@@ -1,0 +1,14 @@
+# Build output
+out/
+*.vsix
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode-test/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

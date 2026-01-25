@@ -1,0 +1,79 @@
+{
+  "name": "etamil-support",
+  "displayName": "eTamil Support",
+  "description": "Syntax highlighting and install command for eTamil.",
+  "version": "0.0.1",
+  "publisher": "eTamilIndia",
+  "author": {
+    "name": "Esan Maruff",
+    "email": "esan@eTamil.in"
+  },
+  "homepage": "https://eTamil.in",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Maruff/etamil_compiler"
+  },
+  "bugs": {
+    "url": "https://github.com/Maruff/etamil_compiler/issues"
+  },
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": ["Programming Languages"],
+  "activationEvents": [
+    "onLanguage:etamil",
+    "onCommand:etamil.install"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "etamil",
+        "aliases": ["eTamil", "etamil"],
+        "extensions": [".etamil", ".qmz"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "etamil",
+        "scopeName": "source.etamil",
+        "path": "./syntaxes/etamil.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "etamil",
+        "path": "./snippets/etamil.code-snippets"
+      }
+    ],
+    "commands": [
+      {
+        "command": "etamil.install",
+        "title": "eTamil: Install Compiler"
+      }
+    ],
+    "configuration": {
+      "title": "eTamil",
+      "properties": {
+        "etamil.installCommand": {
+          "type": "string",
+          "default": "git clone https://github.com/Maruff/etamil_compiler.git && cd etamil_compiler && chmod +x install.sh && ./install.sh",
+          "description": "Shell command to install the eTamil compiler/toolchain. Defaults to cloning and running install.sh from Maruff/etamil_compiler."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "echo 'Run vsce package if installed'"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.84.0",
+    "eslint": "^8.55.0",
+    "typescript": "^5.4.0"
+  }
+}

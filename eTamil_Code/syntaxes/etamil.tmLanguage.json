@@ -1,0 +1,97 @@
+{
+  "name": "eTamil",
+  "scopeName": "source.etamil",
+  "fileTypes": ["etamil", "qmz"],
+  {
+    "name": "eTamil",
+    "scopeName": "source.etamil",
+    "fileTypes": ["etamil", "qmz"],
+    "patterns": [
+      {
+        "name": "comment.line.double-slash.etamil",
+        "match": "//.*$"
+      },
+      {
+        "name": "comment.line.number-sign.etamil",
+        "match": "#.*$"
+      },
+      {
+        "name": "string.quoted.double.etamil",
+        "begin": "\"",
+        "end": "\"",
+        "patterns": [
+          { "name": "constant.character.escape.etamil", "match": "\\\\." }
+        ]
+      },
+      {
+        "name": "string.quoted.single.etamil",
+        "begin": "'",
+        "end": "'",
+        "patterns": [
+          { "name": "constant.character.escape.etamil", "match": "\\\\." }
+        ]
+      },
+      {
+        "name": "constant.numeric.etamil",
+        "match": "\\b\\d+(?:_\\d+)*(?:\\.\\d+)?\\b"
+      },
+      {
+        "name": "constant.numeric.percentage.etamil",
+        "match": "\\b\\d+(?:\\.\\d+)?%\\b"
+      },
+      {
+        "name": "keyword.control.etamil",
+        "match": "\\b(?:எனில்|inREl|இன்றேல்|cuRRu|அச்சு|accu|உள்ளிடு|uLLitu)\\b"
+      },
+      {
+        "name": "storage.modifier.etamil",
+        "match": "\\b(?:மாறி|mARi|நிலை|nilY)\\b"
+      },
+      {
+        "name": "storage.type.etamil",
+        "match": "\\b(?:எண்|eN|பின்னம்|pinnam|சொல்|col|பொது|poqu|உரை|urY|அணி|aNi|தரவு|qaravu|பொருள்|poruL|தேதி|tqEqi)\\b"
+      },
+      {
+        "name": "constant.language.etamil",
+        "match": "\\b(?:மெய்|mey|பொய்|poi|இன்மை|inmY)\\b"
+      },
+      {
+        "name": "support.function.fileio.etamil",
+        "match": "\\b(?:கோப்பு|kOppu|_file|தரவுரை|qaravurY|_CSV|படி|pati|_read|எழுது|ezuqu|_write|திற|qiRa|_open|மூடு|mUtu|_close|கோப்பு_திற|kOppu_qiRa|_fileOpen|கோப்பு_மூடு|kOppu_mUtu|_fileClose|கோப்பு_படி|kOppu_pati|_fileRead|கோப்பு_எழுது|kOppu_ezuqu|_fileWrite|CSV_படி|qaravurY_pati|_readCSV|CSV_எழுது|qaravurY_ezuqu|_writeCSV)\\b"
+      },
+      {
+        "name": "keyword.other.database.etamil",
+        "match": "\\b(?:தளம்_இணை|qaLam_inai|_dbConnect|தளம்_பிரி|qaLam_piri|_dbDisconnect|தளம்_கேள்வி|qaLam_kELvi|_dbQuery|தளம்_செய்|qaLam_cey|_dbExecute|தளம்_தேடு|qaLam_qEtu|_dbSearch|தளம்_செருக|qaLam_ceruka|_dbInsert|தளம்_புதுப்பி|qaLam_puquppi|_dbUpdate|தளம்_நீக்கு|qaLam_nIkku|_dbDelete|கவி_மொழி|_SQL|தேடு_மொழி|_NoSQL|சீகுலைட்|_SQLite|மைசீகுல்|_MySQL|போச்குரசீகுல்|_PostgreSQL|மொங்கோடிபி|_MongoDB|ரெடிஸ்|_Redis|ஜேசான்டிபி|_JSONdb|தேர்வெடு|Select|இதனில்|From|விதி|Where|வரிசை|OrderBy|குழு|GroupBy|சேர்|Join|இடம்|Left|வலம்|Right|உள்|Inner|வெளி|Outer|தனிக|Distinct|வரம்பு|Limit|ஈடு|Offset)\\b"
+      },
+      {
+        "name": "keyword.other.api.etamil",
+        "match": "\\b(?:தள_இடை|qaLa_itY|_api|இறுதி_புள்ளி|_endpoint|வழி|_route|கோரிக்கை|_request|பதில்|_response|தலைப்பு|_header|உடல்|_body|அளவுரு|_param|வினா_அளவுரு|_queryParam|பாதை_அளவுரு|_pathParam|ஜேசான்_உரை|_JSONBody|நிலை_குறி|_statusCode|நிலை_செய்தி|_statusMessage|உறுதி|_auth|குறிதாங்கி|_bearerToken|உரை_வகை|_contentType|சேவை|_serve)\\b"
+      },
+      {
+        "name": "keyword.other.httpmethod.etamil",
+        "match": "\\b(?:பெறு|GET|_get|செய்|POST|_post|மாற்று|PUT|_put|அழி|DELETE|_delete|ஒட்டு|PATCH|_patch|தெரிவு|OPTIONS|_options|தலை|HEAD|_head)\\b"
+      },
+      {
+        "name": "keyword.other.server.etamil",
+        "match": "\\b(?:வழங்கி_தொடங்கு|_startServer|வழங்கி_நிறுத்து|_stopServer)\\b"
+      },
+      {
+        "name": "variable.other.domain.etamil",
+        "match": "\\b(?:வரவு|varavu|பற்று|paRRu|இருப்பு|iruppu|வீதம்|vIqam|சொத்து|soqqu|பொறுப்பு|poRuppu|பங்கு|paNgu|வருவாய்|varuvAy|செலவு|celavu|வருமானம்|varumAnam|பயன்|payan|இழப்பு|izappu|வரி|vari|நிகர|Nikara|மொத்த|moqqa|வட்டி|vatti|பேரேடு|pErEtu|பதிவு|paqivu|வாங்குநர்|vAwkuNar|நிலையான|nilYyAna|நடப்பு|natappu|நடப்பிலில்லா|natappilillA|முகவரி|mukavari|தொகை|toqai|நாணயம்|nANayam|பரிவர்த்தனை|parivarttanai|தேய்மானம்|qEymAnam|கடன்தீர்ப்பு|katan_qIrppu|மதிப்புயர்வு|matippuyarvu|மூலதனம்|mUlatanam|இருப்பாய்வு|iruppAyvu|இருப்புநிலை|iruppunilY|வருமான_அறிக்கை|varumAn_aRikkY|பணப்புழக்கம்|paNappuzakkam|வருமான_வரி|varumAn_vari|வணிகவரி|vaNikavari|_GST|வரியறிக்கை|variyaRikkY|_ITR)\\b"
+      },
+      {
+        "name": "keyword.operator.etamil",
+        "match": "==|!=|>=|<=|>|<|=|\\+|-|\\*|/|&"
+      },
+      {
+        "name": "punctuation.etamil",
+        "match": "[(),{};,]"
+      },
+      {
+        "name": "entity.name.function.etamil",
+        "match": "\\b([\\p{L}_][\\p{L}\\p{N}_]*)\\s*(?=\\()"
+      }
+    ],
+    "repository": {},
+    "uuid": "d65b8f5a-0f9a-4d1d-9a8a-4a7c0e7b2e00"
+  }

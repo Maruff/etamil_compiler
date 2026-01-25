@@ -1,0 +1,45 @@
+{
+  "Function": {
+    "prefix": ["fun", "முறை"],
+    "description": "Define a function",
+    "body": [
+      "முறை ${1:பெயர்}(${2:அளவுருக்கள்}) {",
+      "  ${0}",
+      "}"
+    ]
+  },
+  "If Else": {
+    "prefix": ["if", "என்றால்"],
+    "description": "If-else statement",
+    "body": [
+      "என்றால் (${1:நிபந்தனை}) {",
+      "  ${2}",
+      "} இல்லையெனில் {",
+      "  ${0}",
+      "}"
+    ]
+  },
+  "Loop": {
+    "prefix": ["loop", "சுழறு"],
+    "description": "Loop construct",
+    "body": [
+      "சுழறு (${1:மாற்றி} வரை ${2:நிபந்தனை}) {",
+      "  ${0}",
+      "}"
+    ]
+  },
+  "Print": {
+    "prefix": ["print", "அச்சிடு"],
+    "description": "Print output",
+    "body": [
+      "அச்சிடு(${1:வசனம்})"
+    ]
+  },
+  "Input": {
+    "prefix": ["input", "உள்ளிடு"],
+    "description": "Read input",
+    "body": [
+      "${1:மாறி} = உள்ளிடு(${2:உத்தேசம்})"
+    ]
+  }
+}
