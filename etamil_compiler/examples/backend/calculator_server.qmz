@@ -1,0 +1,23 @@
+// Calculator Server
+// Demonstrates mathematical operations
+// Run: ./etamil_compiler --server --port 8080 calculator_server.qmz
+
+எண் a;
+எண் b;
+எண் sum;
+எண் product;
+எண் difference;
+
+a = 100;
+b = 25;
+
+sum = a + b;
+product = a * b;
+difference = a - b;
+
+அச்சு "Calculator Server";
+அச்சு "a = " & a;
+அச்சு "b = " & b;
+அச்சு "a + b = " & sum;
+அச்சு "a * b = " & product;
+அச்சு "a - b = " & difference;

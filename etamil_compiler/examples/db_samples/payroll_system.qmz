@@ -1,0 +1,59 @@
+// Payroll Management Example
+// Demonstrates financial calculations with database operations
+//
+// This program shows:
+// 1. Employee salary management
+// 2. Tax calculations
+// 3. Deduction processing
+// 4. Net salary computation
+
+எண் employee_id = 0;
+எண் gross_salary = 0;
+எண் tax_amount = 0;
+எண் deduction = 0;
+எண் net_salary = 0;
+
+// Employee salary data
+கோப்பு_திற "payroll.csv" "write";
+
+தரவுரை_எழுது "payroll.csv" "emp_id,name,department,salary";
+தரவுரை_எழுது "payroll.csv" "E1001,ராஜா,Engineering,50000";
+தரவுரை_எழுது "payroll.csv" "E1002,தேவி,Sales,40000";
+தரவுரை_எழுது "payroll.csv" "E1003,குமார்,HR,35000";
+தரவுரை_எழுது "payroll.csv" "E1004,ஆனந்தி,Finance,45000";
+
+// Tax and deduction calculation for first employee
+gross_salary = 50000;
+
+// Tax: 10% of gross salary
+tax_amount = 5000;
+
+// Deductions: Insurance, PF, etc
+deduction = 2000;
+
+// Net salary = Gross - Tax - Deductions
+net_salary = 50000 - 5000 - 2000;
+
+// Write payroll summary
+கோப்பு_திற "payroll_summary.csv" "write";
+
+தரவுரை_எழுது "payroll_summary.csv" "emp_id,gross_salary,tax,deduction,net_salary";
+தரவுரை_எழுது "payroll_summary.csv" "E1001,50000,5000,2000,43000";
+தரவுரை_எழுது "payroll_summary.csv" "E1002,40000,4000,1600,34400";
+தரவுரை_எழுது "payroll_summary.csv" "E1003,35000,3500,1400,30100";
+தரவுரை_எழுது "payroll_summary.csv" "E1004,45000,4500,1800,38700";
+
+// Display payroll information
+அச்சு "Payroll Management System";
+அச்சு "=======================";
+
+// Read payroll data
+கோப்பு_திற "payroll_summary.csv" "read";
+தரவுரை_படி "payroll_summary.csv" net_salary;
+
+அச்சு "Employee E1001 Net Salary: ";
+அச்சு net_salary;
+
+// Close files
+கோப்பு_மூடு "payroll.csv";
+கோப்பு_மூடு "payroll_summary.csv";

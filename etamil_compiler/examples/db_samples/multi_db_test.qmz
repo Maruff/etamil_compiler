@@ -1,0 +1,32 @@
+// Enhanced Database Test with Multiple Database Types
+// பல தரவுசேமி வகைகள் சோதனை
+
+// === SQLite Operations ===
+அச்சு "=== SQLite Database Test ===";
+தளம்_இணை சீகுலைட், "app.db";
+அட்டை_ஆக்கு users, "id INT, username TEXT, email TEXT";
+தளம்_செருக users, "1, 'admin', 'admin@test.com'";
+தளம்_கேள்வி "SELECT * FROM users";
+தளம்_பிரி சீகுலைட்;
+
+அச்சு "\n=== MySQL Database Test ===";
+தளம்_இணை மைசீகுல், "localhost:3306/mydb";
+அச்சு "MySQL connection simulated";
+தளம்_பிரி மைசீகுல்;
+
+அச்சு "\n=== PostgreSQL Database Test ===";
+தளம்_இணை போச்குரசீகுல், "postgresql://localhost/testdb";
+அச்சு "PostgreSQL connection simulated";
+தளம்_பிரி போச்குரசீகுல்;
+
+அச்சு "\n=== MongoDB (NoSQL) Test ===";
+தளம்_இணை மாங்கோடிபி, "mongodb://localhost:27017";
+அச்சு "MongoDB connection simulated";
+தளம்_பிரி மாங்கோடிபி;
+
+அச்சு "\n=== Redis Test ===";
+தளம்_இணை ரெடிஸ், "redis://localhost:6379";
+அச்சு "Redis connection simulated";
+தளம்_பிரி ரெடிஸ்;
+
+அச்சு "\n=== All database types tested successfully! ===";

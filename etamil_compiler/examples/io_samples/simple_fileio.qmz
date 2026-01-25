@@ -1,0 +1,19 @@
+// eTamil File I/O Test Program
+// Simple demonstration of file I/O operations
+
+எண் வருவாய_;
+
+// Open file for reading
+கோப்பு_திற "data.txt", "read";
+
+// Read data from file into வருவாய_
+கோப்பு_படி "data.txt", வருவாய_;
+
+// Display what we read
+அச்சு "Revenue from file: " & வருவாய_;
+
+// Write data to output file
+கோப்பு_எழுது "output.txt", வருவாய_;
+
+// Close files
+கோப்பு_மூடு "data.txt";

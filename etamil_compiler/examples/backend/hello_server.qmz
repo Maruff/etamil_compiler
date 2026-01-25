@@ -1,0 +1,12 @@
+// Simple eTamil HTTP Backend Server
+// This program demonstrates the Minimum Viable Backend (HTTP only)
+// Run with: ./etamil_compiler --server --port 8080 hello_server.qmz
+
+எண் status;
+எண் port;
+
+status = 200;
+port = 8080;
+
+அச்சு "HTTP Server starting on port " & port;
+அச்சு "Status: " & status;

@@ -1,0 +1,39 @@
+# Rust build artifacts
+etamil_compiler/target/
+*.exe
+*.pdb
+
+# Compiled binaries
+etamil_program
+*.o
+*.s
+*.ll
+
+# CSV data files (optional - comment out if you want to include them)
+*.csv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Test outputs
+test_output/
+*.test
+
+# Environment files
+.env
+.env.local

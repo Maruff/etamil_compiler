@@ -1,0 +1,38 @@
+// eTamil Database Connectivity Test
+// தரவுசேமி இணைப்பு சோதனை
+
+// Connect to SQLite database
+அச்சு "=== Database Connectivity Test ===";
+தளம்_இணை சீகுலைட், "students.db";
+
+// Create a table
+அட்டை_ஆக்கு students, "id INT, name TEXT, age INT, grade TEXT";
+
+// Insert data
+தளம்_செருக students, "1, 'Ravi', 20, 'A'";
+தளம்_செருக students, "2, 'Priya', 22, 'B'";
+தளம்_செருக students, "3, 'Kumar', 19, 'A'";
+
+// Query data
+அச்சு "\n=== Querying all students ===";
+தளம்_கேள்வி "SELECT * FROM students";
+
+// Update data
+அச்சு "\n=== Updating student records ===";
+தளம்_புதுப்பி students, "grade='A+'", "name='Ravi'";
+
+// Query with where clause
+அச்சு "\n=== Students with grade A ===";
+தளம்_கேள்வி "SELECT name, age FROM students WHERE grade='A'";
+
+// Delete data
+அச்சு "\n=== Deleting old records ===";
+தளம்_நீக்கு students, "age > 21";
+
+// Final query
+அச்சு "\n=== Final student list ===";
+தளம்_கேள்வி "SELECT * FROM students";
+
+// Disconnect
+தளம்_பிரி சீகுலைட்;
+அச்சு "\n=== Database operations completed ===";

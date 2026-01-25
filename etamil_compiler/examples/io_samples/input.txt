@@ -1,0 +1,12 @@
+Welcome to eTamil Programming Language
+========================================
+
+This file contains test data for file read operations.
+
+Test Data:
+- Number: 12345
+- Text: Sample Input
+- Tamil: தமிழ் நிரலாக்க மொழி
+- Status: Active
+
+Use this file to test fileread operations in your eTamil programs.

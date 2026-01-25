@@ -1,0 +1,82 @@
+[
+  {
+    "_id": "STU001",
+    "name": "ராஜ் குமாரசாமி",
+    "email": "raj.kumar@school.edu",
+    "phone": "+91-9876543210",
+    "class": "10",
+    "address": {
+      "street": "123 முக்குந்த் ஸ்ட்ரீட்",
+      "city": "சென்னை",
+      "state": "தமிழ்நாடு",
+      "zip": "600001"
+    },
+    "enrollment_date": "2023-06-15",
+    "guardian": {
+      "name": "குமாரசாமி வெங்கடாசலபதி",
+      "relation": "Father",
+      "phone": "+91-9876543211"
+    },
+    "academic_status": "Active"
+  },
+  {
+    "_id": "STU002",
+    "name": "தேவி சந்திரமோहन",
+    "email": "devi.chandran@school.edu",
+    "phone": "+91-9876543212",
+    "class": "10",
+    "address": {
+      "street": "456 பார்தி நகர்",
+      "city": "சென்னை",
+      "state": "தமிழ்நாடு",
+      "zip": "600002"
+    },
+    "enrollment_date": "2023-06-15",
+    "guardian": {
+      "name": "சந்திரமோहन வெங்கடेசन்",
+      "relation": "Father",
+      "phone": "+91-9876543213"
+    },
+    "academic_status": "Active"
+  },
+  {
+    "_id": "STU003",
+    "name": "குமார் வெங்கடாசலபதி",
+    "email": "kumar.venkatesh@school.edu",
+    "phone": "+91-9876543214",
+    "class": "9",
+    "address": {
+      "street": "789 நெல்சன் மணपালयम்",
+      "city": "சென்னை",
+      "state": "தமிழ்நாடு",
+      "zip": "600003"
+    },
+    "enrollment_date": "2023-07-01",
+    "guardian": {
+      "name": "வெங்கடாசலபதி कृष्णन्",
+      "relation": "Father",
+      "phone": "+91-9876543215"
+    },
+    "academic_status": "Active"
+  },
+  {
+    "_id": "STU004",
+    "name": "ஆனந்தி கணேசன்",
+    "email": "anandhi.ganesh@school.edu",
+    "phone": "+91-9876543216",
+    "class": "9",
+    "address": {
+      "street": "321 அனावரत நूमanalary",
+      "city": "சென்னை",
+      "state": "தமிழ்நாடு",
+      "zip": "600004"
+    },
+    "enrollment_date": "2023-07-01",
+    "guardian": {
+      "name": "கணேசன் శubhаना",
+      "relation": "Father",
+      "phone": "+91-9876543217"
+    },
+    "academic_status": "Active"
+  }
+]

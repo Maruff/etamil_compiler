@@ -1,0 +1,18 @@
+// Loop Server
+// Demonstrates loop structures
+// Run: ./etamil_compiler --server --port 8080 loop_server.qmz
+
+எண் counter;
+எண் sum;
+
+counter = 0;
+sum = 0;
+
+(counter < 5) சுற்று {
+    sum = sum + counter;
+    counter = counter + 1;
+}
+
+அச்சு "Loop Server";
+அச்சு "Final counter: " & counter;
+அச்சு "Sum of 0-4: " & sum;

@@ -1,0 +1,41 @@
+// Simple REST API Example
+// எளிய REST API உதாரணம்
+
+அச்சு "=== REST API Server ===";
+
+// Define GET route
+வழி பெறு, "/api/hello" {
+    அச்சு "Handling GET /api/hello";
+    ஜேசான்_உரை "{\"message\": \"Hello, World!\"}", 200;
+}
+
+// Define POST route
+வழி பதி, "/api/users" {
+    அச்சு "Handling POST /api/users";
+    ஜேசான்_உரை "{\"status\": \"User created\"}", 201;
+}
+
+// Define PUT route
+வழி இடு, "/api/users/1" {
+    அச்சு "Handling PUT /api/users/1";
+    பதில் 200, "User updated";
+}
+
+// Define DELETE route
+வழி அழி, "/api/users/1" {
+    அச்சு "Handling DELETE /api/users/1";
+    பதில் 204, "User deleted";
+}
+
+// Start server
+வழங்கி_தொடங்கு "localhost", 8080;
+
+அச்சு "\n=== Server started successfully ===";
+அச்சு "API endpoints available:";
+அச்சு "  GET    /api/hello";
+அச்சு "  POST   /api/users";
+அச்சு "  PUT    /api/users/1";
+அச்சு "  DELETE /api/users/1";
+
+// Stop server (for testing purposes)
+வழங்கி_நிறுத்து;

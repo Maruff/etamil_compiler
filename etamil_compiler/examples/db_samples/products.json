@@ -1,0 +1,81 @@
+[
+  {
+    "_id": "PROD001",
+    "name": "Dell XPS 13",
+    "category": "Laptops",
+    "specifications": {
+      "processor": "Intel Core i7",
+      "ram": "16GB",
+      "storage": "512GB SSD",
+      "display": "13.4 inch FHD"
+    },
+    "price": 85000,
+    "stock": {
+      "total": 25,
+      "warehouse_a": 10,
+      "warehouse_b": 15
+    },
+    "rating": 4.7,
+    "reviews_count": 145,
+    "last_updated": "2024-01-19T10:30:00Z"
+  },
+  {
+    "_id": "PROD002",
+    "name": "Mechanical Keyboard RGB",
+    "category": "Peripherals",
+    "specifications": {
+      "switches": "Cherry MX Blue",
+      "layout": "Full Size",
+      "backlight": "RGB",
+      "connection": "USB-C Wireless"
+    },
+    "price": 5500,
+    "stock": {
+      "total": 150,
+      "warehouse_a": 75,
+      "warehouse_b": 75
+    },
+    "rating": 4.5,
+    "reviews_count": 320,
+    "last_updated": "2024-01-18T14:45:00Z"
+  },
+  {
+    "_id": "PROD003",
+    "name": "Ergonomic Office Chair",
+    "category": "Furniture",
+    "specifications": {
+      "material": "Mesh",
+      "height_adjustable": true,
+      "lumbar_support": true,
+      "color": "Black"
+    },
+    "price": 12000,
+    "stock": {
+      "total": 45,
+      "warehouse_a": 20,
+      "warehouse_b": 25
+    },
+    "rating": 4.3,
+    "reviews_count": 89,
+    "last_updated": "2024-01-17T09:15:00Z"
+  },
+  {
+    "_id": "PROD004",
+    "name": "USB-C Dock Hub",
+    "category": "Accessories",
+    "specifications": {
+      "ports": "7 (HDMI, USB3, USB2, Audio, Power)",
+      "video_support": "4K@30Hz",
+      "power_delivery": "100W"
+    },
+    "price": 3500,
+    "stock": {
+      "total": 200,
+      "warehouse_a": 100,
+      "warehouse_b": 100
+    },
+    "rating": 4.6,
+    "reviews_count": 567,
+    "last_updated": "2024-01-19T16:20:00Z"
+  }
+]

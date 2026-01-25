@@ -1,0 +1,6 @@
+Hello from eTamil Compiler!
+This is a sample text file for testing file I/O operations.
+Line 3: வணக்கம் (Vanakkam - Hello in Tamil)
+Line 4: File operations are working correctly.
+Line 5: Testing read and write functionality.
+End of sample file.

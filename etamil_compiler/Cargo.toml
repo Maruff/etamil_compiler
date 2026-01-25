@@ -1,0 +1,104 @@
+# etamil_compiler/Cargo.toml
+# eTamil-Compiler: A Rust-based DSL Compiler for Tamil/Latin Bilingual FinTech
+# Highlights:
+# Inkwell & LLVM 21: 
+#       Enables the generation of machine-efficient code for complex tax calculations.
+# Bilingual Lexing: 
+#       logos allows us to define regex patterns for both வரவு and varavu in a single token.
+# Financial Precision: 
+#       By using rust_decimal instead of standard f64, you ensure $100.00 + 200.00$ never results in $300.000000000004$, which is a critical requirement for Indian Banking standards.
+# Regulatory Ready: 
+#       The inclusion of sqlx with mssql and postgres features ensures you can connect eTamil to enterprise core banking systems immediately.
+
+[package]
+name = "etamil_compiler"
+version = "0.1.0"
+edition = "2024" # Using the latest 2024 edition (stable in 2026)
+authors = ["Esan Maruff <esan@etamil.in>"]
+description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulatory Compliance"
+
+[dependencies]
+# --- 1. Core Compiler Infrastructure ---
+# Direct LLVM FFI bindings. Version 180 = LLVM 18.x
+# Requires: LLVM 18 dev libraries (already installed on your system)
+# Set: LLVM_CONFIG_PATH=/usr/lib/llvm-18/bin/llvm-config
+llvm-sys = { version = "180", features = ["prefer-dynamic"] }
+# Fast Lexer for bilingual tokenization
+logos = "0.16.0"
+# Parser for grammar definition (AST)
+pest = "2.7.0"
+pest_derive = "2.7.0"
+# Essential for handling Tamil Unicode graphemes
+unicode-segmentation = "1.11.0"
+
+# --- 2. Mathematical & Financial Logic (LLOPR & Beyond) ---
+# High-precision decimals for Indian currency (prevents rounding errors)
+rust_decimal = { version = "^1.34", features = ["serde"] }
+rust_decimal_macros = "^1.34"
+# Date/Time handling for financial audit trails
+chrono = { version = "0.4.35", features = ["serde"] }
+
+# --- 3. Data Handling & Security ---
+# CSV processing for financial exports
+csv = "1.3.0"
+# Secure serialization for JSON/Government API interactions
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# AES-GCM for encryption of local CSV/Audit files
+aes-gcm = "0.10.3"
+# Secure hashing and signatures
+ring = "0.17.8"
+
+# --- 4. Database Connectivity (Steps 8 & 9) ---
+# Unified relational DB toolkit (Asynchronous)
+sqlx = { version = "0.8.0", features = [ 
+    "runtime-tokio", 
+    "tls-rustls", 
+    "sqlite", 
+    "postgres", 
+    "mysql"
+] }
+# NoSQL support for high-scale FinTech data
+mongodb = "3.5.0"
+# Oracle-specific driver (as it's outside sqlx's standard scope)
+oracle = "0.6.0"
+
+# --- 5. Async Runtime & System ---
+# Essential for handling high-concurrency DB and API calls
+tokio = { version = "1.37", features = ["full"] }
+# Enhanced error handling for compiler diagnostics
+anyhow = "1.0"
+thiserror = "2.0.18"
+
+# --- 6. HTTP Server (MVP Backend) ---
+# High-performance async HTTP server framework
+axum = "0.7"
+hyper = { version = "1.0", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+# URL parsing and query parameters
+url = "2.5.0"
+# Graceful shutdown handling
+signal-hook = "0.3"
+signal-hook-tokio = "0.3"
+# Request/response handling utilities
+regex = "1.10.0"
+# Connection pooling for database
+deadpool = "0.12"
+deadpool-postgres = "0.14"
+# JWT authentication (Phase 4)
+jsonwebtoken = "9.2"
+# Redis cache client (Phase 4)
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+# Circuit breaker and resilience patterns (Phase 4)
+governor = "0.6"
+# Prometheus metrics export (Phase 4)
+prometheus = "0.13"
+# Bcrypt for password hashing (Phase 4)
+bcrypt = "0.15"
+# UUID generation for user IDs (Phase 4)
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+[dev-dependencies]
+# For testing financial accuracy
+proptest = "1.4.0"

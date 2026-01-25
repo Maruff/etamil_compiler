@@ -1,0 +1,43 @@
+// Student Management System Example
+// Demonstrates database operations with eTamil
+// 
+// This program shows:
+// 1. Creating tables for students
+// 2. Inserting student records
+// 3. Querying student data
+// 4. Updating grades
+// 5. Reading/writing encrypted data
+
+எண் student_id = 0;
+எண் total_students = 0;
+எண் total_score = 0;
+
+// Create students database
+கோப்பு_திற "students.csv" "write";
+கோப்பு_எழுது "students.csv" 1001;
+கோப்பு_எழுது "students.csv" 1002;
+கோப்பு_எழுது "students.csv" 1003;
+கோப்பு_மூடு "students.csv";
+
+// Write student data
+தரவுரை_எழுது "students.csv" "student_id,name,score";
+தரவுரை_எழுது "students.csv" "1001,ராஜா,95";
+தரவுரை_எழுது "students.csv" "1002,தேவி,88";
+தரவுரை_எழுது "students.csv" "1003,குமார்,92";
+
+// Read student data
+கோப்பு_திற "students.csv" "read";
+தரவுரை_படி "students.csv" total_students;
+
+// Calculate total
+total_score = 95 + 88 + 92;
+
+// Display results
+அச்சு "Total Students: ";
+அச்சு total_students;
+
+அச்சு "Total Score: ";
+அச்சு total_score;
+
+// Close file
+கோப்பு_மூடு "students.csv";
