@@ -1,8 +1,8 @@
 {
   "name": "etamil-support",
   "displayName": "eTamil Support",
-  "description": "Syntax highlighting and install command for eTamil.",
-  "version": "0.0.1",
+  "description": "Complete eTamil programming language support with auto-compiler installation, syntax highlighting, IntelliSense, and code snippets.",
+  "version": "0.2.0",
   "publisher": "eTamilIndia",
   "author": {
     "name": "Esan Maruff",
@@ -16,13 +16,16 @@
   "bugs": {
     "url": "https://github.com/Maruff/etamil_compiler/issues"
   },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.84.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": ["Programming Languages", "Debuggers", "Snippets"],
+  "keywords": ["Tamil", "Programming", "Language", "eTamil", "Compiler", "DSL"],
   "activationEvents": [
     "onLanguage:etamil",
-    "onCommand:etamil.install"
+    "onCommand:etamil.install",
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -31,6 +34,10 @@
         "id": "etamil",
         "aliases": ["eTamil", "etamil"],
         "extensions": [".etamil", ".qmz"],
+        "icon": {
+          "light": "./icons/etamil.png",
+          "dark": "./icons/etamil.png"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
@@ -50,7 +57,8 @@
     "commands": [
       {
         "command": "etamil.install",
-        "title": "eTamil: Install Compiler"
+        "title": "eTamil: Install Compiler",
+        "description": "Install the eTamil compiler for your platform"
       }
     ],
     "configuration": {
@@ -60,6 +68,21 @@
           "type": "string",
           "default": "git clone https://github.com/Maruff/etamil_compiler.git && cd etamil_compiler && chmod +x install.sh && ./install.sh",
           "description": "Shell command to install the eTamil compiler/toolchain. Defaults to cloning and running install.sh from Maruff/etamil_compiler."
+        },
+        "etamil.autoInstallOnActivation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically prompt to install eTamil compiler when the extension is activated (if not already installed)"
+        },
+        "etamil.syntaxHighlight": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable advanced syntax highlighting for eTamil code"
+        },
+        "etamil.showIntelliSense": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show IntelliSense suggestions for eTamil keywords and functions"
         }
       }
     }

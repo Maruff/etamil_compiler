@@ -465,7 +465,7 @@ impl Compiler {
                     );
                 }
                 Stmt::DBQuery { query, result_var } => {
-                    // தரவுசேமி_கேள்வி "SELECT * FROM table", result;
+                    // தளம்_வினா "SELECT * FROM table", result;
                     let (printf, printf_type) = self.get_printf();
                     
                     // Extract query string

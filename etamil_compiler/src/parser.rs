@@ -206,11 +206,14 @@ impl<'a> Parser<'a> {
                 Stmt::Input(val)
             }
             Token::FileOpen => {
-                // கோப்பு_திற "file.txt" "read";
+                // கோப்பு_திற "file.txt";  (optional: , "read")
                 let filename = self.parse_expression();
-                self.expect(Token::Comma);
-                let mode_token = self.tokens.next().expect("Expected mode");
-                let mode = self.token_name(&mode_token).to_lowercase();
+                let mode = if self.matches(Token::Comma) {
+                    let mode_expr = self.parse_expression();
+                    self.expr_to_string(mode_expr).to_lowercase()
+                } else {
+                    "read".to_string()
+                };
                 self.expect(Token::Semicolon);
                 Stmt::FileOpen { filename, mode }
             }
@@ -277,7 +280,7 @@ impl<'a> Parser<'a> {
                 Stmt::DBDisconnect { db_type }
             }
             Token::DBQuery => {
-                // தரவுசேமி_கேள்வி "SELECT * FROM table", result_var;
+                // தளம்_வினா "SELECT * FROM table", result_var;
                 let query = self.parse_expression();
                 let result_var = if self.matches(Token::Comma) {
                     let var_token = self.tokens.next().expect("Expected variable name");
@@ -556,16 +559,33 @@ impl<'a> Parser<'a> {
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
+            Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => false,
             Token::FileOpen | Token::FileClose | Token::FileRead | Token::FileWrite | Token::ReadCSV | Token::WriteCSV => false,
             // Database operations
-            Token::DBConnect | Token::DBDisconnect | Token::DBQuery | Token::DBExecute | Token::DBInsert | Token::DBUpdate | Token::DBDelete => false,
-            Token::CreateTable | Token::AlterTable | Token::DropTable | Token::Select | Token::From | Token::Where => false,
+            Token::Database | Token::DBConnect | Token::DBDisconnect | Token::DBQuery | Token::DBExecute | Token::DBSearch | Token::DBInsert | Token::DBUpdate | Token::DBDelete => false,
+            Token::Table | Token::Collection | Token::Row | Token::Column | Token::Key | Token::PrimaryKey | Token::ForeignKey | Token::Index => false,
+            Token::CreateTable | Token::AlterTable | Token::DropTable => false,
+            Token::Select | Token::From | Token::Where | Token::OrderBy | Token::GroupBy | Token::Join | Token::Left | Token::Right | Token::Inner | Token::Outer | Token::Distinct | Token::Limit | Token::Offset => false,
             // Database types
             Token::SQL | Token::NoSQL | Token::SQLite | Token::MySQL | Token::PostgreSQL | Token::MongoDB | Token::Redis | Token::JSONdb => false,
             // REST API operations
             Token::Route | Token::StartServer | Token::StopServer | Token::Response | Token::JSONBody => false,
-            Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body => false,
+            Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body | Token::Param | Token::QueryParam | Token::PathParam => false,
+            Token::URL | Token::Host | Token::Port | Token::Method | Token::StatusCode | Token::StatusMessage | Token::Auth | Token::BearerToken | Token::ContentType | Token::Serve => false,
             Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
+            // Security
+            Token::Encrypt | Token::Decrypt | Token::Password | Token::EncryptionKey => false,
+            // Financial & Accounting Keywords
+            Token::Credit | Token::Debit | Token::Balance | Token::Rate | Token::Asset => false,
+            Token::Liability | Token::Equity | Token::Revenue | Token::Expense | Token::Income => false,
+            Token::Profit | Token::Loss | Token::Tax | Token::Net | Token::Gross => false,
+            Token::Interest | Token::Ledger | Token::Journal | Token::Loan | Token::Finance => false,
+            Token::Statement | Token::Valuation | Token::CreditCard | Token::Cash | Token::Bank => false,
+            Token::Receivable | Token::Payable | Token::Vendor | Token::Customer => false,
+            Token::Fixed | Token::Current | Token::NonCurrent | Token::Address | Token::Amount => false,
+            Token::Currency | Token::Transaction | Token::Depreciation | Token::Amortization => false,
+            Token::Appreciation | Token::Capital | Token::TrialBalance | Token::BalanceSheet => false,
+            Token::IncomeStatement | Token::CashFlow | Token::IncomeTax | Token::GST | Token::ITR => false,
             _ if self.is_type_token(token) => false,
             Token::Identifier(_) => true,
             _ => true,
@@ -604,6 +624,17 @@ impl<'a> Parser<'a> {
             Token::HttpOptions => "OPTIONS".to_string(),
             Token::HttpHead => "HEAD".to_string(),
             _ => format!("{:?}", token),
+        }
+    }
+
+    fn expr_to_string(&self, expr: Expr) -> String {
+        match expr {
+            Expr::String(s) => s,
+            Expr::Variable(name) => name,
+            Expr::Number(n) => n.to_string(),
+            Expr::BinaryOp { op, .. } => op,
+            Expr::Comparison { op, .. } => op,
+            Expr::Concat { .. } => "concat".to_string(),
         }
     }
 

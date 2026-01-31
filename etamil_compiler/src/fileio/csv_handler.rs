@@ -92,7 +92,7 @@ impl FileIOHandler {
         }
     }
 
-    /// Handle file open operation: கோப்பு_திற "filename" "mode";
+    /// Handle file open operation: கோப்பு_திற "filename"; (optional mode)
     pub fn handle_file_open(&self, mode: &str) {
         unsafe {
             let (printf, printf_type) = self.get_printf();

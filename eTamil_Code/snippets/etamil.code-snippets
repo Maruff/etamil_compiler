@@ -1,45 +1,119 @@
 {
-  "Function": {
-    "prefix": ["fun", "முறை"],
-    "description": "Define a function",
+  "If Else": {
+    "prefix": ["enil", "எனில்"],
+    "description": "If-else statement",
     "body": [
-      "முறை ${1:பெயர்}(${2:அளவுருக்கள்}) {",
+      "(${1:நிபந்தனை}) எனில் {",
+      "  ${2}",
+      "} இன்றேல் {",
       "  ${0}",
       "}"
     ]
   },
-  "If Else": {
-    "prefix": ["if", "என்றால்"],
-    "description": "If-else statement",
+  "If Only": {
+    "prefix": ["if_only", "எனில்_மட்டும்"],
+    "description": "If statement without else",
     "body": [
-      "என்றால் (${1:நிபந்தனை}) {",
-      "  ${2}",
-      "} இல்லையெனில் {",
+      "(${1:நிபந்தனை}) எனில் {",
       "  ${0}",
       "}"
     ]
   },
   "Loop": {
-    "prefix": ["loop", "சுழறு"],
+    "prefix": ["cuRRu", "சுற்று"],
     "description": "Loop construct",
     "body": [
-      "சுழறு (${1:மாற்றி} வரை ${2:நிபந்தனை}) {",
+      "சுற்று ${1:i} = ${2:0}; ${1:i} < ${3:10}; ${1:i} = ${1:i} + 1; {",
       "  ${0}",
       "}"
     ]
   },
   "Print": {
-    "prefix": ["print", "அச்சிடு"],
+    "prefix": ["accu", "அச்சு"],
     "description": "Print output",
     "body": [
-      "அச்சிடு(${1:வசனம்})"
+      "அச்சு \"${1:வசனம்}\";"
     ]
   },
   "Input": {
-    "prefix": ["input", "உள்ளிடு"],
+    "prefix": ["uLLitu", "உள்ளிடு"],
     "description": "Read input",
     "body": [
-      "${1:மாறி} = உள்ளிடு(${2:உத்தேசம்})"
+      "அச்சு \"${1:கேள்வி}: \";",
+      "உள்ளிடு ${2:மாறி};"
+    ]
+  },
+  "Number Variable": {
+    "prefix": ["eN", "எண்"],
+    "description": "Declare a number variable",
+    "body": [
+      "எண் ${1:பெயர்} = ${2:0};"
+    ]
+  },
+  "File Write": {
+    "prefix": ["kOppu_ezuqu", "கோப்பு_எழுது"],
+    "description": "Write to file",
+    "body": [
+      "கோப்பு_திற \"${1:filename}\";",
+      "கோப்பு_எழுது \"${1:filename}\", \"${2:data}\";",
+      "கோப்பு_மூடு \"${1:filename}\";"
+    ]
+  },
+  "File Read": {
+    "prefix": ["kOppu_pati", "கோப்பு_படி"],
+    "description": "Read from file",
+    "body": [
+      "கோப்பு_திற \"${1:filename}\";",
+      "சொல் ${2:data};",
+      "கோப்பு_படி \"${1:filename}\", ${2:data};",
+      "கோப்பு_மூடு \"${1:filename}\";"
+    ]
+  },
+  "CSV Write": {
+    "prefix": ["qaravurY_ezuqu", "தரவுரை_எழுது"],
+    "description": "Write to CSV file",
+    "body": [
+      "கோப்பு_திற \"${1:filename.csv}\";",
+      "தரவுரை_எழுது \"${1:filename.csv}\", \"${2:header1},${3:header2}\";",
+      "தரவுரை_எழுது \"${1:filename.csv}\", \"${4:value1},${5:value2}\";",
+      "கோப்பு_மூடு \"${1:filename.csv}\";"
+    ]
+  },
+  "CSV Read": {
+    "prefix": ["qaravurY_pati", "தரவுரை_படி"],
+    "description": "Read from CSV file",
+    "body": [
+      "கோப்பு_திற \"${1:filename.csv}\";",
+      "சொல் ${2:data};",
+      "தரவுரை_படி \"${1:filename.csv}\", ${2:data};",
+      "கோப்பு_மூடு \"${1:filename.csv}\";"
+    ]
+  },
+  "Tax Calculator": {
+    "prefix": ["tax_calc"],
+    "description": "Income tax calculator template",
+    "body": [
+      "// Income Tax Calculator",
+      "எண் வருவாய்;",
+      "அச்சு \"Enter your income: \";",
+      "உள்ளிடு வருவாய்;",
+      "",
+      "(வருவாய் > 800000) எனில் {",
+      "  எண் வரி = (வருவாய் - 800000) * 20%;",
+      "  அச்சு \"Tax payable: \";",
+      "  அச்சு வரி;",
+      "} இன்றேல் {",
+      "  அச்சு \"No tax payable\";",
+      "}"
+    ]
+  },
+  "Comment Block": {
+    "prefix": ["comment", "கருத்து"],
+    "description": "Comment block",
+    "body": [
+      "/*",
+      " * ${1:Description}",
+      " */"
     ]
   }
 }
