@@ -125,6 +125,9 @@ impl BytecodeCompiler {
             Expr::Number(n) => {
                 self.bytecode.push(Instruction::Push(Value::Number(n)));
             }
+            Expr::String(s) => {
+                self.bytecode.push(Instruction::Push(Value::String(s)));
+            }
             Expr::Variable(name) => {
                 self.bytecode.push(Instruction::LoadVar(name));
             }

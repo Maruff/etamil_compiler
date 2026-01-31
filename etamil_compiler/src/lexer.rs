@@ -187,7 +187,10 @@ pub enum Token {
         num_str.parse::<f64>().ok().map(|n| n / 100.0)
     })] Percentage(f64),
     #[regex(r"[0-9]+(\.[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())] Number(f64),
-    #[regex(r#""([^"\\]|\\.)*""#, |lex| lex.slice().to_string())] String(String),
+    #[regex(r#""([^"\\]|\\.)*""#, |lex| {
+        let s = lex.slice();
+        s[1..s.len()-1].to_string()
+    })] String(String),
     #[regex(r"[\u0B80-\u0BFFa-zA-Z_][\u0B80-\u0BFFa-zA-Z0-9_]*", |lex| lex.slice().to_string())] Identifier(String),
 
     // --- Comparison Operators (New: Required for Conditionals) ---

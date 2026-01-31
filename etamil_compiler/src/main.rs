@@ -135,17 +135,37 @@ async fn main() {
         }
     } else {
         // === LLVM COMPILATION PATH (Legacy) ===
-        println!("=== LLVM Code Generation ===");
+        #[cfg(feature = "llvm")]
+        {
+            println!("=== LLVM Code Generation ===");
+            
+            let mut compiler = codegen::Compiler::new();
+            compiler.compile(ast);
+            
+            println!("\nGenerated LLVM IR:");
+            compiler.dump_module();
+            
+            match compiler.emit_ir("output.ll") {
+                Ok(_) => println!("\n✓ Successfully saved LLVM IR to output.ll"),
+                Err(e) => eprintln!("✗ Error writing IR: {}", e),
+            }
+        }
         
-        let mut compiler = codegen::Compiler::new();
-        compiler.compile(ast);
-        
-        println!("\nGenerated LLVM IR:");
-        compiler.dump_module();
-        
-        match compiler.emit_ir("output.ll") {
-            Ok(_) => println!("\n✓ Successfully saved LLVM IR to output.ll"),
-            Err(e) => eprintln!("✗ Error writing IR: {}", e),
+        #[cfg(not(feature = "llvm"))]
+        {
+            eprintln!("❌ Error: LLVM backend is not available on this platform.");
+            eprintln!("   Platform: {}", std::env::consts::OS);
+            eprintln!("   Reason: LLVM feature not enabled during build");
+            eprintln!();
+            eprintln!("Please use one of the following modes instead:");
+            eprintln!("  --vm              VM bytecode executor (default, recommended)");
+            eprintln!("  --server          HTTP sync server");
+            eprintln!("  --async           HTTP async server (production)");
+            eprintln!();
+            eprintln!("Examples:");
+            eprintln!("  etamil --vm myprogram.etamil");
+            eprintln!("  etamil --async --port 8080 api.etamil");
+            std::process::exit(1);
         }
     }
 }

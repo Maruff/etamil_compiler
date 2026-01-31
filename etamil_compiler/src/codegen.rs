@@ -1,15 +1,23 @@
 /// LLVM Code Generator for eTamil using llvm-sys (LLVM 18 compatible)
+#[cfg(feature = "llvm")]
 use llvm_sys::prelude::*;
+#[cfg(feature = "llvm")]
 use llvm_sys::core::*;
+#[cfg(feature = "llvm")]
 use llvm_sys::LLVMRealPredicate;
+#[cfg(feature = "llvm")]
 use std::ffi::CString;
+#[cfg(feature = "llvm")]
 use std::collections::HashMap;
+#[cfg(feature = "llvm")]
 use std::ptr;
 use crate::parser::{Expr, Stmt};
+#[cfg(feature = "llvm")]
 use crate::fileio::csv_handler::FileIOHandler;
 
 
 
+#[cfg(feature = "llvm")]
 pub struct Compiler {
     context: LLVMContextRef,
     module: LLVMModuleRef,
@@ -18,7 +26,13 @@ pub struct Compiler {
     variables: HashMap<String, LLVMValueRef>, // Variable name -> alloca pointer
 }
 
+#[cfg(not(feature = "llvm"))]
+pub struct Compiler {
+    // Placeholder struct for non-LLVM builds
+}
 
+
+#[cfg(feature = "llvm")]
 impl Compiler {
     /// Create a new LLVM compiler instance
     pub fn new() -> Self {
@@ -1129,6 +1143,28 @@ impl Compiler {
     }
 }
 
+// Placeholder implementations for non-LLVM builds (e.g., Windows without LLVM)
+#[cfg(not(feature = "llvm"))]
+impl Compiler {
+    pub fn new() -> Self {
+        Compiler {}
+    }
+
+    pub fn compile(&mut self, _statements: Vec<Stmt>) {
+        eprintln!("WARNING: LLVM code generation is not available on this platform.");
+        eprintln!("Please use --vm flag or install LLVM to use --llvm flag.");
+    }
+
+    pub fn emit_ir(&self, _filename: &str) -> Result<(), String> {
+        Err("LLVM code generation is not available on this platform. Use --vm flag instead.".to_string())
+    }
+
+    pub fn dump_module(&self) {
+        eprintln!("LLVM module dumping is not available on this platform.");
+    }
+}
+
+#[cfg(feature = "llvm")]
 impl Drop for Compiler {
     fn drop(&mut self) {
         unsafe {

@@ -1,0 +1,7 @@
+﻿@"
+அச்சு("Hello from eTamil!");
+அச்சு("Testing VM Executor...");
+மாறி x = 10;
+மாறி y = 20;
+அச்சு("x + y = ", x + y);
+"@

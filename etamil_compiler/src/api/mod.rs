@@ -2,9 +2,11 @@
 // Handles HTTP route definitions, server management, and API response generation
 
 pub mod parser;
+#[cfg(feature = "llvm")]
 pub mod codegen;
 
 pub use parser::APIParser;
+#[cfg(feature = "llvm")]
 pub use codegen::APICodegen;
 
 /// REST API operation types

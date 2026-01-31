@@ -1,13 +1,18 @@
 // API Code Generator Module
 // Handles LLVM IR generation for REST API operations
 
+#[cfg(feature = "llvm")]
 use llvm_sys::prelude::*;
+#[cfg(feature = "llvm")]
 use llvm_sys::core::*;
+#[cfg(feature = "llvm")]
 use std::ffi::CString;
 
 /// API Code Generator for LLVM IR generation
+#[cfg(feature = "llvm")]
 pub struct APICodegen;
 
+#[cfg(feature = "llvm")]
 impl APICodegen {
     /// Generate code for route definition
     pub fn emit_route_definition(

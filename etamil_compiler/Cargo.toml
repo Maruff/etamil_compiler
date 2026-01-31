@@ -12,7 +12,7 @@
 
 [package]
 name = "etamil_compiler"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024" # Using the latest 2024 edition (stable in 2026)
 authors = ["Esan Maruff <esan@etamil.in>"]
 description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulatory Compliance"
@@ -22,7 +22,8 @@ description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulator
 # Direct LLVM FFI bindings. Version 180 = LLVM 18.x
 # Requires: LLVM 18 dev libraries (already installed on your system)
 # Set: LLVM_CONFIG_PATH=/usr/lib/llvm-18/bin/llvm-config
-llvm-sys = { version = "180", features = ["prefer-dynamic"] }
+# Optional for Windows builds (use --features llvm if needed)
+llvm-sys = { version = "180", features = ["prefer-dynamic"], optional = true }
 # Fast Lexer for bilingual tokenization
 logos = "0.16.0"
 # Parser for grammar definition (AST)
@@ -65,7 +66,8 @@ oracle = "0.6.0"
 
 # --- 5. Async Runtime & System ---
 # Essential for handling high-concurrency DB and API calls
-tokio = { version = "1.37", features = ["full"] }
+# Features: rt-multi-thread for production, net for TCP/HTTP, fs for file I/O
+tokio = { version = "1.37", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "net", "fs", "signal"] }
 # Enhanced error handling for compiler diagnostics
 anyhow = "1.0"
 thiserror = "2.0.18"
@@ -78,9 +80,6 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "cors"] }
 # URL parsing and query parameters
 url = "2.5.0"
-# Graceful shutdown handling
-signal-hook = "0.3"
-signal-hook-tokio = "0.3"
 # Request/response handling utilities
 regex = "1.10.0"
 # Connection pooling for database
@@ -99,6 +98,17 @@ bcrypt = "0.15"
 # UUID generation for user IDs (Phase 4)
 uuid = { version = "1.6", features = ["v4", "serde"] }
 
+[target.'cfg(unix)'.dependencies]
+# Graceful shutdown handling (Unix only)
+signal-hook = "0.3"
+signal-hook-tokio = "0.3"
+
 [dev-dependencies]
 # For testing financial accuracy
 proptest = "1.4.0"
+
+[features]
+# Optional LLVM code generation (not available on Windows)
+llvm = ["llvm-sys"]
+# Default features (no LLVM on Windows)
+default = []

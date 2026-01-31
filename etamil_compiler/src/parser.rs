@@ -7,6 +7,7 @@ use std::slice::Iter;
 #[derive(Debug, Clone)]
 pub enum Expr {
     Number(f64),
+    String(String),
     Variable(String),
     BinaryOp {
         op: String,
@@ -530,7 +531,7 @@ impl<'a> Parser<'a> {
         match token {
             Token::Number(n) => Expr::Number(*n),
             Token::Percentage(n) => Expr::Number(*n),
-            Token::String(s) => Expr::Variable(s.clone()),
+            Token::String(s) => Expr::String(s.clone()),
             Token::Identifier(name) => Expr::Variable(name.clone()),
             Token::LParen => {
                 // Parenthesized expression

@@ -1,12 +1,17 @@
 // File I/O and CSV Handler for eTamil Compiler
 // This module handles all file and CSV operations using LLVM IR
 
+#[cfg(feature = "llvm")]
 use llvm_sys::prelude::*;
+#[cfg(feature = "llvm")]
 use llvm_sys::core::*;
+#[cfg(feature = "llvm")]
 use std::ffi::CString;
+#[cfg(feature = "llvm")]
 use std::collections::HashMap;
 
 /// File I/O Handler for managing file operations in compiled code
+#[cfg(feature = "llvm")]
 pub struct FileIOHandler {
     context: LLVMContextRef,
     builder: LLVMBuilderRef,
@@ -14,6 +19,7 @@ pub struct FileIOHandler {
     module: LLVMModuleRef,
 }
 
+#[cfg(feature = "llvm")]
 impl FileIOHandler {
     /// Create a new FileIOHandler
     pub fn new(
