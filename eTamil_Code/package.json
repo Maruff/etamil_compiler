@@ -3,7 +3,7 @@
   "displayName": "eTamil Support",
   "description": "Complete eTamil programming language support with auto-compiler installation, syntax highlighting, IntelliSense, and code snippets.",
   "version": "0.2.0",
-  "publisher": "eTamilIndia",
+  "publisher": "eTamil",
   "author": {
     "name": "Esan Maruff",
     "email": "esan@eTamil.in"
