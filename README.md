@@ -9,6 +9,48 @@
 
 ---
 
+## 🌍 What is eTamil?
+
+**eTamil** is a groundbreaking programming language that brings the Tamil language into software development. Write powerful, production-ready applications in Tamil (or English) without switching between languages or learning complex syntax designed for non-Tamil speakers.
+
+### Key Highlights
+
+- **Tamil as First-Class Citizen**: Write code using Tamil keywords and identifiers alongside English
+- **Production Ready**: Supports REST APIs, databases, file I/O, and complex business logic
+- **Zero Dependencies**: Standalone binary (1.26 MB) - no Rust, no JVM, no external runtime needed
+- **Cross-Platform**: Works natively on Linux and Windows
+- **Bilingual**: Code in Tamil, English, or mix both freely
+- **Made for FinTech**: Built with Indian financial regulations and precision in mind
+
+### Who Should Use eTamil?
+
+- 🇮🇳 Tamil developers and programmers
+- 🏢 Businesses building applications for Tamil-speaking regions
+- 🎓 Educational institutions teaching programming in regional languages
+- 💼 FinTech and banking applications requiring compliance and precision
+- 🔧 DevOps and backend development in Tamil
+
+### Real-World Example
+
+```etamil
+// Income Tax Calculator in Tamil
+எண் வருவாய்;
+அச்சு "Enter income: ";
+உள்ளிடு வருவாய்;
+
+(வருவாய் > 800000) எனில் {
+    அச்சு "High Tax Bracket";
+    அச்சு (வருவாய்-800000)*20%;
+}
+இன்றேல் {
+    அச்சு "Low Tax Bracket (No Tax)";
+}
+```
+
+No special setup, no dependencies, just pure Tamil programming.
+
+---
+
 ## 📦 Installation
 
 ### Linux Installation
