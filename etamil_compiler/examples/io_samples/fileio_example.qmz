@@ -2,34 +2,34 @@
 // This program demonstrates reading and writing CSV and text files
 
 // Declare variables for storing financial data
-எண் தொகை;
-எண் வருவாய்;
-எண் செலவு;
+எண் amt;
+எண் gross_income;
+எண் operating_expense;
 
 // Open transaction file for reading
 கோப்பு_திற "transactions.txt", "read";
 
 // Read revenue data from file
-கோப்பு_படி "transactions.txt", தொகை;
+கோப்பு_படி "transactions.txt", amt;
 
 // Perform calculation
-வருவாய் = தொகை * 1.15;
+gross_income = amt * 1.15;
 
 // Write calculated result to file
-கோப்பு_எழுது "results.txt", வருவாய்;
+கோப்பு_எழுது "results.txt", gross_income;
 
 // Read CSV data
-தரவுரை_படி "sales.csv", வருவாய்;
+தரவுரை_படி "sales.csv", gross_income;
 
 // Calculate expense
-செலவு = வருவாய் * 0.30;
+operating_expense = gross_income * 0.30;
 
 // Write CSV output
-தரவுரை_எழுது "output.csv", செலவு;
+தரவுரை_எழுது "output.csv", operating_expense;
 
 // Display results
-அச்சு "Gross Revenue: " & வருவாய_;
-அச்சு "Operating Expense: " & செலவு;
+அச்சு "Gross Revenue: " & gross_income;
+அச்சு "Operating Expense: " & operating_expense;
 
 // Close files
 கோப்பு_மூடு "transactions.txt";

@@ -6,7 +6,7 @@
 தளம்_இணை சீகுலைட், "app.db";
 அட்டை_ஆக்கு users, "id INT, username TEXT, email TEXT";
 தளம்_செருக users, "1, 'admin', 'admin@test.com'";
-தளம்_கேள்வி "SELECT * FROM users";
+தளம்_வினா "SELECT * FROM users";
 தளம்_பிரி சீகுலைட்;
 
 அச்சு "\n=== MySQL Database Test ===";

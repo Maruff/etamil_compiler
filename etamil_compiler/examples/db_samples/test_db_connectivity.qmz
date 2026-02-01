@@ -15,7 +15,7 @@
 
 // Query data
 அச்சு "\n=== Querying all students ===";
-தளம்_கேள்வி "SELECT * FROM students";
+தளம்_வினா "SELECT * FROM students";
 
 // Update data
 அச்சு "\n=== Updating student records ===";
@@ -23,7 +23,7 @@
 
 // Query with where clause
 அச்சு "\n=== Students with grade A ===";
-தளம்_கேள்வி "SELECT name, age FROM students WHERE grade='A'";
+தளம்_வினா "SELECT name, age FROM students WHERE grade='A'";
 
 // Delete data
 அச்சு "\n=== Deleting old records ===";
@@ -31,7 +31,7 @@
 
 // Final query
 அச்சு "\n=== Final student list ===";
-தளம்_கேள்வி "SELECT * FROM students";
+தளம்_வினா "SELECT * FROM students";
 
 // Disconnect
 தளம்_பிரி சீகுலைட்;
