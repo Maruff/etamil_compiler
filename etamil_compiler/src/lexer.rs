@@ -59,7 +59,7 @@ pub enum Token {
     #[regex("எண்|eN")] IntegerType,
     #[regex("பின்னம்|pinnam")] FloatType,
     #[regex("சொல்|col")] StringType,
-    #[regex("பொது|poqu")] BoolType,
+    #[regex("ஈர்ம|Irma")] BoolType,
     #[regex("உரை|urY")] TextType,
     #[regex("அணி|aNi")] ArrayType,
     #[regex("தரவு|qaravu")] DataType,

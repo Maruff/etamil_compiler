@@ -49,6 +49,70 @@
 
 No special setup, no dependencies, just pure Tamil programming.
 
+### Tamil Letter Mapping Table (eTamil vs Transliteration vs ISO)
+
+The table below lists all 36 letters: 12 vowels + 18 consonants + ஃ + 5 borrowed letters.
+"Transliteration in practice" reflects common ASCII approximations used in everyday writing.
+
+| Tamil | eTamil | Transliteration | ISO 15919 |
+|-------|--------|-----------------|-----------|
+| அ | a | a | a |
+| ஆ | A | aa | ā |
+| இ | i | i | i |
+| ஈ | I | ii | ī |
+| உ | u | u | u |
+| ஊ | U | uu | ū |
+| எ | e | e | e |
+| ஏ | E | ee | ē |
+| ஐ | Y | ai | ai |
+| ஒ | o | o | o |
+| ஓ | O | oo | ō |
+| ஔ | V | au | au |
+| க | k | k | k |
+| ங | w | ng | ṅ |
+| ச | c | ch | c |
+| ஞ | W | nj | ñ |
+| ட | t | t | ṭ |
+| ண | N | nn | ṇ |
+| த | q | th | t |
+| ந | N | n | n |
+| ப | p | p | p |
+| ம | m | m | m |
+| ய | y | y | y |
+| ர | r | r | r |
+| ல | l | l | l |
+| வ | v | v | v |
+| ழ | z | zh | ḻ |
+| ள | L | ll | ḷ |
+| ற | R | rr | ṟ |
+| ன | n | n | ṉ |
+| ஃ | h | h | ḵ |
+| ஹ | H | h | h |
+| ஜ | j | j | j |
+| ஷ | S | sh | ṣ |
+| ஸ | s | s | s |
+| க்ஷ | x | ksh | kṣ |
+
+### Tamil Letter Equivalents
+
+All eTamil keywords support bilingual usage - Tamil script and romanized equivalents. Learn the Tamil letter mapping system in the [Tamil Letter Equivalents Guide](etamil_compiler/TAMIL_LETTER_EQUIVALENTS.md):
+
+- Tamil alphabet breakdown (consonants, vowels, clusters)
+- Romanization rules from `ezuqqu.pdf`
+- Keyword-by-keyword letter mapping
+- Gemination rules (double consonants)
+
+Example:
+```etamil
+// Tamil form
+எண் வருவாய் = 100000;
+
+// Romanized equivalent
+eN varuvAy = 100000;
+
+// Both work identically!
+```
+
 ---
 
 ## 📦 Installation

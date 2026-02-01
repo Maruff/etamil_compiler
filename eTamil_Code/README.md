@@ -66,6 +66,24 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 - `அணி` / `aNi` - Array
 - `தேதி` / `qEqi` - Date
 
+### Tamil Letter Equivalents
+
+The extension supports both Tamil script and romanized (Latin character) forms from the `ezuqqu.pdf` standard. Learn the complete mapping in the **[Tamil Letter Equivalents Guide](TAMIL_LETTER_EQUIVALENTS.md)**:
+
+- Tamil alphabet system (consonants, vowels, gemination)
+- Romanization rules with detailed examples
+- Keyword-by-keyword letter breakdown
+- How both forms work identically in code
+
+Example:
+```etamil
+// Tamil form - same result
+எண் வருவாய் = 50000;
+
+// Romanized form - same result  
+eN varuvAy = 50000;
+```
+
 ### Compiler Installation
 Build from source with Rust:
 ```bash
