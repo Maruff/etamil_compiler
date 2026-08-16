@@ -223,6 +223,9 @@ impl BytecodeCompiler {
     /// Human-readable name for a statement the VM cannot execute.
     fn stmt_label(stmt: &Stmt) -> String {
         match stmt {
+            // Imports are resolved by module.rs before compilation; reaching
+            // here means the program was compiled without resolving them.
+            Stmt::Import(_) => "இறக்கு (import)",
             Stmt::DBConnect { .. } => "தளம்_இணை (database connect)",
             Stmt::DBDisconnect { .. } => "தளம்_பிரி (database disconnect)",
             Stmt::DBQuery { .. } => "தளம்_வினா (database query)",
@@ -337,6 +340,10 @@ impl BytecodeCompiler {
             Expr::Field { base, name } => {
                 self.compile_expr(*base);
                 self.bytecode.push(Instruction::Field(name));
+            }
+            Expr::Try(inner) => {
+                self.compile_expr(*inner);
+                self.bytecode.push(Instruction::TryUnwrap);
             }
             Expr::Concat { left, right } => {
                 self.compile_expr(*left);

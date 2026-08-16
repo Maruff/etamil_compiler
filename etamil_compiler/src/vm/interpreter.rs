@@ -13,6 +13,9 @@ use crate::vm::{Value, Instruction, Bytecode};
 pub struct Frame {
     pub return_ip: usize,
     pub locals: HashMap<String, Value>,
+    /// Stack depth when the call began. Returning truncates back to this, so
+    /// a half-evaluated expression abandoned by `?` cannot leave residue.
+    pub base_len: usize,
 }
 
 /// Guards against runaway recursion before the host stack is exhausted.
@@ -77,6 +80,8 @@ impl VM {
             Value::Boolean(_) => "a boolean",
             Value::Array(_) => "an array",
             Value::Map(_) => "a record",
+            Value::Ok(_) => "a result",
+            Value::Err(_) => "a result",
             Value::Null => "nil",
         }
     }
@@ -171,6 +176,55 @@ impl VM {
             "வகை" | "vakY" | "_typeof" => {
                 Self::expect_args(name, &args, 1)?;
                 Ok(Value::String(Self::type_name(&args[0]).to_string()))
+            }
+            // --- Results, following Rust ---
+            // சரி(v) — Ok
+            "சரி" | "cari" | "_ok" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Ok(Box::new(args[0].clone())))
+            }
+            // தவறு(e) — Err
+            "தவறு" | "qavaRu" | "_err" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Err(Box::new(args[0].clone())))
+            }
+            // சரியா(r) — is_ok
+            "சரியா" | "cariyA" | "_isOk" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Boolean(matches!(args[0], Value::Ok(_))))
+            }
+            // தவறா(r) — is_err
+            "தவறா" | "qavaRA" | "_isErr" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Boolean(matches!(args[0], Value::Err(_))))
+            }
+            // மதிப்பு(r) — unwrap; a தவறு here is a runtime error, as in Rust
+            "மதிப்பு" | "maqippu" | "_unwrap" => {
+                Self::expect_args(name, &args, 1)?;
+                match &args[0] {
+                    Value::Ok(inner) => Ok((**inner).clone()),
+                    Value::Err(error) => Err(format!(
+                        "தவறான முடிவை விரித்தது: {}  (unwrap on an error: {})",
+                        error.to_string(),
+                        error.to_string()
+                    )),
+                    other => Err(format!(
+                        "மதிப்பு க்கு ஒரு முடிவு தேவை  (unwrap needs a result, got {})",
+                        Self::type_name(other)
+                    )),
+                }
+            }
+            // இயல்பு(r, d) — unwrap_or
+            "இயல்பு" | "iyalpu" | "_unwrapOr" => {
+                Self::expect_args(name, &args, 2)?;
+                match &args[0] {
+                    Value::Ok(inner) => Ok((**inner).clone()),
+                    Value::Err(_) => Ok(args[1].clone()),
+                    other => Err(format!(
+                        "இயல்பு க்கு ஒரு முடிவு தேவை  (unwrapOr needs a result, got {})",
+                        Self::type_name(other)
+                    )),
+                }
             }
             unknown => Err(format!(
                 "அறியப்படாத செயல் '{}'  (unknown function '{}')",
@@ -571,6 +625,7 @@ impl VM {
                     self.frames.push(Frame {
                         return_ip: self.instruction_pointer + 1,
                         locals,
+                        base_len: self.stack.len(),
                     });
                     self.instruction_pointer = info.start;
                     continue;
@@ -580,9 +635,40 @@ impl VM {
                     let frame = self.frames.pop().ok_or(
                         "செயலுக்கு வெளியே திரும்பு  (return outside of a function)",
                     )?;
+                    self.stack.truncate(frame.base_len);
                     self.instruction_pointer = frame.return_ip;
                     self.stack.push(value);
                     continue;
+                }
+                Instruction::TryUnwrap => {
+                    let value = self.pop()?;
+                    match value {
+                        Value::Ok(inner) => self.stack.push(*inner),
+                        Value::Err(error) => {
+                            // Rust's `?`: hand the failure to the caller.
+                            match self.frames.pop() {
+                                Some(frame) => {
+                                    self.stack.truncate(frame.base_len);
+                                    self.instruction_pointer = frame.return_ip;
+                                    self.stack.push(Value::Err(error));
+                                    continue;
+                                }
+                                None => {
+                                    return Err(format!(
+                                        "கையாளப்படாத தவறு: {}  (unhandled error at top level: {})",
+                                        error.to_string(),
+                                        error.to_string()
+                                    ));
+                                }
+                            }
+                        }
+                        other => {
+                            return Err(format!(
+                                "'?' க்கு ஒரு முடிவு தேவை  ('?' needs a result, got {})",
+                                Self::type_name(&other)
+                            ));
+                        }
+                    }
                 }
                 Instruction::DBConnect(_) | Instruction::DBQuery | Instruction::DBExecute
                 | Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {

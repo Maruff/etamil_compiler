@@ -141,6 +141,9 @@ pub enum Token {
     #[regex("ஒவ்வொரு|ovvoru|_each")] ForEach,
     #[regex("இல்|il|_in")] In,
 
+    // --- Modules ---
+    #[regex("இறக்கு|iRakku|_import")] Import,
+
     // --- File I/O Operations ---
     #[regex("கோப்பு|kOppu|_file")] File,
     #[regex("தரவுரை|qaravurY|_CSV")] CSV,
@@ -278,6 +281,7 @@ pub enum Token {
     #[token("*")] Multiply,
     #[token("/")] Divide,
     #[token("&")] Ampersand,
+    #[token("?")] Question,
     #[token("[")] LBracket,
     #[token("]")] RBracket,
     #[token(".")] Dot,

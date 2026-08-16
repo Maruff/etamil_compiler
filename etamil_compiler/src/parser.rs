@@ -53,6 +53,8 @@ pub enum Expr {
         base: Box<Expr>,
         name: String,
     },
+    // expr? — unwrap a சரி, or return the தவறு to the caller
+    Try(Box<Expr>),
 }
 
 #[allow(dead_code)]
@@ -84,6 +86,8 @@ pub enum Stmt {
     },
     // A bare expression evaluated for its effect, e.g. a call statement.
     Expression(Expr),
+    // iRakku "path.qmz"; — resolved before compilation, see module.rs
+    Import(String),
     Print(Expr),
     Input(Expr),
     // (cond) eZil { then } iZREl { else }
@@ -302,6 +306,17 @@ impl<'a> Parser<'a> {
                     body.push(self.parse_statement());
                 }
                 Stmt::FunctionDef { name, params, body }
+            }
+            Token::Import => {
+                let path = self.parse_expression();
+                self.expect(Token::Semicolon);
+                match path {
+                    Expr::String(s) => Stmt::Import(s),
+                    other => panic!(
+                        "இறக்கு needs a quoted file path, got {:?}",
+                        other
+                    ),
+                }
             }
             Token::ForEach => {
                 // ovvoru item il collection { ... }
@@ -714,6 +729,8 @@ impl<'a> Parser<'a> {
                     base: Box::new(expr),
                     name,
                 };
+            } else if self.matches(Token::Question) {
+                expr = Expr::Try(Box::new(expr));
             } else {
                 break;
             }
@@ -826,7 +843,7 @@ impl<'a> Parser<'a> {
             Token::And | Token::Or | Token::Not => false,
             Token::True | Token::False | Token::Null => false,
             Token::Function | Token::Return => false,
-            Token::ForEach | Token::In => false,
+            Token::ForEach | Token::In | Token::Import => false,
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
@@ -908,6 +925,7 @@ impl<'a> Parser<'a> {
             Expr::RecordLiteral(_) => "record".to_string(),
             Expr::Index { .. } => "index".to_string(),
             Expr::Field { name, .. } => name,
+            Expr::Try(_) => "try".to_string(),
             Expr::Concat { .. } => "concat".to_string(),
         }
     }

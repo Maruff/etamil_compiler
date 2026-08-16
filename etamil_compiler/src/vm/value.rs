@@ -16,6 +16,11 @@ pub enum Value {
     Boolean(bool),
     Array(Vec<Value>),
     Map(HashMap<String, Value>),
+    /// சரி — a successful result, as in Rust's Ok.
+    Ok(Box<Value>),
+    /// தவறு — a failed result, as in Rust's Err. Failure is a value that
+    /// must be handled, not an exception that unwinds silently.
+    Err(Box<Value>),
     Null,
 }
 
@@ -59,6 +64,8 @@ impl Value {
                     .collect();
                 format!("{{{}}}", inner.join(", "))
             }
+            Value::Ok(inner) => format!("சரி({})", inner.to_string()),
+            Value::Err(inner) => format!("தவறு({})", inner.to_string()),
         }
     }
 
@@ -70,6 +77,10 @@ impl Value {
             Value::Boolean(b) => *b,
             Value::Array(a) => !a.is_empty(),
             Value::Map(m) => !m.is_empty(),
+            // A result is truthy when it succeeded, so `(r) எனில்` reads the
+            // way you would expect without unwrapping first.
+            Value::Ok(_) => true,
+            Value::Err(_) => false,
         }
     }
 
@@ -87,6 +98,8 @@ impl PartialEq for Value {
             (Value::Number(a), Value::Number(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
+            (Value::Ok(a), Value::Ok(b)) => a == b,
+            (Value::Err(a), Value::Err(b)) => a == b,
             (Value::Null, Value::Null) => true,
             _ => false,
         }

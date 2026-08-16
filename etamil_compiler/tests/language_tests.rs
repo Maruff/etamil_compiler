@@ -627,6 +627,209 @@ fn type_keywords_are_reserved_but_financial_ones_are_not() {
     assert_eq!(num(&vm, "Amount"), dec(5));
 }
 
+// --- Results (சரி / தவறு), following Rust ---------------------------------
+
+#[test]
+fn ok_and_err_construct_results() {
+    let vm = run(r#"a = cari(5); b = qavaRu("thavaru");"#).unwrap();
+    assert_eq!(vm.variables.get("a"), Some(&Value::Ok(Box::new(Value::Number(dec(5))))));
+    assert!(matches!(vm.variables.get("b"), Some(Value::Err(_))));
+}
+
+#[test]
+fn is_ok_and_is_err() {
+    let vm = run(r#"a = cariyA(cari(1)); b = qavaRA(qavaRu("x")); c = cariyA(qavaRu("x"));"#).unwrap();
+    assert_eq!(vm.variables.get("a"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("b"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("c"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn unwrap_returns_the_value() {
+    let vm = run("x = maqippu(cari(42));").unwrap();
+    assert_eq!(num(&vm, "x"), dec(42));
+}
+
+#[test]
+fn unwrap_on_an_error_is_a_runtime_error() {
+    let err = run(r#"x = maqippu(qavaRu("pizai"));"#).expect_err("unwrap on Err must fail");
+    assert!(err.contains("unwrap on an error"), "unexpected error: {}", err);
+}
+
+#[test]
+fn unwrap_or_supplies_a_default() {
+    let vm = run(r#"a = iyalpu(cari(1), 99); b = iyalpu(qavaRu("x"), 99);"#).unwrap();
+    assert_eq!(num(&vm, "a"), dec(1));
+    assert_eq!(num(&vm, "b"), dec(99));
+}
+
+#[test]
+fn a_result_is_truthy_when_it_succeeded() {
+    let src = r#"r = cari(1);
+                 (r) eZil { a = 1; } iZREl { a = 0; }
+                 e = qavaRu("x");
+                 (e) eZil { b = 1; } iZREl { b = 0; }"#;
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "a"), dec(1));
+    assert_eq!(num(&vm, "b"), dec(0));
+}
+
+// --- The ? operator -------------------------------------------------------
+
+#[test]
+fn question_mark_unwraps_a_success() {
+    let src = "ceyal paravAyillY() { qirumpu cari(7); } \
+               ceyal azY() { x = paravAyillY()?; qirumpu cari(x * 2); } \
+               y = maqippu(azY());";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "y"), dec(14));
+}
+
+#[test]
+fn question_mark_propagates_a_failure_to_the_caller() {
+    let src = r#"ceyal cimY() { qirumpu qavaRu("pizai"); }
+                 ceyal azY() { x = cimY()?; qirumpu cari(x * 2); }
+                 r = azY();
+                 failed = qavaRA(r);"#;
+    let vm = run(src).unwrap();
+    assert_eq!(vm.variables.get("failed"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn question_mark_propagates_through_several_frames() {
+    let src = r#"ceyal mUZRu() { qirumpu qavaRu("Azam"); }
+                 ceyal iraNtu() { x = mUZRu()?; qirumpu cari(x); }
+                 ceyal oZRu() { x = iraNtu()?; qirumpu cari(x); }
+                 r = oZRu();
+                 msg = maqippu(cari(qavaRA(r)));"#;
+    let vm = run(src).unwrap();
+    assert_eq!(vm.variables.get("msg"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn question_mark_at_top_level_is_an_error() {
+    let err = run(r#"x = qavaRu("pizai")?;"#).expect_err("no frame to unwind to");
+    assert!(err.contains("unhandled error"), "unexpected error: {}", err);
+}
+
+#[test]
+fn question_mark_needs_a_result() {
+    let err = run("x = 5?;").expect_err("? on a number");
+    assert!(err.contains("needs a result"), "unexpected error: {}", err);
+}
+
+#[test]
+fn propagation_leaves_no_stack_residue() {
+    // The abandoned expression had operands pending when ? unwound.
+    let src = r#"ceyal cimY() { qirumpu qavaRu("x"); }
+                 ceyal azY() { qirumpu cari(100 + cimY()? + 200); }
+                 r = azY();"#;
+    let vm = run(src).unwrap();
+    assert!(matches!(vm.variables.get("r"), Some(Value::Err(_))));
+    assert!(vm.stack.is_empty(), "stack leaked: {:?}", vm.stack);
+}
+
+#[test]
+fn results_in_tamil_script() {
+    let src = "செயல் வகு(அ, ஆ) { \
+                 (ஆ == 0) எனில் { திரும்பு தவறு(\"பூஜ்ஜியம்\"); } \
+                 திரும்பு சரி(அ / ஆ); \
+               } \
+               நல்லது = மதிப்பு(வகு(10, 2)); \
+               கெட்டது = தவறா(வகு(10, 0));";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "நல்லது"), dec(5));
+    assert_eq!(vm.variables.get("கெட்டது"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn results_print_readably() {
+    let vm = run(r#"a = cari(5); b = qavaRu("pizai");"#).unwrap();
+    assert_eq!(vm.variables.get("a").unwrap().to_string(), "சரி(5)");
+    assert_eq!(vm.variables.get("b").unwrap().to_string(), "தவறு(pizai)");
+}
+
+// --- Modules (இறக்கு) ------------------------------------------------------
+
+/// Write a module file next to the test binary's working directory.
+fn write_module(name: &str, source: &str) -> std::path::PathBuf {
+    let path = std::env::temp_dir().join(format!("etamil_mod_{}", name));
+    std::fs::write(&path, source).unwrap();
+    path
+}
+
+fn run_program(statements: Vec<etamil_compiler::parser::Stmt>) -> Result<VM, String> {
+    let bytecode = BytecodeCompiler::compile_statements(statements);
+    let mut vm = VM::new();
+    vm.execute(bytecode)?;
+    Ok(vm)
+}
+
+#[test]
+fn import_brings_in_a_function() {
+    let lib = write_module(
+        "vari_lib.qmz",
+        "ceyal vari(varumAZam) { qirumpu varumAZam * 20%; }",
+    );
+    let main = format!(r#"iRakku "{}"; moqqam = vari(100000);"#, lib.file_name().unwrap().to_string_lossy());
+    let ast = etamil_compiler::module::load_source(&main, &std::env::temp_dir()).unwrap();
+    let vm = run_program(ast).unwrap();
+    assert_eq!(num(&vm, "moqqam"), dec(20000));
+    let _ = std::fs::remove_file(lib);
+}
+
+#[test]
+fn importing_the_same_module_twice_includes_it_once() {
+    let lib = write_module("once.qmz", "eNNikkY = 1;");
+    let name = lib.file_name().unwrap().to_string_lossy().to_string();
+    let main = format!(r#"iRakku "{}"; iRakku "{}"; x = eNNikkY;"#, name, name);
+    let ast = etamil_compiler::module::load_source(&main, &std::env::temp_dir()).unwrap();
+    // Only one copy of the module's single statement, plus our own.
+    assert_eq!(ast.len(), 2);
+    let vm = run_program(ast).unwrap();
+    assert_eq!(num(&vm, "x"), dec(1));
+    let _ = std::fs::remove_file(lib);
+}
+
+#[test]
+fn a_circular_import_terminates() {
+    let a = write_module("cycle_a.qmz", r#"iRakku "etamil_mod_cycle_b.qmz"; a_ready = 1;"#);
+    let b = write_module("cycle_b.qmz", r#"iRakku "etamil_mod_cycle_a.qmz"; b_ready = 1;"#);
+    let main = r#"iRakku "etamil_mod_cycle_a.qmz";"#;
+    let ast = etamil_compiler::module::load_source(main, &std::env::temp_dir()).unwrap();
+    let vm = run_program(ast).unwrap();
+    assert_eq!(num(&vm, "a_ready"), dec(1));
+    assert_eq!(num(&vm, "b_ready"), dec(1));
+    let _ = std::fs::remove_file(a);
+    let _ = std::fs::remove_file(b);
+}
+
+#[test]
+fn importing_a_missing_file_is_an_error() {
+    let main = r#"iRakku "etamil_mod_does_not_exist.qmz";"#;
+    let err = etamil_compiler::module::load_source(main, &std::env::temp_dir())
+        .expect_err("missing module");
+    assert!(err.contains("cannot open"), "unexpected error: {}", err);
+}
+
+#[test]
+fn a_lexical_error_inside_a_module_is_reported() {
+    let lib = write_module("bad.qmz", "x = 5 @ 3;");
+    let main = r#"iRakku "etamil_mod_bad.qmz";"#;
+    let err = etamil_compiler::module::load_source(main, &std::env::temp_dir())
+        .expect_err("module has a lexical error");
+    assert!(err.contains("unrecognized input"), "unexpected error: {}", err);
+    let _ = std::fs::remove_file(lib);
+}
+
+#[test]
+fn an_unresolved_import_fails_loudly_at_runtime() {
+    // Compiling without going through module resolution must not silently
+    // skip the import.
+    let err = run(r#"iRakku "anything.qmz";"#).expect_err("unresolved import");
+    assert!(err.contains("not implemented"), "unexpected error: {}", err);
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

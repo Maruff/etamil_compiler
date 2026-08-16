@@ -56,6 +56,9 @@ pub enum Instruction {
     SetIndex(String),
     /// Pop value; store into the named variable's field.
     SetField(String, String),
+    /// `?` — pop a result; push the சரி value, or unwind the current call
+    /// and return the தவறு to the caller.
+    TryUnwrap,
     /// Pop a collection; push how many elements it has.
     Length,
     /// Pop index then collection; push the nth element of an array, the nth
