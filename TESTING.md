@@ -243,6 +243,48 @@ that is expected until roadmap item 4 lands.
 
 ---
 
+## 7b. The database layer
+
+SQLite is compiled in by default (`--features sqlite`, on unless you pass
+`--no-default-features`). `rusqlite` is bundled, so no system SQLite is
+needed — but it does compile C, which is why `build-essential` is required.
+
+```bash
+cd /tmp
+etamil --vm ~/etamil_compiler/examples/db_samples/kaNakku_qaLam.qmz
+```
+
+**Expect:** a ledger created, four rows inserted, credits and debits listed
+with `₹` formatting, and a closing balance of `₹2,17,300.00`. It writes
+`kaNakku.db` in the current directory, hence running it from `/tmp`.
+
+Check that parameters really are bound rather than interpolated:
+
+```bash
+cat > /tmp/inject.qmz <<'EOF'
+தளம்_இணை சீகுலைட், ":memory:";
+தளம்_செய் "CREATE TABLE t (peyar TEXT)", [];
+தளம்_செய் "INSERT INTO t VALUES (?)", ["Ravi'; DROP TABLE t; --"];
+தளம்_வினா "SELECT peyar FROM t WHERE peyar = ?", ["Ravi'; DROP TABLE t; --"], r;
+அச்சு நீளம்(r);
+EOF
+etamil --vm /tmp/inject.qmz
+```
+
+**Expect `1`.** The table survives and the hostile string is matched as data.
+If the table were dropped, the value would have reached SQLite as SQL.
+
+A build without the driver should say so rather than fail obscurely:
+
+```bash
+cd etamil_compiler && cargo build --release --no-default-features
+./target/release/etamil --vm /tmp/inject.qmz
+```
+
+**Expect:** `this build has no SQLite support: rebuild with --features sqlite`.
+
+---
+
 ## 8. The LLVM backend
 
 Linux only, and the least-exercised path in the repository — treat a failure

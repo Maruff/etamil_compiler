@@ -74,9 +74,15 @@ pub enum Instruction {
     ReadCSV,          // pops filename, pushes the number of data rows
     WriteCSV,         // pops row, then filename
 
-    // Database
-    DBConnect(String), // db_type
+    // Database. Queries carry their parameters separately so values are
+    // bound by the driver rather than spliced into the SQL text.
+    /// Pop the connection string; open a connection under this type name.
+    DBConnect(String),
+    /// Close and forget the connection for this type name.
+    DBDisconnect(String),
+    /// Pop params then SQL; push an array of records, one per row.
     DBQuery,
+    /// Pop params then SQL; run it, discarding the affected-row count.
     DBExecute,
 
     // API

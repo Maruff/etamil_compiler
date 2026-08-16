@@ -39,9 +39,17 @@ This is the single biggest usability gap for learners.
 
 ## 3. Database execution
 
-**Today:** `தளம்_இணை`, `தளம்_வினா` and friends parse into AST nodes, then compile to an `Unsupported` instruction that fails at runtime with a clear message. There is no database layer at all — the former `src/db/` was an in-memory `HashMap` simulation that printed `[DB] ...` lines, was never connected to the VM, and has been removed.
+**Done for SQLite.** `src/db/` holds a `Database` trait with no driver dependency, and `src/db/sqlite.rs` implements it with the blocking `rusqlite` driver behind the `sqlite` feature (on by default). The VM keeps a connection per database type.
 
-**What it involves:** add `sqlx` and implement the `DB*` instructions against it. The VM is synchronous, so either the driver calls block on a runtime handle or the VM gains an async execution path — which makes this depend on item 4. Start from the AST nodes in `parser.rs`, which already carry table, data and condition.
+Queries are **always parameterised** — there is deliberately no way to splice a value into SQL text from eTamil:
+
+```etamil
+தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ?", ["வரவு"], வரவுகள்;
+```
+
+Rows return as an array of records, so a result set iterates like any other table. Decimals cross the boundary as text rather than `REAL`, so no precision is lost — using an inexact SQL type would defeat the point of decimal arithmetic.
+
+**Still to do:** PostgreSQL and MySQL (the trait is the only thing they need to implement); transactions; more than one connection open at a time, which the VM currently refuses rather than guessing.
 
 ---
 

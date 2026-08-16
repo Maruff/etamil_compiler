@@ -30,6 +30,31 @@ pub struct Frame {
 /// Guards against runaway recursion before the host stack is exhausted.
 const MAX_CALL_DEPTH: usize = 256;
 
+/// Open database connections, keyed by the type name written in source.
+/// Wrapped so the VM can still derive Debug — a driver handle cannot.
+#[derive(Default)]
+pub struct Connections(HashMap<String, Box<dyn crate::db::Database>>);
+
+impl std::fmt::Debug for Connections {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Connections({} open)", self.0.len())
+    }
+}
+
+impl Connections {
+    pub fn insert(&mut self, name: String, handle: Box<dyn crate::db::Database>) {
+        self.0.insert(name, handle);
+    }
+
+    pub fn remove(&mut self, name: &str) -> Option<Box<dyn crate::db::Database>> {
+        self.0.remove(name)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 #[derive(Debug)]
 pub struct VM {
     pub stack: Vec<Value>,
@@ -39,6 +64,8 @@ pub struct VM {
     pub file_modes: HashMap<String, String>,
     /// Active call frames; empty means we are at global scope.
     pub frames: Vec<Frame>,
+    /// Open database connections.
+    pub connections: Connections,
 }
 
 impl VM {
@@ -49,7 +76,28 @@ impl VM {
             instruction_pointer: 0,
             file_modes: HashMap::new(),
             frames: Vec::new(),
+            connections: Connections::default(),
         }
+    }
+
+    /// The connection to use for a query. There is one per database type, and
+    /// with a single type open the choice is unambiguous.
+    fn connection_mut(&mut self) -> Result<&mut Box<dyn crate::db::Database>, String> {
+        if self.connections.0.len() == 1 {
+            return Ok(self.connections.0.values_mut().next().expect("checked"));
+        }
+        if self.connections.is_empty() {
+            return Err(
+                "தரவுத்தளம் இணைக்கப்படவில்லை  (not connected to a database): \
+                 use தளம்_இணை first"
+                    .to_string(),
+            );
+        }
+        Err(
+            "பல தரவுத்தளங்கள் திறந்துள்ளன  (several databases are open); \
+             close all but one for now"
+                .to_string(),
+        )
     }
 
     /// Read a name: the current call's locals shadow globals.
@@ -730,10 +778,40 @@ impl VM {
                         }
                     }
                 }
-                Instruction::DBConnect(_) | Instruction::DBQuery | Instruction::DBExecute
-                | Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
+                Instruction::DBConnect(db_type) => {
+                    let connection = self.pop()?.to_string();
+                    let handle = crate::db::open(&db_type, &connection)?;
+                    self.connections.insert(db_type, handle);
+                }
+                Instruction::DBDisconnect(db_type) => {
+                    match self.connections.remove(&db_type) {
+                        Some(mut handle) => handle.close()?,
+                        None => {
+                            return Err(format!(
+                                "'{}' இணைக்கப்படவில்லை  (not connected to {})",
+                                db_type, db_type
+                            ));
+                        }
+                    }
+                }
+                Instruction::DBExecute => {
+                    let params = crate::db::params_from(&self.pop()?)?;
+                    let sql = self.pop()?.to_string();
+                    let handle = self.connection_mut()?;
+                    handle.execute(&sql, &params)?;
+                }
+                Instruction::DBQuery => {
+                    let params = crate::db::params_from(&self.pop()?)?;
+                    let sql = self.pop()?.to_string();
+                    let handle = self.connection_mut()?;
+                    // One record per row, so a result set is an array of
+                    // records — a table in the language's own terms.
+                    let rows = handle.query(&sql, &params)?;
+                    self.stack.push(Value::Array(rows));
+                }
+                Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(
-                        "தரவுத்தளம்/வழங்கி செயல்பாடுகள் VM இல் இன்னும் இல்லை  (database and server operations are not implemented in the VM yet)"
+                        "வழங்கி செயல்பாடுகள் VM இல் இன்னும் இல்லை  (server operations are not implemented in the VM yet)"
                             .to_string(),
                     );
                 }

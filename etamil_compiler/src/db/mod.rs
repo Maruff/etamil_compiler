@@ -1,0 +1,80 @@
+//! Database access.
+//!
+//! The trait and everything around it are plain Rust with no driver
+//! dependency, so the VM wiring, parameter binding and row conversion can be
+//! tested against a stand-in backend. Real drivers live in submodules behind
+//! cargo features.
+//!
+//! Queries are always parameterised. There is deliberately no way to splice
+//! a value into the SQL text from eTamil: for a language aimed at financial
+//! systems, the first example anyone copies should not contain an injection.
+
+use crate::vm::Value;
+
+#[cfg(feature = "sqlite")]
+pub mod sqlite;
+
+/// One open connection.
+pub trait Database: Send {
+    /// Run a statement that returns no rows. Yields the number affected.
+    fn execute(&mut self, sql: &str, params: &[Value]) -> Result<i64, String>;
+
+    /// Run a query. Yields one record (பொருள்) per row, so a result set is
+    /// an array of records — a table in the language's own terms.
+    fn query(&mut self, sql: &str, params: &[Value]) -> Result<Vec<Value>, String>;
+
+    /// Release the connection. Dropping is expected to do this too.
+    fn close(&mut self) -> Result<(), String> {
+        Ok(())
+    }
+}
+
+/// Open a connection for a database type as named in eTamil source.
+///
+/// `db_type` arrives as the parser's token name — "SQLite", "PostgreSQL" and
+/// so on — not as the user's spelling.
+pub fn open(db_type: &str, connection: &str) -> Result<Box<dyn Database>, String> {
+    match db_type {
+        #[cfg(feature = "sqlite")]
+        "SQLite" | "SQL" => Ok(Box::new(sqlite::SqliteDatabase::open(connection)?)),
+
+        #[cfg(not(feature = "sqlite"))]
+        "SQLite" | "SQL" => Err(format!(
+            "SQLite ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+             (this build has no SQLite support): rebuild with --features sqlite"
+        )),
+
+        "PostgreSQL" | "MySQL" | "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
+            "{} இன்னும் ஆதரிக்கப்படவில்லை  ({} is not supported yet); \
+             SQLite is the only backend today",
+            db_type, db_type
+        )),
+
+        other => Err(format!(
+            "அறியப்படாத தரவுத்தள வகை '{}'  (unknown database type '{}')",
+            other, other
+        )),
+    }
+}
+
+/// Convert an eTamil array of parameters into a slice the drivers can bind.
+/// Anything that is not an array is a mistake worth naming clearly, since
+/// the syntax always requires one.
+pub fn params_from(value: &Value) -> Result<Vec<Value>, String> {
+    match value {
+        Value::Array(items) => Ok(items.clone()),
+        other => Err(format!(
+            "அளவுருக்கள் ஒரு அணியாக இருக்க வேண்டும்  \
+             (query parameters must be an array, got {})",
+            match other {
+                Value::Number(_) => "a number",
+                Value::String(_) => "a string",
+                Value::Boolean(_) => "a boolean",
+                Value::Map(_) => "a record",
+                Value::Ok(_) | Value::Err(_) => "a result",
+                Value::Null => "nil",
+                Value::Array(_) => unreachable!(),
+            }
+        )),
+    }
+}

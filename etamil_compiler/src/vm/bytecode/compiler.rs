@@ -210,9 +210,27 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::WriteCSV);
             }
-            // Database and server statements parse, but the VM has no runtime
-            // for them yet. Emit an instruction that fails loudly rather than
-            // silently doing nothing.
+            Stmt::DBConnect { db_type, connection_string } => {
+                self.compile_expr(connection_string);
+                self.bytecode.push(Instruction::DBConnect(db_type));
+            }
+            Stmt::DBDisconnect { db_type } => {
+                self.bytecode.push(Instruction::DBDisconnect(db_type));
+            }
+            Stmt::DBExecute { command, params } => {
+                self.compile_expr(command);
+                self.compile_expr(params);
+                self.bytecode.push(Instruction::DBExecute);
+            }
+            Stmt::DBQuery { query, params, result_var } => {
+                self.compile_expr(query);
+                self.compile_expr(params);
+                self.bytecode.push(Instruction::DBQuery);
+                self.bytecode.push(Instruction::StoreVar(result_var));
+            }
+            // The remaining database and server statements parse, but the VM
+            // has no runtime for them yet. Emit an instruction that fails
+            // loudly rather than silently doing nothing.
             other => {
                 let label = Self::stmt_label(&other);
                 self.bytecode.push(Instruction::Unsupported(label));

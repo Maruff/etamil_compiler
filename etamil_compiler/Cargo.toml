@@ -53,10 +53,16 @@ jsonwebtoken = "9.2"
 bcrypt = "0.15"
 uuid = { version = "1.6", features = ["v4", "serde"] }
 
+# --- Database ---
+# Blocking driver, which suits a synchronous VM behind a thread-per-request
+# server. "bundled" compiles SQLite itself so there is no system dependency.
+rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+
 [features]
 # Optional LLVM code generation (not available on Windows)
 llvm = ["llvm-sys"]
-default = []
+sqlite = ["rusqlite"]
+default = ["sqlite"]
 
 [profile.release]
 # The headline feature is a small standalone binary, so optimize for that.
