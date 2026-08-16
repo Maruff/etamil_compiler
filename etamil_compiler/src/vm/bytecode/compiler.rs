@@ -210,6 +210,11 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::WriteCSV);
             }
+            Stmt::SendResponse { status_code, body, .. } => {
+                self.compile_expr(status_code);
+                self.compile_expr(body);
+                self.bytecode.push(Instruction::SendResponse);
+            }
             Stmt::DBConnect { db_type, connection_string } => {
                 self.compile_expr(connection_string);
                 self.bytecode.push(Instruction::DBConnect(db_type));

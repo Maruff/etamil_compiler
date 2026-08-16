@@ -1,0 +1,33 @@
+// வரி சேவை — a routed tax API
+//
+// Run it:   etamil --server --port 8080 examples/api/vari_cEvY.qmz
+// Try it:   curl http://localhost:8080/vari
+//           curl http://localhost:8080/
+//
+// Everything outside a வழி block is a prelude: imports and functions are
+// compiled into every handler, so routes can use them.
+
+இறக்கு "../../nUlakam/paNam.qmz";
+இறக்கு "../../nUlakam/kaNiqam.qmz";
+
+செயல் வரி_கணக்கு(ஆண்டு_வருமானம்) {
+    (ஆண்டு_வருமானம் <= 300000) எனில் { திரும்பு 0; }
+    (ஆண்டு_வருமானம் <= 700000) எனில் {
+        திரும்பு சதவீதம்(ஆண்டு_வருமானம் - 300000, 5);
+    }
+    திரும்பு 20000 + சதவீதம்(ஆண்டு_வருமானம் - 700000, 20);
+}
+
+வழி பெறு, "/" {
+    பதில் 200, "eTamil வரி சேவை — /vari ஐ முயற்சிக்கவும்";
+}
+
+வழி பெறு, "/vari" {
+    வருமானம் = 950000;
+    வரி = வரி_கணக்கு(வருமானம்);
+    பதில் 200, "வருமானம் " & ரூபாய்(வருமானம்) & " → வரி " & ரூபாய்(வரி);
+}
+
+வழி பெறு, "/nalam" {
+    பதில் 200, "சரி";
+}

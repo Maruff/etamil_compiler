@@ -9,6 +9,11 @@ etamil_program
 *.s
 *.ll
 
+# Databases created by the examples
+*.db
+*.db-journal
+*.sqlite
+
 # Build logs and intermediate output
 build_output.txt
 output.bin

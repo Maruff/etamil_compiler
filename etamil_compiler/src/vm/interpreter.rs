@@ -809,6 +809,16 @@ impl VM {
                     let rows = handle.query(&sql, &params)?;
                     self.stack.push(Value::Array(rows));
                 }
+                Instruction::SendResponse => {
+                    let body = self.pop()?;
+                    let status = self.pop()?;
+                    // Written to globals, not the current frame: the server
+                    // reads them from the VM once the handler has returned.
+                    self.variables
+                        .insert("response_status".to_string(), status);
+                    self.variables
+                        .insert("response_body".to_string(), Value::String(body.to_string()));
+                }
                 Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(
                         "வழங்கி செயல்பாடுகள் VM இல் இன்னும் இல்லை  (server operations are not implemented in the VM yet)"
