@@ -1,4 +1,4 @@
-// Structured Logging Module for eTamil Backend - Phase 3
+// Structured Logging Module for eTamil Backend - Backend milestone 3
 // Provides JSON-formatted logging with context, log levels, and request tracking
 
 use chrono::Utc;

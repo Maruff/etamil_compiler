@@ -16,8 +16,8 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 
 ### Core Keywords (Tamil / English)
 **Control Flow:**
-- `எனில்` / `enil` - If conditional
-- `இன்றேல்` / `inREl` - Else clause
+- `எனில்` / `eZil` - If conditional
+- `இன்றேல்` / `iZREl` - Else clause
 - `சுற்று` / `cuRRu` - Loop
 
 **I/O Operations:**
@@ -37,7 +37,7 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 **Database Operations:**
 - `தளம்_இணை` / `qaLam_iNY` - Connect to database
 - `தளம்_பிரி` / `qaLam_piri` - Disconnect from database
-- `தளம்_வினா` / `qaLam_vinA` - Database query
+- `தளம்_வினா` / `qaLam_viZA` - Database query
 - `தளம்_செய்` / `qaLam_cey` - Execute command
 - `தளம்_செருக` / `qaLam_ceruka` - Insert into database
 - `தளம்_புதுப்பி` / `qaLam_puquppi` - Update database
@@ -45,7 +45,7 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 
 **Data Types:**
 - `எண்` / `eN` - Integer/Number
-- `பின்னம்` / `pinnam` - Float
+- `பின்னம்` / `piZZam` - Float
 - `சொல்` / `col` - String
 - `பொது` / `poqu` - Boolean
 
@@ -55,8 +55,8 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 - `இருப்பு` / `iruppu` - Balance
 - `வருவாய்` / `varuvAy` - Revenue
 - `செலவு` / `celavu` - Expense
-- `வருமானம்` / `varumAnam` - Income
-- `பயன்` / `payan` - Profit
+- `வருமானம்` / `varumAZam` - Income
+- `பயன்` / `payaZ` - Profit
 - `இழப்பு` / `izappu` - Loss
 - `வரி` / `vari` - Tax
 - `வங்கி` / `vawki` - Bank
@@ -272,8 +272,8 @@ cargo build --release
 #### Core Keywords
 | Tamil | English | Purpose |
 |-------|---------|---------|
-| `எனில்` | `enil` | If condition |
-| `இன்றேல்` | `inREl` | Else clause |
+| `எனில்` | `eZil` | If condition |
+| `இன்றேல்` | `iZREl` | Else clause |
 | `சுற்று` | `cuRRu` | Loop |
 | `அச்சு` | `accu` | Print output |
 | `உள்ளிடு` | `uLLitu` | Read input |
@@ -282,7 +282,7 @@ cargo build --release
 | Tamil | English | Purpose |
 |-------|---------|---------|
 | `எண்` | `eN` | Integer/Number |
-| `பின்னம்` | `pinnam` | Float |
+| `பின்னம்` | `piZZam` | Float |
 | `சொல்` | `col` | String |
 | `பொது` | `poqu` | Boolean |
 | `உரை` | `urY` | Text |
@@ -308,7 +308,7 @@ cargo build --release
 |-------|---------|---------|
 | `தளம்_இணை` | `qaLam_iNY` | Connect to database |
 | `தளம்_பிரி` | `qaLam_piri` | Disconnect from database |
-| `தளம்_வினா` | `qaLam_vinA` | Query database |
+| `தளம்_வினா` | `qaLam_viZA` | Query database |
 | `தளம்_செய்` | `qaLam_cey` | Execute command |
 | `தளம்_செருக` | `qaLam_ceruka` | Insert into database |
 | `தளம்_புதுப்பி` | `qaLam_puquppi` | Update database |

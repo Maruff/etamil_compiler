@@ -1,4 +1,4 @@
-// Phase 2: Async HTTP Handler for eTamil
+// Backend milestone 2: Async HTTP Handler for eTamil
 // Integrates with existing Tokio runtime and connection pooling
 
 use std::collections::HashMap;

@@ -1,4 +1,4 @@
-// Phase 2: Async/Concurrent HTTP Server Implementation
+// Backend milestone 2: Async/Concurrent HTTP Server Implementation
 // Using Axum + Tokio for high-performance concurrent request handling
 // Supports graceful shutdown and connection pooling
 
@@ -19,7 +19,7 @@ use futures::stream::StreamExt;
 
 use crate::vm::{VM, bytecode::compiler::Compiler};
 
-/// Phase 2 async HTTP server configuration
+/// Backend milestone 2 async HTTP server configuration
 #[derive(Clone)]
 pub struct ServerConfig {
     pub host: String,
@@ -45,7 +45,7 @@ pub struct HttpResponse {
 /// Route handler function type (async)
 pub type AsyncHandler = Arc<dyn Fn(RequestContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = HttpResponse> + Send>> + Send + Sync>;
 
-/// Phase 2 Async HTTP Server
+/// Backend milestone 2 Async HTTP Server
 pub struct AsyncHttpServer {
     config: ServerConfig,
     handlers: Arc<RwLock<HashMap<String, AsyncHandler>>>,
@@ -75,7 +75,7 @@ impl AsyncHttpServer {
         let addr = format!("{}:{}", self.config.host, self.config.port);
         let listener = tokio::net::TcpListener::bind(&addr).await?;
         
-        println!("🚀 eTamil Async HTTP Server Started (Phase 2)");
+        println!("🚀 eTamil Async HTTP Server Started (Backend milestone 2)");
         println!("📍 Listening on: http://{}", addr);
         println!("🔄 Concurrent request handling: ENABLED");
         println!("✅ Graceful shutdown: ENABLED");

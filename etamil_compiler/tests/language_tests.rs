@@ -45,19 +45,19 @@ fn text(vm: &VM, name: &str) -> String {
 
 #[test]
 fn equality_false_branch_is_taken_when_operands_differ() {
-    let vm = run("x = 3; (x == 5) enil { y = 1; } inREl { y = 2; }").unwrap();
+    let vm = run("x = 3; (x == 5) eZil { y = 1; } iZREl { y = 2; }").unwrap();
     assert_eq!(num(&vm, "y"), 2.0);
 }
 
 #[test]
 fn equality_true_branch_is_taken_when_comparing_against_zero() {
-    let vm = run("x = 0; (x == 0) enil { y = 1; } inREl { y = 2; }").unwrap();
+    let vm = run("x = 0; (x == 0) eZil { y = 1; } iZREl { y = 2; }").unwrap();
     assert_eq!(num(&vm, "y"), 1.0);
 }
 
 #[test]
 fn inequality_and_ordering_operators() {
-    let vm = run("a = 5; (a != 4) enil { p = 1; } (a >= 5) enil { q = 1; } (a <= 4) enil { r = 1; } inREl { r = 0; }").unwrap();
+    let vm = run("a = 5; (a != 4) eZil { p = 1; } (a >= 5) eZil { q = 1; } (a <= 4) eZil { r = 1; } iZREl { r = 0; }").unwrap();
     assert_eq!(num(&vm, "p"), 1.0);
     assert_eq!(num(&vm, "q"), 1.0);
     assert_eq!(num(&vm, "r"), 0.0);
@@ -90,7 +90,7 @@ fn logical_and_or_not() {
 #[test]
 fn logical_operators_bind_looser_than_comparison() {
     // Parsed as (x > 1) && (x < 10), not x > (1 && x) < 10.
-    let vm = run("x = 5; (x > 1 _and x < 10) enil { hit = 1; } inREl { hit = 0; }").unwrap();
+    let vm = run("x = 5; (x > 1 _and x < 10) eZil { hit = 1; } iZREl { hit = 0; }").unwrap();
     assert_eq!(num(&vm, "hit"), 1.0);
 }
 

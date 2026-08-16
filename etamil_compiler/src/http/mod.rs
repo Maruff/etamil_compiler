@@ -15,9 +15,9 @@ pub mod handler;
 pub mod logging;
 pub mod errors;
 pub mod monitoring;
-pub mod auth;       // Phase 4: Authentication & Authorization
-pub mod cache;      // Phase 4: Caching Layer
-pub mod resilience; // Phase 4: Circuit breakers, retries, timeouts
+pub mod auth;       // Backend milestone 4: Authentication & Authorization
+pub mod cache;      // Backend milestone 4: Caching Layer
+pub mod resilience; // Backend milestone 4: Circuit breakers, retries, timeouts
 
 pub use self::router::Router;
 pub use self::request::HttpRequest;
@@ -83,7 +83,7 @@ impl HttpServer {
         let listener = TcpListener::bind(&addr)?;
         
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("🚀 eTamil HTTP Server Started (Phase 3 - Production Logging & Error Handling)");
+        println!("🚀 eTamil HTTP Server Started (Backend milestone 3 - Production Logging & Error Handling)");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         println!("📍 Listening on: http://{}", addr);
         println!("📋 Registered Routes:");

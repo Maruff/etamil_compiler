@@ -44,7 +44,7 @@ pub enum Stmt {
     },
     Print(Expr),
     Input(Expr),
-    // (cond) enil { then } inREl { else }
+    // (cond) eZil { then } iZREl { else }
     If {
         condition: Expr,
         then_branch: Vec<Stmt>,
@@ -178,7 +178,7 @@ impl<'a> Parser<'a> {
     fn parse_statement(&mut self) -> Stmt {
         let token = self.tokens.next().expect("Unexpected end of input");
 
-        // Skip optional type declaration (eN, pinnam, col, etc.)
+        // Skip optional type declaration (eN, piZZam, col, etc.)
         let current_token = if self.is_type_token(&token) {
             self.tokens.next().expect("Expected identifier after type")
         } else {
@@ -424,7 +424,7 @@ impl<'a> Parser<'a> {
                 Stmt::SendJSON { data, status_code }
             }
             Token::LParen => {
-                // Handling (condition) enil { ... }
+                // Handling (condition) eZil { ... }
                 let condition = self.parse_expression();
                 self.expect(Token::RParen);
                 
@@ -432,14 +432,14 @@ impl<'a> Parser<'a> {
                 match next {
                     Token::If => self.parse_if_remainder(condition),
                     Token::Loop => self.parse_loop_remainder(condition),
-                    _ => panic!("Expected enil or cuRRu after condition"),
+                    _ => panic!("Expected eZil or cuRRu after condition"),
                 }
             }
             _ => panic!("Unexpected token: {:?}", current_token),
         }
     }
 
-    // Handles the body of 'enil' (if) and 'inREl' (else)
+    // Handles the body of 'eZil' (if) and 'iZREl' (else)
     fn parse_if_remainder(&mut self, condition: Expr) -> Stmt {
         self.expect(Token::LBrace);
         let mut then_branch = Vec::new();

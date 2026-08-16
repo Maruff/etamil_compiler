@@ -229,7 +229,7 @@ CSV row counting (excludes the header):
 | ட | t | t | ṭ |
 | ண | N | nn | ṇ |
 | த | q | th | t |
-| ந | n \* | n | n |
+| ந | n | n | n |
 | ப | p | p | p |
 | ம | m | m | m |
 | ய | y | y | y |
@@ -239,7 +239,7 @@ CSV row counting (excludes the header):
 | ழ | z | zh | ḻ |
 | ள | L | ll | ḷ |
 | ற | R | rr | ṟ |
-| ன | n \* | n | ṉ |
+| ன | Z | n | ṉ |
 | ஃ | h | h | ḵ |
 | ஹ | H | h | h |
 | ஜ | j | j | j |
@@ -247,7 +247,19 @@ CSV row counting (excludes the header):
 | ஸ | s | s | s |
 | க்ஷ | x | ksh | kṣ |
 
-\* **Known gap:** ந and ன both romanize to `n`, so they cannot be told apart in romanized source. The lexer is also inconsistent here — most keywords use `n` for ந (`niqi`, `nilY`, `natappu`) but a few use `N` (`Nikara`, `NirY`), which collides with ண. This needs a decision before the keyword set grows; see [ROADMAP](docs/ROADMAP.md).
+### The n-family letters
+
+Tamil has three distinct nasals that English collapses into one `n`. eTamil keeps them apart:
+
+| Tamil | eTamil | ISO 15919 | Example |
+|---|---|---|---|
+| ண | `N` | ṇ | `எண்` → `eN` |
+| ந | `n` | n | `நிதி` → `niqi` |
+| ன | `Z` | ṉ | `பயன்` → `payaZ` |
+
+`Z` was free — ழ is lowercase `z` — so it takes ன, leaving `N` unambiguously ண and `n` unambiguously ந. Words containing more than one show the distinction clearly: `நாணயம்` → `nANayam` (ந-ண), `பின்னம்` → `piZZam` (two ன), `வருமானம்` → `varumAZam`.
+
+This replaces an earlier scheme in which ந and ன both used `n` and a few keywords spelled ந as `N`. **Romanized source written before this change needs updating** — Tamil-script source is unaffected.
 
 See the [Tamil Letter Equivalents Guide](docs/reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md) for the full derivation.
 

@@ -2,6 +2,17 @@
 
 What is not built yet, why it matters, and what finishing it involves. Items are ordered by how much they block real use.
 
+## A note on "phases"
+
+Two unrelated numbering schemes existed in this project, both called Phase 1-N. They are now kept apart:
+
+| Term | Meaning | Where it appears |
+|---|---|---|
+| **Paper Phase 1-5** | The research roadmap: compiler core → domain modules → tooling/REPL → pilot projects → policy engagement | *eTamil: An Indian FinTech DSL* (Maruff & Valli), p.13 |
+| **Backend milestone 1-4** | This repository's HTTP work: sync server → async → logging → auth | source comments, `docs/archive/phases/` |
+
+They mean entirely different things. Backend milestones 1-4 being "complete" says nothing about paper Phase 2, which has not started. Against the paper's scheme, the project is mid-**Phase 1**: the compiler core exists, the domain modules do not.
+
 ---
 
 ## 1. Decimal arithmetic for currency
@@ -52,11 +63,13 @@ This is the single biggest usability gap for learners.
 
 ---
 
-## 6. Resolving ந vs ன in the romanization
+## 6. ~~Resolving ந vs ன in the romanization~~ — RESOLVED
 
-**Today:** both letters romanize to `n`, so they cannot be distinguished in romanized source. The lexer is also internally inconsistent: most keywords use `n` for ந (`niqi`, `nilY`, `natappu`) but `Nikara` and `NirY` use `N`, which is ண's letter.
+The three nasals now have distinct letters: **ண = `N`, ந = `n`, ன = `Z`.**
 
-**What it involves:** pick a distinct letter for one of them, update `EZUQQU_TRANSLITERATION_STANDARD`, fix the inconsistent keywords in `lexer.rs`, and add lexer tests asserting each letter round-trips. Worth doing before the keyword set grows further.
+`Z` was unassigned (ழ is lowercase `z`), so it takes ன and leaves `N` unambiguously ண. Thirty keyword spellings changed, including four that spelled ந as `N` (`nikara`, `nirY`, `kOppu_nirY`, `vAwkunar`), one that used `N` for ங் (`pawku`, formerly `paNgu`), and one that spelled நிலை two different ways (`nilY_ceyqi`, formerly `nilai_ceyqi`).
+
+This is a **breaking change to romanized source**; Tamil-script source is unaffected. Remaining follow-up: a handful of keywords are still off-scheme for unrelated letters — `parivarttaZai` and `taZik_vicY` use `t` where த should be `q`, and `parivarttaZai` uses `ai` where ஐ should be `Y`. Those should be swept in one pass, with lexer tests asserting every letter round-trips.
 
 ---
 

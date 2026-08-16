@@ -1,4 +1,4 @@
-// Phase 4: Authentication & Authorization Module
+// Backend milestone 4: Authentication & Authorization Module
 // JWT-based auth with role-based access control (RBAC)
 
 use chrono::{Duration, Utc};
