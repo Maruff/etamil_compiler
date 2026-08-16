@@ -1,0 +1,29 @@
+# Keep line endings sane across the Windows and Linux checkouts of this repo.
+#
+# Without this, git checks files out with CRLF on Windows and shell scripts
+# then fail on Linux with "bad interpreter: /bin/bash^M".
+
+# Normalize to LF in the repository; let git decide in the working tree.
+* text=auto
+
+# These must be LF in the working tree on every platform.
+*.sh        text eol=lf
+*.rs        text eol=lf
+*.toml      text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+*.md        text eol=lf
+*.qmz       text eol=lf
+*.etamil    text eol=lf
+*.json      text eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat       text eol=crlf
+
+# Never touch binary content.
+*.pdf       binary
+*.png       binary
+*.jpg       binary
+*.bin       binary
+*.db        binary
+*.vsidx     binary
