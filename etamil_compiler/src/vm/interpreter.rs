@@ -69,6 +69,132 @@ impl VM {
         self.stack.pop().ok_or_else(|| "Stack underflow".to_string())
     }
 
+    /// Human-readable type name, for error messages.
+    fn type_name(value: &Value) -> &'static str {
+        match value {
+            Value::Number(_) => "a number",
+            Value::String(_) => "a string",
+            Value::Boolean(_) => "a boolean",
+            Value::Array(_) => "an array",
+            Value::Map(_) => "a record",
+            Value::Null => "nil",
+        }
+    }
+
+    /// Turn an index value into a valid array position, or explain why not.
+    fn array_index(len: usize, index: &Value) -> Result<usize, String> {
+        let raw = index.to_number();
+        if raw.fract() != Decimal::ZERO {
+            return Err(format!(
+                "அட்டவணை முழு எண்ணாக இருக்க வேண்டும்  (array index must be a whole number, got {})",
+                raw
+            ));
+        }
+        let i = rust_decimal::prelude::ToPrimitive::to_i64(&raw).unwrap_or(-1);
+        if i < 0 || i as usize >= len {
+            return Err(format!(
+                "அட்டவணை {} வரம்பிற்கு வெளியே (நீளம் {})  (index {} out of bounds, length {})",
+                raw, len, raw, len
+            ));
+        }
+        Ok(i as usize)
+    }
+
+    /// `base[index]` for arrays (by position) and records (by key).
+    fn index_of(base: &Value, index: &Value) -> Result<Value, String> {
+        match base {
+            Value::Array(items) => {
+                let i = Self::array_index(items.len(), index)?;
+                Ok(items[i].clone())
+            }
+            Value::Map(fields) => {
+                let key = index.to_string();
+                fields.get(&key).cloned().ok_or_else(|| {
+                    format!("புலம் '{}' இல்லை  (no field '{}' on this record)", key, key)
+                })
+            }
+            Value::String(s) => {
+                let chars: Vec<char> = s.chars().collect();
+                let i = Self::array_index(chars.len(), index)?;
+                Ok(Value::String(chars[i].to_string()))
+            }
+            other => Err(format!(
+                "அட்டவணைப்படுத்த முடியாது  (cannot index into {})",
+                Self::type_name(other)
+            )),
+        }
+    }
+
+    /// Builtins, callable under Tamil, romanized or English names. This is
+    /// the extension point the tax and accounting builtins will plug into.
+    fn call_builtin(&mut self, name: &str, argc: usize) -> Result<Value, String> {
+        let mut args = Vec::with_capacity(argc);
+        for _ in 0..argc {
+            args.push(self.pop()?);
+        }
+        args.reverse();
+
+        match name {
+            // நீளம் — length of an array, record or string
+            "நீளம்" | "nILam" | "_length" => {
+                Self::expect_args(name, &args, 1)?;
+                let n = match &args[0] {
+                    Value::Array(items) => items.len(),
+                    Value::Map(fields) => fields.len(),
+                    Value::String(s) => s.chars().count(),
+                    other => {
+                        return Err(format!(
+                            "நீளம் ஒரு அணி/பொருள்/சொல் தேவை  (length needs an array, record or string, got {})",
+                            Self::type_name(other)
+                        ));
+                    }
+                };
+                Ok(Value::Number(Decimal::from(n)))
+            }
+            // இணை — append to an array, returning the extended array.
+            // (சேர் / cEr is already the SQL JOIN keyword.)
+            "இணை" | "iNY" | "_append" => {
+                Self::expect_args(name, &args, 2)?;
+                match &args[0] {
+                    Value::Array(items) => {
+                        let mut items = items.clone();
+                        items.push(args[1].clone());
+                        Ok(Value::Array(items))
+                    }
+                    other => Err(format!(
+                        "சேர் ஒரு அணி தேவை  (append needs an array, got {})",
+                        Self::type_name(other)
+                    )),
+                }
+            }
+            // வகை — the type of a value, as a string
+            "வகை" | "vakY" | "_typeof" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::String(Self::type_name(&args[0]).to_string()))
+            }
+            unknown => Err(format!(
+                "அறியப்படாத செயல் '{}'  (unknown function '{}')",
+                unknown, unknown
+            )),
+        }
+    }
+
+    fn expect_args(name: &str, args: &[Value], want: usize) -> Result<(), String> {
+        if args.len() != want {
+            return Err(format!(
+                "செயல் '{}' {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
+                 (function '{}' expects {} argument(s), got {})",
+                name,
+                want,
+                args.len(),
+                name,
+                want,
+                args.len()
+            ));
+        }
+        Ok(())
+    }
+
     /// Append one line to a file, creating it if needed.
     fn append_line(filename: &str, data: &str) -> Result<(), String> {
         let mut file = OpenOptions::new()
@@ -273,7 +399,99 @@ impl VM {
                         what
                     ));
                 }
+                Instruction::MakeArray(count) => {
+                    let mut items = Vec::with_capacity(count);
+                    for _ in 0..count {
+                        items.push(self.pop()?);
+                    }
+                    items.reverse(); // pushed left to right
+                    self.stack.push(Value::Array(items));
+                }
+                Instruction::MakeRecord(keys) => {
+                    let mut fields = HashMap::with_capacity(keys.len());
+                    for key in keys.into_iter().rev() {
+                        let value = self.pop()?;
+                        fields.insert(key, value);
+                    }
+                    self.stack.push(Value::Map(fields));
+                }
+                Instruction::Index => {
+                    let index = self.pop()?;
+                    let base = self.pop()?;
+                    self.stack.push(Self::index_of(&base, &index)?);
+                }
+                Instruction::Field(name) => {
+                    let base = self.pop()?;
+                    match base {
+                        Value::Map(fields) => {
+                            let value = fields.get(&name).cloned().ok_or_else(|| {
+                                format!("புலம் '{}' இல்லை  (no field '{}' on this record)", name, name)
+                            })?;
+                            self.stack.push(value);
+                        }
+                        other => {
+                            return Err(format!(
+                                "'{}' ஒரு பொருள் அல்ல  ('.{}' needs a record, got {})",
+                                name,
+                                name,
+                                Self::type_name(&other)
+                            ));
+                        }
+                    }
+                }
+                Instruction::SetIndex(name) => {
+                    let value = self.pop()?;
+                    let index = self.pop()?;
+                    let mut base = self.get_var(&name).ok_or_else(|| {
+                        format!("அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')", name, name)
+                    })?;
+                    match &mut base {
+                        Value::Array(items) => {
+                            let i = Self::array_index(items.len(), &index)?;
+                            items[i] = value;
+                        }
+                        Value::Map(fields) => {
+                            fields.insert(index.to_string(), value);
+                        }
+                        other => {
+                            return Err(format!(
+                                "'{}' ஐ அட்டவணைப்படுத்த முடியாது  (cannot index into {})",
+                                name,
+                                Self::type_name(other)
+                            ));
+                        }
+                    }
+                    self.set_var(name, base);
+                }
+                Instruction::SetField(name, field) => {
+                    let value = self.pop()?;
+                    let mut base = self.get_var(&name).ok_or_else(|| {
+                        format!("அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')", name, name)
+                    })?;
+                    match &mut base {
+                        Value::Map(fields) => {
+                            fields.insert(field, value);
+                        }
+                        other => {
+                            return Err(format!(
+                                "'{}' ஒரு பொருள் அல்ல  ('{}.{}' needs a record, got {})",
+                                name,
+                                name,
+                                field,
+                                Self::type_name(other)
+                            ));
+                        }
+                    }
+                    self.set_var(name, base);
+                }
                 Instruction::Call(name, argc) => {
+                    // User-defined functions shadow builtins.
+                    if !bytecode.functions.contains_key(&name) {
+                        let result = self.call_builtin(&name, argc)?;
+                        self.stack.push(result);
+                        self.instruction_pointer += 1;
+                        continue;
+                    }
                     let info = bytecode.functions.get(&name).cloned().ok_or_else(|| {
                         format!(
                             "அறியப்படாத செயல் '{}'  (unknown function '{}')",
