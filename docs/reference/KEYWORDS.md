@@ -65,6 +65,70 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 | வணிகவரி | `vaNikavari` | `_GST` |
 | வரியறிக்கை | `variyaRikkY` | `_ITR` |
 
+## Transactions & Documents
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| விற்பனை | `viRpaZY` | — |
+| கொள்முதல் | `koLmuqal` | — |
+| விலைப்பட்டியல் | `vilYppattiyal` | — |
+| ரசீது | `racIqu` | — |
+| காசோலை | `kAcOlY` | — |
+| ஒப்பந்தம் | `oppanqam` | — |
+| சரக்கு | `carakku` | — |
+| சரக்கிருப்பு | `carakkiruppu` | — |
+
+## Money Movement
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| வைப்பு | `vYppu` | — |
+| எடுப்பு | `etuppu` | — |
+| பரிமாற்றம் | `parimARRam` | — |
+| முன்பணம் | `muZpaNam` | — |
+| நிலுவை | `niluvY` | — |
+| தவணை | `qavaNY` | — |
+| அசல் | `acal` | — |
+
+## Income & Costs
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| ஊதியம் | `Uqiyam` | — |
+| வாடகை | `vAtakY` | — |
+| கட்டணம் | `kattaNam` | — |
+| தள்ளுபடி | `qaLLupati` | — |
+| அபராதம் | `aparAqam` | — |
+| காப்பீடு | `kAppItu` | — |
+| ஈவுத்தொகை | `IvuqqokY` | — |
+| முதலீடு | `muqalItu` | — |
+| விலை | `vilY` | — |
+
+## Accounts, Reporting & Audit
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| கணக்கு | `kaNakku` | — |
+| தணிக்கை | `qaNikkY` | — |
+| நிதியாண்டு | `niqiyANtu` | — |
+| காலாண்டு | `kAlANtu` | — |
+| பங்குதாரர் | `pawkuqArar` | — |
+| நிதித்திட்டம் | `niqiqqittam` | — |
+
+## Indian Taxation
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| வரிப்பிடித்தம் | `varippitiqqam` | `_TDS` |
+| உள்ளீட்டுவரி | `uLLIttuvari` | `_ITC` |
+| விலக்கு | `vilakku` | — |
+| விதிவிலக்கு | `viqivilakku` | — |
+| அடுக்கு | `atukku` | — |
+| சுங்கவரி | `cuwkavari` | — |
+| கலால்வரி | `kalAlvari` | — |
+| முத்திரைத்தீர்வை | `muqqirYqqIrvY` | — |
+| மதிப்பீட்டாண்டு | `maqippIttANtu` | — |
+
 ## Variables & Data Types
 
 | Tamil | Romanized | English alias |

@@ -69,7 +69,21 @@ The three nasals now have distinct letters: **ண = `N`, ந = `n`, ன = `Z`.**
 
 `Z` was unassigned (ழ is lowercase `z`), so it takes ன and leaves `N` unambiguously ண. Thirty keyword spellings changed, including four that spelled ந as `N` (`nikara`, `nirY`, `kOppu_nirY`, `vAwkunar`), one that used `N` for ங் (`pawku`, formerly `paNgu`), and one that spelled நிலை two different ways (`nilY_ceyqi`, formerly `nilai_ceyqi`).
 
-This is a **breaking change to romanized source**; Tamil-script source is unaffected. Remaining follow-up: a handful of keywords are still off-scheme for unrelated letters — `parivarttaZai` and `taZik_vicY` use `t` where த should be `q`, and `parivarttaZai` uses `ai` where ஐ should be `Y`. Those should be swept in one pass, with lexer tests asserting every letter round-trips.
+This is a **breaking change to romanized source**; Tamil-script source is unaffected.
+
+### Follow-up: 19 keywords are still off-scheme for other letters
+
+`scripts/transliterate.py` implements the scheme and `--check` audits the lexer against it. It reproduces 177 of 196 keywords exactly; the other 19 use letters the scheme does not assign, or assigns elsewhere:
+
+| Problem | Examples |
+|---|---|
+| `t`/`q` swapped (ட is `t`, த is `q`) | `soqqu`→`coqqu`, `toqai`→`qokY`, `uqal`→`utal`, `talY`→`qalY` |
+| Letters not in the scheme at all | `matippIDu` (`D`), `toguippu` (`g`), `vazhi` (`zh`), `paDil` (`D`) |
+| ச written `s` instead of `c` | `soqqu`→`coqqu` |
+| Doubled consonants dropped | `iraqi_pulli`→`iRuqi_puLLi` |
+| Compound convention | `varumAZ_aRikkY` vs `varumAZa_aRikkY` — the lexer drops the inherent vowel before `_`; decide and document this |
+
+Sweeping these is one more breaking change to romanized source, so it should land in a single commit with lexer tests asserting every letter round-trips. CI runs `--check` today as a non-gating step; make it gating once the sweep is done.
 
 ---
 
