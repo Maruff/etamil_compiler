@@ -2,15 +2,19 @@
 use crate::parser::{Expr, Stmt};
 use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};
 use crate::vm::Value;
+use rust_decimal::Decimal;
 
 pub struct BytecodeCompiler {
     bytecode: Bytecode,
+    /// Makes each ஒவ்வொரு loop's hidden variables unique.
+    loop_id: usize,
 }
 
 impl BytecodeCompiler {
     pub fn new() -> Self {
         BytecodeCompiler {
             bytecode: Bytecode::new(),
+            loop_id: 0,
         }
     }
 
@@ -135,6 +139,48 @@ impl BytecodeCompiler {
                 if let Instruction::JumpIfFalse(_) = &mut self.bytecode.instructions[jump_false_idx] {
                     self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(end);
                 }
+            }
+            // ovvoru item il collection { ... } is desugared into an index
+            // loop over hidden variables. The '#' prefix cannot appear in a
+            // user identifier, so these can never collide with a real name.
+            Stmt::ForEach { var, collection, body } => {
+                let id = self.loop_id;
+                self.loop_id += 1;
+                let items = format!("#each_items_{}", id);
+                let index = format!("#each_i_{}", id);
+
+                self.compile_expr(collection);
+                self.bytecode.push(Instruction::StoreVar(items.clone()));
+                self.bytecode
+                    .push(Instruction::Push(Value::Number(Decimal::ZERO)));
+                self.bytecode.push(Instruction::StoreVar(index.clone()));
+
+                let start = self.bytecode.len();
+                self.bytecode.push(Instruction::LoadVar(index.clone()));
+                self.bytecode.push(Instruction::LoadVar(items.clone()));
+                self.bytecode.push(Instruction::Length);
+                self.bytecode.push(Instruction::LessThan);
+                let jump_false_idx = self.bytecode.len();
+                self.bytecode.push(Instruction::JumpIfFalse(0)); // patched below
+
+                self.bytecode.push(Instruction::LoadVar(items.clone()));
+                self.bytecode.push(Instruction::LoadVar(index.clone()));
+                self.bytecode.push(Instruction::NthOrKey);
+                self.bytecode.push(Instruction::StoreVar(var));
+
+                for stmt in body {
+                    self.compile_stmt(stmt);
+                }
+
+                self.bytecode.push(Instruction::LoadVar(index.clone()));
+                self.bytecode
+                    .push(Instruction::Push(Value::Number(Decimal::ONE)));
+                self.bytecode.push(Instruction::Add);
+                self.bytecode.push(Instruction::StoreVar(index));
+                self.bytecode.push(Instruction::Jump(start));
+
+                let end = self.bytecode.len();
+                self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(end);
             }
             Stmt::FileOpen { filename, mode } => {
                 self.compile_expr(filename);

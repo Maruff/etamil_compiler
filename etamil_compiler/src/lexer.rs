@@ -137,6 +137,10 @@ pub enum Token {
     #[regex("செயல்|ceyal|_fn")] Function,
     #[regex("திரும்பு|qirumpu|_return")] Return,
 
+    // --- Iteration ---
+    #[regex("ஒவ்வொரு|ovvoru|_each")] ForEach,
+    #[regex("இல்|il|_in")] In,
+
     // --- File I/O Operations ---
     #[regex("கோப்பு|kOppu|_file")] File,
     #[regex("தரவுரை|qaravurY|_CSV")] CSV,

@@ -545,6 +545,88 @@ fn collections_print_readably() {
     assert_eq!(vm.variables.get("r").unwrap().to_string(), "{a: 1, b: 2}");
 }
 
+// --- Iteration (ஒவ்வொரு … இல்) --------------------------------------------
+
+#[test]
+fn foreach_sums_an_array() {
+    let vm = run("moqqam = 0; ovvoru x il [1, 2, 3, 4] { moqqam = moqqam + x; }").unwrap();
+    assert_eq!(num(&vm, "moqqam"), dec(10));
+}
+
+#[test]
+fn foreach_over_an_empty_array_runs_zero_times() {
+    let vm = run("n = 0; ovvoru x il [] { n = n + 1; }").unwrap();
+    assert_eq!(num(&vm, "n"), dec(0));
+}
+
+#[test]
+fn foreach_over_records_yields_field_names() {
+    let vm = run(r#"keys = ""; ovvoru k il {b: 2, a: 1} { keys = keys & k; }"#).unwrap();
+    // Keys are sorted, so the order is stable.
+    assert_eq!(text(&vm, "keys"), "ab");
+}
+
+#[test]
+fn foreach_over_a_table_of_records() {
+    let src = r#"rows = [{peyar: "Ravi", vari: 1000}, {peyar: "Priya", vari: 2000}];
+                 moqqam = 0;
+                 ovvoru paqivu il rows { moqqam = moqqam + paqivu.vari; }"#;
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "moqqam"), dec(3000));
+}
+
+#[test]
+fn foreach_loops_may_nest() {
+    let src = "moqqam = 0;
+               ovvoru a il [1, 2] { ovvoru b il [10, 20] { moqqam = moqqam + a * b; } }";
+    let vm = run(src).unwrap();
+    // (1*10 + 1*20) + (2*10 + 2*20) = 30 + 60
+    assert_eq!(num(&vm, "moqqam"), dec(90));
+}
+
+#[test]
+fn foreach_works_inside_a_function() {
+    let src = "ceyal moqqam_kaNakku(pattiyal) { \
+                 m = 0; \
+                 ovvoru x il pattiyal { m = m + x; } \
+                 qirumpu m; \
+               } \
+               y = moqqam_kaNakku([5, 10, 15]);";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "y"), dec(30));
+}
+
+#[test]
+fn foreach_over_a_string_yields_characters() {
+    let vm = run(r#"n = 0; ovvoru c il "abc" { n = n + 1; }"#).unwrap();
+    assert_eq!(num(&vm, "n"), dec(3));
+}
+
+#[test]
+fn foreach_over_a_number_is_an_error() {
+    let err = run("ovvoru x il 5 { }").expect_err("numbers are not iterable");
+    assert!(err.contains("cannot iterate"), "unexpected error: {}", err);
+}
+
+#[test]
+fn foreach_in_tamil_script() {
+    // தொகை is the Amount keyword — financial vocabulary is usable as a name.
+    let src = "மொத்தம் = 0; ஒவ்வொரு தொகை இல் [100, 200] { மொத்தம் = மொத்தம் + தொகை; }";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "மொத்தம்"), dec(300));
+}
+
+// Type keywords are reserved, the way `int` is in C. Financial keywords are
+// not — that distinction is what makes `தொகை` above legal.
+#[test]
+fn type_keywords_are_reserved_but_financial_ones_are_not() {
+    let reserved = std::panic::catch_unwind(|| run("eN = 1;")).is_err();
+    assert!(reserved, "eN (IntegerType) should be reserved");
+
+    let vm = run("toqai = 5;").unwrap();
+    assert_eq!(num(&vm, "Amount"), dec(5));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

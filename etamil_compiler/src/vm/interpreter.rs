@@ -484,6 +484,50 @@ impl VM {
                     }
                     self.set_var(name, base);
                 }
+                Instruction::Length => {
+                    let value = self.pop()?;
+                    let n = match &value {
+                        Value::Array(items) => items.len(),
+                        Value::Map(fields) => fields.len(),
+                        Value::String(s) => s.chars().count(),
+                        other => {
+                            return Err(format!(
+                                "இதை சுற்ற முடியாது  (cannot iterate over {})",
+                                Self::type_name(other)
+                            ));
+                        }
+                    };
+                    self.stack.push(Value::Number(Decimal::from(n)));
+                }
+                Instruction::NthOrKey => {
+                    let index = self.pop()?;
+                    let base = self.pop()?;
+                    let value = match &base {
+                        Value::Array(items) => {
+                            let i = Self::array_index(items.len(), &index)?;
+                            items[i].clone()
+                        }
+                        Value::Map(fields) => {
+                            // Sorted so iteration order is stable run to run.
+                            let mut keys: Vec<&String> = fields.keys().collect();
+                            keys.sort();
+                            let i = Self::array_index(keys.len(), &index)?;
+                            Value::String(keys[i].clone())
+                        }
+                        Value::String(s) => {
+                            let chars: Vec<char> = s.chars().collect();
+                            let i = Self::array_index(chars.len(), &index)?;
+                            Value::String(chars[i].to_string())
+                        }
+                        other => {
+                            return Err(format!(
+                                "இதை சுற்ற முடியாது  (cannot iterate over {})",
+                                Self::type_name(other)
+                            ));
+                        }
+                    };
+                    self.stack.push(value);
+                }
                 Instruction::Call(name, argc) => {
                     // User-defined functions shadow builtins.
                     if !bytecode.functions.contains_key(&name) {

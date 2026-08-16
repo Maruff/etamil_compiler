@@ -56,6 +56,12 @@ pub enum Instruction {
     SetIndex(String),
     /// Pop value; store into the named variable's field.
     SetField(String, String),
+    /// Pop a collection; push how many elements it has.
+    Length,
+    /// Pop index then collection; push the nth element of an array, the nth
+    /// key of a record (keys sorted so iteration order is stable), or the
+    /// nth character of a string. Used to desugar ஒவ்வொரு.
+    NthOrKey,
     
     // File I/O — each pops its operands off the stack
     FileOpen(String), // mode; pops filename
