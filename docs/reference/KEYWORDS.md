@@ -165,6 +165,13 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 | செயல் | `ceyal` | `_fn` |
 | திரும்பு | `qirumpu` | `_return` |
 
+## Iteration
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| ஒவ்வொரு | `ovvoru` | `_each` |
+| இல் | `il` | `_in` |
+
 ## File I/O Operations
 
 | Tamil | Romanized | English alias |

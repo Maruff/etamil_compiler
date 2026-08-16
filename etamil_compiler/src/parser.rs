@@ -97,6 +97,12 @@ pub enum Stmt {
         condition: Expr,
         body: Vec<Stmt>,
     },
+    // ovvoru item il collection { body }
+    ForEach {
+        var: String,
+        collection: Expr,
+        body: Vec<Stmt>,
+    },
     // File I/O Operations
     FileOpen {
         filename: Expr,
@@ -296,6 +302,19 @@ impl<'a> Parser<'a> {
                     body.push(self.parse_statement());
                 }
                 Stmt::FunctionDef { name, params, body }
+            }
+            Token::ForEach => {
+                // ovvoru item il collection { ... }
+                let var_token = self.tokens.next().expect("Expected a loop variable");
+                let var = self.token_name(var_token);
+                self.expect(Token::In);
+                let collection = self.parse_expression();
+                self.expect(Token::LBrace);
+                let mut body = Vec::new();
+                while !self.matches(Token::RBrace) {
+                    body.push(self.parse_statement());
+                }
+                Stmt::ForEach { var, collection, body }
             }
             Token::Return => {
                 if self.matches(Token::Semicolon) {
@@ -807,6 +826,7 @@ impl<'a> Parser<'a> {
             Token::And | Token::Or | Token::Not => false,
             Token::True | Token::False | Token::Null => false,
             Token::Function | Token::Return => false,
+            Token::ForEach | Token::In => false,
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
