@@ -24,6 +24,12 @@ pub struct Compiler {
     builder: LLVMBuilderRef,
     function: LLVMValueRef,
     variables: HashMap<String, LLVMValueRef>, // Variable name -> alloca pointer
+    /// Constructs this backend cannot build. The VM supports considerably
+    /// more of the language than the LLVM path does, and emitting IR that
+    /// drops a statement or evaluates an expression as 0.0 would make the
+    /// compiled program quietly disagree with the same source run on the VM.
+    /// The caller must refuse to emit when this is non-empty.
+    unsupported: Vec<String>,
 }
 
 #[cfg(not(feature = "llvm"))]
@@ -67,7 +73,42 @@ impl Compiler {
                 builder,
                 function,
                 variables: HashMap::new(),
+                unsupported: Vec::new(),
             }
+        }
+    }
+
+    /// Constructs encountered that this backend cannot compile.
+    pub fn unsupported(&self) -> &[String] {
+        &self.unsupported
+    }
+
+    fn stmt_label(statement: &Stmt) -> &'static str {
+        match statement {
+            Stmt::FunctionDef { .. } => "செயல் (function definition)",
+            Stmt::Return(_) => "திரும்பு (return)",
+            Stmt::ForEach { .. } => "ஒவ்வொரு (for-each)",
+            Stmt::SetIndex { .. } => "a[i] = v (index assignment)",
+            Stmt::SetField { .. } => "r.f = v (field assignment)",
+            Stmt::Import(_) => "இறக்கு (import)",
+            Stmt::Expression(_) => "an expression statement",
+            _ => "a database or server statement",
+        }
+    }
+
+    fn expr_label(expression: &Expr) -> &'static str {
+        match expression {
+            Expr::Call { .. } => "a function call",
+            Expr::ArrayLiteral(_) => "an array literal",
+            Expr::RecordLiteral(_) => "a record literal",
+            Expr::Index { .. } => "an index",
+            Expr::Field { .. } => "a field access",
+            Expr::Try(_) => "the ? operator",
+            Expr::Logical { .. } => "a logical operator",
+            Expr::Not(_) => "இல்லை (not)",
+            Expr::Boolean(_) => "a boolean literal",
+            Expr::Null => "இன்மை (nil)",
+            _ => "this expression",
         }
     }
 
@@ -912,8 +953,12 @@ impl Compiler {
                         CString::new("").unwrap().as_ptr(),
                     );
                 }
-                _ => {
-                    // Unsupported statements are ignored by the LLVM backend.
+                other => {
+                    // Recording rather than ignoring: a statement the LLVM
+                    // backend drops would make the compiled program quietly
+                    // disagree with the same source run on the VM.
+                    self.unsupported
+                        .push(format!("statement {}", Self::stmt_label(&other)));
                 }
             }
         }
@@ -1024,7 +1069,11 @@ impl Compiler {
                     // (concat is mainly for print statements)
                     self.compile_expr(left)
                 }
-                _ => {
+                other => {
+                    // Same reasoning: yielding 0.0 for an expression this
+                    // backend cannot build would silently change the answer.
+                    self.unsupported
+                        .push(format!("expression {}", Self::expr_label(other)));
                     let f64_type = LLVMDoubleTypeInContext(self.context);
                     LLVMConstReal(f64_type, 0.0)
                 }
