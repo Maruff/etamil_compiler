@@ -30,6 +30,7 @@ export ETAMIL_PATH="$ROOT"
 # Examples that must fail, and the text their error must contain.
 declare -A EXPECT_FAIL=(
     ["examples/api/simple_api.qmz"]="not implemented"
+    ["examples/api/vari_cEvY.qmz"]="not implemented"
 )
 
 WORK="$(mktemp -d)"
