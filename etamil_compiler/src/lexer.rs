@@ -55,6 +55,55 @@ pub enum Token {
     #[regex("வணிகவரி|vaNikavari|_GST")] GST,
     #[regex("வரியறிக்கை|variyaRikkY|_ITR")] ITR,
 
+    // --- Transactions & Documents ---
+    #[regex("விற்பனை|viRpaZY")] Sales,
+    #[regex("கொள்முதல்|koLmuqal")] Purchase,
+    #[regex("விலைப்பட்டியல்|vilYppattiyal")] Invoice,
+    #[regex("ரசீது|racIqu")] Receipt,
+    #[regex("காசோலை|kAcOlY")] Cheque,
+    #[regex("ஒப்பந்தம்|oppanqam")] Contract,
+    #[regex("சரக்கு|carakku")] Goods,
+    #[regex("சரக்கிருப்பு|carakkiruppu")] Inventory,
+
+    // --- Money Movement ---
+    #[regex("வைப்பு|vYppu")] Deposit,
+    #[regex("எடுப்பு|etuppu")] Withdrawal,
+    #[regex("பரிமாற்றம்|parimARRam")] Transfer,
+    #[regex("முன்பணம்|muZpaNam")] Advance,
+    #[regex("நிலுவை|niluvY")] Outstanding,
+    #[regex("தவணை|qavaNY")] Installment,
+    #[regex("அசல்|acal")] Principal,
+
+    // --- Income & Costs ---
+    #[regex("ஊதியம்|Uqiyam")] Salary,
+    #[regex("வாடகை|vAtakY")] Rent,
+    #[regex("கட்டணம்|kattaNam")] Fee,
+    #[regex("தள்ளுபடி|qaLLupati")] Discount,
+    #[regex("அபராதம்|aparAqam")] Penalty,
+    #[regex("காப்பீடு|kAppItu")] Insurance,
+    #[regex("ஈவுத்தொகை|IvuqqokY")] Dividend,
+    #[regex("முதலீடு|muqalItu")] Investment,
+    #[regex("விலை|vilY")] Price,
+
+    // --- Accounts, Reporting & Audit ---
+    #[regex("கணக்கு|kaNakku")] Account,
+    #[regex("தணிக்கை|qaNikkY")] Audit,
+    #[regex("நிதியாண்டு|niqiyANtu")] FiscalYear,
+    #[regex("காலாண்டு|kAlANtu")] Quarter,
+    #[regex("பங்குதாரர்|pawkuqArar")] Shareholder,
+    #[regex("நிதித்திட்டம்|niqiqqittam")] Budget,
+
+    // --- Indian Taxation ---
+    #[regex("வரிப்பிடித்தம்|varippitiqqam|_TDS")] TDS,
+    #[regex("உள்ளீட்டுவரி|uLLIttuvari|_ITC")] InputTaxCredit,
+    #[regex("விலக்கு|vilakku")] Deduction,
+    #[regex("விதிவிலக்கு|viqivilakku")] Exemption,
+    #[regex("அடுக்கு|atukku")] Slab,
+    #[regex("சுங்கவரி|cuwkavari")] CustomsDuty,
+    #[regex("கலால்வரி|kalAlvari")] ExciseDuty,
+    #[regex("முத்திரைத்தீர்வை|muqqirYqqIrvY")] StampDuty,
+    #[regex("மதிப்பீட்டாண்டு|maqippIttANtu")] AssessmentYear,
+
     // --- Variables & Data Types ---
     #[regex("எண்|eN")] IntegerType,
     #[regex("பின்னம்|piZZam")] FloatType,
