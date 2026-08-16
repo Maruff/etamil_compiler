@@ -174,6 +174,23 @@ async fn main() {
             
             let mut compiler = codegen::Compiler::new();
             compiler.compile(ast);
+
+            // The LLVM backend covers less of the language than the VM. If it
+            // met anything it cannot build, refuse rather than emit IR that
+            // silently computes something else.
+            if !compiler.unsupported().is_empty() {
+                eprintln!("✗ The LLVM backend cannot compile this program.");
+                eprintln!("  Unsupported here, though the VM handles them:");
+                let mut seen: Vec<&String> = compiler.unsupported().iter().collect();
+                seen.sort();
+                seen.dedup();
+                for item in seen {
+                    eprintln!("    - {}", item);
+                }
+                eprintln!();
+                eprintln!("  Run it on the VM instead:  etamil --vm <file>");
+                std::process::exit(1);
+            }
             
             println!("\nGenerated LLVM IR:");
             compiler.dump_module();
