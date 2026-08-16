@@ -1,12 +1,12 @@
 // The modules live in the library target (src/lib.rs); this binary uses them
 // from there rather than re-declaring them, which previously compiled the
 // whole crate twice.
-use std::fs;
 use std::io::{self, Read};
 use std::env;
+use std::path::Path;
 
 use etamil_compiler::http::HttpServer;
-use etamil_compiler::{lexer, parser, vm};
+use etamil_compiler::{module, parser, vm};
 #[cfg(feature = "llvm")]
 use etamil_compiler::codegen;
 
@@ -90,33 +90,25 @@ async fn main() {
         i += 1;
     }
     
-    // 1. Load the eTamil Source Code
-    let input = if let Some(fname) = filename {
-        fs::read_to_string(&fname)
-            .unwrap_or_else(|_| panic!("Unable to read eTamil source file: {}", fname))
-    } else {
-        let mut buffer = String::new();
-        io::stdin().read_to_string(&mut buffer)
-            .expect("Unable to read from stdin");
-        buffer
+    // 1-3. Load, lex, parse, and resolve any இறக்கு imports.
+    let loaded = match &filename {
+        Some(fname) => module::load_file(Path::new(fname)),
+        None => {
+            let mut buffer = String::new();
+            io::stdin()
+                .read_to_string(&mut buffer)
+                .expect("Unable to read from stdin");
+            module::load_source(&buffer, Path::new("."))
+        }
     };
 
-    // 2. Lexical Analysis
-    let tokens = match lexer::tokenize(&input) {
-        Ok(tokens) => tokens,
-        Err(errors) => {
-            eprintln!("✗ Lexical analysis failed ({} error(s)):", errors.len());
-            for error in &errors {
-                eprintln!("  {}", error);
-            }
+    let ast = match loaded {
+        Ok(ast) => ast,
+        Err(message) => {
+            eprintln!("✗ {}", message);
             std::process::exit(1);
         }
     };
-    println!("✓ Lexical analysis complete ({} tokens)", tokens.len());
-
-    // 3. Parsing (AST Construction)
-    let mut parser = parser::Parser::new(tokens.iter());
-    let ast = parser.parse();
     println!("✓ Parsing complete ({} statements)\n", ast.len());
 
     // Backend milestone 2: Check if async server mode is enabled

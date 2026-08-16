@@ -172,6 +172,12 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 | ஒவ்வொரு | `ovvoru` | `_each` |
 | இல் | `il` | `_in` |
 
+## Modules
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| இறக்கு | `iRakku` | `_import` |
+
 ## File I/O Operations
 
 | Tamil | Romanized | English alias |
@@ -334,6 +340,7 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 | `*` | multiply |
 | `/` | divide |
 | `&` | string concatenation |
+| `?` |  |
 | `[` |  |
 | `]` |  |
 | `.` |  |
