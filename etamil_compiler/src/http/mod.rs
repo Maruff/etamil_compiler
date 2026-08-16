@@ -2,8 +2,9 @@
 // Provides synchronous HTTP server capabilities for Minimum Viable Backend
 
 use std::collections::HashMap;
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
+use std::sync::{mpsc, Mutex};
 use std::time::Instant;
 use crate::parser::Stmt;
 use crate::vm::VM;
@@ -95,62 +96,117 @@ impl HttpServer {
 
         self.logger.info("eTamil HTTP Server started successfully");
 
-        for stream in listener.incoming() {
-            match stream {
-                Ok(mut tcp_stream) => {
-                    let request_id = generate_request_id();
-                    let start_time = Instant::now();
-                    
-                    let mut buffer = vec![0; 4096];
-                    if let Ok(n) = tcp_stream.read(&mut buffer) {
-                        if n > 0 {
-                            let request_str = String::from_utf8_lossy(&buffer[..n]);
-                            match HttpRequest::parse(&request_str) {
-                                Ok(request) => {
-                                    // Log incoming request
-                                    let mut req_context = std::collections::HashMap::new();
-                                    req_context.insert("request_id".to_string(), request_id.clone());
-                                    
-                                    let log_entry = LogEntry::new(LogLevel::Info, "Incoming request")
-                                        .with_context(req_context);
-                                    self.logger.log(log_entry);
-                                    
-                                    let response = self.handle_request(&request);
-                                    let duration = start_time.elapsed().as_millis() as u64;
-                                    
-                                    // Record metrics
-                                    self.metrics.record_request(
-                                        &request.path,
-                                        &request.method,
-                                        duration,
-                                        response.status_code < 400,
-                                    );
-                                    
-                                    let _ = tcp_stream.write_all(response.to_http_string().as_bytes());
-                                }
-                                Err(e) => {
-                                    // Log parse error
-                                    let log_entry = LogEntry::new(LogLevel::Error, "Failed to parse HTTP request")
-                                        .with_error("HTTP_PARSE_ERROR", &e.to_string());
-                                    self.logger.log(log_entry);
-                                    
-                                    let error_response = HttpResponse::bad_request(&e.to_string());
-                                    let _ = tcp_stream.write_all(error_response.to_http_string().as_bytes());
-                                    self.metrics.record_request("/", "UNKNOWN", 0, false);
-                                }
-                            }
+        // Connections are handed to a fixed pool of worker threads, each of
+        // which runs one request to completion on its own VM. A pool rather
+        // than a thread per connection means a burst of traffic queues
+        // instead of spawning unbounded threads.
+        //
+        // Scoped threads let the workers borrow &self directly: Logger and
+        // MetricsCollector are already Arc<Mutex<..>> internally, and the
+        // handler ASTs are read-only once the server has started.
+        let workers = Self::worker_count();
+        println!("🧵 Worker threads: {}\n", workers);
+
+        let (sender, receiver) = mpsc::channel::<TcpStream>();
+        let receiver = Mutex::new(receiver);
+
+        std::thread::scope(|scope| {
+            for _ in 0..workers {
+                scope.spawn(|| {
+                    loop {
+                        // The guard is released before the request is served,
+                        // otherwise the pool would serialise on the queue.
+                        let job = {
+                            let queue = match receiver.lock() {
+                                Ok(queue) => queue,
+                                Err(_) => break, // a worker panicked; stop
+                            };
+                            queue.recv()
+                        };
+                        match job {
+                            Ok(stream) => self.serve_connection(stream),
+                            Err(_) => break, // listener closed
                         }
                     }
-                }
-                Err(e) => {
-                    // Log connection error
-                    let log_entry = LogEntry::new(LogLevel::Warn, format!("Connection error: {}", e));
-                    self.logger.log(log_entry);
+                });
+            }
+
+            for stream in listener.incoming() {
+                match stream {
+                    Ok(tcp_stream) => {
+                        if sender.send(tcp_stream).is_err() {
+                            break; // no workers left
+                        }
+                    }
+                    Err(e) => {
+                        let log_entry =
+                            LogEntry::new(LogLevel::Warn, format!("Connection error: {}", e));
+                        self.logger.log(log_entry);
+                    }
                 }
             }
-        }
+        });
 
         Ok(())
+    }
+
+    /// Size of the worker pool: `ETAMIL_WORKERS` if set, otherwise twice the
+    /// available parallelism, which suits handlers that block on I/O.
+    fn worker_count() -> usize {
+        std::env::var("ETAMIL_WORKERS")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or_else(|| {
+                std::thread::available_parallelism()
+                    .map(|n| n.get() * 2)
+                    .unwrap_or(8)
+            })
+            .max(1)
+    }
+
+    /// Read one request off a connection, run it, and write the response.
+    fn serve_connection(&self, mut tcp_stream: TcpStream) {
+        let request_id = generate_request_id();
+        let start_time = Instant::now();
+
+        let mut buffer = vec![0; 4096];
+        let read = match tcp_stream.read(&mut buffer) {
+            Ok(n) if n > 0 => n,
+            _ => return,
+        };
+
+        let request_str = String::from_utf8_lossy(&buffer[..read]);
+        match HttpRequest::parse(&request_str) {
+            Ok(request) => {
+                let mut req_context = std::collections::HashMap::new();
+                req_context.insert("request_id".to_string(), request_id);
+
+                let log_entry =
+                    LogEntry::new(LogLevel::Info, "Incoming request").with_context(req_context);
+                self.logger.log(log_entry);
+
+                let response = self.handle_request(&request);
+                let duration = start_time.elapsed().as_millis() as u64;
+
+                self.metrics.record_request(
+                    &request.path,
+                    &request.method,
+                    duration,
+                    response.status_code < 400,
+                );
+
+                let _ = tcp_stream.write_all(response.to_http_string().as_bytes());
+            }
+            Err(e) => {
+                let log_entry = LogEntry::new(LogLevel::Error, "Failed to parse HTTP request")
+                    .with_error("HTTP_PARSE_ERROR", &e.to_string());
+                self.logger.log(log_entry);
+
+                let error_response = HttpResponse::bad_request(&e.to_string());
+                let _ = tcp_stream.write_all(error_response.to_http_string().as_bytes());
+                self.metrics.record_request("/", "UNKNOWN", 0, false);
+            }
+        }
     }
 
     /// Handle an incoming HTTP request
