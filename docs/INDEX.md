@@ -46,18 +46,19 @@ Both pages carry a status banner; read it first.
 
 | Page | What it covers |
 |---|---|
-| [HTTP Server](backend/HTTP_SERVER_QUICKREF.md) | Server usage — sync only |
-| [Database Commands](backend/DATABASE_COMMANDS_GUIDE.md) | Database syntax — not executable yet |
+| [HTTP Server](backend/HTTP_SERVER_QUICKREF.md) | Server usage. `வழி` routes and a worker pool now work; `--async` is still an alias for `--server` |
+| [Database Commands](backend/DATABASE_COMMANDS_GUIDE.md) | Database syntax. SQLite executes; queries are always parameterised. Other engines report that they are unsupported |
 
 ## Planning
 
 | Page | What it covers |
 |---|---|
+| [Architecture](ARCHITECTURE.md) | Why the project is built this way: the layering rule, every design decision and its reasoning, the known warts, and how to work on it |
 | [Roadmap](ROADMAP.md) | What is unfinished, why it matters, what finishing it takes |
 
 ## Examples
 
-Sample programs live in [`../examples/`](../examples/). The basic and file I/O samples run; the database samples fail by design.
+Sample programs live in [`../examples/`](../examples/). `./scripts/run_examples.sh` runs them all and enforces which are expected to fail — today only the routed API examples, which need `--server` rather than `--vm`.
 
 ---
 

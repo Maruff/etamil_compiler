@@ -1472,6 +1472,95 @@ fn cash_flow_over_a_period() {
     assert_eq!(num(&vm, "இறுதி"), dec(118000));
 }
 
+// --- Entities, currency and the year-end close -----------------------------
+
+#[test]
+fn entities_partition_one_ledger() {
+    let vm = run_niluvy(
+        r#"இறக்கு "kaNakkiyal/niRuvaZam.qmz";
+           ப2 = [];
+           ப2 = மதிப்பு(நிறுவனத்துடன்_பதிவிடு(ப2, பரிவர்த்தனை_ஆக்கு(
+                 "A1", "2026-04-01", "அ நிறுவனம்",
+                 [பற்று_வரிசை("1000", 1000), வரவு_வரிசை("4000", 1000)]), "AAA"));
+           ப2 = மதிப்பு(நிறுவனத்துடன்_பதிவிடு(ப2, பரிவர்த்தனை_ஆக்கு(
+                 "B1", "2026-04-01", "ஆ நிறுவனம்",
+                 [பற்று_வரிசை("1000", 2500), வரவு_வரிசை("4000", 2500)]), "BBB"));
+
+           அ_மட்டும் = நிறுவன_வடிகட்டு(ப2, "AAA");
+           அ_வங்கி = கணக்கு_இருப்பு(அ_மட்டும், "1000", "சொத்து");
+           ஆ_வங்கி = கணக்கு_இருப்பு(நிறுவன_வடிகட்டு(ப2, "BBB"), "1000", "சொத்து");
+           ஒருங்கிணைந்த = கணக்கு_இருப்பு(ப2, "1000", "சொத்து");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "அ_வங்கி"), dec(1000));
+    assert_eq!(num(&vm, "ஆ_வங்கி"), dec(2500));
+    // not filtering consolidates the group
+    assert_eq!(num(&vm, "ஒருங்கிணைந்த"), dec(3500));
+}
+
+#[test]
+fn foreign_amounts_convert_at_a_rate() {
+    let vm = run_niluvy(
+        r#"இறக்கு "kaNakkiyal/niRuvaZam.qmz";
+           அடிப்படை = அடிப்படைக்கு_மாற்று(1200, 83.45);
+           வேறு = வேறுபாட்டுத்_தொகை(1200, 83.45, 84.10);"#,
+    )
+    .unwrap();
+    assert_eq!(text(&vm, "அடிப்படை"), "100140");
+    // 1200 * 0.65 = 780 gain
+    assert_eq!(num(&vm, "வேறு"), dec(780));
+}
+
+#[test]
+fn an_exchange_gain_posts_to_the_customer_and_gain_account() {
+    let vm = run_niluvy(
+        r#"இறக்கு "kaNakkiyal/niRuvaZam.qmz";
+           த = மதிப்பு(அன்னிய_வேறுபாடு("FX1", "2026-04-30", "மாற்று வேறுபாடு",
+                 "1100", "4000", "4000", 780));
+           பற்றுத்_தொகை = மொத்த_பற்று(த.வரிசைகள்);
+           வரவுத்_தொகை = மொத்த_வரவு(த.வரிசைகள்);"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "பற்றுத்_தொகை"), dec(780));
+    assert_eq!(num(&vm, "வரவுத்_தொகை"), dec(780));
+}
+
+#[test]
+fn closing_a_year_empties_income_into_retained_earnings() {
+    let vm = run_niluvy(
+        r#"இறக்கு "kaNakkiyal/mutippu.qmz";
+           கணக்குகள் = இணை(கணக்குகள்,
+               மதிப்பு(கணக்கு_ஆக்கு("3100", "தேக்கிய வருவாய்", வகை_பங்கு(), "பங்கு")));
+
+           ஆண்டு = இந்திய_ஆண்டு(2025);          // covers Jan and Mar invoices
+           முன்பு = கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், ஆண்டு).நிகர_லாபம்;
+
+           பேரேடு = மதிப்பு(ஆண்டை_முடி(பேரேடு, கணக்குகள், ஆண்டு, "3100", "CLOSE2025"));
+
+           பின்பு = கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், ஆண்டு).நிகர_லாபம்;
+           தேக்கியது = கணக்கு_இருப்பு(பேரேடு, "3100", "பங்கு");
+           முடிந்ததா = முடிக்கப்பட்டதா(பேரேடு, கணக்குகள், ஆண்டு);"#,
+    )
+    .unwrap();
+    // January 100,000 + March 50,000 of revenue, no expenses
+    assert_eq!(num(&vm, "முன்பு"), dec(150000));
+    assert_eq!(num(&vm, "பின்பு"), dec(0));
+    assert_eq!(num(&vm, "தேக்கியது"), dec(150000));
+    assert_eq!(vm.variables.get("முடிந்ததா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn closing_an_empty_period_is_an_error() {
+    let vm = run_niluvy(
+        r#"இறக்கு "kaNakkiyal/mutippu.qmz";
+           காலி = இந்திய_ஆண்டு(2030);
+           விளைவு = முடிப்பு_பரிவர்த்தனை("X", பேரேடு, கணக்குகள், காலி, "3100");
+           மறுக்கப்பட்டதா = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
