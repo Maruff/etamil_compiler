@@ -1,36 +1,23 @@
-// eTamil File I/O Example Program
-// This program demonstrates reading and writing CSV and text files
+// பரிவர்த்தனை கோப்பு — writing and counting CSV rows
+//
+// Shows the file and CSV statements together. தரவுரை_படி returns the number
+// of data rows, excluding the header. Self-contained: it creates the file it
+// reads, so it runs from a clean checkout.
 
-// Declare variables for storing financial data
-எண் amt;
-எண் gross_income;
-எண் operating_expense;
+// Build a transactions file
+கோப்பு_திற "transactions.csv", "write";
+தரவுரை_எழுது "transactions.csv", "நாள்,விவரம்,தொகை";
+தரவுரை_எழுது "transactions.csv", "2026-04-01,வாடகை,25000";
+தரவுரை_எழுது "transactions.csv", "2026-04-05,சம்பளம்,180000";
+தரவுரை_எழுது "transactions.csv", "2026-04-11,மின்கட்டணம்,4200";
+கோப்பு_மூடு "transactions.csv";
 
-// Open transaction file for reading
-கோப்பு_திற "transactions.txt", "read";
+// Count the data rows
+எண் எத்தனை;
+தரவுரை_படி "transactions.csv", எத்தனை;
+அச்சு "பரிவர்த்தனைகள்: " & எத்தனை;
 
-// Read revenue data from file
-கோப்பு_படி "transactions.txt", amt;
-
-// Perform calculation
-gross_income = amt * 1.15;
-
-// Write calculated result to file
-கோப்பு_எழுது "results.txt", gross_income;
-
-// Read CSV data
-தரவுரை_படி "sales.csv", gross_income;
-
-// Calculate expense
-operating_expense = gross_income * 0.30;
-
-// Write CSV output
-தரவுரை_எழுது "output.csv", operating_expense;
-
-// Display results
-அச்சு "Gross Revenue: " & gross_income;
-அச்சு "Operating Expense: " & operating_expense;
-
-// Close files
-கோப்பு_மூடு "transactions.txt";
-கோப்பு_மூடு "results.txt";
+// Read the whole file back as text
+கோப்பு_படி "transactions.csv", உள்ளடக்கம்;
+அச்சு "";
+அச்சு உள்ளடக்கம்;
