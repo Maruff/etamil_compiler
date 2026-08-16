@@ -70,7 +70,7 @@ Tamil has 12 vowels + 2 special vowels (14 total):
 #### If/Else
 ```
 Tamil:      எனில் | இன்றேல்
-Romanized:  enil | inREl
+Romanized:  eZil | iZREl
 Breakdown:  e+n+i+l | i+n+R+E+l
 ```
 
@@ -93,7 +93,7 @@ Breakdown:  a+c+c+u | u+LL+i+t+u
 #### Number/Float
 ```
 Tamil:      எண் | பின்னம்
-Romanized:  eN | pinnam
+Romanized:  eN | piZZam
 Breakdown:  e+N | p+i+nn+a+m
 Notes:      'ண்' (geminated n) = N, 'ன்' = n
 ```
@@ -247,14 +247,14 @@ Breakdown:  c+e+l+a+w+u
 #### Income (வருமானம்)
 ```
 Tamil:      வருமானம்
-Romanized:  varumAnam
+Romanized:  varumAZam
 Breakdown:  w+a+r+u+m+A+n+a+m
 ```
 
 #### Profit (பயன்)
 ```
 Tamil:      பயன்
-Romanized:  payan
+Romanized:  payaZ
 Breakdown:  p+a+y+a+n
 ```
 
@@ -317,7 +317,7 @@ Notes:      'ே' = E (long e) appears twice
 #### Net (நிகர)
 ```
 Tamil:      நிகர
-Romanized:  Nikara
+Romanized:  nikara
 Breakdown:  n+i+k+a+r+a
 ```
 
@@ -399,8 +399,8 @@ Notes:      'த்த' = qq (doubled dental t)
 ```etamil
 eN varuvAy = 100000;
 eN celavu = 30000;
-eN payan = varuvAy - celavu;
-accu payan;
+eN payaZ = varuvAy - celavu;
+accu payaZ;
 ```
 
 ### Example 3: Mixed Usage

@@ -1,4 +1,4 @@
-// Monitoring & Metrics Module for eTamil Backend - Phase 3
+// Monitoring & Metrics Module for eTamil Backend - Backend milestone 3
 // Provides performance metrics, health checks, and observability hooks
 
 use chrono::Utc;

@@ -1,4 +1,4 @@
-// Error Handling Module for eTamil Backend - Phase 3
+// Error Handling Module for eTamil Backend - Backend milestone 3
 // Provides custom error types, error recovery, and detailed error context
 
 use serde::{Serialize, Deserialize};

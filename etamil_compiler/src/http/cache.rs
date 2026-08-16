@@ -1,4 +1,4 @@
-// Phase 4: Redis Cache Module
+// Backend milestone 4: Redis Cache Module
 // In-memory and distributed caching with TTL support
 
 use serde_json::Value;
@@ -20,7 +20,7 @@ impl CacheEntry {
     }
 }
 
-/// In-memory cache (Phase 4 - memory tier)
+/// In-memory cache (Backend milestone 4 - memory tier)
 pub struct Cache {
     entries: Arc<RwLock<HashMap<String, CacheEntry>>>,
 }

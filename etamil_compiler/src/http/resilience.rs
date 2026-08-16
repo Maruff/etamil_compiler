@@ -1,4 +1,4 @@
-// Phase 4: Resilience Patterns (Circuit Breaker, Retries, Timeouts)
+// Backend milestone 4: Resilience Patterns (Circuit Breaker, Retries, Timeouts)
 
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;

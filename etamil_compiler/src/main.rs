@@ -10,12 +10,12 @@ use etamil_compiler::{lexer, parser, vm};
 #[cfg(feature = "llvm")]
 use etamil_compiler::codegen;
 
-// ============================================================================
-// PHASE 2 INTEGRATION: Async/Await Support with Tokio
-// ============================================================================
-// Entry point is now async to support high-concurrency backend
-// Use #[tokio::main] to automatically set up async runtime
-// ============================================================================
+// main is async so the tokio runtime is available to the server paths.
+//
+// Note on numbering: "backend milestone N" here refers to this repository's
+// own HTTP work (1 sync server, 2 async, 3 logging, 4 auth). It is unrelated
+// to the Phase 1-5 in the eTamil paper, which numbers compiler core, domain
+// modules, tooling, pilots and policy. See docs/ROADMAP.md.
 
 fn print_help() {
     println!("etamil {} — the eTamil compiler", env!("CARGO_PKG_VERSION"));
@@ -46,7 +46,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
     let mut use_vm = true;  // Default: use VM executor
     let mut use_http_server = false;
-    let mut use_async_server = false;  // PHASE 2: New async server flag
+    let mut use_async_server = false;  // Backend milestone 2: New async server flag
     let mut server_host = "127.0.0.1".to_string();
     let mut server_port = 8080u16;
     let mut filename = None;
@@ -57,7 +57,7 @@ async fn main() {
             "--llvm" => use_vm = false,
             "--vm" => use_vm = true,
             "--server" => use_http_server = true,
-            "--async" => use_async_server = true,  // PHASE 2: Async server mode
+            "--async" => use_async_server = true,  // Backend milestone 2: Async server mode
             "--host" => {
                 if i + 1 < args.len() {
                     server_host = args[i + 1].clone();
@@ -119,15 +119,11 @@ async fn main() {
     let ast = parser.parse();
     println!("✓ Parsing complete ({} statements)\n", ast.len());
 
-    // PHASE 2: Check if async server mode is enabled
+    // Backend milestone 2: Check if async server mode is enabled
     if use_async_server {
-        // ========================================================================
-        // PHASE 2: ASYNC/CONCURRENT HTTP SERVER MODE (Production-Ready)
-        // ========================================================================
-        // This is the high-concurrency backend with 100x throughput improvement
-        // Uses Tokio async runtime + Axum HTTP framework
-        // Supports graceful shutdown and connection pooling
-        // ========================================================================
+        // Intended to be the concurrent server. The Axum/Tokio modules exist
+        // in src/http/ but are not compiled in, so this currently falls back
+        // to the synchronous server. See docs/ROADMAP.md item 4.
         println!("=== eTamil HTTP Server (--async) ===");
         println!("⚠️  The async runtime is not wired up yet; this falls back to");
         println!("   the synchronous server. See docs/ROADMAP.md.");
@@ -138,7 +134,7 @@ async fn main() {
             std::process::exit(1);
         }
     } else if use_http_server {
-        // === PHASE 1: SYNCHRONOUS HTTP SERVER MODE (MVP) ===
+        // === Backend milestone 1: SYNCHRONOUS HTTP SERVER MODE (MVP) ===
         println!("=== eTamil HTTP Server (Minimum Viable Backend) ===\n");
         
         let mut server = HttpServer::new(&server_host, server_port);
@@ -216,7 +212,7 @@ async fn main() {
 }
 
 // ============================================================================
-// PHASE 2: ASYNC SERVER IMPLEMENTATION
+// Backend milestone 2: ASYNC SERVER IMPLEMENTATION
 // ============================================================================
 // This function starts the high-performance async HTTP server
 // Handles concurrent requests with graceful shutdown support
@@ -240,7 +236,7 @@ async fn run_async_server(
         parser::Stmt::Print(parser::Expr::Number(200.0)),
     ]);
     
-    println!("✓ Async server started (using Phase 1 handler for compatibility)\n");
+    println!("✓ Async server started (using Backend milestone 1 handler for compatibility)\n");
     server.start()?;
     Ok(())
 }

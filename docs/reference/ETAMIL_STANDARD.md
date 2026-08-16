@@ -236,7 +236,7 @@ The design of eTamil aims at two objectives, and those are the domain expressive
 
 *வரவு \> 500000 எனில் { ... }*  
 is equivalent to  
-*varavu \> \[?\]500000 enil { ... }*
+*varavu \> \[?\]500000 eZil { ... }*
 
 This two-script solution brings a new model to a financial DSL.
 
@@ -338,8 +338,8 @@ eTamil accepts two keying forms, Tamil Unicode (e.g., *வருமானவர�
 *வரி \= வருமானம் \* 0.1*   
 *அச்சு(வரி)*  
 Or, in Latin script:  
-*varumAnam \= 800000*  
-*vari \= varumAnam \* 0.1*   
+*varumAZam \= 800000*  
+*vari \= varumAZam \* 0.1*   
 *accu(vari)*
 
 ## ***Compiler and Toolchain Architecture***
