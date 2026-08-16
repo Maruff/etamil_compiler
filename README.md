@@ -55,8 +55,11 @@ eTamil is **usable for scripts and calculations, and under construction everywhe
 | Logical `மற்றும்` / `அல்லது` / `இல்லை` | ✅ Working | both sides always evaluated — no short-circuiting |
 | File I/O and CSV row counting | ✅ Working | in the VM (`--vm`) |
 | VM bytecode executor | ✅ Working | |
-| Sync HTTP server (`--server`) | 🟡 Minimal | single-threaded; serves one handler on all routes |
-| Async HTTP server (`--async`) | ❌ Not implemented | falls back to the sync server; see [ROADMAP](docs/ROADMAP.md) |
+| Functions (`செயல்` / `திரும்பு`) | ✅ Working | parameters, returns, local scope, recursion |
+| Arrays (`[…]`) and records (`{…}`) | ✅ Working | indexing, field access, assignment |
+| Iteration (`ஒவ்வொரு … இல்`) | ✅ Working | arrays, records, strings |
+| HTTP server (`--server`) | 🟡 Partial | concurrent worker pool; still serves one handler on all routes |
+| Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
 | Databases (`தளம்_இணை` etc.) | ❌ Not implemented | statements parse, then fail with a clear error |
 | Routes / responses as DSL statements | ❌ Not implemented | same |
 | LLVM backend (`--llvm`) | 🟡 Optional | off by default, Linux/macOS only, `--features llvm` |
