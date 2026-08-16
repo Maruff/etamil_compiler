@@ -1,0 +1,269 @@
+# eTamil Keyword Reference
+
+Every keyword in the language, grouped as the lexer groups them.
+
+Each row lists the forms that produce the same token: Tamil script, the
+romanized (ezuqqu) spelling, and where one exists an English alias. All
+forms are interchangeable in source code.
+
+> Generated from `etamil_compiler/src/lexer.rs`. Regenerate after changing the token list.
+
+
+## Core Financial & Accounting
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| வரவு | `varavu` | — |
+| பற்று | `paRRu` | — |
+| இருப்பு | `iruppu` | — |
+| வீதம் | `vIqam` | — |
+| சொத்து | `soqqu` | — |
+| பொறுப்பு | `poRuppu` | — |
+| பங்கு | `paNgu` | — |
+| வருவாய் | `varuvAy` | — |
+| செலவு | `celavu` | — |
+| வருமானம் | `varumAnam` | — |
+| பயன் | `payan` | — |
+| இழப்பு | `izappu` | — |
+| வரி | `vari` | — |
+| நிகர | `Nikara` | — |
+| மொத்த | `moqqa` | — |
+| வட்டி | `vatti` | — |
+| பேரேடு | `pErEtu` | — |
+| பதிவு | `paqivu` | — |
+| கடன் | `katan` | — |
+| நிதி | `niqi` | — |
+| அறிக்கை | `aRikkY` | — |
+| மதிப்பீடு | `matippIDu` | — |
+| கடன்_அட்டை | `katan_attY` | — |
+| பணம் | `paNam` | — |
+| வங்கி | `vawki` | — |
+| பெறத்தக்க | `peRaqqakka` | — |
+| கொடுக்காத | `kotukkAqa` | — |
+| விற்பனர் | `viRpanar` | — |
+| வாங்குநர் | `vAwkuNar` | — |
+| நிலையான | `nilYyAna` | — |
+| நடப்பு | `natappu` | — |
+| நடப்பிலில்லா | `natappilillA` | — |
+| முகவரி | `mukavari` | — |
+| தொகை | `toqai` | — |
+| நாணயம் | `nANayam` | — |
+| பரிவர்த்தனை | `parivarttanai` | — |
+| தேய்மானம் | `qEymAnam` | — |
+| கடன்தீர்ப்பு | `katan_qIrppu` | — |
+| மதிப்புயர்வு | `matippuyarvu` | — |
+| மூலதனம் | `mUlatanam` | — |
+| இருப்பாய்வு | `iruppAyvu` | — |
+| இருப்புநிலை | `iruppunilY` | — |
+| வருமான_அறிக்கை | `varumAn_aRikkY` | — |
+| பணப்புழக்கம் | `paNappuzakkam` | — |
+| வருமான_வரி | `varumAn_vari` | — |
+| வணிகவரி | `vaNikavari` | `_GST` |
+| வரியறிக்கை | `variyaRikkY` | `_ITR` |
+
+## Variables & Data Types
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| எண் | `eN` | — |
+| பின்னம் | `pinnam` | — |
+| சொல் | `col` | — |
+| ஈர்ம | `Irma` | — |
+| உரை | `urY` | — |
+| அணி | `aNi` | — |
+| தரவு | `qaravu` | — |
+| பொருள் | `poruL` | — |
+| தேதி | `qEqi` | — |
+| மெய் | `mey` | — |
+| பொய் | `poy` | — |
+| இன்மை | `inmY` | — |
+| மாறி | `mARi` | — |
+| நிலை | `nilY` | — |
+
+## Control Flow
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| எனில் | `enil` | — |
+| இன்றேல் | `inREl` | — |
+| சுற்று | `cuRRu` | — |
+| அச்சு | `accu` | — |
+| உள்ளிடு | `uLLitu` | — |
+
+## File I/O Operations
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| கோப்பு | `kOppu` | `_file` |
+| தரவுரை | `qaravurY` | `_CSV` |
+| படி | `pati` | `_read` |
+| எழுது | `ezuqu` | `_write` |
+| திற | `qiRa` | `_open` |
+| மூடு | `mUtu` | `_close` |
+| கோப்பு_திற | `kOppu_qiRa` | `_fileOpen` |
+| கோப்பு_மூடு | `kOppu_mUtu` | `_fileClose` |
+| கோப்பு_படி | `kOppu_pati` | `_fileRead` |
+| கோப்பு_எழுது | `kOppu_ezuqu` | `_fileWrite` |
+| கோப்பு_நிரை | `kOppu_NirY` | `_fileLines` |
+| தரவுரை_படி | `qaravurY_pati` | `_readCSV` |
+| தரவுரை_எழுது | `qaravurY_ezuqu` | `_writeCSV` |
+
+## Database Connectivity Operations
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| தரவுதளம் | `qaravuqaLam` | `_database` |
+| தளம்_இணை | `qaLam_iNY` | `_dbConnect` |
+| தளம்_பிரி | `qaLam_piri` | `_dbDisconnect` |
+| தளம்_வினா | `qaLam_vinA` | `_dbQuery` |
+| தளம்_செய் | `qaLam_cey` | `_dbExecute` |
+| தளம்_தேடு | `qaLam_qEtu` | `_dbSearch` |
+| தளம்_செருக | `qaLam_ceruka` | `_dbInsert` |
+| தளம்_புதுப்பி | `qaLam_puquppi` | `_dbUpdate` |
+| தளம்_நீக்கு | `qaLam_nIkku` | `_dbDelete` |
+
+## Database Types
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| கவி_மொழி | `kavi_mozi` | `_SQL` |
+| தேடு_மொழி | `qEtu_mozi` | `_NoSQL` |
+| சீகுலைட் | `cIkulYt` | `_SQLite` |
+| மைசீகுல் | `mYcIkul` | `_MySQL` |
+| போச்குரசீகுல் | `pOckuracIkul` | `_PostgreSQL` |
+| மாங்கோடிபி | `mAwkOtipi` | `_MongoDB` |
+| ரெடிஸ் | `retis` | `_Redis` |
+| ஜேசான் | `jEcAn` | `_JSON` |
+
+## Database Operations
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| அட்டை | `attY` | `_table` |
+| தொகுப்பு | `toguippu` | `_collection` |
+| நிரை | `NirY` | `_row` |
+| பத்தி | `paqqi` | `_column` |
+| விசை | `vicY` | `_key` |
+| தனிக_விசை | `tanik_vicY` | `_primaryKey` |
+| வெளி_விசை | `veLi_vicY` | `_foreignKey` |
+| குறியீடு | `kuRiyItu` | `_index` |
+| அட்டை_ஆக்கு | `attY_Akku` | `_createTable` |
+| அட்டை_மாற்று | `attY_mARRu` | `_alterTable` |
+| அட்டை_நீக்கு | `attY_nIkku` | `_dropTable` |
+
+## Database Clauses & Keywords
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| தேர்வெடு | `qErvetu` | `_select` |
+| இதனில் | `iqanil` | `_from` |
+| விதி | `viqi` | `_where` |
+| வரிசை | `varicY` | `_orderBy` |
+| குழு | `kuzu` | `_groupBy` |
+| சேர் | `cEr` | `_join` |
+| இடம் | `itam` | `_left` |
+| வலம் | `valam` | `_right` |
+| உள் | `uL` | `_inner` |
+| வெளி | `veLi` | `_outer` |
+| தனிக | `qanika` | `_distinct` |
+| வரம்பு | `varampu` | `_limit` |
+| ஈடு | `Itu` | `_offset` |
+
+## REST API & HTTP
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| தள_இடை | `qaLa_itY` | `_api` |
+| இறுதி_புள்ளி | `iraqi_pulli` | `_endpoint` |
+| வழி | `vazhi` | `_route` |
+| கோரிக்கை | `kOrikkY` | `_request` |
+| பதில் | `paDil` | `_response` |
+| தலைப்பு | `talYppu` | `_header` |
+| உடல் | `uqal` | `_body` |
+| அளவுரு | `aLavuru` | `_param` |
+| வினா_அளவுரு | `vinA_aLavuru` | `_queryParam` |
+| பாதை_அளவுரு | `pAtY_aLavuru` | `_pathParam` |
+| ஜேசான்_உரை | `jEcAn_urY` | `_jsonBody` |
+| உரலி | `urali` | `_url` |
+| புரவலன் | `puravalan` | `_host` |
+| குதை | `kuqY` | `_port` |
+| முறை | `muRY` | `_method` |
+| பெறு | `peRu` | `_get` |
+| பதி | `paqi` | `_post` |
+| இடு | `itu` | `_put` |
+| அழி | `azi` | `_delete` |
+| ஒட்டு | `ottu` | `_patch` |
+| தெரிவு | `qerivu` | `_options` |
+| தலை | `talY` | `_head` |
+| நிலை_குறி | `nilY_kuRi` | `_statusCode` |
+| நிலை_செய்தி | `nilai_ceyqi` | `_statusMessage` |
+| உறுதி | `uRuqi` | `_auth` |
+| குறிதாங்கி | `kuRiqAwki` | `_bearerToken` |
+| உரை_வகை | `urY_vakY` | `_contentType` |
+| சேவை | `cEvY` | `_serve` |
+| வழங்கி_தொடங்கு | `vazawki_toqotawku` | `_startServer` |
+| வழங்கி_நிறுத்து | `vazawki_niRuqqu` | `_stopServer` |
+
+## Encryption & Security
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| மறை | `maRY` | `_encrypt` |
+| வெளிப்படு | `veLippatu` | `_decrypt` |
+| குறிமுறை | `kuRimuRY` | `_password` |
+| மறை_விசை | `maRY_vicY` | `_encryptionKey` |
+
+## Logical Operators
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+| மற்றும் | `maRRum` | `_and` |
+| அல்லது | `allaqu` | `_or` |
+| இல்லை | `illY` | `_not` |
+
+## Literals & Identifiers
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+
+## Comparison Operators
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+
+## Operators & Symbols
+
+| Tamil | Romanized | English alias |
+|---|---|---|
+
+## Operators
+
+| Symbol | Meaning |
+|---|---|
+| `>` | greater than |
+| `<` | less than |
+| `==` | equal |
+| `!=` | not equal |
+| `>=` | greater or equal |
+| `<=` | less or equal |
+| `=` | assignment |
+| `+` | add |
+| `-` | subtract (also unary minus) |
+| `*` | multiply |
+| `/` | divide |
+| `&` | string concatenation |
+| `(` | open group |
+| `)` | close group |
+| `{` | open block |
+| `}` | close block |
+| `,` | separator |
+| `;` | end of statement |
+
+## Literals
+
+| Form | Example | Notes |
+|---|---|---|
+| Number | `1500`, `99.99` | IEEE-754 `f64` |
+| Percentage | `20%` | converted at lex time to `0.2` |
+| String | `"vaNakkam"` | escape sequences are not yet unescaped |
+| Identifier | `varuvAy`, `வருவாய்` | Tamil letters, ASCII letters, digits, underscore |

@@ -1,5 +1,7 @@
 # eTamil File Encryption System
 
+> **Status: not real encryption, and not reachable from eTamil code.** `src/fileio/crypto.rs` implements a repeating-key XOR cipher with a hardcoded default key, not AES-GCM. It provides no confidentiality against any serious attacker and must not be used for sensitive data. The module is also not wired into the VM, so `.ani`/`.qrv` files cannot be produced from an eTamil program today.
+
 ## Overview
 
 The eTamil compiler includes a comprehensive encryption system for secure file storage. Files are stored in encrypted format on the backend/server, while maintaining plain text/CSV interfaces for user interaction.

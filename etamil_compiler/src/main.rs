@@ -17,6 +17,29 @@ use etamil_compiler::codegen;
 // Use #[tokio::main] to automatically set up async runtime
 // ============================================================================
 
+fn print_help() {
+    println!("etamil {} — the eTamil compiler", env!("CARGO_PKG_VERSION"));
+    println!();
+    println!("USAGE:");
+    println!("    etamil [OPTIONS] <FILE>");
+    println!("    cat program.qmz | etamil [OPTIONS]");
+    println!();
+    println!("OPTIONS:");
+    println!("    --vm               Run on the bytecode VM (default)");
+    println!("    --server           Start the synchronous HTTP server");
+    println!("    --async            Currently an alias for --server");
+    println!("    --llvm             LLVM backend (requires --features llvm; Linux/macOS)");
+    println!("    --host <HOST>      Server bind address (default: 127.0.0.1)");
+    println!("    --port <PORT>      Server port (default: 8080)");
+    println!("    -h, --help         Show this message");
+    println!("    -V, --version      Show the version");
+    println!();
+    println!("EXAMPLES:");
+    println!("    etamil --vm program.qmz");
+    println!("    echo \"950000\" | etamil --vm examples/basic_samples/example.qmz");
+    println!("    etamil --server --port 8080 examples/backend/hello_server.qmz");
+}
+
 #[tokio::main]
 async fn main() {
     // Parse command line arguments
@@ -47,8 +70,22 @@ async fn main() {
                     i += 1;
                 }
             }
+            "--version" | "-V" => {
+                println!("etamil {}", env!("CARGO_PKG_VERSION"));
+                return;
+            }
+            "--help" | "-h" => {
+                print_help();
+                return;
+            }
             arg if !arg.starts_with('-') => filename = Some(arg.to_string()),
-            _ => {}
+            // Unknown flags used to be ignored, which meant `etamil --version`
+            // fell through to reading a program from stdin and appeared to hang.
+            unknown => {
+                eprintln!("✗ Unknown option: {}", unknown);
+                eprintln!("   Run `etamil --help` to see the available options.");
+                std::process::exit(2);
+            }
         }
         i += 1;
     }
@@ -93,7 +130,7 @@ async fn main() {
         // ========================================================================
         println!("=== eTamil HTTP Server (--async) ===");
         println!("⚠️  The async runtime is not wired up yet; this falls back to");
-        println!("   the synchronous server. See docs/phases/PHASE_2_STATUS.md.");
+        println!("   the synchronous server. See docs/ROADMAP.md.");
         println!("🚀 Starting server on {}:{}\n", server_host, server_port);
         
         if let Err(e) = run_async_server(&server_host, server_port, ast).await {
