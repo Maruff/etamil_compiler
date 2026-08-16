@@ -737,7 +737,7 @@ impl Compiler {
                     };
                     
                     let port_num = match &port {
-                        Expr::Number(n) => *n as u32,
+                        Expr::Number(n) => rust_decimal::prelude::ToPrimitive::to_u32(n).unwrap_or(0),
                         _ => 8080,
                     };
                     
@@ -783,7 +783,7 @@ impl Compiler {
                     let (printf, printf_type) = self.get_printf();
                     
                     let status = match &status_code {
-                        Expr::Number(n) => *n as u32,
+                        Expr::Number(n) => rust_decimal::prelude::ToPrimitive::to_u32(n).unwrap_or(0),
                         _ => 200,
                     };
                     
@@ -817,7 +817,7 @@ impl Compiler {
                     
                     let status = if let Some(code) = status_code {
                         match code {
-                            Expr::Number(n) => n as u32,
+                            Expr::Number(n) => rust_decimal::prelude::ToPrimitive::to_u32(&n).unwrap_or(0),
                             _ => 200,
                         }
                     } else {
@@ -968,7 +968,7 @@ impl Compiler {
             match expr {
                 Expr::Number(n) => {
                     let f64_type = LLVMDoubleTypeInContext(self.context);
-                    LLVMConstReal(f64_type, *n)
+                    LLVMConstReal(f64_type, rust_decimal::prelude::ToPrimitive::to_f64(n).unwrap_or(0.0))
                 }
                 Expr::Variable(name) => {
                     if let Some(var_ptr) = self.variables.get(name) {

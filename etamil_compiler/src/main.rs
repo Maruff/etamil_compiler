@@ -148,9 +148,9 @@ async fn main() {
         
         // Also register health check endpoint
         server.register_route("GET", "/health", vec![
-            parser::Stmt::Print(parser::Expr::Number(200.0)),
+            parser::Stmt::Print(parser::Expr::Number(rust_decimal::Decimal::from(200))),
         ]);
-        
+
         // Start the server
         if let Err(e) = server.start() {
             eprintln!("❌ Server error: {}", e);
@@ -233,9 +233,9 @@ async fn run_async_server(
     server.register_route("PUT", "/", ast.clone());
     server.register_route("DELETE", "/", ast.clone());
     server.register_route("GET", "/health", vec![
-        parser::Stmt::Print(parser::Expr::Number(200.0)),
+        parser::Stmt::Print(parser::Expr::Number(rust_decimal::Decimal::from(200))),
     ]);
-    
+
     println!("✓ Async server started (using Backend milestone 1 handler for compatibility)\n");
     server.start()?;
     Ok(())

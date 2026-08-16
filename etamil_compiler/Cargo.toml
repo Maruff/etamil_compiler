@@ -3,9 +3,9 @@
 #
 # Dependency policy: this file lists only crates the compiled code actually
 # uses. Crates for planned work (sqlx/mongodb/oracle for real database
-# backends, rust_decimal for exact currency arithmetic, axum/futures for the
-# async server drafted in src/http/async_mod.rs) are deliberately absent —
-# add them back in the commit that starts using them. See docs/ROADMAP.md.
+# backends, axum/futures for the async server drafted in
+# src/http/async_mod.rs) are deliberately absent — add them back in the commit
+# that starts using them. See docs/ROADMAP.md.
 
 [package]
 name = "etamil_compiler"
@@ -24,6 +24,11 @@ path = "src/main.rs"
 # --- Compiler front end ---
 # Fast lexer for bilingual (Tamil script / romanized) tokenization
 logos = "0.16.0"
+
+# --- Numbers ---
+# Every value in the language is a fixed-point decimal, not f64: this is a
+# language for tax and accounting, where 0.1 + 0.2 must equal 0.3 exactly.
+rust_decimal = "1.37"
 # Direct LLVM FFI bindings, enabled with --features llvm (Linux/macOS only)
 llvm-sys = { version = "180", features = ["prefer-dynamic"], optional = true }
 

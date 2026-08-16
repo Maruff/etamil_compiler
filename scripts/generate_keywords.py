@@ -72,8 +72,8 @@ def main() -> None:
     out.append("\n## Literals\n")
     out.append("| Form | Example | Notes |")
     out.append("|---|---|---|")
-    out.append("| Number | `1500`, `99.99` | IEEE-754 `f64` |")
-    out.append("| Percentage | `20%` | converted at lex time to `0.2` |")
+    out.append("| Number | `1500`, `99.99` | fixed-point decimal — `0.1 + 0.2` is exactly `0.3` |")
+    out.append("| Percentage | `20%` | converted at lex time to exactly `0.20` |")
     out.append('| String | `"vaNakkam"` | escape sequences are not yet unescaped |')
     out.append("| Identifier | `varuvAy`, `வருவாய்` | Tamil letters, ASCII letters, digits, underscore |")
 

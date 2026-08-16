@@ -15,13 +15,15 @@ They mean entirely different things. Backend milestones 1-4 being "complete" say
 
 ---
 
-## 1. Decimal arithmetic for currency
+## 1. ~~Decimal arithmetic for currency~~ — RESOLVED
 
-**Today:** every number is `f64`, from the lexer (`Token::Number(f64)`) through the AST to `Value::Number(f64)`. `0.1 + 0.2` prints `0.30000000000000004`.
+Every number is now a fixed-point `Decimal`, from the lexer through the AST to `Value::Number`. `0.1 + 0.2` is exactly `0.3`; `99.99 * 3` is exactly `299.97`; `18%` is exactly `0.18`.
 
-**Why it matters:** eTamil is aimed at tax and accounting work, where totals must balance exactly. Floating point cannot promise that.
+Equality is exact. The previous `f64` value type compared numbers equal within `1e-10`, so two amounts a fraction of a paisa apart were indistinguishable — a real hazard in reconciliation.
 
-**What it involves:** introduce a decimal value type (`rust_decimal` was chosen originally and is a good fit), thread it through `Value`, the arithmetic instructions, and the lexer's number and percentage literals. Decide the rounding rule for division and document it. Add `rust_decimal` back to `Cargo.toml` in that commit.
+**Division policy:** division keeps the decimal type's full precision and does *not* round at each step. Indian tax computation rounds once at the end, and rounding intermediates compounds error through a chained calculation. An explicit rounding builtin is still needed — see item 3.
+
+**Still open:** `எண்` is the only numeric type. A separate money type carrying a currency, and integer/decimal distinction, would let the type checker (item 7) reject nonsense like adding rupees to a count.
 
 ---
 

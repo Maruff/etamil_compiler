@@ -1,10 +1,17 @@
 // Bytecode value types for the eTamil VM
+use rust_decimal::Decimal;
 use std::collections::HashMap;
+use std::str::FromStr;
 
-/// Runtime values in the eTamil VM
+/// Runtime values in the eTamil VM.
+///
+/// Numbers are fixed-point decimals rather than `f64`. eTamil is a language
+/// for tax and accounting, where `0.1 + 0.2` must be exactly `0.3` and a
+/// ledger has to balance to the paisa; binary floating point cannot promise
+/// either.
 #[derive(Debug, Clone)]
 pub enum Value {
-    Number(f64),
+    Number(Decimal),
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
@@ -13,23 +20,26 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn to_number(&self) -> f64 {
+    pub fn to_number(&self) -> Decimal {
         match self {
             Value::Number(n) => *n,
-            Value::Boolean(true) => 1.0,
-            Value::Boolean(false) => 0.0,
-            Value::String(s) => s.parse::<f64>().unwrap_or(0.0),
-            _ => 0.0,
+            Value::Boolean(true) => Decimal::ONE,
+            Value::Boolean(false) => Decimal::ZERO,
+            // Input arrives as text, so strings coerce when used as numbers.
+            Value::String(s) => Decimal::from_str(s.trim()).unwrap_or(Decimal::ZERO),
+            _ => Decimal::ZERO,
         }
     }
 
     pub fn to_string(&self) -> String {
         match self {
             Value::Number(n) => {
-                if n.fract() == 0.0 {
-                    format!("{:.0}", n)
+                if n.fract() == Decimal::ZERO {
+                    n.trunc().to_string()
                 } else {
-                    format!("{}", n)
+                    // normalize() drops trailing zeros, so 1.50 prints as 1.5
+                    // while 1.05 keeps both digits.
+                    n.normalize().to_string()
                 }
             }
             Value::String(s) => s.clone(),
@@ -43,7 +53,7 @@ impl Value {
     pub fn to_boolean(&self) -> bool {
         match self {
             Value::Null => false,
-            Value::Number(n) => *n != 0.0,
+            Value::Number(n) => *n != Decimal::ZERO,
             Value::String(s) => !s.is_empty(),
             Value::Boolean(b) => *b,
             Value::Array(a) => !a.is_empty(),
@@ -59,7 +69,10 @@ impl Value {
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Value::Number(a), Value::Number(b)) => (a - b).abs() < 1e-10,
+            // Exact comparison. The old f64 representation needed an epsilon
+            // here, which meant two amounts a hundredth of a paisa apart
+            // compared equal.
+            (Value::Number(a), Value::Number(b)) => a == b,
             (Value::String(a), Value::String(b)) => a == b,
             (Value::Boolean(a), Value::Boolean(b)) => a == b,
             (Value::Null, Value::Null) => true,
@@ -73,8 +86,9 @@ impl PartialOrd for Value {
         match (self, other) {
             (Value::Number(a), Value::Number(b)) => a.partial_cmp(b),
             (Value::String(a), Value::String(b)) => a.partial_cmp(b),
-            (Value::String(_), Value::Number(_)) => self.to_number().partial_cmp(&other.to_number()),
-            (Value::Number(_), Value::String(_)) => self.to_number().partial_cmp(&other.to_number()),
+            (Value::String(_), Value::Number(_)) | (Value::Number(_), Value::String(_)) => {
+                self.to_number().partial_cmp(&other.to_number())
+            }
             _ => None,
         }
     }

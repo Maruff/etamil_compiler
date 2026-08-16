@@ -331,7 +331,7 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 
 | Form | Example | Notes |
 |---|---|---|
-| Number | `1500`, `99.99` | IEEE-754 `f64` |
-| Percentage | `20%` | converted at lex time to `0.2` |
+| Number | `1500`, `99.99` | fixed-point decimal — `0.1 + 0.2` is exactly `0.3` |
+| Percentage | `20%` | converted at lex time to exactly `0.20` |
 | String | `"vaNakkam"` | escape sequences are not yet unescaped |
 | Identifier | `varuvAy`, `வருவாய்` | Tamil letters, ASCII letters, digits, underscore |
