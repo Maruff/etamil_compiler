@@ -1,0 +1,75 @@
+// nUlakam/kaNakkiyal/mutippu.qmz — ஆண்டு முடிப்பு (period close)
+//
+// At the end of a year the revenue and expense accounts are emptied into
+// retained earnings. Without this, a second year's income statement would
+// include the first year's trading, and the balance sheet would count the
+// same profit twice — once in the accumulated ledger and once as the
+// current period's result.
+//
+// The closing entry is an ordinary transaction: it balances, it posts
+// through பதிவிடு, and it appears in the ledger like any other. Nothing is
+// deleted.
+
+இறக்கு "pErEtu.qmz";
+இறக்கு "kaNakkukaL.qmz";
+இறக்கு "kAlam.qmz";
+இறக்கு "aRikkYkaL.qmz";
+
+// முடிப்பு_பரிவர்த்தனை(...) — build the closing entry for a period
+//
+// Every revenue account is debited by its balance and every expense account
+// credited by its, with the net going to retained earnings. The result is
+// that both sets read zero from the day after the close.
+செயல் முடிப்பு_பரிவர்த்தனை(பரிவர்த்தனை_எண், பேரேடு, கணக்குகள்,
+                              காலம், தேக்கிய_கணக்கு) {
+    கால_பேரேடு = காலம்_வடிகட்டு(பேரேடு, காலம்);
+    வரிசைகள் = [];
+    நிகரம் = 0;
+
+    ஒவ்வொரு ஒரு_கணக்கு இல் கணக்குகள் {
+        இருப்பு_மதிப்பு = கணக்கு_இருப்பு(கால_பேரேடு, ஒரு_கணக்கு.குறி,
+                                            ஒரு_கணக்கு.கணக்கு_வகை);
+        (இருப்பு_மதிப்பு != 0) எனில் {
+            (ஒரு_கணக்கு.கணக்கு_வகை == "வருவாய்") எனில் {
+                // revenue carries a credit balance, so debit it away
+                வரிசைகள் = இணை(வரிசைகள்,
+                    பற்று_வரிசை(ஒரு_கணக்கு.குறி, இருப்பு_மதிப்பு));
+                நிகரம் = நிகரம் + இருப்பு_மதிப்பு;
+            }
+            (ஒரு_கணக்கு.கணக்கு_வகை == "செலவு") எனில் {
+                வரிசைகள் = இணை(வரிசைகள்,
+                    வரவு_வரிசை(ஒரு_கணக்கு.குறி, இருப்பு_மதிப்பு));
+                நிகரம் = நிகரம் - இருப்பு_மதிப்பு;
+            }
+        }
+    }
+
+    (நீளம்(வரிசைகள்) == 0) எனில் {
+        திரும்பு தவறு("முடிக்க எதுவும் இல்லை  (nothing to close in this period)");
+    }
+
+    // The balancing line: a profit credits retained earnings, a loss debits it
+    (நிகரம் >= 0) எனில் {
+        வரிசைகள் = இணை(வரிசைகள், வரவு_வரிசை(தேக்கிய_கணக்கு, நிகரம்));
+    }
+    இன்றேல் {
+        வரிசைகள் = இணை(வரிசைகள், பற்று_வரிசை(தேக்கிய_கணக்கு, 0 - நிகரம்));
+    }
+
+    திரும்பு சரி(பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், காலம்.முடிவு,
+                                     "ஆண்டு முடிப்பு", வரிசைகள்));
+}
+
+// ஆண்டை_முடி(...) — build the entry and post it in one step
+செயல் ஆண்டை_முடி(பேரேடு, கணக்குகள், காலம், தேக்கிய_கணக்கு, பரிவர்த்தனை_எண்) {
+    முடிப்பு = முடிப்பு_பரிவர்த்தனை(பரிவர்த்தனை_எண், பேரேடு, கணக்குகள்,
+                                      காலம், தேக்கிய_கணக்கு)?;
+    திரும்பு பதிவிடு(பேரேடு, முடிப்பு);
+}
+
+// முடிக்கப்பட்டதா(பேரேடு, கணக்குகள், காலம்) — do the income accounts read
+// zero for this period? A safety check before opening the next year.
+செயல் முடிக்கப்பட்டதா(பேரேடு, கணக்குகள், காலம்) {
+    அறிக்கை = கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்);
+    திரும்பு அறிக்கை.நிகர_லாபம் == 0;
+}
