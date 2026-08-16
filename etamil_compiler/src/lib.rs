@@ -1,10 +1,12 @@
+//! The eTamil compiler.
+//!
+//! Pipeline: `lexer` -> `parser` -> `vm::bytecode::compiler` -> `vm::interpreter`.
+//! `codegen` is an optional LLVM backend replacing the last two stages,
+//! enabled with `--features llvm`.
+
 pub mod lexer;
 pub mod parser;
 pub mod codegen;
-pub mod finance;
 pub mod fileio;
-pub mod db;
-pub mod api;
-pub mod commands;
 pub mod vm;
 pub mod http;

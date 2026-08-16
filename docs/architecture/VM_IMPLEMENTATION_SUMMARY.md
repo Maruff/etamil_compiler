@@ -93,7 +93,7 @@ while ip < instructions.len() {
 ### Run a Program
 ```bash
 # Via wrapper script (easiest)
-./etamil program.qmz
+etamil program.qmz
 
 # Via Cargo
 cargo run --bin etamil_compiler -- program.qmz
@@ -251,7 +251,7 @@ Overall: 3/6 core functionality working
 
 ### Mode 1: Direct VM Execution (DEFAULT)
 ```bash
-./etamil program.qmz
+etamil program.qmz
 ```
 - Fastest startup
 - No compilation step
@@ -259,7 +259,7 @@ Overall: 3/6 core functionality working
 
 ### Mode 2: LLVM Compilation (LEGACY)
 ```bash
-./etamil -c program.qmz
+etamil -c program.qmz
 # OR
 cargo run --bin etamil_compiler -- program.qmz --llvm
 ```

@@ -333,12 +333,11 @@ etamil_compiler/
 │   │   ├── vm/             # bytecode compiler + stack VM
 │   │   ├── codegen.rs      # LLVM IR backend (optional feature)
 │   │   ├── http/           # sync HTTP server, auth, cache, logging
-│   │   ├── fileio/         # file and CSV handling
-│   │   └── db/             # in-memory database simulation (not wired up)
+│   │   └── fileio/         # file and CSV handling
 │   └── tests/              # end-to-end language tests
 ├── examples/               # sample eTamil programs
-├── docs/                   # guides, reference, roadmap, archive
-└── tests/                  # shell-based integration scripts
+├── scripts/                # keyword generation, romanization checker
+└── docs/                   # guides, reference, roadmap
 ```
 
 ---
