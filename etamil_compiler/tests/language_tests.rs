@@ -1154,6 +1154,144 @@ fn an_unsupported_database_type_says_so() {
     assert!(err.contains("not supported yet"), "unexpected error: {}", err);
 }
 
+// --- The accounting framework (nUlakam/kaNakkiyal/) ------------------------
+// Written in eTamil. These load the real framework files, so a broken
+// framework is a failing build.
+
+/// A short chart of accounts and a ledger, as a prelude for the tests below.
+const KANAKKIYAL_PRELUDE: &str = r#"
+இறக்கு "kaNakkiyal/kaNakkukaL.qmz";
+இறக்கு "kaNakkiyal/pErEtu.qmz";
+இறக்கு "kaNakkiyal/vari.qmz";
+இறக்கு "kaNakkiyal/aRikkYkaL.qmz";
+
+கணக்குகள் = [
+    மதிப்பு(கணக்கு_ஆக்கு("1000", "வங்கி",       வகை_சொத்து(),   "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("1100", "வாங்குநர்",    வகை_சொத்து(),   "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("2100", "வரி",          வகை_பொறுப்பு(), "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("3000", "மூலதனம்",     வகை_பங்கு(),    "பங்கு")),
+    மதிப்பு(கணக்கு_ஆக்கு("4000", "விற்பனை",     வகை_வருவாய்(),  "இயக்கம்")),
+    மதிப்பு(கணக்கு_ஆக்கு("5000", "வாடகை",       வகை_செலவு(),    "இயக்கம்"))
+];
+பேரேடு = [];
+"#;
+
+fn run_kanakkiyal(body: &str) -> Result<VM, String> {
+    let source = format!("{}{}", KANAKKIYAL_PRELUDE, body);
+    let ast = etamil_compiler::module::load_source(&source, &stdlib_dir())?;
+    let bytecode = BytecodeCompiler::compile_statements(ast);
+    let mut vm = VM::new();
+    vm.execute(bytecode)?;
+    Ok(vm)
+}
+
+#[test]
+fn accounting_posts_a_balanced_entry() {
+    let vm = run_kanakkiyal(
+        r#"த = பரிவர்த்தனை_ஆக்கு("JV1", "2026-04-01", "மூலதனம்",
+               [பற்று_வரிசை("1000", 500000), வரவு_வரிசை("3000", 500000)]);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, த));
+           எத்தனை = நீளம்(பேரேடு);
+           வங்கி_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "1000", "சொத்து");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "எத்தனை"), dec(2)); // one ledger line per side
+    assert_eq!(num(&vm, "வங்கி_இருப்பு"), dec(500000));
+}
+
+#[test]
+fn accounting_refuses_an_unbalanced_entry() {
+    let vm = run_kanakkiyal(
+        r#"த = பரிவர்த்தனை_ஆக்கு("JV9", "2026-04-01", "தவறு",
+               [பற்று_வரிசை("5000", 1000), வரவு_வரிசை("1000", 900)]);
+           விளைவு = பதிவிடு(பேரேடு, த);
+           மறுக்கப்பட்டதா = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn accounting_balances_by_normal_side() {
+    // A liability with more credits than debits reads positive, like an
+    // asset with more debits than credits.
+    let vm = run_kanakkiyal(
+        r#"த = பரிவர்த்தனை_ஆக்கு("JV1", "2026-04-01", "மூலதனம்",
+               [பற்று_வரிசை("1000", 500000), வரவு_வரிசை("3000", 500000)]);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, த));
+           சொத்து_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "1000", "சொத்து");
+           பங்கு_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "3000", "பங்கு");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "சொத்து_இருப்பு"), dec(500000));
+    assert_eq!(num(&vm, "பங்கு_இருப்பு"), dec(500000));
+}
+
+#[test]
+fn gst_sale_splits_net_and_tax() {
+    // A ₹2,00,000 sale at 18% posts 2,36,000 receivable, 2,00,000 revenue
+    // and 36,000 to the tax control account.
+    let vm = run_kanakkiyal(
+        r#"வி = விற்பனை_பரிவர்த்தனை("INV1", "2026-04-05", "சேவை",
+                 "1100", "4000", "2100", 200000, 18);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, வி));
+           வாங்குநர்_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "1100", "சொத்து");
+           வருவாய்_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "4000", "வருவாய்");
+           வரி_இருப்பு = கணக்கு_இருப்பு(பேரேடு, "2100", "பொறுப்பு");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "வாங்குநர்_இருப்பு"), dec(236000));
+    assert_eq!(num(&vm, "வருவாய்_இருப்பு"), dec(200000));
+    assert_eq!(num(&vm, "வரி_இருப்பு"), dec(36000));
+}
+
+#[test]
+fn cgst_and_sgst_always_sum_to_the_whole_tax() {
+    // An odd number of paise must not go missing in the halving.
+    let vm = run_kanakkiyal(
+        r#"ப = மாநில_பிரிப்பு(29699.47, மெய்);
+           மொத்தம் = ப.cgst + ப.sgst;
+           igst_மதிப்பு = மாநில_பிரிப்பு(29699.47, பொய்).igst;"#,
+    )
+    .unwrap();
+    assert_eq!(text(&vm, "மொத்தம்"), "29699.47");
+    assert_eq!(text(&vm, "igst_மதிப்பு"), "29699.47");
+}
+
+#[test]
+fn trial_balance_agrees_and_the_sheet_balances() {
+    let vm = run_kanakkiyal(
+        r#"த1 = பரிவர்த்தனை_ஆக்கு("JV1", "2026-04-01", "மூலதனம்",
+                [பற்று_வரிசை("1000", 500000), வரவு_வரிசை("3000", 500000)]);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, த1));
+
+           வி = விற்பனை_பரிவர்த்தனை("INV1", "2026-04-05", "சேவை",
+                 "1100", "4000", "2100", 200000, 18);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, வி));
+
+           த2 = பரிவர்த்தனை_ஆக்கு("JV2", "2026-04-10", "வாடகை",
+                [பற்று_வரிசை("5000", 45000), வரவு_வரிசை("1000", 45000)]);
+           பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, த2));
+
+           ஆய்வு = இருப்பாய்வு(பேரேடு, கணக்குகள்);
+           ஆய்வு_சரியா = ஆய்வு.சமநிலையா;
+
+           வரு = வருமான_அறிக்கை(பேரேடு, கணக்குகள்);
+           லாபம் = வரு.நிகர_லாபம்;
+
+           நிலை = இருப்புநிலை(பேரேடு, கணக்குகள்);
+           நிலை_சரியா = நிலை.சமநிலையா;
+           மொத்த_சொத்து = நிலை.மொத்த_சொத்து;"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("ஆய்வு_சரியா"), Some(&Value::Boolean(true)));
+    // 200,000 revenue less 45,000 rent
+    assert_eq!(num(&vm, "லாபம்"), dec(155000));
+    // bank 455,000 + receivable 236,000
+    assert_eq!(num(&vm, "மொத்த_சொத்து"), dec(691000));
+    assert_eq!(vm.variables.get("நிலை_சரியா"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
