@@ -133,10 +133,37 @@ async fn main() {
         
         // For MVP, register all statements as a single handler
         // Future: parse route definitions from DSL (वழि / path directives)
-        server.register_route("GET", "/", ast.clone());
-        server.register_route("POST", "/", ast.clone());
-        server.register_route("PUT", "/", ast.clone());
-        server.register_route("DELETE", "/", ast.clone());
+        // Split the program into route definitions and everything else. The
+        // remainder is a prelude — imports, functions, setup — compiled into
+        // every handler so a route can call what the file defines.
+        let (routes, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
+            .clone()
+            .into_iter()
+            .partition(|s| matches!(s, parser::Stmt::DefineRoute { .. }));
+
+        if routes.is_empty() {
+            // No வழி statements: the whole program answers every request,
+            // which is how server programs behaved before routing existed.
+            println!("ℹ️  No வழி routes found; serving the whole program on /");
+            for method in ["GET", "POST", "PUT", "DELETE"] {
+                server.register_route(method, "/", prelude.clone());
+            }
+        } else {
+            for route in routes {
+                if let parser::Stmt::DefineRoute { method, path, handler } = route {
+                    let path = match path {
+                        parser::Expr::String(literal) => literal,
+                        other => {
+                            eprintln!("✗ வழி needs a literal path, got {:?}", other);
+                            std::process::exit(1);
+                        }
+                    };
+                    let mut program = prelude.clone();
+                    program.extend(handler);
+                    server.register_route(&method, &path, program);
+                }
+            }
+        }
         
         // Also register health check endpoint
         server.register_route("GET", "/health", vec![

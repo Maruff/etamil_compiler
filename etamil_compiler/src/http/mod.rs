@@ -35,7 +35,9 @@ pub struct HttpServer {
     pub host: String,
     pub port: u16,
     pub router: Router,
-    pub handlers: HashMap<String, Vec<Stmt>>,
+    /// Compiled once at registration; a request should not pay to
+    /// recompile the handler every time.
+    pub handlers: HashMap<String, crate::vm::Bytecode>,
     pub logger: Logger,
     pub metrics: MetricsCollector,
     pub health_checker: HealthChecker,
@@ -68,10 +70,13 @@ impl HttpServer {
         }
     }
 
-    /// Register a route with an eTamil handler
+    /// Register a route with an eTamil handler.
+    ///
+    /// The statements are compiled here, once, rather than on every request.
     pub fn register_route(&mut self, method: &str, path: &str, handler: Vec<Stmt>) {
+        let bytecode = crate::vm::BytecodeCompiler::compile_statements(handler);
         let route_key = format!("{} {}", method.to_uppercase(), path);
-        self.handlers.insert(route_key.clone(), handler);
+        self.handlers.insert(route_key.clone(), bytecode);
         self.router.add_route(method, path);
         
         // Log route registration
@@ -248,7 +253,7 @@ impl HttpServer {
                     crate::vm::Value::Map(headers));
 
                 // Compile and execute handler
-                let bytecode = crate::vm::bytecode::compiler::BytecodeCompiler::compile_statements(handler_stmts.clone());
+                let bytecode = handler_stmts.clone();
                 match vm.execute(bytecode) {
                     Ok(_) => {
                         // Get response from VM
@@ -295,7 +300,7 @@ impl HttpServer {
                             vm.variables.insert("request_path".to_string(),
                                 crate::vm::Value::String(request.path.clone()));
                             
-                            let bytecode = crate::vm::bytecode::compiler::BytecodeCompiler::compile_statements(handler_stmts.clone());
+                            let bytecode = handler_stmts.clone();
                             match vm.execute(bytecode) {
                                 Ok(_) => {
                                     if let Some(crate::vm::Value::String(body)) = vm.variables.get("response_body") {

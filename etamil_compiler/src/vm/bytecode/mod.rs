@@ -87,6 +87,8 @@ pub enum Instruction {
 
     // API
     DefineRoute(String, String), // method, path
+    /// Pop body then status; record them for the server to send back.
+    SendResponse,
     StartServer(String, u16),    // host, port
 
     // Functions
