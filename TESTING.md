@@ -362,6 +362,67 @@ Everything except the audit should exit 0.
 
 ---
 
+## Developing on Windows without the MSVC linker
+
+Rust's default Windows toolchain needs `link.exe` from Visual Studio Build
+Tools. Without it **nothing compiles** — not even `cargo check`, because
+proc-macro crates are built and linked as DLLs during the build.
+
+If installing Build Tools is not an option, the GNU toolchain ships its own
+linker and can build the compiler core:
+
+```bash
+rustup toolchain install stable-x86_64-pc-windows-gnu
+cargo +stable-x86_64-pc-windows-gnu test
+```
+
+**What this does and does not cover.** The core — `lexer`, `parser`,
+`module`, `vm`, `db` (trait only) — is pure Rust and builds fine. These do
+**not**:
+
+| Crate | Blocked because |
+|---|---|
+| `ring` (via `jsonwebtoken`) | compiles C; needs a MinGW gcc |
+| `rusqlite` | compiles bundled SQLite |
+| `chrono` | needs `dlltool.exe`, absent from rustup's MinGW |
+
+So `src/http/`, `src/fileio/` and the SQLite driver cannot be tested this
+way. Build them on Linux, or install Build Tools.
+
+This is why the date primitives in `vm/interpreter.rs` use a hand-written
+civil-calendar conversion rather than `chrono`: reaching for the obvious
+crate would have made the language's own date handling untestable on the
+machine it was written on.
+
+To test the core against a checkout without touching the real crate, a shim
+crate that pulls the modules in by `#[path]` works well:
+
+```toml
+# Cargo.toml of a scratch crate named etamil_compiler
+[dependencies]
+logos = "0.16.1"
+rust_decimal = "1.37"
+unicode-segmentation = "1.11"
+
+[[test]]
+name = "language_tests"
+path = "/abs/path/to/etamil_compiler/tests/language_tests.rs"
+```
+
+```rust
+// src/lib.rs
+#[path = "/abs/path/to/etamil_compiler/src/lexer.rs"]  pub mod lexer;
+#[path = "/abs/path/to/etamil_compiler/src/parser.rs"] pub mod parser;
+#[path = "/abs/path/to/etamil_compiler/src/vm/mod.rs"] pub mod vm;
+#[path = "/abs/path/to/etamil_compiler/src/module.rs"] pub mod module;
+#[path = "/abs/path/to/etamil_compiler/src/db/mod.rs"] pub mod db;
+```
+
+Set `ETAMIL_STDLIB` to the `nUlakam` directory so the standard-library tests
+can find it.
+
+---
+
 ## Troubleshooting
 
 **`linker 'cc' not found`** — install `build-essential`.
