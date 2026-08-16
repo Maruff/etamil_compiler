@@ -1,6 +1,8 @@
 // Used _ as prefix for ttokens that are English keywords, and capitals letter for abbreviations to avoid conflicts
 
 use logos::Logos;
+use rust_decimal::Decimal;
+use std::str::FromStr;
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
@@ -235,12 +237,14 @@ pub enum Token {
     #[regex("இல்லை|illY|_not")] Not,
 
     // --- Literals & Identifiers ---
+    // Numbers are fixed-point decimals, so 20% is exactly 0.20 and money
+    // arithmetic does not drift the way f64 does.
     #[regex(r"[0-9]+(\.[0-9]+)?%", |lex| {
         let s = lex.slice();
         let num_str = &s[..s.len()-1];
-        num_str.parse::<f64>().ok().map(|n| n / 100.0)
-    })] Percentage(f64),
-    #[regex(r"[0-9]+(\.[0-9]+)?", |lex| lex.slice().parse::<f64>().ok())] Number(f64),
+        Decimal::from_str(num_str).ok().map(|n| n / Decimal::from(100))
+    })] Percentage(Decimal),
+    #[regex(r"[0-9]+(\.[0-9]+)?", |lex| Decimal::from_str(lex.slice()).ok())] Number(Decimal),
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
         let s = lex.slice();
         s[1..s.len()-1].to_string()

@@ -60,13 +60,21 @@ eTamil is **usable for scripts and calculations, and under construction everywhe
 | Databases (`தளம்_இணை` etc.) | ❌ Not implemented | statements parse, then fail with a clear error |
 | Routes / responses as DSL statements | ❌ Not implemented | same |
 | LLVM backend (`--llvm`) | 🟡 Optional | off by default, Linux/macOS only, `--features llvm` |
-| Decimal currency arithmetic | ❌ Not implemented | values are `f64`; see [ROADMAP](docs/ROADMAP.md) |
+| Decimal currency arithmetic | ✅ Working | fixed-point decimals, not `f64` |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
-### Not for production financial use yet
+### Money is exact
 
-Numbers are IEEE-754 `f64`, so `0.1 + 0.2` is `0.30000000000000004`. Do not use eTamil for money that must balance to the paisa until decimal arithmetic lands.
+Every number in eTamil is a fixed-point decimal, so the arithmetic a tax program actually performs comes out right:
+
+```etamil
+அச்சு 0.1 + 0.2;      // 0.3        — not 0.30000000000000004
+அச்சு 99.99 * 3;      // 299.97     — not 299.96999999999997
+அச்சு 18%;            // 0.18       exactly
+```
+
+Equality is exact too. Division keeps full precision rather than rounding at each step, because Indian tax computation rounds once at the end — round explicitly when you need to.
 
 ---
 
@@ -132,8 +140,8 @@ etamil --vm hello.etamil
 
 ```etamil
 எண் age = 25;          // number
-எண் price = 99.99;     // numbers are f64; no separate int/float yet
-எண் rate = 15%;        // percentage literal -> 0.15
+எண் price = 99.99;     // fixed-point decimal; no separate int/float yet
+எண் rate = 15%;        // percentage literal -> exactly 0.15
 சொல் name = "Ravi";    // string
 ```
 

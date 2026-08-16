@@ -199,7 +199,7 @@ impl HttpServer {
                         if let Some(crate::vm::Value::String(body)) = vm.variables.get("response_body") {
                             let status = vm.variables.get("response_status")
                                 .and_then(|v| match v {
-                                    crate::vm::Value::Number(n) => Some(*n as u16),
+                                    crate::vm::Value::Number(n) => rust_decimal::prelude::ToPrimitive::to_u16(n),
                                     _ => None
                                 })
                                 .unwrap_or(200);
@@ -245,7 +245,7 @@ impl HttpServer {
                                     if let Some(crate::vm::Value::String(body)) = vm.variables.get("response_body") {
                                         let status = vm.variables.get("response_status")
                                             .and_then(|v| match v {
-                                                crate::vm::Value::Number(n) => Some(*n as u16),
+                                                crate::vm::Value::Number(n) => rust_decimal::prelude::ToPrimitive::to_u16(n),
                                                 _ => None
                                             })
                                             .unwrap_or(200);

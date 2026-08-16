@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write as IoWrite;
+use rust_decimal::Decimal;
 use crate::vm::{Value, Instruction, Bytecode};
 
 #[derive(Debug)]
@@ -89,9 +90,14 @@ impl VM {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
                     let divisor = right.to_number();
-                    if divisor == 0.0 {
-                        return Err("Division by zero".to_string());
+                    if divisor == Decimal::ZERO {
+                        return Err("பூஜ்ஜியத்தால் வகுத்தல்  (division by zero)".to_string());
                     }
+                    // Division stays exact to the decimal type's full
+                    // precision. Rounding is deliberately not applied here:
+                    // Indian tax computation rounds once at the end, and
+                    // rounding every intermediate would compound error in a
+                    // chained calculation.
                     self.stack.push(Value::Number(left.to_number() / divisor));
                 }
                 Instruction::Modulo => {
@@ -216,7 +222,7 @@ impl VM {
                     // Count data rows, excluding the header line.
                     let rows = contents.lines().filter(|l| !l.trim().is_empty()).count();
                     let data_rows = if rows > 0 { rows - 1 } else { 0 };
-                    self.stack.push(Value::Number(data_rows as f64));
+                    self.stack.push(Value::Number(Decimal::from(data_rows)));
                 }
                 Instruction::WriteCSV => {
                     let row = self.pop()?.to_string();

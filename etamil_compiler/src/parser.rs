@@ -1,4 +1,5 @@
 use crate::lexer::Token;
+use rust_decimal::Decimal;
 use std::iter::Peekable;
 use std::slice::Iter;
 
@@ -6,7 +7,7 @@ use std::slice::Iter;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Number(f64),
+    Number(Decimal),
     String(String),
     Boolean(bool),
     Null,
@@ -195,7 +196,7 @@ impl<'a> Parser<'a> {
             if self.tokens.peek() == Some(&&Token::Semicolon) {
                 self.tokens.next(); // consume semicolon
                 // Variable declaration without initialization - assign 0
-                return Stmt::Assign { name, value: Expr::Number(0.0) };
+                return Stmt::Assign { name, value: Expr::Number(Decimal::ZERO) };
             }
             
             self.expect(Token::Assign);
@@ -586,7 +587,7 @@ impl<'a> Parser<'a> {
                 let operand = self.parse_factor();
                 Expr::BinaryOp {
                     op: "-".to_string(),
-                    left: Box::new(Expr::Number(0.0)),
+                    left: Box::new(Expr::Number(Decimal::ZERO)),
                     right: Box::new(operand),
                 }
             }

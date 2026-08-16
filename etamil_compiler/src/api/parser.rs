@@ -33,7 +33,7 @@ impl APIParser {
         };
         
         let port_num = match port {
-            Expr::Number(n) => *n as u16,
+            Expr::Number(n) => rust_decimal::prelude::ToPrimitive::to_u16(n).unwrap_or(8080),
             _ => 8080,
         };
         
