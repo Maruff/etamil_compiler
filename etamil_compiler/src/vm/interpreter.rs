@@ -8,6 +8,16 @@ use std::io::Write as IoWrite;
 use rust_decimal::Decimal;
 use crate::vm::{Value, Instruction, Bytecode};
 
+/// One active function call: where to resume, and that call's local names.
+#[derive(Debug)]
+pub struct Frame {
+    pub return_ip: usize,
+    pub locals: HashMap<String, Value>,
+}
+
+/// Guards against runaway recursion before the host stack is exhausted.
+const MAX_CALL_DEPTH: usize = 256;
+
 #[derive(Debug)]
 pub struct VM {
     pub stack: Vec<Value>,
@@ -15,6 +25,8 @@ pub struct VM {
     pub instruction_pointer: usize,
     /// Mode ("read" / "write" / "append") recorded by கோப்பு_திற per file.
     pub file_modes: HashMap<String, String>,
+    /// Active call frames; empty means we are at global scope.
+    pub frames: Vec<Frame>,
 }
 
 impl VM {
@@ -24,6 +36,31 @@ impl VM {
             variables: HashMap::new(),
             instruction_pointer: 0,
             file_modes: HashMap::new(),
+            frames: Vec::new(),
+        }
+    }
+
+    /// Read a name: the current call's locals shadow globals.
+    fn get_var(&self, name: &str) -> Option<Value> {
+        if let Some(frame) = self.frames.last() {
+            if let Some(value) = frame.locals.get(name) {
+                return Some(value.clone());
+            }
+        }
+        self.variables.get(name).cloned()
+    }
+
+    /// Write a name. Inside a function this always creates or updates a
+    /// local, so a function cannot silently clobber a global — assigning to
+    /// an outer name shadows it for the duration of the call.
+    fn set_var(&mut self, name: String, value: Value) {
+        match self.frames.last_mut() {
+            Some(frame) => {
+                frame.locals.insert(name, value);
+            }
+            None => {
+                self.variables.insert(name, value);
+            }
         }
     }
 
@@ -56,14 +93,14 @@ impl VM {
                 }
                 Instruction::StoreVar(name) => {
                     if let Some(value) = self.stack.pop() {
-                        self.variables.insert(name, value);
+                        self.set_var(name, value);
                     }
                 }
                 Instruction::LoadVar(name) => {
                     // An unknown name used to silently load Null, which
                     // to_number() then turned into 0.0 — a typo became a
                     // wrong answer with no diagnostic.
-                    let value = self.variables.get(&name).cloned().ok_or_else(|| {
+                    let value = self.get_var(&name).ok_or_else(|| {
                         format!(
                             "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
                             name, name
@@ -236,9 +273,57 @@ impl VM {
                         what
                     ));
                 }
+                Instruction::Call(name, argc) => {
+                    let info = bytecode.functions.get(&name).cloned().ok_or_else(|| {
+                        format!(
+                            "அறியப்படாத செயல் '{}'  (unknown function '{}')",
+                            name, name
+                        )
+                    })?;
+                    if info.params.len() != argc {
+                        return Err(format!(
+                            "செயல் '{}' {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
+                             (function '{}' expects {} argument(s), got {})",
+                            name,
+                            info.params.len(),
+                            argc,
+                            name,
+                            info.params.len(),
+                            argc
+                        ));
+                    }
+                    if self.frames.len() >= MAX_CALL_DEPTH {
+                        return Err(format!(
+                            "செயல் அழைப்பு ஆழம் மிகுதி ({})  (call depth exceeded — infinite recursion?)",
+                            MAX_CALL_DEPTH
+                        ));
+                    }
+
+                    // Arguments were pushed left to right, so bind in reverse.
+                    let mut locals = HashMap::new();
+                    for param in info.params.iter().rev() {
+                        let value = self.pop()?;
+                        locals.insert(param.clone(), value);
+                    }
+
+                    self.frames.push(Frame {
+                        return_ip: self.instruction_pointer + 1,
+                        locals,
+                    });
+                    self.instruction_pointer = info.start;
+                    continue;
+                }
+                Instruction::Return => {
+                    let value = self.pop()?;
+                    let frame = self.frames.pop().ok_or(
+                        "செயலுக்கு வெளியே திரும்பு  (return outside of a function)",
+                    )?;
+                    self.instruction_pointer = frame.return_ip;
+                    self.stack.push(value);
+                    continue;
+                }
                 Instruction::DBConnect(_) | Instruction::DBQuery | Instruction::DBExecute
-                | Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _)
-                | Instruction::Call(_) | Instruction::Return => {
+                | Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(
                         "தரவுத்தளம்/வழங்கி செயல்பாடுகள் VM இல் இன்னும் இல்லை  (database and server operations are not implemented in the VM yet)"
                             .to_string(),

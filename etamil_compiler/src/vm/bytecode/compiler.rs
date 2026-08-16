@@ -1,6 +1,6 @@
 // Bytecode compiler: Converts AST to bytecode instructions
 use crate::parser::{Expr, Stmt};
-use crate::vm::bytecode::{Bytecode, Instruction};
+use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};
 use crate::vm::Value;
 
 pub struct BytecodeCompiler {
@@ -28,6 +28,37 @@ impl BytecodeCompiler {
             Stmt::Assign { name, value } => {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
+            }
+            Stmt::FunctionDef { name, params, body } => {
+                // The body is emitted inline, so execution has to jump over it.
+                let jump_idx = self.bytecode.len();
+                self.bytecode.push(Instruction::Jump(0)); // patched below
+
+                let start = self.bytecode.len();
+                for stmt in body {
+                    self.compile_stmt(stmt);
+                }
+                // Falling off the end returns nil.
+                self.bytecode.push(Instruction::Push(Value::Null));
+                self.bytecode.push(Instruction::Return);
+
+                let end = self.bytecode.len();
+                self.bytecode.instructions[jump_idx] = Instruction::Jump(end);
+                self.bytecode
+                    .functions
+                    .insert(name, FunctionInfo { start, params });
+            }
+            Stmt::Return(value) => {
+                match value {
+                    Some(expr) => self.compile_expr(expr),
+                    None => self.bytecode.push(Instruction::Push(Value::Null)),
+                }
+                self.bytecode.push(Instruction::Return);
+            }
+            Stmt::Expression(expr) => {
+                // Evaluated for its effect; discard whatever it left behind.
+                self.compile_expr(expr);
+                self.bytecode.push(Instruction::Pop);
             }
             Stmt::Print(expr) => {
                 self.compile_expr(expr);
@@ -220,6 +251,13 @@ impl BytecodeCompiler {
             Expr::Not(inner) => {
                 self.compile_expr(*inner);
                 self.bytecode.push(Instruction::Not);
+            }
+            Expr::Call { name, args } => {
+                let argc = args.len();
+                for arg in args {
+                    self.compile_expr(arg);
+                }
+                self.bytecode.push(Instruction::Call(name, argc));
             }
             Expr::Concat { left, right } => {
                 self.compile_expr(*left);

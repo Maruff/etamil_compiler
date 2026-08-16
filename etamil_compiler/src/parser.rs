@@ -34,6 +34,11 @@ pub enum Expr {
     },
     // illY
     Not(Box<Expr>),
+    // name(arg, ...)
+    Call {
+        name: String,
+        args: Vec<Expr>,
+    },
 }
 
 #[allow(dead_code)]
@@ -43,6 +48,16 @@ pub enum Stmt {
         name: String,
         value: Expr,
     },
+    // ceyal name(params) { body }
+    FunctionDef {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Stmt>,
+    },
+    // qirumpu value;
+    Return(Option<Expr>),
+    // A bare expression evaluated for its effect, e.g. a call statement.
+    Expression(Expr),
     Print(Expr),
     Input(Expr),
     // (cond) eZil { then } iZREl { else }
@@ -191,7 +206,14 @@ impl<'a> Parser<'a> {
                 Token::Identifier(n) => n.clone(),
                 _ => self.token_name(&current_token),
             };
-            
+
+            // A call used as a statement, e.g. `pqivu_ceyal(x);`
+            if self.tokens.peek() == Some(&&Token::LParen) {
+                let call = self.finish_name_or_call(name);
+                self.expect(Token::Semicolon);
+                return Stmt::Expression(call);
+            }
+
             // Check if it's just a declaration (semicolon) or assignment
             if self.tokens.peek() == Some(&&Token::Semicolon) {
                 self.tokens.next(); // consume semicolon
@@ -206,6 +228,38 @@ impl<'a> Parser<'a> {
         }
 
         match current_token {
+            Token::Function => {
+                // ceyal name(a, b) { ... }
+                let name_token = self.tokens.next().expect("Expected a function name");
+                let name = self.token_name(name_token);
+                self.expect(Token::LParen);
+                let mut params = Vec::new();
+                if !self.matches(Token::RParen) {
+                    loop {
+                        let param = self.tokens.next().expect("Expected a parameter name");
+                        params.push(self.token_name(param));
+                        if !self.matches(Token::Comma) {
+                            break;
+                        }
+                    }
+                    self.expect(Token::RParen);
+                }
+                self.expect(Token::LBrace);
+                let mut body = Vec::new();
+                while !self.matches(Token::RBrace) {
+                    body.push(self.parse_statement());
+                }
+                Stmt::FunctionDef { name, params, body }
+            }
+            Token::Return => {
+                if self.matches(Token::Semicolon) {
+                    Stmt::Return(None)
+                } else {
+                    let value = self.parse_expression();
+                    self.expect(Token::Semicolon);
+                    Stmt::Return(Some(value))
+                }
+            }
             Token::Print => {
                 let val = self.parse_expression();
                 self.expect(Token::Semicolon);
@@ -597,7 +651,10 @@ impl<'a> Parser<'a> {
             Token::True => Expr::Boolean(true),
             Token::False => Expr::Boolean(false),
             Token::Null => Expr::Null,
-            Token::Identifier(name) => Expr::Variable(name.clone()),
+            Token::Identifier(name) => {
+                let name = name.clone();
+                self.finish_name_or_call(name)
+            }
             Token::LParen => {
                 // Parenthesized expression
                 let expr = self.parse_expression();
@@ -607,10 +664,28 @@ impl<'a> Parser<'a> {
             // Handle financial keywords as variable references
             t if self.is_identifier_like(t) => {
                 let name = self.token_name(t);
-                Expr::Variable(name)
+                self.finish_name_or_call(name)
             }
             _ => panic!("Expected factor, got {:?}", token),
         }
+    }
+
+    /// A name already consumed: a call if `(` follows, otherwise a variable.
+    fn finish_name_or_call(&mut self, name: String) -> Expr {
+        if !self.matches(Token::LParen) {
+            return Expr::Variable(name);
+        }
+        let mut args = Vec::new();
+        if !self.matches(Token::RParen) {
+            loop {
+                args.push(self.parse_expression());
+                if !self.matches(Token::Comma) {
+                    break;
+                }
+            }
+            self.expect(Token::RParen);
+        }
+        Expr::Call { name, args }
     }
 
     // Helpers to recognize identifier-like tokens (domain keywords or identifiers)
@@ -620,6 +695,7 @@ impl<'a> Parser<'a> {
             Token::If | Token::Else | Token::Loop | Token::Print | Token::Input => false,
             Token::And | Token::Or | Token::Not => false,
             Token::True | Token::False | Token::Null => false,
+            Token::Function | Token::Return => false,
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
@@ -696,6 +772,7 @@ impl<'a> Parser<'a> {
             Expr::Comparison { op, .. } => op,
             Expr::Logical { op, .. } => op,
             Expr::Not(_) => "not".to_string(),
+            Expr::Call { name, .. } => name,
             Expr::Concat { .. } => "concat".to_string(),
         }
     }
