@@ -22,8 +22,10 @@ path = "src/main.rs"
 
 [dependencies]
 # --- Compiler front end ---
-# Fast lexer for bilingual (Tamil script / romanized) tokenization
-logos = "0.16.0"
+# Fast lexer for bilingual (Tamil script / romanized) tokenization.
+# 0.16.1 or newer: earlier patch releases lack the allow_greedy option that
+# the line-comment skip pattern in lexer.rs needs.
+logos = "0.16.1"
 
 # --- Numbers ---
 # Every value in the language is a fixed-point decimal, not f64: this is a

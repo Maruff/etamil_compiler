@@ -171,8 +171,18 @@ fn while_loop_accumulates() {
 
 #[test]
 fn declaration_without_initializer_defaults_to_zero() {
-    let vm = run("eN varuvAy;").unwrap();
-    assert_eq!(num(&vm, "varuvAy"), dec(0));
+    let vm = run("eN counter;").unwrap();
+    assert_eq!(num(&vm, "counter"), dec(0));
+}
+
+#[test]
+fn keyword_backed_names_are_stored_under_the_token_name() {
+    // வருவாய் / varuvAy is the Revenue keyword, not a plain identifier, so
+    // the variable lands under "Revenue". That is exactly what makes the
+    // Tamil and romanized spellings name the same variable.
+    let vm = run("eN varuvAy = 5;").unwrap();
+    assert_eq!(num(&vm, "Revenue"), dec(5));
+    assert!(vm.variables.get("varuvAy").is_none());
 }
 
 #[test]

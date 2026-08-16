@@ -2,11 +2,15 @@
 
 use logos::Logos;
 use rust_decimal::Decimal;
+// Needed for Decimal::from_str inside the literal callbacks below; the
+// "unused import" warning you may see is emitted before macro expansion.
 use std::str::FromStr;
 
 #[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
-#[logos(skip r"//[^\n]*")] 
+// A line comment must run to the end of the line, so the greedy repetition
+// is intentional here; logos 0.16.1+ requires saying so explicitly.
+#[logos(skip(r"//[^\n]*", allow_greedy = true))]
 pub enum Token {
     // --- Core Financial & Accounting ---
     #[regex("வரவு|varavu")] Credit,
