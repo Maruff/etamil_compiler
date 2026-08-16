@@ -217,12 +217,12 @@ fn undefined_variables_are_an_error() {
     assert!(err.contains("undefined variable"), "unexpected error: {}", err);
 }
 
-// Regression: database and server statements compiled to nothing and the
-// program exited 0 having done none of what it said.
+// Regression: server statements compiled to nothing and the program exited
+// 0 having done none of what it said.
 #[test]
-fn database_statements_fail_loudly() {
-    let err = run(r#"qaLam_iNY cIkulYt, "students.db";"#)
-        .expect_err("database statements are not implemented in the VM");
+fn server_statements_fail_loudly() {
+    let err = run(r#"vazawki_toqotawku "127.0.0.1", 8080;"#)
+        .expect_err("server statements are not implemented in the VM");
     assert!(
         err.contains("not implemented"),
         "unexpected error: {}",
@@ -1017,6 +1017,141 @@ fn case_folding_affects_latin_only() {
     assert_eq!(text(&vm, "a"), "GSTIN27");
     assert_eq!(text(&vm, "b"), "pan");
     assert_eq!(text(&vm, "c"), "வணக்கம்");
+}
+
+// --- Database ------------------------------------------------------------
+// A stand-in backend records what it was asked and returns canned rows, so
+// the VM wiring, parameter binding and row conversion can all be checked
+// without a driver. The real SQLite backend is behind the `sqlite` feature.
+
+use std::sync::{Arc, Mutex};
+
+#[derive(Default)]
+struct Recorded {
+    sql: Vec<String>,
+    params: Vec<Vec<Value>>,
+}
+
+struct FakeDb {
+    log: Arc<Mutex<Recorded>>,
+    rows: Vec<Value>,
+}
+
+impl etamil_compiler::db::Database for FakeDb {
+    fn execute(&mut self, sql: &str, params: &[Value]) -> Result<i64, String> {
+        let mut log = self.log.lock().unwrap();
+        log.sql.push(sql.to_string());
+        log.params.push(params.to_vec());
+        Ok(1)
+    }
+
+    fn query(&mut self, sql: &str, params: &[Value]) -> Result<Vec<Value>, String> {
+        let mut log = self.log.lock().unwrap();
+        log.sql.push(sql.to_string());
+        log.params.push(params.to_vec());
+        Ok(self.rows.clone())
+    }
+}
+
+fn record(pairs: &[(&str, Value)]) -> Value {
+    let mut fields = std::collections::HashMap::new();
+    for (name, value) in pairs {
+        fields.insert(name.to_string(), value.clone());
+    }
+    Value::Map(fields)
+}
+
+/// Run a program with a pre-opened stand-in connection.
+fn run_with_db(source: &str, rows: Vec<Value>) -> (Result<VM, String>, Arc<Mutex<Recorded>>) {
+    let log = Arc::new(Mutex::new(Recorded::default()));
+    let ast = match etamil_compiler::module::load_source(source, &std::env::temp_dir()) {
+        Ok(ast) => ast,
+        Err(e) => return (Err(e), log),
+    };
+    let bytecode = BytecodeCompiler::compile_statements(ast);
+    let mut vm = VM::new();
+    vm.connections.insert(
+        "SQLite".to_string(),
+        Box::new(FakeDb { log: Arc::clone(&log), rows }),
+    );
+    let outcome = vm.execute(bytecode).map(|_| vm);
+    (outcome, log)
+}
+
+#[test]
+fn query_returns_an_array_of_records() {
+    let rows = vec![
+        record(&[("peyar", Value::String("Ravi".into())), ("vari", Value::Number(dec(1000)))]),
+        record(&[("peyar", Value::String("Priya".into())), ("vari", Value::Number(dec(2500)))]),
+    ];
+    let src = r#"qaLam_viZA "SELECT peyar, vari FROM kaNakku", [], varicYkaL;
+                 eNNikkY = nILam(varicYkaL);
+                 muqal = varicYkaL[0].peyar;"#;
+    let (vm, _) = run_with_db(src, rows);
+    let vm = vm.unwrap();
+    assert_eq!(num(&vm, "eNNikkY"), dec(2));
+    assert_eq!(text(&vm, "muqal"), "Ravi");
+}
+
+#[test]
+fn a_result_set_can_be_iterated_and_summed() {
+    let rows = vec![
+        record(&[("amount", Value::Number(dec(1000)))]),
+        record(&[("amount", Value::Number(dec(2500)))]),
+        record(&[("amount", Value::Number(dec(499)))]),
+    ];
+    let src = r#"qaLam_viZA "SELECT amount FROM ledger", [], varicYkaL;
+                 moqqam = 0;
+                 ovvoru paqivu il varicYkaL { moqqam = moqqam + paqivu.amount; }"#;
+    let (vm, _) = run_with_db(src, rows);
+    assert_eq!(num(&vm.unwrap(), "moqqam"), dec(3999));
+}
+
+#[test]
+fn parameters_are_bound_never_spliced() {
+    let src = r#"peyar = "Ravi'; DROP TABLE kaNakku; --";
+                 qaLam_viZA "SELECT * FROM kaNakku WHERE peyar = ?", [peyar], varicYkaL;"#;
+    let (vm, log) = run_with_db(src, vec![]);
+    vm.unwrap();
+
+    let log = log.lock().unwrap();
+    // The SQL reaching the driver is exactly what was written.
+    assert_eq!(log.sql[0], "SELECT * FROM kaNakku WHERE peyar = ?");
+    // The hostile value arrives as a bound parameter, inert.
+    assert_eq!(log.params[0].len(), 1);
+    assert_eq!(log.params[0][0], Value::String("Ravi'; DROP TABLE kaNakku; --".into()));
+}
+
+#[test]
+fn execute_binds_several_parameters_in_order() {
+    let src = r#"qaLam_cey "INSERT INTO kaNakku (peyar, vari) VALUES (?, ?)", ["Devi", 4200];"#;
+    let (vm, log) = run_with_db(src, vec![]);
+    vm.unwrap();
+
+    let log = log.lock().unwrap();
+    assert_eq!(log.params[0][0], Value::String("Devi".into()));
+    assert_eq!(log.params[0][1], Value::Number(dec(4200)));
+}
+
+#[test]
+fn querying_without_a_connection_is_an_error() {
+    let err = run(r#"qaLam_viZA "SELECT 1", [], r;"#)
+        .expect_err("no connection is open");
+    assert!(err.contains("not connected"), "unexpected error: {}", err);
+}
+
+#[test]
+fn parameters_must_be_an_array() {
+    let (vm, _) = run_with_db(r#"qaLam_viZA "SELECT 1", 5, r;"#, vec![]);
+    let err = vm.expect_err("5 is not a parameter array");
+    assert!(err.contains("must be an array"), "unexpected error: {}", err);
+}
+
+#[test]
+fn an_unsupported_database_type_says_so() {
+    let err = run(r#"qaLam_iNY mAwkOtipi, "mongodb://localhost";"#)
+        .expect_err("MongoDB has no backend");
+    assert!(err.contains("not supported yet"), "unexpected error: {}", err);
 }
 
 // --- Bilingual equivalence ------------------------------------------------

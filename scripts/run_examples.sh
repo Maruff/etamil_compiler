@@ -24,11 +24,12 @@ fi
 # examples work no matter where they are run from.
 export ETAMIL_PATH="$ROOT"
 
+# Needs a database file; runs in the temp directory like the others.
+# Skipped automatically if this build has no SQLite support.
+
 # Examples that must fail, and the text their error must contain.
 declare -A EXPECT_FAIL=(
     ["examples/api/simple_api.qmz"]="not implemented"
-    ["examples/db_samples/multi_db_test.qmz"]="not implemented"
-    ["examples/db_samples/test_db_connectivity.qmz"]="not implemented"
 )
 
 WORK="$(mktemp -d)"

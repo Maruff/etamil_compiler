@@ -139,12 +139,16 @@ pub enum Stmt {
     DBDisconnect {
         db_type: String,
     },
+    // தளம்_வினா "sql", [params], result;
     DBQuery {
         query: Expr,
-        result_var: Option<String>,
+        params: Expr,
+        result_var: String,
     },
+    // தளம்_செய் "sql", [params];
     DBExecute {
         command: Expr,
+        params: Expr,
     },
     DBInsert {
         table: String,
@@ -425,25 +429,26 @@ impl<'a> Parser<'a> {
                 Stmt::DBDisconnect { db_type }
             }
             Token::DBQuery => {
-                // தளம்_வினா "SELECT * FROM table", result_var;
+                // தளம்_வினா "SELECT ... WHERE x = ?", [அளவுருக்கள்], முடிவு;
+                //
+                // The parameter array is always required, even when empty.
+                // Values reach the driver bound, never spliced into the SQL.
                 let query = self.parse_expression();
-                let result_var = if self.matches(Token::Comma) {
-                    let var_token = self.tokens.next().expect("Expected variable name");
-                    Some(match &var_token {
-                        Token::Identifier(n) => n.clone(),
-                        _ => self.token_name(&var_token),
-                    })
-                } else {
-                    None
-                };
+                self.expect(Token::Comma);
+                let params = self.parse_expression();
+                self.expect(Token::Comma);
+                let var_token = self.tokens.next().expect("Expected a variable to hold the rows");
+                let result_var = self.name_of(var_token);
                 self.expect(Token::Semicolon);
-                Stmt::DBQuery { query, result_var }
+                Stmt::DBQuery { query, params, result_var }
             }
             Token::DBExecute => {
-                // தரவுசேமி_செய் "SQL command";
+                // தளம்_செய் "INSERT ... VALUES (?, ?)", [அளவுருக்கள்];
                 let command = self.parse_expression();
+                self.expect(Token::Comma);
+                let params = self.parse_expression();
                 self.expect(Token::Semicolon);
-                Stmt::DBExecute { command }
+                Stmt::DBExecute { command, params }
             }
             Token::DBInsert => {
                 // தரவுசேமி_செருக table_name, data;

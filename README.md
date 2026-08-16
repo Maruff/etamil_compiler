@@ -60,7 +60,8 @@ eTamil is **usable for scripts and calculations, and under construction everywhe
 | Iteration (`ஒவ்வொரு … இல்`) | ✅ Working | arrays, records, strings |
 | HTTP server (`--server`) | 🟡 Partial | concurrent worker pool; still serves one handler on all routes |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
-| Databases (`தளம்_இணை` etc.) | ❌ Not implemented | statements parse, then fail with a clear error |
+| SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows come back as an array of records |
+| Other databases | ❌ Not implemented | PostgreSQL, MySQL, MongoDB and Redis report that they are unsupported |
 | Routes / responses as DSL statements | ❌ Not implemented | same |
 | LLVM backend (`--llvm`) | 🟡 Optional | off by default, Linux/macOS only, `--features llvm` |
 | Decimal currency arithmetic | ✅ Working | fixed-point decimals, not `f64` |

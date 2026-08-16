@@ -1,0 +1,59 @@
+// கணக்கு தளம் — a ledger in SQLite
+//
+// Queries are always parameterised: values are bound by the driver, never
+// spliced into the SQL text. A result set comes back as an array of records,
+// so it iterates like any other table.
+
+இறக்கு "../../nUlakam/paNam.qmz";
+இறக்கு "../../nUlakam/kaNiqam.qmz";
+இறக்கு "../../nUlakam/aNi.qmz";
+
+தளம்_இணை சீகுலைட், "kaNakku.db";
+
+தளம்_செய் "DROP TABLE IF EXISTS pativukaL", [];
+தளம்_செய் "CREATE TABLE pativukaL (
+              id INTEGER PRIMARY KEY,
+              peyar TEXT NOT NULL,
+              vakY TEXT NOT NULL,
+              qokY TEXT NOT NULL)", [];
+
+// Bound parameters — note the values are passed, not concatenated
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
+          ["வாடகை", "செலவு", 25000];
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
+          ["விற்பனை", "வரவு", 184500];
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
+          ["மின்கட்டணம்", "செலவு", 4200];
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
+          ["ஆலோசனை", "வரவு", 62000];
+
+// A parameterised read
+தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ? ORDER BY qokY DESC",
+          ["வரவு"], வரவுகள்;
+
+அச்சு "வரவுகள்";
+அச்சு "---------------------------------";
+ஒவ்வொரு பதிவு இல் வரவுகள் {
+    அச்சு "  " & பதிவு.peyar & " — " & ரூபாய்(பதிவு.qokY);
+}
+
+தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ?", ["செலவு"], செலவுகள்;
+
+அச்சு "";
+அச்சு "செலவுகள்";
+அச்சு "---------------------------------";
+ஒவ்வொரு பதிவு இல் செலவுகள் {
+    அச்சு "  " & பதிவு.peyar & " — " & ரூபாய்(பதிவு.qokY);
+}
+
+// புலம்_எடு turns the rows into a column, which கூட்டு can total
+மொத்த_வரவு = கூட்டு(புலம்_எடு(வரவுகள், "qokY"));
+மொத்த_செலவு = கூட்டு(புலம்_எடு(செலவுகள், "qokY"));
+
+அச்சு "";
+அச்சு "=================================";
+அச்சு "மொத்த வரவு : " & ரூபாய்(மொத்த_வரவு);
+அச்சு "மொத்த செலவு: " & ரூபாய்(மொத்த_செலவு);
+அச்சு "நிகர இருப்பு: " & ரூபாய்(மொத்த_வரவு - மொத்த_செலவு);
+
+தளம்_பிரி சீகுலைட்;
