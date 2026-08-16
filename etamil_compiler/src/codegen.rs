@@ -912,6 +912,9 @@ impl Compiler {
                         CString::new("").unwrap().as_ptr(),
                     );
                 }
+                _ => {
+                    // Unsupported statements are ignored by the LLVM backend.
+                }
             }
         }
     }
@@ -1020,6 +1023,10 @@ impl Compiler {
                     // For concat in expression context, just evaluate left side
                     // (concat is mainly for print statements)
                     self.compile_expr(left)
+                }
+                _ => {
+                    let f64_type = LLVMDoubleTypeInContext(self.context);
+                    LLVMConstReal(f64_type, 0.0)
                 }
             }
         }
