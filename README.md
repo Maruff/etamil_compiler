@@ -45,7 +45,7 @@ echo "950000" | etamil --vm examples/basic_samples/example.qmz
 
 ## Project status
 
-eTamil is **usable for scripts and calculations, and under construction everywhere else.** This table is the honest state of the code — please read it before planning work on top of it.
+eTamil runs backend programs today: functions, collections, error handling, modules, a SQLite database layer, a concurrent HTTP server with routing, and an accounting framework written in the language itself. This table is the honest state of the code.
 
 | Area | Status | Notes |
 |---|---|---|
@@ -58,15 +58,24 @@ eTamil is **usable for scripts and calculations, and under construction everywhe
 | Functions (`செயல்` / `திரும்பு`) | ✅ Working | parameters, returns, local scope, recursion |
 | Arrays (`[…]`) and records (`{…}`) | ✅ Working | indexing, field access, assignment |
 | Iteration (`ஒவ்வொரு … இல்`) | ✅ Working | arrays, records, strings |
-| HTTP server (`--server`) | 🟡 Partial | concurrent worker pool; still serves one handler on all routes |
+| Results (`சரி` / `தவறு` / `?`) | ✅ Working | Rust semantics; failure is a value, not an exception |
+| Modules (`இறக்கு`) | ✅ Working | resolves beside the file, then `ETAMIL_PATH` |
+| Decimal arithmetic | ✅ Working | fixed point, not `f64` |
+| Standard library (`nUlakam/`) | ✅ Working | strings, math, arrays, money — **written in eTamil** |
+| Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
+| SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
+| HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes and `பதில்` responses |
+| LLVM backend (`--llvm`) | 🟡 Optional | Linux/macOS, `--features llvm`; refuses what it cannot compile |
+| Other databases | ❌ Not implemented | PostgreSQL, MySQL, MongoDB and Redis say so explicitly |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
-| SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows come back as an array of records |
-| Other databases | ❌ Not implemented | PostgreSQL, MySQL, MongoDB and Redis report that they are unsupported |
-| Routes / responses as DSL statements | ❌ Not implemented | same |
-| LLVM backend (`--llvm`) | 🟡 Optional | off by default, Linux/macOS only, `--features llvm` |
-| Decimal currency arithmetic | ✅ Working | fixed-point decimals, not `f64` |
+| Type checking | ❌ Not implemented | type keywords are parsed and discarded |
+| Parser error positions | ❌ Not implemented | lexer errors carry line/column; parse errors do not |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
+
+### One thing to know before you write much
+
+A keyword used as a variable or record field is stored under its **token name**. `வங்கி = 5` creates a variable called `Bank`; `{வரி: 100}` produces the field `Tax`. That is what makes Tamil and romanized spellings interchangeable, but it means a keyword name is silently translated, and string-keyed lookup needs the token name. Compound names (`வங்கி_இருப்பு`, `நிலுவைத்_தொகை`) are ordinary identifiers and are stored as written. The Token column in [KEYWORDS.md](docs/reference/KEYWORDS.md) lists every one; fixing this properly is [roadmap item 2](docs/ROADMAP.md).
 
 ### Money is exact
 
@@ -330,19 +339,45 @@ CI runs the build and the full test suite on Linux and Windows for every push an
 
 ```
 etamil_compiler/
-├── etamil_compiler/        # Rust crate
+├── etamil_compiler/        # Rust crate — the host
 │   ├── src/
 │   │   ├── lexer.rs        # bilingual tokenizer (logos)
 │   │   ├── parser.rs       # recursive-descent parser -> AST
+│   │   ├── module.rs       # இறக்கு resolution
 │   │   ├── vm/             # bytecode compiler + stack VM
-│   │   ├── codegen.rs      # LLVM IR backend (optional feature)
-│   │   ├── http/           # sync HTTP server, auth, cache, logging
-│   │   └── fileio/         # file and CSV handling
+│   │   ├── db/             # Database trait + SQLite driver
+│   │   ├── http/           # HTTP server, auth, cache, logging
+│   │   ├── fileio/         # file and CSV handling
+│   │   └── codegen.rs      # LLVM IR backend (optional feature)
 │   └── tests/              # end-to-end language tests
+├── nUlakam/                # standard library — written in eTamil
+│   ├── col.qmz  kaNiqam.qmz  aNi.qmz  paNam.qmz
+│   └── kaNakkiyal/         # accounting framework — written in eTamil
 ├── examples/               # sample eTamil programs
-├── scripts/                # keyword generation, romanization checker
+├── scripts/                # keyword generation, romanization audit, runner
 └── docs/                   # guides, reference, roadmap
 ```
+
+## Libraries, written in eTamil
+
+The standard library and the accounting framework are eTamil source, not Rust. The host provides only what a language cannot express — arithmetic on decimals, text measurement, file and socket access — and everything above that is readable and editable by the people who use it.
+
+```etamil
+இறக்கு "nUlakam/paNam.qmz";
+அச்சு ரூபாய்(12345678.5);            // ₹1,23,45,678.50 — Indian grouping
+```
+
+```etamil
+இறக்கு "nUlakam/kaNakkiyal/pErEtu.qmz";
+
+த = பரிவர்த்தனை_ஆக்கு("JV1", "2026-04-01", "மூலதனம்", [
+    பற்று_வரிசை("1000", 500000),
+    வரவு_வரிசை("3000", 500000)
+]);
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, த));   // refuses anything unbalanced
+```
+
+See [`nUlakam/README.md`](nUlakam/README.md) for the full list, and `examples/finance/kaNakkiyal.qmz` for a complete accounting cycle with GST and the three statements.
 
 ---
 

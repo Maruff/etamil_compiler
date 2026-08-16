@@ -27,13 +27,19 @@ Equality is exact. The previous `f64` value type compared numbers equal within `
 
 ---
 
-## 2. Source positions in parser errors
+## 2. Keep the source text of tokens
 
-**Today:** the lexer reports line and column, but `tokenize()` returns a bare `Vec<Token>`, so the parser has no positions. Parse failures are `panic!` with a message like `Expected Semicolon` and no location.
+This is now the **top priority**, because one missing capability causes two separate problems.
 
-**What it involves:** return `Vec<(Token, Span)>` from the lexer, carry the span through `Parser`, and convert the parser from `panic!` to a `Result` with a diagnostic type shared with the lexer. Messages should be bilingual, like the lexer's already are.
+The lexer discards the text it matched. `Token::Bank` records that the word was the Bank keyword, but not whether the author wrote `வங்கி`, `vawki` or `_bank`. That has two consequences.
 
-This is the single biggest usability gap for learners.
+**A keyword used as a name is silently translated.** `வங்கி = 5` creates a variable called `Bank`; `{வரி: 100}` produces the field `Tax`. Printing such a record emits English field names into Tamil output, and looking a field up by string requires knowing the token name. It bit four times while writing the standard library and the accounting framework — the natural Tamil word for a thing is very often already a keyword. For a language whose purpose is letting people write in their own language, having their chosen names quietly anglicised is the sharpest remaining contradiction.
+
+**Parse errors have no position.** The lexer reports line and column, but `tokenize()` returns a bare `Vec<Token>`, so the parser has none. Failures are `panic!` with `Expected Semicolon` and no location — the biggest usability gap for learners.
+
+**What it involves:** return `Vec<(Token, Span)>` from the lexer; use the span's text for variable and field names so an author's spelling is preserved; carry the span through `Parser`; and convert the parser from `panic!` to a `Result` with the diagnostic type the lexer already uses. Bilingual messages, as the lexer's already are.
+
+Note the tradeoff to decide: preserving source text means `{வரி: 1}` and `{vari: 1}` become *different* fields. That is probably right — a field name is data, not a language construct — but it is a real change in meaning and should be documented rather than slipped in.
 
 ---
 
@@ -65,11 +71,13 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 ---
 
-## 5. Routes and responses as language statements
+## 5. ~~Routes and responses as language statements~~ — RESOLVED
 
-**Today:** `வழி` (route), `பதில்` (response) and the request accessors parse, but compile to `Unsupported`. `main.rs` registers the *entire program* as the handler for every method and path, so the server can only do one thing.
+`வழி` statements are lifted out of the program at startup and registered with the router; everything else becomes a prelude compiled into every handler, so a route can call the file's imports and functions. `பதில்` records status and body for the server to send. Handlers compile once at registration rather than on every request.
 
-**What it involves:** execute `DefineRoute` at load time to populate the router, and give the VM a request context so `உடல்`, `அளவுரு` and `தலைப்பு` can read from it. Note that `Stmt::SendResponse` currently discards its headers.
+Request data is injected as variables — `request_method`, `request_path`, `query_params`, `headers`, `request_body` — and map indexing makes `query_params["id"]` readable from eTamil.
+
+**Still to do:** `Stmt::SendResponse` discards its headers; `ஜேசான்_உரை` (JSON responses) needs a serializer; path parameters (`/kaNakku/:id`) are not matched; and each request builds a fresh VM, so a database connection opened in the prelude is reopened per request rather than pooled.
 
 ---
 

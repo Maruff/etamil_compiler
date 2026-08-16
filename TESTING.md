@@ -181,6 +181,29 @@ Note the Indian grouping — three digits, then pairs — not `12,345,678.50`.
 
 ---
 
+## 5b. The accounting framework
+
+```bash
+etamil --vm examples/finance/kaNakkiyal.qmz
+```
+
+A full cycle: opening capital, a GST sale, a GST purchase, rent, a receipt,
+and a deliberately unbalanced entry that must be refused.
+
+**Expect:**
+
+| | |
+|---|---|
+| Unbalanced entry | `✓ சமநிலையற்ற பரிவர்த்தனை மறுக்கப்பட்டது` |
+| Trial balance | `பற்று 7,86,000.00   வரவு 7,86,000.00` and `✓ சமநிலை` |
+| Net profit | `₹1,05,000.00` |
+| Balance sheet | assets `₹6,91,000.00` and `✓ சொத்து = பொறுப்பு + பங்கு` |
+
+If the trial balance does not agree, the ledger is being written by something
+other than `பதிவிடு`, since posting refuses anything unbalanced.
+
+---
+
 ## 6. Check decimal correctness
 
 This is the property the language exists for, so it is worth verifying

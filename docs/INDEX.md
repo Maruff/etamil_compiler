@@ -9,11 +9,20 @@ Start with the [README](../README.md) for what eTamil is and which parts of it r
 | [Installation](getting-started/INSTALLATION.md) | Prerequisites, building from source, verifying, troubleshooting |
 | [Quick Start](getting-started/QUICKSTART.md) | Your first program, through to files and a server |
 
+## Libraries
+
+Both are written in eTamil, not Rust.
+
+| Page | What it covers |
+|---|---|
+| [Standard library](../nUlakam/README.md) | `nUlakam/` — strings, math, arrays, money with Indian digit grouping |
+| Accounting framework | `nUlakam/kaNakkiyal/` — chart of accounts, double-entry ledger, GST, and the three statements. See `examples/finance/kaNakkiyal.qmz` for a full cycle |
+
 ## Language reference
 
 | Page | What it covers |
 |---|---|
-| [Keywords](reference/KEYWORDS.md) | Every keyword in all three spellings — generated from the lexer |
+| [Keywords](reference/KEYWORDS.md) | Every keyword in all three spellings, with its token name — generated from the lexer |
 | [Commands](reference/COMMANDS.md) | CLI flags, exit codes, environment variables |
 | [Tamil Letter Equivalents](reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md) | How the ezuqqu romanization is derived |
 | [File I/O](reference/FILE_IO_FEATURES.md) | File and CSV statements |
