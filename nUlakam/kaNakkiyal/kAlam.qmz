@@ -1,0 +1,50 @@
+// nUlakam/kaNakkiyal/kAlam.qmz — காலம் (reporting periods)
+//
+// Dates are ISO-8601 text, which sorts chronologically, so "is this posting
+// within the period" needs nothing but a string comparison. Only arithmetic
+// — how many days between two dates — needs the host.
+//
+// The distinction this file exists to enforce: an income statement covers a
+// period, a balance sheet is as at a date. Reporting one as the other is a
+// real error, not a presentation choice.
+
+// காலம்_ஆக்கு(தொடக்கம், முடிவு)
+செயல் காலம்_ஆக்கு(தொடக்கம், முடிவு) {
+    (தொடக்கம் > முடிவு) எனில் {
+        திரும்பு தவறு("காலத் தொடக்கம் முடிவுக்குப் பின் உள்ளது: "
+                      & தொடக்கம் & " > " & முடிவு);
+    }
+    திரும்பு சரி({தொடக்கம்: தொடக்கம், முடிவு: முடிவு});
+}
+
+// இந்திய_ஆண்டு(ஆண்டு) — the Indian financial year, 1 April to 31 March
+செயல் இந்திய_ஆண்டு(ஆண்டு) {
+    அடுத்தது = ஆண்டு + 1;
+    திரும்பு மதிப்பு(காலம்_ஆக்கு(
+        சொல்லாக்கு(ஆண்டு) & "-04-01",
+        சொல்லாக்கு(அடுத்தது) & "-03-31"
+    ));
+}
+
+// நாட்காட்டி_ஆண்டு(ஆண்டு)
+செயல் நாட்காட்டி_ஆண்டு(ஆண்டு) {
+    திரும்பு மதிப்பு(காலம்_ஆக்கு(
+        சொல்லாக்கு(ஆண்டு) & "-01-01",
+        சொல்லாக்கு(ஆண்டு) & "-12-31"
+    ));
+}
+
+// காலத்தில்_உள்ளதா(நாள், காலம்)
+செயல் காலத்தில்_உள்ளதா(நாள், காலம்) {
+    திரும்பு நாள் >= காலம்.தொடக்கம் மற்றும் நாள் <= காலம்.முடிவு;
+}
+
+// வரையிலா(நாள், வரம்பு_நாள்) — on or before, for as-at reporting
+செயல் வரையிலா(நாள், வரம்பு_நாள்) {
+    திரும்பு நாள் <= வரம்பு_நாள்;
+}
+
+// காலம்_விவரம்(காலம்)
+செயல் காலம்_விவரம்(காலம்) {
+    திரும்பு காலம்.தொடக்கம் & " முதல் " & காலம்.முடிவு & " வரை";
+}
