@@ -42,6 +42,20 @@ pub enum Instruction {
     
     // String operations
     Concat,
+
+    // Collections
+    /// Pop n values into an array (அணி — a column).
+    MakeArray(usize),
+    /// Pop one value per key into a record (பொருள் — a row).
+    MakeRecord(Vec<String>),
+    /// Pop index then base; push the element.
+    Index,
+    /// Pop base; push the named field.
+    Field(String),
+    /// Pop index and value; store into the named variable's collection.
+    SetIndex(String),
+    /// Pop value; store into the named variable's field.
+    SetField(String, String),
     
     // File I/O — each pops its operands off the stack
     FileOpen(String), // mode; pops filename

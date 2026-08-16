@@ -39,6 +39,20 @@ pub enum Expr {
         name: String,
         args: Vec<Expr>,
     },
+    // அணி — a column: [a, b, c]
+    ArrayLiteral(Vec<Expr>),
+    // பொருள் — a row: {peyar: "ravi", vayaqu: 20}
+    RecordLiteral(Vec<(String, Expr)>),
+    // a[i]
+    Index {
+        base: Box<Expr>,
+        index: Box<Expr>,
+    },
+    // r.peyar
+    Field {
+        base: Box<Expr>,
+        name: String,
+    },
 }
 
 #[allow(dead_code)]
@@ -56,6 +70,18 @@ pub enum Stmt {
     },
     // qirumpu value;
     Return(Option<Expr>),
+    // a[i] = value;  — the base must be a plain variable for now
+    SetIndex {
+        name: String,
+        index: Expr,
+        value: Expr,
+    },
+    // r.peyar = value;
+    SetField {
+        name: String,
+        field: String,
+        value: Expr,
+    },
     // A bare expression evaluated for its effect, e.g. a call statement.
     Expression(Expr),
     Print(Expr),
@@ -212,6 +238,26 @@ impl<'a> Parser<'a> {
                 let call = self.finish_name_or_call(name);
                 self.expect(Token::Semicolon);
                 return Stmt::Expression(call);
+            }
+
+            // a[i] = value;
+            if self.matches(Token::LBracket) {
+                let index = self.parse_expression();
+                self.expect(Token::RBracket);
+                self.expect(Token::Assign);
+                let value = self.parse_expression();
+                self.expect(Token::Semicolon);
+                return Stmt::SetIndex { name, index, value };
+            }
+
+            // r.field = value;
+            if self.matches(Token::Dot) {
+                let field_token = self.tokens.next().expect("Expected a field name");
+                let field = self.token_name(field_token);
+                self.expect(Token::Assign);
+                let value = self.parse_expression();
+                self.expect(Token::Semicolon);
+                return Stmt::SetField { name, field, value };
             }
 
             // Check if it's just a declaration (semicolon) or assignment
@@ -631,11 +677,76 @@ impl<'a> Parser<'a> {
         left
     }
 
+    /// A primary expression followed by any number of `[i]` and `.name`.
     fn parse_factor(&mut self) -> Expr {
+        let mut expr = self.parse_primary();
+        loop {
+            if self.matches(Token::LBracket) {
+                let index = self.parse_expression();
+                self.expect(Token::RBracket);
+                expr = Expr::Index {
+                    base: Box::new(expr),
+                    index: Box::new(index),
+                };
+            } else if self.matches(Token::Dot) {
+                let field_token = self.tokens.next().expect("Expected a field name");
+                let name = self.name_of(field_token);
+                expr = Expr::Field {
+                    base: Box::new(expr),
+                    name,
+                };
+            } else {
+                break;
+            }
+        }
+        expr
+    }
+
+    /// A field or key name: a bare name, or a quoted string.
+    fn name_of(&self, token: &Token) -> String {
+        match token {
+            Token::String(s) => s.clone(),
+            other => self.token_name(other),
+        }
+    }
+
+    fn parse_primary(&mut self) -> Expr {
         // Base case for numbers/identifiers
         let token = self.tokens.next()
             .expect("Unexpected end of input while reading an expression");
         match token {
+            // அணி — an array literal: [a, b, c]
+            Token::LBracket => {
+                let mut items = Vec::new();
+                if !self.matches(Token::RBracket) {
+                    loop {
+                        items.push(self.parse_expression());
+                        if !self.matches(Token::Comma) {
+                            break;
+                        }
+                    }
+                    self.expect(Token::RBracket);
+                }
+                Expr::ArrayLiteral(items)
+            }
+            // பொருள் — a record literal: {peyar: "ravi", vayaqu: 20}
+            Token::LBrace => {
+                let mut fields = Vec::new();
+                if !self.matches(Token::RBrace) {
+                    loop {
+                        let key_token = self.tokens.next().expect("Expected a field name");
+                        let key = self.name_of(key_token);
+                        self.expect(Token::Colon);
+                        let value = self.parse_expression();
+                        fields.push((key, value));
+                        if !self.matches(Token::Comma) {
+                            break;
+                        }
+                    }
+                    self.expect(Token::RBrace);
+                }
+                Expr::RecordLiteral(fields)
+            }
             // Unary minus: -x is compiled as 0 - x
             Token::Minus => {
                 let operand = self.parse_factor();
@@ -773,6 +884,10 @@ impl<'a> Parser<'a> {
             Expr::Logical { op, .. } => op,
             Expr::Not(_) => "not".to_string(),
             Expr::Call { name, .. } => name,
+            Expr::ArrayLiteral(_) => "array".to_string(),
+            Expr::RecordLiteral(_) => "record".to_string(),
+            Expr::Index { .. } => "index".to_string(),
+            Expr::Field { name, .. } => name,
             Expr::Concat { .. } => "concat".to_string(),
         }
     }

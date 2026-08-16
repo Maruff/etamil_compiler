@@ -390,6 +390,161 @@ fn tamil_function_definition_and_call() {
     assert_eq!(num(&vm, "விடை"), dec(100));
 }
 
+// --- Arrays (அணி — a column) ----------------------------------------------
+
+#[test]
+fn array_literal_and_indexing() {
+    let vm = run("a = [10, 20, 30]; x = a[0]; y = a[2];").unwrap();
+    assert_eq!(num(&vm, "x"), dec(10));
+    assert_eq!(num(&vm, "y"), dec(30));
+}
+
+#[test]
+fn array_index_out_of_bounds_is_an_error() {
+    let err = run("a = [1, 2]; x = a[5];").expect_err("index 5 is out of bounds");
+    assert!(err.contains("out of bounds"), "unexpected error: {}", err);
+}
+
+#[test]
+fn array_index_must_be_a_whole_number() {
+    let err = run("a = [1, 2]; x = a[0.5];").expect_err("fractional index");
+    assert!(err.contains("whole number"), "unexpected error: {}", err);
+}
+
+#[test]
+fn array_elements_can_be_assigned() {
+    let vm = run("a = [1, 2, 3]; a[1] = 99; x = a[1];").unwrap();
+    assert_eq!(num(&vm, "x"), dec(99));
+}
+
+#[test]
+fn empty_array_literal() {
+    let vm = run("a = []; n = nILam(a);").unwrap();
+    assert_eq!(num(&vm, "n"), dec(0));
+}
+
+// --- Records (பொருள் — a row) ---------------------------------------------
+
+#[test]
+fn record_literal_and_field_access() {
+    let vm = run(r#"r = {peyar: "Ravi", vayaqu: 20}; p = r.peyar; v = r.vayaqu;"#).unwrap();
+    assert_eq!(text(&vm, "p"), "Ravi");
+    assert_eq!(num(&vm, "v"), dec(20));
+}
+
+#[test]
+fn record_field_can_be_read_by_key() {
+    let vm = run(r#"r = {peyar: "Ravi"}; p = r["peyar"];"#).unwrap();
+    assert_eq!(text(&vm, "p"), "Ravi");
+}
+
+#[test]
+fn missing_record_field_is_an_error() {
+    let err = run("r = {a: 1}; x = r.b;").expect_err("field b does not exist");
+    assert!(err.contains("no field"), "unexpected error: {}", err);
+}
+
+#[test]
+fn record_fields_can_be_assigned_and_added() {
+    let vm = run("r = {a: 1}; r.a = 5; r.b = 7; x = r.a; y = r.b;").unwrap();
+    assert_eq!(num(&vm, "x"), dec(5));
+    assert_eq!(num(&vm, "y"), dec(7));
+}
+
+#[test]
+fn field_access_on_a_non_record_is_an_error() {
+    let err = run("x = 5; y = x.peyar;").expect_err("numbers have no fields");
+    assert!(err.contains("needs a record"), "unexpected error: {}", err);
+}
+
+// --- An array of records is a table --------------------------------------
+
+#[test]
+fn array_of_records_reads_like_a_result_set() {
+    let src = r#"rows = [{peyar: "Ravi", vari: 1000}, {peyar: "Priya", vari: 2000}];
+                 moqqam = 0;
+                 i = 0;
+                 (i < nILam(rows)) cuRRu {
+                     oru_paqivu = rows[i];
+                     moqqam = moqqam + oru_paqivu.vari;
+                     i = i + 1;
+                 }"#;
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "moqqam"), dec(3000));
+}
+
+#[test]
+fn nested_arrays_index_in_sequence() {
+    let vm = run("m = [[1, 2], [3, 4]]; x = m[1][0];").unwrap();
+    assert_eq!(num(&vm, "x"), dec(3));
+}
+
+#[test]
+fn a_function_can_return_a_record() {
+    let src = r#"ceyal varicY_aRikkY(varumAZam) {
+                     qirumpu {varumAZam: varumAZam, vari: varumAZam * 20%};
+                 }
+                 r = varicY_aRikkY(100000);
+                 v = r.vari;"#;
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "v"), dec(20000));
+}
+
+// --- Builtins -------------------------------------------------------------
+
+#[test]
+fn length_works_on_arrays_records_and_strings() {
+    let vm = run(r#"a = nILam([1,2,3]); b = nILam({x: 1, y: 2}); c = nILam("abcd");"#).unwrap();
+    assert_eq!(num(&vm, "a"), dec(3));
+    assert_eq!(num(&vm, "b"), dec(2));
+    assert_eq!(num(&vm, "c"), dec(4));
+}
+
+#[test]
+fn builtins_answer_to_tamil_and_romanized_names() {
+    let vm = run("a = நீளம்([1,2,3]); b = nILam([1,2,3]);").unwrap();
+    assert_eq!(num(&vm, "a"), num(&vm, "b"));
+}
+
+#[test]
+fn append_extends_an_array() {
+    let vm = run("a = iNY([1, 2], 3); n = nILam(a); last = a[2];").unwrap();
+    assert_eq!(num(&vm, "n"), dec(3));
+    assert_eq!(num(&vm, "last"), dec(3));
+}
+
+// Reserved words are a real constraint: the SQL clause keywords take several
+// natural Tamil nouns, so they cannot be used as variable names.
+#[test]
+fn sql_clause_keywords_are_reserved() {
+    let err = std::panic::catch_unwind(|| run("varicY = 1;"))
+        .err()
+        .map(|_| "panicked".to_string())
+        .unwrap_or_else(|| "parsed".to_string());
+    assert_eq!(err, "panicked", "varicY (OrderBy) should still be reserved");
+}
+
+#[test]
+fn typeof_distinguishes_arrays_from_records() {
+    let vm = run(r#"a = vakY([1]); r = vakY({x: 1});"#).unwrap();
+    assert_eq!(text(&vm, "a"), "an array");
+    assert_eq!(text(&vm, "r"), "a record");
+}
+
+#[test]
+fn a_user_function_shadows_a_builtin() {
+    let vm = run("ceyal nILam(x) { qirumpu 99; } y = nILam([1,2,3]);").unwrap();
+    assert_eq!(num(&vm, "y"), dec(99));
+}
+
+#[test]
+fn collections_print_readably() {
+    let vm = run(r#"a = [1, 2]; r = {b: 2, a: 1};"#).unwrap();
+    assert_eq!(vm.variables.get("a").unwrap().to_string(), "[1, 2]");
+    // Keys are sorted so output is deterministic.
+    assert_eq!(vm.variables.get("r").unwrap().to_string(), "{a: 1, b: 2}");
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

@@ -45,8 +45,20 @@ impl Value {
             Value::String(s) => s.clone(),
             Value::Boolean(b) => b.to_string(),
             Value::Null => "nil".to_string(),
-            Value::Array(_) => "[Array]".to_string(),
-            Value::Map(_) => "[Map]".to_string(),
+            Value::Array(items) => {
+                let inner: Vec<String> = items.iter().map(|v| v.to_string()).collect();
+                format!("[{}]", inner.join(", "))
+            }
+            Value::Map(fields) => {
+                // Sorted so printing a record is deterministic.
+                let mut keys: Vec<&String> = fields.keys().collect();
+                keys.sort();
+                let inner: Vec<String> = keys
+                    .iter()
+                    .map(|k| format!("{}: {}", k, fields[*k].to_string()))
+                    .collect();
+                format!("{{{}}}", inner.join(", "))
+            }
         }
     }
 

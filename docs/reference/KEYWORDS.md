@@ -327,6 +327,10 @@ The three Tamil nasals stay distinct in romanized form: **ண = `N`, ந = `n`,
 | `*` | multiply |
 | `/` | divide |
 | `&` | string concatenation |
+| `[` |  |
+| `]` |  |
+| `.` |  |
+| `:` |  |
 | `(` | open group |
 | `)` | close group |
 | `{` | open block |

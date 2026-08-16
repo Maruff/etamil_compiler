@@ -60,6 +60,15 @@ impl BytecodeCompiler {
                 self.compile_expr(expr);
                 self.bytecode.push(Instruction::Pop);
             }
+            Stmt::SetIndex { name, index, value } => {
+                self.compile_expr(index);
+                self.compile_expr(value);
+                self.bytecode.push(Instruction::SetIndex(name));
+            }
+            Stmt::SetField { name, field, value } => {
+                self.compile_expr(value);
+                self.bytecode.push(Instruction::SetField(name, field));
+            }
             Stmt::Print(expr) => {
                 self.compile_expr(expr);
                 self.bytecode.push(Instruction::Print);
@@ -258,6 +267,30 @@ impl BytecodeCompiler {
                     self.compile_expr(arg);
                 }
                 self.bytecode.push(Instruction::Call(name, argc));
+            }
+            Expr::ArrayLiteral(items) => {
+                let count = items.len();
+                for item in items {
+                    self.compile_expr(item);
+                }
+                self.bytecode.push(Instruction::MakeArray(count));
+            }
+            Expr::RecordLiteral(fields) => {
+                let mut keys = Vec::with_capacity(fields.len());
+                for (key, value) in fields {
+                    keys.push(key);
+                    self.compile_expr(value);
+                }
+                self.bytecode.push(Instruction::MakeRecord(keys));
+            }
+            Expr::Index { base, index } => {
+                self.compile_expr(*base);
+                self.compile_expr(*index);
+                self.bytecode.push(Instruction::Index);
+            }
+            Expr::Field { base, name } => {
+                self.compile_expr(*base);
+                self.bytecode.push(Instruction::Field(name));
             }
             Expr::Concat { left, right } => {
                 self.compile_expr(*left);
