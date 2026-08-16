@@ -1292,6 +1292,186 @@ fn trial_balance_agrees_and_the_sheet_balances() {
     assert_eq!(vm.variables.get("நிலை_சரியா"), Some(&Value::Boolean(true)));
 }
 
+// --- Dates ----------------------------------------------------------------
+
+#[test]
+fn date_arithmetic() {
+    let vm = run(r#"a = nAL_vERupAtu("2026-01-10", "2026-04-30");
+                    b = nAL_kUttu("2026-02-28", 1);
+                    c = nAL_kUttu("2024-02-28", 1);
+                    d = nAL_vERupAtu("2026-04-30", "2026-01-10");"#)
+        .unwrap();
+    assert_eq!(num(&vm, "a"), dec(110));
+    assert_eq!(text(&vm, "b"), "2026-03-01");
+    assert_eq!(text(&vm, "c"), "2024-02-29"); // 2024 is a leap year
+    assert_eq!(num(&vm, "d"), dec(-110));
+}
+
+#[test]
+fn a_malformed_date_is_an_error() {
+    let err = run(r#"x = nAL_kUttu("not-a-date", 1);"#).expect_err("bad date");
+    assert!(err.contains("is not a date"), "unexpected error: {}", err);
+}
+
+// --- Periods, clearing and ageing -----------------------------------------
+
+/// A ledger with three invoices and one receipt, as a prelude.
+const NILUVY_PRELUDE: &str = r#"
+இறக்கு "kaNakkiyal/kaNakkukaL.qmz";
+இறக்கு "kaNakkiyal/pErEtu.qmz";
+இறக்கு "kaNakkiyal/vari.qmz";
+இறக்கு "kaNakkiyal/oqukkItu.qmz";
+இறக்கு "kaNakkiyal/aRikkYkaL.qmz";
+
+கணக்குகள் = [
+    மதிப்பு(கணக்கு_ஆக்கு("1000", "வங்கி",       வகை_சொத்து(),   "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("1100", "வாங்குநர்",   வகை_சொத்து(),   "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("2100", "வணிகவரி",    வகை_பொறுப்பு(), "நடப்பு")),
+    மதிப்பு(கணக்கு_ஆக்கு("4000", "விற்பனை",    வகை_வருவாய்(),  "இயக்கம்"))
+];
+பேரேடு = [];
+ஒதுக்கீடுகள் = [];
+
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, விற்பனை_பரிவர்த்தனை(
+    "INV001", "2026-01-10", "ஜனவரி", "1100", "4000", "2100", 100000, 18)));
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, விற்பனை_பரிவர்த்தனை(
+    "INV002", "2026-03-05", "மார்ச்", "1100", "4000", "2100", 50000, 18)));
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, விற்பனை_பரிவர்த்தனை(
+    "INV003", "2026-04-12", "ஏப்ரல்", "1100", "4000", "2100", 75000, 18)));
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, பணம்_பெறு(
+    "RCT001", "2026-04-20", "பணம்", "1000", "1100", 118000)));
+"#;
+
+fn run_niluvy(body: &str) -> Result<VM, String> {
+    let source = format!("{}{}", NILUVY_PRELUDE, body);
+    let ast = etamil_compiler::module::load_source(&source, &stdlib_dir())?;
+    let bytecode = BytecodeCompiler::compile_statements(ast);
+    let mut vm = VM::new();
+    vm.execute(bytecode)?;
+    Ok(vm)
+}
+
+#[test]
+fn an_unassigned_invoice_is_outstanding_in_full() {
+    let vm = run_niluvy(
+        r#"மீதம் = நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், "INV001", "1100", "சொத்து");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "மீதம்"), dec(118000)); // 100,000 + 18%
+}
+
+#[test]
+fn assigning_a_receipt_clears_the_invoice() {
+    let vm = run_niluvy(
+        r#"ஒதுக்கீடுகள் = மதிப்பு(ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
+               "RCT001", "INV001", 118000, "1100", "சொத்து"));
+           மீதம் = நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், "INV001", "1100", "சொத்து");"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "மீதம்"), dec(0));
+}
+
+#[test]
+fn clearing_more_than_the_invoice_is_refused() {
+    let vm = run_niluvy(
+        r#"விளைவு = ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
+               "RCT001", "INV002", 999999, "1100", "சொத்து");
+           மறுக்கப்பட்டதா = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn spreading_a_receipt_beyond_its_own_value_is_refused() {
+    let vm = run_niluvy(
+        r#"ஒதுக்கீடுகள் = மதிப்பு(ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
+               "RCT001", "INV001", 118000, "1100", "சொத்து"));
+           விளைவு = ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
+               "RCT001", "INV002", 1, "1100", "சொத்து");
+           மறுக்கப்பட்டதா = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn ageing_buckets_by_invoice_date() {
+    // As at 30 April: INV003 is 18 days old, INV002 is 56.
+    let vm = run_niluvy(
+        r#"ஒதுக்கீடுகள் = மதிப்பு(ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
+               "RCT001", "INV001", 118000, "1100", "சொத்து"));
+           அ = வயது_அட்டவணை(பேரேடு, ஒதுக்கீடுகள், "1100", "சொத்து", "2026-04-30");
+           நடப்பு_தொகை = அ.நடப்பு;
+           முப்பது = அ.முப்பது;
+           மொத்தம் = அ.மொத்தம்;"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "நடப்பு_தொகை"), dec(88500)); // INV003
+    assert_eq!(num(&vm, "முப்பது"), dec(59000)); // INV002
+    assert_eq!(num(&vm, "மொத்தம்"), dec(147500));
+}
+
+#[test]
+fn an_income_statement_covers_only_its_period() {
+    // FY 2026-27 starts 1 April, so only INV003 falls inside it.
+    let vm = run_niluvy(
+        r#"ஆண்டு = இந்திய_ஆண்டு(2026);
+           வரு = கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், ஆண்டு);
+           கால_வருவாய் = வரு.மொத்த_வருவாய்;
+           முழு = வருமான_அறிக்கை(பேரேடு, கணக்குகள்);
+           மொத்த_வருவாய்_எல்லாம் = முழு.மொத்த_வருவாய்;"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "கால_வருவாய்"), dec(75000));
+    assert_eq!(num(&vm, "மொத்த_வருவாய்_எல்லாம்"), dec(225000));
+}
+
+#[test]
+fn a_balance_sheet_is_cumulative_to_its_date() {
+    let vm = run_niluvy(
+        r#"நிலை = நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், "2026-04-30");
+           சொத்து_மொத்தம் = நிலை.மொத்த_சொத்து;
+           சமமா = நிலை.சமநிலையா;
+           முன்பு = நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், "2026-02-01");
+           முன்பு_சொத்து = முன்பு.மொத்த_சொத்து;"#,
+    )
+    .unwrap();
+    // bank 118,000 + receivables 147,500
+    assert_eq!(num(&vm, "சொத்து_மொத்தம்"), dec(265500));
+    assert_eq!(vm.variables.get("சமமா"), Some(&Value::Boolean(true)));
+    // as at 1 February only INV001 exists
+    assert_eq!(num(&vm, "முன்பு_சொத்து"), dec(118000));
+}
+
+#[test]
+fn an_account_statement_carries_a_running_balance() {
+    let vm = run_niluvy(
+        r#"அ = கணக்கு_அறிக்கை(பேரேடு, "1100", "சொத்து");
+           எத்தனை = நீளம்(அ.வரிகள்);
+           இறுதி = அ.இறுதி_இருப்பு;
+           முதல் = அ.வரிகள்[0].ஓட்ட_இருப்பு;"#,
+    )
+    .unwrap();
+    assert_eq!(num(&vm, "எத்தனை"), dec(4));
+    assert_eq!(num(&vm, "முதல்"), dec(118000));
+    assert_eq!(num(&vm, "இறுதி"), dec(147500));
+}
+
+#[test]
+fn cash_flow_over_a_period() {
+    let vm = run_niluvy(
+        r#"ஆண்டு = இந்திய_ஆண்டு(2026);
+           ப = பணப்புழக்க_அறிக்கை(பேரேடு, ["1000"], ஆண்டு);
+           உள்வரவு = ப.உள்வரவு;
+           இறுதி = ப.இறுதி_இருப்பு;"#,
+    )
+    .unwrap();
+    // the only cash movement is the 118,000 receipt on 20 April
+    assert_eq!(num(&vm, "உள்வரவு"), dec(118000));
+    assert_eq!(num(&vm, "இறுதி"), dec(118000));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
