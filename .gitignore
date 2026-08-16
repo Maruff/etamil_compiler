@@ -9,10 +9,15 @@ etamil_program
 *.s
 *.ll
 
+# Build logs and intermediate output
+build_output.txt
+output.bin
+
 # CSV data files (optional - comment out if you want to include them)
 *.csv
 
 # IDE and editor files
+.vs/
 .vscode/
 .idea/
 *.swp

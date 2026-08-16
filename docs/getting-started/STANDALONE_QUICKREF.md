@@ -56,7 +56,7 @@ etamil hello.etamil
 ### Simple Backend
 ```bash
 # Use existing example
-cd etamil_compiler/examples/backend
+cd examples/backend
 
 # Run CRUD API
 etamil --server --port 8080 crud.etamil
@@ -68,7 +68,7 @@ curl http://localhost:8080/health
 ### File I/O
 ```bash
 # Use file I/O example
-cd etamil_compiler/examples/io_samples
+cd examples/io_samples
 
 # Run file operations
 etamil file_operations.etamil

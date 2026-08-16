@@ -1,0 +1,80 @@
+# eTamil Roadmap
+
+What is not built yet, why it matters, and what finishing it involves. Items are ordered by how much they block real use.
+
+---
+
+## 1. Decimal arithmetic for currency
+
+**Today:** every number is `f64`, from the lexer (`Token::Number(f64)`) through the AST to `Value::Number(f64)`. `0.1 + 0.2` prints `0.30000000000000004`.
+
+**Why it matters:** eTamil is aimed at tax and accounting work, where totals must balance exactly. Floating point cannot promise that.
+
+**What it involves:** introduce a decimal value type (`rust_decimal` was chosen originally and is a good fit), thread it through `Value`, the arithmetic instructions, and the lexer's number and percentage literals. Decide the rounding rule for division and document it. Add `rust_decimal` back to `Cargo.toml` in that commit.
+
+---
+
+## 2. Source positions in parser errors
+
+**Today:** the lexer reports line and column, but `tokenize()` returns a bare `Vec<Token>`, so the parser has no positions. Parse failures are `panic!` with a message like `Expected Semicolon` and no location.
+
+**What it involves:** return `Vec<(Token, Span)>` from the lexer, carry the span through `Parser`, and convert the parser from `panic!` to a `Result` with a diagnostic type shared with the lexer. Messages should be bilingual, like the lexer's already are.
+
+This is the single biggest usability gap for learners.
+
+---
+
+## 3. Database execution
+
+**Today:** `தளம்_இணை`, `தளம்_வினா` and friends parse into AST nodes, then compile to an `Unsupported` instruction that fails at runtime with a clear message. `src/db/` contains an in-memory `HashMap` simulation that prints `[DB] ...` lines and is not connected to the VM.
+
+**What it involves:** decide whether `src/db/` becomes a real backend or is deleted. For real database work, add `sqlx` back and give the VM an async execution path — the VM is currently synchronous, so this depends on item 4.
+
+---
+
+## 4. The async HTTP server
+
+**Today:** `--async` prints a warning and runs the synchronous server. `src/http/async_mod.rs` and `src/http/async_handler.rs` are **not declared in `src/http/mod.rs`**, so they are never compiled — and they would not compile as written:
+
+- `use futures::stream::StreamExt;` — `futures` is not a dependency
+- `use signal_hook::consts::signal::*;` — `signal-hook` is unix-only but imported unconditionally
+- `use crate::vm::{VM, bytecode::compiler::Compiler};` — the type is `BytecodeCompiler`
+
+**What it involves:** fix those three, declare the modules, add `axum` and `futures` back to `Cargo.toml`, gate the signal handling behind `#[cfg(unix)]`, and give the VM a per-request execution model. Also needs item 5, since a server without route statements can only serve one handler.
+
+---
+
+## 5. Routes and responses as language statements
+
+**Today:** `வழி` (route), `பதில்` (response) and the request accessors parse, but compile to `Unsupported`. `main.rs` registers the *entire program* as the handler for every method and path, so the server can only do one thing.
+
+**What it involves:** execute `DefineRoute` at load time to populate the router, and give the VM a request context so `உடல்`, `அளவுரு` and `தலைப்பு` can read from it. Note that `Stmt::SendResponse` currently discards its headers.
+
+---
+
+## 6. Resolving ந vs ன in the romanization
+
+**Today:** both letters romanize to `n`, so they cannot be distinguished in romanized source. The lexer is also internally inconsistent: most keywords use `n` for ந (`niqi`, `nilY`, `natappu`) but `Nikara` and `NirY` use `N`, which is ண's letter.
+
+**What it involves:** pick a distinct letter for one of them, update `EZUQQU_TRANSLITERATION_STANDARD`, fix the inconsistent keywords in `lexer.rs`, and add lexer tests asserting each letter round-trips. Worth doing before the keyword set grows further.
+
+---
+
+## 7. Type checking
+
+**Today:** type keywords (`எண்`, `சொல்`, `ஈர்ம`…) are parsed and then discarded. `சொல் x = 5;` is accepted.
+
+**What it involves:** keep the declared type in `Stmt::Assign`, check assignments against it, and report mismatches with the diagnostics from item 2.
+
+---
+
+## Smaller known issues
+
+- **No short-circuiting.** `மற்றும்` and `அல்லது` evaluate both sides. Harmless today because expressions have no side effects, but it must change when function calls arrive.
+- **Chained comparisons parse oddly.** `a > b > c` becomes `(a > b) > c`.
+- **Functions are not implemented.** `Call` and `Return` instructions exist but nothing emits them.
+- **`src/finance/` is empty.** `calculator.rs` and `mod.rs` are zero-byte files.
+- **`src/api/` duplicates parser and codegen logic** and is not reachable from `main.rs`.
+- **`CommandExecutor` in `src/commands.rs` is never called** from either binary.
+- **Encryption is XOR, not AES.** `src/fileio/crypto.rs` uses a repeating-key XOR cipher with a default key. It should not be described as encryption in user-facing docs until it uses a real AEAD.
+- **`rustfmt` and `clippy` are not clean.** CI runs both with `continue-on-error: true`; remove that once the backlog is cleared.

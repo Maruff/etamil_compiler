@@ -96,9 +96,16 @@ impl BytecodeCompiler {
                     self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(end);
                 }
             }
+            Stmt::FileOpen { filename, mode } => {
+                self.compile_expr(filename);
+                self.bytecode.push(Instruction::FileOpen(mode));
+            }
+            Stmt::FileClose { filename } => {
+                self.compile_expr(filename);
+                self.bytecode.push(Instruction::FileClose);
+            }
             Stmt::FileWrite { filename, data } => {
                 self.compile_expr(filename);
-                self.bytecode.push(Instruction::FileWrite);
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::FileWrite);
             }
@@ -107,17 +114,49 @@ impl BytecodeCompiler {
                 self.bytecode.push(Instruction::FileRead);
                 self.bytecode.push(Instruction::StoreVar(variable));
             }
-            Stmt::DBQuery { query, result_var } => {
-                self.compile_expr(query);
-                self.bytecode.push(Instruction::DBQuery);
-                if let Some(var) = result_var {
-                    self.bytecode.push(Instruction::StoreVar(var));
-                }
+            Stmt::ReadCSV { filename, variable } => {
+                self.compile_expr(filename);
+                self.bytecode.push(Instruction::ReadCSV);
+                self.bytecode.push(Instruction::StoreVar(variable));
             }
-            _ => {
-                // Other statements handled as needed
+            Stmt::WriteCSV { filename, data } => {
+                self.compile_expr(filename);
+                self.compile_expr(data);
+                self.bytecode.push(Instruction::WriteCSV);
+            }
+            // Database and server statements parse, but the VM has no runtime
+            // for them yet. Emit an instruction that fails loudly rather than
+            // silently doing nothing.
+            other => {
+                let label = Self::stmt_label(&other);
+                self.bytecode.push(Instruction::Unsupported(label));
             }
         }
+    }
+
+    /// Human-readable name for a statement the VM cannot execute.
+    fn stmt_label(stmt: &Stmt) -> String {
+        match stmt {
+            Stmt::DBConnect { .. } => "தளம்_இணை (database connect)",
+            Stmt::DBDisconnect { .. } => "தளம்_பிரி (database disconnect)",
+            Stmt::DBQuery { .. } => "தளம்_வினா (database query)",
+            Stmt::DBExecute { .. } => "தளம்_செய் (database execute)",
+            Stmt::DBInsert { .. } => "தளம்_செருக (database insert)",
+            Stmt::DBUpdate { .. } => "தளம்_புதுப்பி (database update)",
+            Stmt::DBDelete { .. } => "தளம்_நீக்கு (database delete)",
+            Stmt::CreateTable { .. } => "அட்டை_ஆக்கு (create table)",
+            Stmt::Select { .. } => "தேர்வெடு (select)",
+            Stmt::DefineRoute { .. } => "வழி (route)",
+            Stmt::StartServer { .. } => "வழங்கி_தொடங்கு (start server)",
+            Stmt::StopServer => "வழங்கி_நிறுத்து (stop server)",
+            Stmt::SendResponse { .. } => "பதில் (response)",
+            Stmt::SendJSON { .. } => "ஜேசான்_உரை (json response)",
+            Stmt::GetRequestBody { .. } => "உடல் (request body)",
+            Stmt::GetRequestParam { .. } => "அளவுரு (request param)",
+            Stmt::GetHeader { .. } | Stmt::SetHeader { .. } => "தலைப்பு (header)",
+            _ => "this statement",
+        }
+        .to_string()
     }
 
     fn compile_expr(&mut self, expr: Expr) {
@@ -127,6 +166,12 @@ impl BytecodeCompiler {
             }
             Expr::String(s) => {
                 self.bytecode.push(Instruction::Push(Value::String(s)));
+            }
+            Expr::Boolean(b) => {
+                self.bytecode.push(Instruction::Push(Value::Boolean(b)));
+            }
+            Expr::Null => {
+                self.bytecode.push(Instruction::Push(Value::Null));
             }
             Expr::Variable(name) => {
                 self.bytecode.push(Instruction::LoadVar(name));
@@ -149,14 +194,32 @@ impl BytecodeCompiler {
                 self.compile_expr(*right);
                 
                 match op.as_str() {
-                    "=" => self.bytecode.push(Instruction::Equal),
+                    // The parser emits "==" for equality; matching "=" here
+                    // meant no instruction was emitted and both operands were
+                    // left on the stack, so every == comparison silently
+                    // tested the truthiness of its right-hand side instead.
+                    "==" => self.bytecode.push(Instruction::Equal),
                     "!=" => self.bytecode.push(Instruction::NotEqual),
                     "<" => self.bytecode.push(Instruction::LessThan),
                     "<=" => self.bytecode.push(Instruction::LessOrEqual),
                     ">" => self.bytecode.push(Instruction::GreaterThan),
                     ">=" => self.bytecode.push(Instruction::GreaterOrEqual),
-                    _ => {}
+                    other => panic!("Unknown comparison operator: {}", other),
                 }
+            }
+            Expr::Logical { op, left, right } => {
+                self.compile_expr(*left);
+                self.compile_expr(*right);
+
+                match op.as_str() {
+                    "&&" => self.bytecode.push(Instruction::And),
+                    "||" => self.bytecode.push(Instruction::Or),
+                    other => panic!("Unknown logical operator: {}", other),
+                }
+            }
+            Expr::Not(inner) => {
+                self.compile_expr(*inner);
+                self.bytecode.push(Instruction::Not);
             }
             Expr::Concat { left, right } => {
                 self.compile_expr(*left);

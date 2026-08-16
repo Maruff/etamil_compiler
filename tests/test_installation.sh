@@ -47,7 +47,7 @@ fi
 
 # Test 4: Test with a backend example
 echo -e "\n${BLUE}[4/4] Testing backend capabilities...${NC}"
-cd etamil_compiler/examples/basic_samples
+cd examples/basic_samples
 if etamil hello_world.etamil 2>&1 | grep -q "Execution completed successfully"; then
     echo -e "${GREEN}✓ Backend example works${NC}"
 else

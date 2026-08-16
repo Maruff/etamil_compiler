@@ -7,8 +7,28 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use bcrypt::{hash, verify};
 
-const JWT_SECRET: &[u8] = b"etamil-phase4-jwt-secret-change-in-production";
+const JWT_SECRET_ENV: &str = "ETAMIL_JWT_SECRET";
 const BCRYPT_COST: u32 = 12;
+
+/// The signing secret, read from the environment.
+///
+/// A hardcoded constant would let anyone holding the binary forge a token for
+/// any role, so when the variable is unset we fall back to a random secret
+/// that lives only as long as this process: tokens stop working after a
+/// restart, which is noisy but safe.
+fn jwt_secret() -> Vec<u8> {
+    match std::env::var(JWT_SECRET_ENV) {
+        Ok(secret) if !secret.is_empty() => secret.into_bytes(),
+        _ => {
+            eprintln!(
+                "⚠️  {} is not set — using a random per-process secret. \
+                 Issued tokens will not survive a restart. Set {} in production.",
+                JWT_SECRET_ENV, JWT_SECRET_ENV
+            );
+            format!("{}{}", uuid::Uuid::new_v4(), uuid::Uuid::new_v4()).into_bytes()
+        }
+    }
+}
 
 /// JWT Claims structure for access tokens
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -54,10 +74,11 @@ pub struct AuthManager {
 impl AuthManager {
     /// Create a new auth manager
     pub fn new() -> Self {
+        let secret = jwt_secret();
         Self {
             users: HashMap::new(),
-            encoding_key: EncodingKey::from_secret(JWT_SECRET),
-            decoding_key: DecodingKey::from_secret(JWT_SECRET),
+            encoding_key: EncodingKey::from_secret(&secret),
+            decoding_key: DecodingKey::from_secret(&secret),
         }
     }
 

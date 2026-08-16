@@ -89,7 +89,7 @@ pub enum Token {
     #[regex("கோப்பு_மூடு|kOppu_mUtu|_fileClose")] FileClose,
     #[regex("கோப்பு_படி|kOppu_pati|_fileRead")] FileRead,
     #[regex("கோப்பு_எழுது|kOppu_ezuqu|_fileWrite")] FileWrite,
-    #[regex("கோப்பு_நிரை|kOppu_NirY|fileLines")] FileLines,
+    #[regex("கோப்பு_நிரை|kOppu_NirY|_fileLines")] FileLines,
     #[regex("தரவுரை_படி|qaravurY_pati|_readCSV")] ReadCSV,
     #[regex("தரவுரை_எழுது|qaravurY_ezuqu|_writeCSV")] WriteCSV,
 
@@ -110,7 +110,7 @@ pub enum Token {
     #[regex("சீகுலைட்|cIkulYt|_SQLite")] SQLite,
     #[regex("மைசீகுல்|mYcIkul|_MySQL")] MySQL,
     #[regex("போச்குரசீகுல்|pOckuracIkul|_PostgreSQL")] PostgreSQL,
-    #[regex("மாங்கோடிபி|mAwkOṭipi|_MongoDB")] MongoDB,
+    #[regex("மாங்கோடிபி|mAwkOtipi|_MongoDB")] MongoDB,
     #[regex("ரெடிஸ்|retis|_Redis")] Redis,
     #[regex("ஜேசான்|jEcAn|_JSON")] JSONdb,
     
@@ -180,6 +180,11 @@ pub enum Token {
     #[regex("குறிமுறை|kuRimuRY|_password")] Password,
     #[regex("மறை_விசை|maRY_vicY|_encryptionKey")] EncryptionKey,
 
+    // --- Logical Operators ---
+    #[regex("மற்றும்|maRRum|_and")] And,
+    #[regex("அல்லது|allaqu|_or")] Or,
+    #[regex("இல்லை|illY|_not")] Not,
+
     // --- Literals & Identifiers ---
     #[regex(r"[0-9]+(\.[0-9]+)?%", |lex| {
         let s = lex.slice();
@@ -217,9 +222,70 @@ pub enum Token {
 }
 
 
-/// Helper function to tokenize a string of eTamil code
-pub fn tokenize(source: &str) -> Vec<Token> {
-    Token::lexer(source)
-        .filter_map(|token| token.ok())
-        .collect()
+/// A lexical error, carrying the position of the offending input.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LexError {
+    pub line: usize,
+    pub column: usize,
+    pub text: String,
+}
+
+impl std::fmt::Display for LexError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "வரி {}, நெடுவரிசை {}: அறியப்படாத உள்ளீடு '{}'  (line {}, column {}: unrecognized input '{}')",
+            self.line, self.column, self.text, self.line, self.column, self.text
+        )
+    }
+}
+
+/// Tokenize a string of eTamil code.
+///
+/// Every slice the lexer cannot recognize is reported with its position
+/// rather than silently discarded, so a mistyped character is a visible
+/// error instead of a program that quietly means something else.
+pub fn tokenize(source: &str) -> Result<Vec<Token>, Vec<LexError>> {
+    let mut tokens = Vec::new();
+    let mut errors = Vec::new();
+    let mut lexer = Token::lexer(source);
+
+    while let Some(result) = lexer.next() {
+        match result {
+            Ok(token) => tokens.push(token),
+            Err(_) => {
+                let (line, column) = line_col(source, lexer.span().start);
+                errors.push(LexError {
+                    line,
+                    column,
+                    text: lexer.slice().to_string(),
+                });
+            }
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(tokens)
+    } else {
+        Err(errors)
+    }
+}
+
+/// Convert a byte offset into a 1-based (line, column) pair, counting
+/// characters rather than bytes so Tamil text reports sensible columns.
+fn line_col(source: &str, offset: usize) -> (usize, usize) {
+    let mut line = 1;
+    let mut column = 1;
+    for (idx, ch) in source.char_indices() {
+        if idx >= offset {
+            break;
+        }
+        if ch == '\n' {
+            line += 1;
+            column = 1;
+        } else {
+            column += 1;
+        }
+    }
+    (line, column)
 }
