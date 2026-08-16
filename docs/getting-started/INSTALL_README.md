@@ -108,7 +108,7 @@ Expected output:
 
 - 📚 See [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for complete documentation
 - 🐛 Run `./test_installation.sh` to verify installation
-- 📖 Check examples in `etamil_compiler/examples/`
+- 📖 Check examples in `examples/`
 
 ---
 

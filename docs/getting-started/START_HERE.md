@@ -34,10 +34,10 @@ etamil hello.etamil
 ### 2. Start a Backend Server
 ```bash
 # Production-ready async server (100-1000 req/sec)
-etamil --async --port 8080 etamil_compiler/examples/backend/hello_server.qmz
+etamil --async --port 8080 examples/backend/hello_server.qmz
 
 # Or simple sync server (1-10 req/sec)
-etamil --server --port 8080 etamil_compiler/examples/backend/hello_server.qmz
+etamil --server --port 8080 examples/backend/hello_server.qmz
 ```
 
 ### 3. Test It
@@ -57,7 +57,7 @@ curl http://127.0.0.1:8080/health
 ### 🆕 New to eTamil?
 1. **[Installation Guide](docs/getting-started/INSTALLATION.md)** - Complete setup
 2. **[Quick Start Tutorial](docs/getting-started/QUICKSTART.md)** - 5-minute guide
-3. **[Examples](etamil_compiler/examples/)** - Sample code
+3. **[Examples](examples/)** - Sample code
 
 ### 🌐 Building Backend APIs?
 1. **[HTTP Server Guide](docs/backend/HTTP_SERVER_QUICKREF.md)** - Quick reference
@@ -101,7 +101,7 @@ curl http://127.0.0.1:8080/health
    - Phase 3-5 (Advanced features)
 
 ### Want Working Examples?
-6. **[etamil_compiler/examples/backend/README.md](etamil_compiler/examples/backend/README.md)**
+6. **[examples/backend/README.md](examples/backend/README.md)**
    - 6 sample applications
    - How to modify them
    - Real-world use cases
@@ -188,7 +188,7 @@ BACKEND_ANALYSIS.md             - Detailed analysis
 ### Option 1: Try the Samples (Recommended for First Time)
 ```bash
 # See how HTTP server works with real examples
-cd etamil_compiler/examples/backend
+cd examples/backend
 cat README.md          # Read examples guide
 cat hello_server.qmz   # Look at code
 ```
@@ -197,7 +197,7 @@ cat hello_server.qmz   # Look at code
 ```bash
 # Create your own .qmz file and start the server
 vi my_backend.qmz
-../../target/release/etamil_compiler --server my_backend.qmz
+../../target/release/etamil --server my_backend.qmz
 ```
 
 ### Option 3: Understand the Architecture
@@ -220,7 +220,7 @@ cat BACKEND_ANALYSIS.md
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
 | [HTTP_SERVER_QUICKREF.md](HTTP_SERVER_QUICKREF.md) | Quick reference | 5 min |
-| [etamil_compiler/examples/backend/README.md](etamil_compiler/examples/backend/README.md) | Getting started | 10 min |
+| [examples/backend/README.md](examples/backend/README.md) | Getting started | 10 min |
 | [HTTP_SERVER_IMPLEMENTATION.md](HTTP_SERVER_IMPLEMENTATION.md) | Technical guide | 30 min |
 | [TEST_RESULTS.md](TEST_RESULTS.md) | Verification | 20 min |
 | [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) | Project status | 10 min |
@@ -231,7 +231,7 @@ cat BACKEND_ANALYSIS.md
 
 ### Start Server
 ```bash
-./etamil_compiler/target/release/etamil_compiler --server [--port PORT] <program.qmz>
+./etamil_compiler/target/release/etamil --server [--port PORT] <program.qmz>
 ```
 
 ### Test with curl
@@ -309,7 +309,7 @@ You have a **fully functional HTTP backend server**.
 
 ### Next Action
 Choose one:
-- 👉 **Try Sample Apps**: `cd etamil_compiler/examples/backend`
+- 👉 **Try Sample Apps**: `cd examples/backend`
 - 👉 **Create Your Own**: Write a `.qmz` file and run the server
 - 👉 **Learn More**: Read the documentation
 - 👉 **Plan Phase 2**: Review requirements and roadmap

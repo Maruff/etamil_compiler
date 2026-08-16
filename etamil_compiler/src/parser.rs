@@ -8,6 +8,8 @@ use std::slice::Iter;
 pub enum Expr {
     Number(f64),
     String(String),
+    Boolean(bool),
+    Null,
     Variable(String),
     BinaryOp {
         op: String,
@@ -23,6 +25,14 @@ pub enum Expr {
         left: Box<Expr>,
         right: Box<Expr>,
     },
+    // maRRum / allaqu — both operands are evaluated (no short-circuiting)
+    Logical {
+        op: String,
+        left: Box<Expr>,
+        right: Box<Expr>,
+    },
+    // illY
+    Not(Box<Expr>),
 }
 
 #[allow(dead_code)]
@@ -462,7 +472,45 @@ impl<'a> Parser<'a> {
 
     // --- Expression Parsing (LLOPR & Precedence) ---
 
+    // Precedence, loosest first:
+    //   or  <  and  <  not  <  comparison  <  additive  <  term  <  factor
     fn parse_expression(&mut self) -> Expr {
+        self.parse_or()
+    }
+
+    fn parse_or(&mut self) -> Expr {
+        let mut left = self.parse_and();
+        while let Some(Token::Or) = self.tokens.peek() {
+            self.tokens.next();
+            let right = self.parse_and();
+            left = Expr::Logical {
+                op: "||".to_string(),
+                left: Box::new(left),
+                right: Box::new(right),
+            };
+        }
+        left
+    }
+
+    fn parse_and(&mut self) -> Expr {
+        let mut left = self.parse_not();
+        while let Some(Token::And) = self.tokens.peek() {
+            self.tokens.next();
+            let right = self.parse_not();
+            left = Expr::Logical {
+                op: "&&".to_string(),
+                left: Box::new(left),
+                right: Box::new(right),
+            };
+        }
+        left
+    }
+
+    fn parse_not(&mut self) -> Expr {
+        if let Some(Token::Not) = self.tokens.peek() {
+            self.tokens.next();
+            return Expr::Not(Box::new(self.parse_not()));
+        }
         self.parse_comparison()
     }
 
@@ -530,11 +578,24 @@ impl<'a> Parser<'a> {
 
     fn parse_factor(&mut self) -> Expr {
         // Base case for numbers/identifiers
-        let token = self.tokens.next().unwrap();
+        let token = self.tokens.next()
+            .expect("Unexpected end of input while reading an expression");
         match token {
+            // Unary minus: -x is compiled as 0 - x
+            Token::Minus => {
+                let operand = self.parse_factor();
+                Expr::BinaryOp {
+                    op: "-".to_string(),
+                    left: Box::new(Expr::Number(0.0)),
+                    right: Box::new(operand),
+                }
+            }
             Token::Number(n) => Expr::Number(*n),
             Token::Percentage(n) => Expr::Number(*n),
             Token::String(s) => Expr::String(s.clone()),
+            Token::True => Expr::Boolean(true),
+            Token::False => Expr::Boolean(false),
+            Token::Null => Expr::Null,
             Token::Identifier(name) => Expr::Variable(name.clone()),
             Token::LParen => {
                 // Parenthesized expression
@@ -556,6 +617,8 @@ impl<'a> Parser<'a> {
         match token {
             Token::Number(_) | Token::Percentage(_) | Token::String(_) => false,
             Token::If | Token::Else | Token::Loop | Token::Print | Token::Input => false,
+            Token::And | Token::Or | Token::Not => false,
+            Token::True | Token::False | Token::Null => false,
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
@@ -575,17 +638,11 @@ impl<'a> Parser<'a> {
             Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
             // Security
             Token::Encrypt | Token::Decrypt | Token::Password | Token::EncryptionKey => false,
-            // Financial & Accounting Keywords
-            Token::Credit | Token::Debit | Token::Balance | Token::Rate | Token::Asset => false,
-            Token::Liability | Token::Equity | Token::Revenue | Token::Expense | Token::Income => false,
-            Token::Profit | Token::Loss | Token::Tax | Token::Net | Token::Gross => false,
-            Token::Interest | Token::Ledger | Token::Journal | Token::Loan | Token::Finance => false,
-            Token::Statement | Token::Valuation | Token::CreditCard | Token::Cash | Token::Bank => false,
-            Token::Receivable | Token::Payable | Token::Vendor | Token::Customer => false,
-            Token::Fixed | Token::Current | Token::NonCurrent | Token::Address | Token::Amount => false,
-            Token::Currency | Token::Transaction | Token::Depreciation | Token::Amortization => false,
-            Token::Appreciation | Token::Capital | Token::TrialBalance | Token::BalanceSheet => false,
-            Token::IncomeStatement | Token::CashFlow | Token::IncomeTax | Token::GST | Token::ITR => false,
+            // Financial & accounting keywords ARE usable as names: வருவாய்,
+            // வரி and the rest are the domain nouns programs are written
+            // about. They have no statement syntax of their own, and listing
+            // them here made `எண் வருவாய்;` — the language's own headline
+            // example — a parse error.
             _ if self.is_type_token(token) => false,
             Token::Identifier(_) => true,
             _ => true,
@@ -632,8 +689,12 @@ impl<'a> Parser<'a> {
             Expr::String(s) => s,
             Expr::Variable(name) => name,
             Expr::Number(n) => n.to_string(),
+            Expr::Boolean(b) => b.to_string(),
+            Expr::Null => "nil".to_string(),
             Expr::BinaryOp { op, .. } => op,
             Expr::Comparison { op, .. } => op,
+            Expr::Logical { op, .. } => op,
+            Expr::Not(_) => "not".to_string(),
             Expr::Concat { .. } => "concat".to_string(),
         }
     }

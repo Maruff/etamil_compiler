@@ -114,7 +114,7 @@ etamil --async --port 8080 api.etamil      # Async HTTP server
 
 - **Unit tests**: Inline in `src/*.rs` files (use `#[test]` attribute)
 - **Integration tests**: `etamil_compiler/tests/`
-- **Example programs**: `etamil_compiler/examples/`
+- **Example programs**: `examples/`
 - **Test scripts**: `*.sh` files in root and `etamil_compiler/`
 
 ---

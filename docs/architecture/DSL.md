@@ -174,7 +174,7 @@ cargo run --bin etamil_compiler -- program.qmz --llvm
 ```bash
 cd etamil_compiler
 cargo build --release
-cp target/release/etamil_compiler ~/.local/bin/etamil
+cp target/release/etamil ~/.local/bin/etamil
 etamil myprogram.qmz  # Works anywhere!
 ```
 
@@ -253,7 +253,7 @@ Instruction::NewFeature(arg) => {
 - Value system: `src/vm/value.rs`
 
 ### Example Programs
-Located in: `etamil_compiler/examples/`
+Located in: `examples/`
 - `io_samples/` - File I/O
 - `db_samples/` - Database operations
 - `basic_samples/` - Core language features
@@ -349,7 +349,7 @@ eTamil has been successfully transformed from a **compile-time DSL** to an **ins
 
 ```bash
 # Download and run a program in one line
-./etamil etamil_compiler/examples/io_samples/simple_fileio.qmz
+./etamil examples/io_samples/simple_fileio.qmz
 
 # Output (instant, no compilation):
 # ✓ Lexical analysis complete (26 tokens)

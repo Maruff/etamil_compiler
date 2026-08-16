@@ -1,16 +1,14 @@
-mod lexer;
-mod parser;
-mod codegen;
-mod fileio;
-mod db;
-mod commands;
-mod vm;
-mod http;
-
+// The modules live in the library target (src/lib.rs); this binary uses them
+// from there rather than re-declaring them, which previously compiled the
+// whole crate twice.
 use std::fs;
 use std::io::{self, Read};
 use std::env;
-use http::HttpServer;
+
+use etamil_compiler::http::HttpServer;
+use etamil_compiler::{lexer, parser, vm};
+#[cfg(feature = "llvm")]
+use etamil_compiler::codegen;
 
 // ============================================================================
 // PHASE 2 INTEGRATION: Async/Await Support with Tokio
@@ -67,7 +65,16 @@ async fn main() {
     };
 
     // 2. Lexical Analysis
-    let tokens = lexer::tokenize(&input);
+    let tokens = match lexer::tokenize(&input) {
+        Ok(tokens) => tokens,
+        Err(errors) => {
+            eprintln!("✗ Lexical analysis failed ({} error(s)):", errors.len());
+            for error in &errors {
+                eprintln!("  {}", error);
+            }
+            std::process::exit(1);
+        }
+    };
     println!("✓ Lexical analysis complete ({} tokens)", tokens.len());
 
     // 3. Parsing (AST Construction)
@@ -84,9 +91,10 @@ async fn main() {
         // Uses Tokio async runtime + Axum HTTP framework
         // Supports graceful shutdown and connection pooling
         // ========================================================================
-        println!("=== eTamil Async HTTP Server (Phase 2 - Production Backend) ===");
-        println!("🚀 Starting async server on {}:{}", server_host, server_port);
-        println!("📊 Expected: 100-1000 req/sec with <20ms latency\n");
+        println!("=== eTamil HTTP Server (--async) ===");
+        println!("⚠️  The async runtime is not wired up yet; this falls back to");
+        println!("   the synchronous server. See docs/phases/PHASE_2_STATUS.md.");
+        println!("🚀 Starting server on {}:{}\n", server_host, server_port);
         
         if let Err(e) = run_async_server(&server_host, server_port, ast).await {
             eprintln!("❌ Async server error: {}", e);
@@ -182,14 +190,9 @@ async fn run_async_server(
     port: u16,
     ast: Vec<parser::Stmt>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Placeholder for async server start
-    // TODO: Integrate with async_mod.rs AsyncHttpServer
-    
-    println!("⚠️  Async server framework ready for integration");
-    println!("   Current: Using sync HTTP server");
-    println!("   Status: Phase 2 async_handler.rs and async_mod.rs are prepared");
-    println!("   Next: Wire async handlers and route registration");
-    
+    // TODO: Integrate with async_mod.rs AsyncHttpServer. Until then this is
+    // the synchronous server, and --async is an alias for --server.
+
     // For now, fallback to sync server to prevent breaking existing functionality
     let mut server = HttpServer::new(host, port);
     server.register_route("GET", "/", ast.clone());

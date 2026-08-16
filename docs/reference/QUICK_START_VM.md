@@ -7,7 +7,7 @@
 cd ~/ஆவணங்கள்/eTamil
 
 # 2. Run a program
-./etamil etamil_compiler/examples/io_samples/simple_fileio.qmz
+./etamil examples/io_samples/simple_fileio.qmz
 
 # 3. Done! ✅
 ```
@@ -68,7 +68,7 @@ cd etamil_compiler
 cargo build --release --bin etamil_compiler
 
 # Run it
-./target/release/etamil_compiler program.qmz
+./target/release/etamil program.qmz
 ```
 
 ---
@@ -194,7 +194,7 @@ Output
 ```bash
 cd etamil_compiler
 cargo build --release --bin etamil_compiler
-cp target/release/etamil_compiler ~/.local/bin/etamil
+cp target/release/etamil ~/.local/bin/etamil
 chmod +x ~/.local/bin/etamil
 
 # Now you can run from anywhere:
@@ -207,7 +207,7 @@ etamil myprogram.qmz
 
 - **Full docs**: See `VM_EXECUTOR.md`
 - **Implementation**: See `VM_IMPLEMENTATION_SUMMARY.md`
-- **Examples**: `etamil_compiler/examples/`
+- **Examples**: `examples/`
 - **Tests**: Run `./test_vm_executor.sh`
 
 ---

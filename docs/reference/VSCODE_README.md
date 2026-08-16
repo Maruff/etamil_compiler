@@ -260,7 +260,7 @@ sum: 30
 git clone https://github.com/Maruff/etamil_compiler.git
 cd etamil_compiler/etamil_compiler
 cargo build --release
-# Binary is at: target/release/etamil_compiler or etamil_compiler.exe
+# Binary is at: target/release/etamil or etamil_compiler.exe
 ```
 
 ---
@@ -377,7 +377,7 @@ chmod +x /path/to/etamil
 
 - **Official Repository**: https://github.com/Maruff/etamil_compiler
 - **Documentation**: See `docs/` folder in repository
-- **Examples**: See `etamil_compiler/examples/` in repository
+- **Examples**: See `examples/` in repository
 - **Issue Tracker**: https://github.com/Maruff/etamil_compiler/issues
 
 ---

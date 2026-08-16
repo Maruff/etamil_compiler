@@ -32,10 +32,10 @@ cd etamil_compiler
 cargo build --release
 
 # Copy to your preferred location
-sudo cp target/release/etamil_compiler /usr/local/bin/etamil
+sudo cp target/release/etamil /usr/local/bin/etamil
 # OR for user installation:
 mkdir -p ~/.local/bin
-cp target/release/etamil_compiler ~/.local/bin/etamil
+cp target/release/etamil ~/.local/bin/etamil
 
 # Make it executable
 chmod +x /usr/local/bin/etamil
@@ -199,7 +199,7 @@ etamil main.etamil
 # Create API file
 cat > api.etamil << 'EOF'
 // Note: Backend route syntax will be implemented
-// For now, use existing examples from etamil_compiler/examples/backend/
+// For now, use existing examples from examples/backend/
 EOF
 
 # Run the server (sync mode)
@@ -238,7 +238,7 @@ The repository includes many example applications:
 
 ```bash
 # File I/O examples
-cd etamil_compiler/examples/io_samples
+cd examples/io_samples
 etamil compile read_file.etamil -o read_file.qmz
 etamil run read_file.qmz
 
@@ -367,14 +367,14 @@ rm ~/.local/bin/etamil
 - Read [QUICK_START_VM.md](QUICK_START_VM.md) for VM features
 - Read [QUICK_START_DATABASE_EXAMPLES.md](QUICK_START_DATABASE_EXAMPLES.md) for database usage
 - Read [HTTP_SERVER_QUICKREF.md](HTTP_SERVER_QUICKREF.md) for backend development
-- Explore examples in `etamil_compiler/examples/`
+- Explore examples in `examples/`
 
 ---
 
 ## Support
 
 - **Documentation**: See `*.md` files in repository
-- **Examples**: `etamil_compiler/examples/`
+- **Examples**: `examples/`
 - **Test Suite**: Run `bash test_all_examples.sh`
 
 ---

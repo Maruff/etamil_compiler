@@ -58,7 +58,7 @@ fileClose "data.txt";
 
 ## Example Programs
 
-Located in `etamil_compiler/examples/`:
+Located in `examples/`:
 - **simple_fileio.qmz** - Basic file I/O operations
 - **fileio_example.qmz** - Comprehensive file and CSV operations
 - **example.qmz** - Original tax calculator (still works perfectly)

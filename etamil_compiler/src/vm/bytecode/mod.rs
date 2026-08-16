@@ -43,27 +43,32 @@ pub enum Instruction {
     // String operations
     Concat,
     
-    // File I/O
-    FileOpen(String), // mode
-    FileClose,
-    FileWrite,
-    FileRead,
-    
+    // File I/O — each pops its operands off the stack
+    FileOpen(String), // mode; pops filename
+    FileClose,        // pops filename
+    FileWrite,        // pops data, then filename
+    FileRead,         // pops filename, pushes contents
+    ReadCSV,          // pops filename, pushes the number of data rows
+    WriteCSV,         // pops row, then filename
+
     // Database
     DBConnect(String), // db_type
     DBQuery,
     DBExecute,
-    
+
     // API
     DefineRoute(String, String), // method, path
     StartServer(String, u16),    // host, port
-    
+
     // Functions
     Call(String),
     Return,
-    
+
     // Misc
     Nop,
+    /// A statement the VM cannot execute. Carries the message shown to the
+    /// user; executing it is a runtime error rather than a silent no-op.
+    Unsupported(String),
     Halt,
 }
 

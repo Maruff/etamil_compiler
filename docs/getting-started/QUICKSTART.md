@@ -49,7 +49,7 @@ etamil file_example.etamil
 
 ```bash
 # Use existing example
-etamil --server --port 8080 etamil_compiler/examples/backend/hello_server.qmz
+etamil --server --port 8080 examples/backend/hello_server.qmz
 ```
 
 In another terminal:
@@ -62,7 +62,7 @@ curl http://localhost:8080/health
 
 ```bash
 # High-performance async server
-etamil --async --port 8080 etamil_compiler/examples/backend/hello_server.qmz
+etamil --async --port 8080 examples/backend/hello_server.qmz
 ```
 
 **Performance**: 100-1000 requests/second with <20ms latency
@@ -120,7 +120,7 @@ etamil --llvm myprogram.etamil
 Explore built-in examples:
 
 ```bash
-cd etamil_compiler/examples
+cd examples
 
 # Backend examples
 ls backend/

@@ -17,7 +17,7 @@
 
 ```bash
 cd ~/ஆவணங்கள்/eTamil
-./etamil etamil_compiler/examples/io_samples/simple_fileio.qmz
+./etamil examples/io_samples/simple_fileio.qmz
 ```
 
 Time: **<100ms** ⚡
