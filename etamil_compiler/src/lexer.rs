@@ -133,6 +133,10 @@ pub enum Token {
     #[regex("அச்சு|accu")] Print,
     #[regex("உள்ளிடு|uLLitu")] Input,
 
+    // --- Functions ---
+    #[regex("செயல்|ceyal|_fn")] Function,
+    #[regex("திரும்பு|qirumpu|_return")] Return,
+
     // --- File I/O Operations ---
     #[regex("கோப்பு|kOppu|_file")] File,
     #[regex("தரவுரை|qaravurY|_CSV")] CSV,

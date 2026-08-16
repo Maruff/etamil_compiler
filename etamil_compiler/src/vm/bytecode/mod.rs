@@ -61,7 +61,9 @@ pub enum Instruction {
     StartServer(String, u16),    // host, port
 
     // Functions
-    Call(String),
+    /// Call a named function with this many arguments already on the stack.
+    Call(String, usize),
+    /// Pop the return value, restore the caller's frame, push the value back.
     Return,
 
     // Misc
@@ -72,16 +74,28 @@ pub enum Instruction {
     Halt,
 }
 
+/// Where a function's body starts, and the names its arguments bind to.
+#[derive(Debug, Clone)]
+pub struct FunctionInfo {
+    pub start: usize,
+    pub params: Vec<String>,
+}
+
 /// Complete bytecode program
 #[derive(Debug, Clone)]
 pub struct Bytecode {
     pub instructions: Vec<Instruction>,
+    /// Function bodies are emitted inline and jumped over; this maps a name
+    /// to its entry point. Resolution happens at call time, so functions may
+    /// be defined in any order and may recurse.
+    pub functions: std::collections::HashMap<String, FunctionInfo>,
 }
 
 impl Bytecode {
     pub fn new() -> Self {
         Bytecode {
             instructions: Vec::new(),
+            functions: std::collections::HashMap::new(),
         }
     }
 

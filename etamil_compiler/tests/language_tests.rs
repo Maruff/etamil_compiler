@@ -286,6 +286,110 @@ fn csv_row_count_excludes_the_header() {
     let _ = std::fs::remove_file(path);
 }
 
+// --- Functions ------------------------------------------------------------
+
+#[test]
+fn function_returns_a_value() {
+    let vm = run("ceyal iru_matangu(x) { qirumpu x * 2; } y = iru_matangu(21);").unwrap();
+    assert_eq!(num(&vm, "y"), dec(42));
+}
+
+#[test]
+fn function_with_several_parameters_binds_them_in_order() {
+    let vm = run("ceyal kazi(a, b) { qirumpu a - b; } y = kazi(10, 3);").unwrap();
+    assert_eq!(num(&vm, "y"), dec(7));
+}
+
+#[test]
+fn function_body_may_branch() {
+    let src = "ceyal vari(varumAZam) { \
+                 (varumAZam > 800000) eZil { qirumpu (varumAZam - 800000) * 20%; } \
+                 qirumpu 0; \
+               } \
+               a = vari(950000); b = vari(500000);";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "a"), dec(30000));
+    assert_eq!(num(&vm, "b"), dec(0));
+}
+
+#[test]
+fn functions_may_recurse() {
+    let src = "ceyal paktoriyal(n) { \
+                 (n <= 1) eZil { qirumpu 1; } \
+                 qirumpu n * paktoriyal(n - 1); \
+               } \
+               y = paktoriyal(5);";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "y"), dec(120));
+}
+
+#[test]
+fn functions_may_be_called_before_they_are_defined() {
+    let src = "y = irattai(4); ceyal irattai(x) { qirumpu x + x; }";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "y"), dec(8));
+}
+
+#[test]
+fn falling_off_the_end_returns_nil() {
+    let vm = run("ceyal onRumillY() { x = 1; } y = onRumillY();").unwrap();
+    assert_eq!(vm.variables.get("y"), Some(&Value::Null));
+}
+
+#[test]
+fn a_function_reads_globals_but_does_not_clobber_them() {
+    let src = "moqqam = 100; \
+               ceyal maRRu() { moqqam = 5; qirumpu moqqam; } \
+               uLLE = maRRu();";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "uLLE"), dec(5));
+    // The global is untouched: the assignment created a local.
+    assert_eq!(num(&vm, "moqqam"), dec(100));
+}
+
+#[test]
+fn parameters_do_not_leak_into_the_caller() {
+    let err = run("ceyal f(x) { qirumpu x; } y = f(1); accu x;")
+        .expect_err("x is local to f");
+    assert!(err.contains("undefined variable"), "unexpected error: {}", err);
+}
+
+#[test]
+fn wrong_argument_count_is_an_error() {
+    let err = run("ceyal f(a, b) { qirumpu a; } y = f(1);")
+        .expect_err("arity mismatch should fail");
+    assert!(err.contains("expects 2"), "unexpected error: {}", err);
+}
+
+#[test]
+fn calling_an_unknown_function_is_an_error() {
+    let err = run("y = illAqa_ceyal(1);").expect_err("unknown function should fail");
+    assert!(err.contains("unknown function"), "unexpected error: {}", err);
+}
+
+#[test]
+fn runaway_recursion_is_caught() {
+    let err = run("ceyal muti_illA(n) { qirumpu muti_illA(n + 1); } y = muti_illA(1);")
+        .expect_err("infinite recursion should be caught");
+    assert!(err.contains("call depth"), "unexpected error: {}", err);
+}
+
+#[test]
+fn a_call_may_stand_alone_as_a_statement() {
+    let vm = run("ceyal kAttu(x) { accu x; } kAttu(7); y = 1;").unwrap();
+    assert_eq!(num(&vm, "y"), dec(1));
+    // The discarded return value must not be left on the stack.
+    assert!(vm.stack.is_empty(), "stack leaked: {:?}", vm.stack);
+}
+
+#[test]
+fn tamil_function_definition_and_call() {
+    let src = "செயல் இரட்டை(எண்ணிக்கை) { திரும்பு எண்ணிக்கை * 2; } \
+               விடை = இரட்டை(50);";
+    let vm = run(src).unwrap();
+    assert_eq!(num(&vm, "விடை"), dec(100));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
