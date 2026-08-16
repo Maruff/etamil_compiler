@@ -11,7 +11,9 @@ use std::ffi::CString;
 use std::collections::HashMap;
 #[cfg(feature = "llvm")]
 use std::ptr;
-use crate::parser::{Expr, Stmt};
+use crate::parser::Stmt;
+#[cfg(feature = "llvm")]
+use crate::parser::Expr;
 #[cfg(feature = "llvm")]
 use crate::fileio::csv_handler::FileIOHandler;
 
