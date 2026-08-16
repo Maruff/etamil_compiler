@@ -1,5 +1,7 @@
 # eTamil HTTP Server - Quick Reference Guide
 
+> **Status: partly implemented.** Only the synchronous server runs. It is single-threaded and serves your whole program as the handler for every route; `--async` is an alias for `--server`, and route/response statements are not executable. See [ROADMAP](../ROADMAP.md) items 4 and 5.
+
 ## Quick Start
 
 ### 1. Build

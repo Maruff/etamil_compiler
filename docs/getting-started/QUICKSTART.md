@@ -1,206 +1,160 @@
-# eTamil Quick Start Guide
+# Quick Start
 
-Get up and running with eTamil in 5 minutes.
+Assumes eTamil is installed — see the [Installation Guide](INSTALLATION.md).
 
-## Prerequisites
-
-- eTamil installed ([Installation Guide](INSTALLATION.md))
-- Terminal/command line access
-
-## Your First eTamil Program
-
-### 1. Hello World
+## Hello world
 
 ```bash
-# Create a simple program
-echo 'அச்சு("வணக்கம் உலகம்!");' > hello.etamil
-
-# Run it
-etamil hello.etamil
+echo 'அச்சு "வணக்கம் உலகம்!";' > hello.etamil
+etamil --vm hello.etamil
 ```
 
-**Output:**
+On Windows, write the file as UTF-8:
+
+```powershell
+'அச்சு "வணக்கம் உலகம்!";' | Out-File hello.etamil -Encoding UTF8
+etamil --vm hello.etamil
 ```
-✓ Lexical analysis complete (4 tokens)
+
+Output:
+
+```
+✓ Lexical analysis complete (3 tokens)
 ✓ Parsing complete (1 statements)
+
 === eTamil VM Executor ===
-✓ Bytecode generated (2 instructions)
+
+✓ Bytecode generated (3 instructions)
 === Execution Output ===
-nil
+
+வணக்கம் உலகம்!
+
 ✓ Execution completed successfully
 ```
 
-### 2. Working with Files
+`அச்சு` (`accu`) prints. Statements end with `;`.
 
-```bash
-# Create a file I/O program
-cat > file_example.etamil << 'ETAMIL'
-// Write to file
-file_content = "வணக்கம்! This is eTamil.";
-// Read from file
-அச்சு("File operations completed");
-ETAMIL
+## Variables and input
 
-# Run it
-etamil file_example.etamil
+```etamil
+எண் வருவாய்;
+அச்சு "Enter income: ";
+உள்ளிடு வருவாய்;
+அச்சு "You earn " & வருவாய்;
 ```
 
-### 3. Start an HTTP Server
+`எண்` declares a number, `உள்ளிடு` reads a line from standard input, and `&` joins strings.
+
+Every keyword also has a romanized spelling, so this is the same program:
+
+```etamil
+eN varuvAy;
+accu "Enter income: ";
+uLLitu varuvAy;
+accu "You earn " & varuvAy;
+```
+
+## Conditions
+
+```etamil
+(வருவாய் > 800000) எனில் {
+    அச்சு "High Tax Bracket";
+}
+இன்றேல் {
+    அச்சு "Low Tax Bracket";
+}
+```
+
+Conditions go in parentheses *before* `எனில்` (if). `இன்றேல்` (else) is optional.
+
+Conditions can be combined:
+
+```etamil
+(வருவாய் > 800000 மற்றும் வயது < 60) எனில் {
+    அச்சு "Taxable";
+}
+```
+
+## Loops
+
+```etamil
+எண் i = 0;
+(i < 3) சுற்று {
+    அச்சு i;
+    i = i + 1;
+}
+```
+
+## A complete program
+
+```etamil
+// Income tax calculator
+எண் வருவாய்;
+அச்சு "Enter income: ";
+உள்ளிடு வருவாய்;
+வரி = 20%;
+
+(வருவாய் > 800000) எனில் {
+    அச்சு "High Tax Bracket";
+    அச்சு (வருவாய் - 800000) * வரி;
+}
+இன்றேல் {
+    அச்சு "Low Tax Bracket (No Tax)";
+}
+```
 
 ```bash
-# Use existing example
+echo "950000" | etamil --vm tax.etamil
+```
+
+A `20%` literal becomes `0.2` at lex time.
+
+## Files
+
+```etamil
+கோப்பு_திற "output.txt", "write";
+கோப்பு_எழுது "output.txt", "வணக்கம்";
+கோப்பு_மூடு "output.txt";
+
+கோப்பு_படி "output.txt", data;
+அச்சு data;
+```
+
+Opening for `"write"` truncates the file; each write after that appends a line.
+
+## An HTTP server
+
+```bash
 etamil --server --port 8080 examples/backend/hello_server.qmz
-```
-
-In another terminal:
-```bash
 curl http://localhost:8080/
-curl http://localhost:8080/health
 ```
 
-### 4. Start Async Server (Production)
+The server is minimal: it runs your whole program as the handler for every route, single-threaded. `--async` is currently an alias for `--server`. Routes as language statements are not implemented yet — see the [roadmap](../ROADMAP.md).
+
+## Run the examples
 
 ```bash
-# High-performance async server
-etamil --async --port 8080 examples/backend/hello_server.qmz
+etamil --vm examples/basic_samples/example.qmz
+etamil --vm examples/io_samples/simple_fileio.qmz
 ```
 
-**Performance**: 100-1000 requests/second with <20ms latency
+The `examples/db_samples/` programs deliberately **fail** — database statements parse but are not executable yet.
 
-## Command Modes
+## When something goes wrong
 
-### VM Execution (Default)
-```bash
-etamil myprogram.etamil
+Errors report where they happened:
+
 ```
-- Fast bytecode execution
-- <100ms startup
-- Good for scripts and CLI tools
-
-### HTTP Server (Sync)
-```bash
-etamil --server --port 8080 api.etamil
-```
-- Simple synchronous server
-- 1-10 requests/second
-- Good for MVP and testing
-
-### HTTP Server (Async)
-```bash
-etamil --async --port 8080 api.etamil
-```
-- Production-ready async server
-- 100-1000 requests/second
-- 10-20ms latency
-- Good for production APIs
-
-### LLVM Backend
-```bash
-etamil --llvm myprogram.etamil
-```
-- Native code generation
-- Maximum performance
-- Longer compilation time
-
-## Common Options
-
-```bash
-# Specify host and port
-etamil --async --host 0.0.0.0 --port 3000 api.etamil
-
-# Use VM explicitly
-etamil --vm myprogram.etamil
-
-# Use LLVM backend
-etamil --llvm myprogram.etamil
+✗ Lexical analysis failed (1 error(s)):
+  வரி 3, நெடுவரிசை 12: அறியப்படாத உள்ளீடு '@'  (line 3, column 12: unrecognized input '@')
 ```
 
-## Examples Directory
+Common causes:
 
-Explore built-in examples:
-
-```bash
-cd examples
-
-# Backend examples
-ls backend/
-# - hello_server.qmz
-# - crud.etamil
-# - auth.etamil
-# - middleware.etamil
-
-# File I/O examples
-ls io_samples/
-# - file_operations.etamil
-# - csv_parser.etamil
-
-# Database examples
-ls db_samples/
-# - postgresql.etamil
-# - mysql.etamil
-```
-
-## Testing Your Installation
-
-```bash
-# Run installation test
-./test_installation.sh
-
-# Run HTTP backend tests
-./test_http_backend.sh
-
-# Run unit tests
-cd etamil_compiler && cargo test
-```
-
-## Next Steps
-
-1. **Learn the Language**: [Language Syntax](../reference/QUICK_START_VM.md)
-2. **Build an API**: [HTTP Server Guide](../backend/HTTP_SERVER_QUICKREF.md)
-3. **Use Databases**: [Database Guide](../backend/DATABASE_COMMANDS_GUIDE.md)
-4. **Deploy**: [Deployment Guide](../backend/DEPLOYMENT_GUIDE.md)
-
-## Troubleshooting
-
-### Program doesn't run
-- Check syntax (eTamil uses Tamil keywords)
-- Verify file path is correct
-- Run `etamil --vm yourfile.etamil` explicitly
-
-### Server won't start
-- Check if port is already in use: `sudo lsof -i :8080`
-- Try a different port: `--port 3000`
-- Verify .qmz file exists
-
-### "Command not found"
-- Ensure `etamil` is in PATH
-- Run: `export PATH="$PATH:$HOME/.local/bin"`
-- See [Installation Guide](INSTALLATION.md)
-
-## Quick Command Reference
-
-```bash
-# Run program
-etamil app.etamil
-
-# Start sync server
-etamil --server --port 8080 api.etamil
-
-# Start async server
-etamil --async --port 8080 api.etamil
-
-# Custom host
-etamil --async --host 0.0.0.0 --port 8080 api.etamil
-
-# LLVM backend
-etamil --llvm app.etamil
-
-# Test installation
-./test_installation.sh
-```
+- **Missing `;`** — every statement needs one.
+- **`undefined variable`** — the name was never assigned. Declare it first (`எண் x;` sets it to 0).
+- **`not implemented in the VM yet`** — a database or server statement; see the [roadmap](../ROADMAP.md).
 
 ---
 
-**You're ready to build with eTamil!** 🚀
-
-For complete command reference, see [COMMANDS.md](../reference/COMMANDS.md)
+Next: [Keyword Reference](../reference/KEYWORDS.md) · [Command Reference](../reference/COMMANDS.md) · [Roadmap](../ROADMAP.md)

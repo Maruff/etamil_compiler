@@ -1,5 +1,7 @@
 # eTamil Database & Commands System
 
+> **Status: syntax reference only.** Database statements parse, but the VM cannot execute them — running one fails with `not implemented`. `src/db/` is an in-memory simulation that is not connected to the interpreter, and no database driver is currently a dependency. See [ROADMAP](../ROADMAP.md) item 3.
+
 ## Overview
 
 The eTamil compiler now includes a comprehensive database connectivity and command execution system for managing relational databases (SQL), NoSQL databases (MongoDB, Redis), and compiler operations (compile, run, query).
@@ -384,7 +386,7 @@ pub mod commands;  // CommandExecutor
 
 ## Example: Complete Workflow
 
-See [db_commands_demo.rs](examples/db_commands_demo.rs) for a complete working example demonstrating:
+See [db_commands_demo.rs](../../examples/db_samples/db_commands_demo.rs) for a complete working example demonstrating:
 1. Relational database creation and queries
 2. NoSQL document insertion and retrieval
 3. Command compilation and validation

@@ -1,77 +1,59 @@
-# eTamil Documentation Index
+# eTamil Documentation
 
-```
-docs/
-├── getting-started/   # installation and first steps
-├── architecture/      # how the compiler is put together
-├── backend/           # HTTP server and database guides
-├── reference/         # language and letter-scheme reference
-├── phases/            # development phase reports
-└── archive/           # superseded historical documents
-```
+Start with the [README](../README.md) for what eTamil is and which parts of it run today, then pick a page below.
 
-> **Read [ROADMAP.md](ROADMAP.md) first if you plan to build on eTamil.** Several documents below describe features as complete that are not yet wired up — the roadmap and the status table in the [README](../README.md) are the authoritative account of what runs today.
+## Getting started
 
----
-
-## Start here
-
-- **[README](../README.md)** — what eTamil is, how to build it, and the current status of every subsystem
-- **[ROADMAP](ROADMAP.md)** — what is unfinished, why it matters, and what it takes to finish
-- **[Installation Guide](getting-started/INSTALLATION.md)** — setup instructions
-- **[Quick Start](getting-started/QUICKSTART.md)** — short tutorial
-
----
+| Page | What it covers |
+|---|---|
+| [Installation](getting-started/INSTALLATION.md) | Prerequisites, building from source, verifying, troubleshooting |
+| [Quick Start](getting-started/QUICKSTART.md) | Your first program, through to files and a server |
 
 ## Language reference
 
-- **[Tamil Letter Equivalents](reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md)** — the ezuqqu romanization scheme
-- **[eTamil Standard](reference/ETAMIL_STANDARD.md)** — language standard
-- **[Quick Reference](reference/QUICK_REFERENCE.md)** — syntax at a glance
-- **[File I/O Features](reference/FILE_IO_FEATURES.md)** — file and CSV statements
-- **[VM Quick Start](reference/QUICK_START_VM.md)** — running programs on the VM
-
----
+| Page | What it covers |
+|---|---|
+| [Keywords](reference/KEYWORDS.md) | Every keyword in all three spellings — generated from the lexer |
+| [Commands](reference/COMMANDS.md) | CLI flags, exit codes, environment variables |
+| [Tamil Letter Equivalents](reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md) | How the ezuqqu romanization is derived |
+| [File I/O](reference/FILE_IO_FEATURES.md) | File and CSV statements |
+| [VM Quick Start](reference/QUICK_START_VM.md) | Running programs on the bytecode VM |
+| [Quick Reference](reference/QUICK_REFERENCE.md) | Syntax at a glance — partly outdated |
+| [eTamil Standard](reference/ETAMIL_STANDARD.md) | The language standard, with PDFs alongside |
+| [VS Code Extension](reference/VSCODE_README.md) | Editor support (the extension itself lives in another repo) |
 
 ## Architecture
 
-- **[System Overview](architecture/OVERVIEW.md)** — high-level design
-- **[DSL Design](architecture/DSL.md)** — language design rationale
-- **[VM Implementation](architecture/VM_IMPLEMENTATION_SUMMARY.md)** — bytecode and interpreter
+| Page | What it covers |
+|---|---|
+| [Module Overview](architecture/OVERVIEW.md) | How the crate is organized |
+| [VM Implementation](architecture/VM_IMPLEMENTATION_SUMMARY.md) | Bytecode format and interpreter |
 
-The pipeline is: `lexer.rs` (logos) → `parser.rs` (recursive descent) → `vm/bytecode/compiler.rs` → `vm/interpreter.rs`. The optional LLVM backend in `codegen.rs` is an alternative to the last two stages.
+The pipeline is `lexer.rs` → `parser.rs` → `vm/bytecode/compiler.rs` → `vm/interpreter.rs`. `codegen.rs` is an optional LLVM backend replacing the last two stages.
 
----
+## Backend
 
-## Backend development
+Both pages carry a status banner; read it first.
 
-⚠️ These guides describe the intended design. Today only the **synchronous** server runs, it serves a single handler on every route, and database statements fail with "not implemented". See [ROADMAP](ROADMAP.md) items 3–5.
+| Page | What it covers |
+|---|---|
+| [HTTP Server](backend/HTTP_SERVER_QUICKREF.md) | Server usage — sync only |
+| [Database Commands](backend/DATABASE_COMMANDS_GUIDE.md) | Database syntax — not executable yet |
 
-- **[HTTP Server Implementation](backend/HTTP_SERVER_IMPLEMENTATION.md)**
-- **[HTTP Server Quick Reference](backend/HTTP_SERVER_QUICKREF.md)**
-- **[Database Commands](backend/DATABASE_COMMANDS_GUIDE.md)** — syntax reference; execution is not implemented
-- **[Deployment Guide](backend/DEPLOYMENT_GUIDE.md)**
-- **[Production Hardening](backend/PRODUCTION_HARDENING_GUIDE.md)**
+## Planning
 
----
-
-## Development phases
-
-Historical reports on how the code was built. They record intent at the time of writing and have **not** been reconciled with the current state of the code — Phase 2 in particular is described as complete, but its modules are not compiled. Treat the roadmap as authoritative.
-
-- Phase 1 — [complete](phases/PHASE_1_COMPLETE.md): synchronous HTTP server
-- Phase 2 — [status](phases/PHASE_2_STATUS.md): async server, **not wired up**
-- Phase 3 — [logging](phases/PHASE_3_LOGGING_IMPLEMENTATION.md): logging, errors, metrics
-- Phase 4 — [module status](phases/PHASE_4_MODULE_STATUS.md): auth, cache, resilience — built and unit-tested, not reachable from the DSL
-
----
+| Page | What it covers |
+|---|---|
+| [Roadmap](ROADMAP.md) | What is unfinished, why it matters, what finishing it takes |
 
 ## Examples
 
-Sample programs live in [`../examples/`](../examples/), not under `docs/`. Basic and file I/O samples run today; database samples fail by design until database execution exists.
+Sample programs live in [`../examples/`](../examples/). The basic and file I/O samples run; the database samples fail by design.
 
 ---
 
-## Archive
+## About the archive
 
-`docs/archive/` holds superseded status reports, completion manifests, and refactoring summaries kept for history. Nothing there should be treated as current.
+`archive/` holds superseded documents — phase completion reports, backend planning drafts, older installation guides, and VS Code extension write-ups. They are kept for history and are **not** maintained. Several describe features as complete that were never wired up, which is exactly why they were archived rather than left in the navigation.
+
+When a page here and a page in `archive/` disagree, this side wins. When a page here and the **code** disagree, the code wins — please open an issue or fix the page.

@@ -1,5 +1,7 @@
 # eTamil Compiler - Quick Reference Guide
 
+> **Note:** parts of this page predate the current code and overstate what runs — notably async server throughput and database execution. The [README status table](../../README.md#project-status), [KEYWORDS](KEYWORDS.md) and [COMMANDS](COMMANDS.md) are authoritative.
+
 ## Project Status: ✅ COMPLETE & PRODUCTION READY
 
 ---
@@ -307,8 +309,8 @@ cat output.ll
 **Status:** ✅ Production Ready  
 **Build Date:** January 25, 2026
 
-For technical details, see [ARCHITECTURE.md](ARCHITECTURE.md)  
-For refactoring details, see [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)
+For technical details, see [ARCHITECTURE.md](../architecture/OVERVIEW.md)  
+For refactoring details, see [REFACTORING_SUMMARY.md](../archive/REFACTORING_SUMMARY.md)
 
 ---
 

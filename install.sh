@@ -16,7 +16,7 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 # Check if binary exists
-BINARY_PATH="./etamil_compiler/target/release/etamil_compiler"
+BINARY_PATH="./etamil_compiler/target/release/etamil"
 if [ ! -f "$BINARY_PATH" ]; then
     echo -e "${RED}✗ Error: eTamil compiler binary not found at $BINARY_PATH${NC}"
     echo -e "${BLUE}Building the compiler...${NC}"
@@ -65,15 +65,13 @@ if [ -f "$INSTALL_DIR/$INSTALL_NAME" ]; then
     echo -e "${BLUE}Installation complete!${NC}"
     echo ""
     echo -e "${GREEN}Usage:${NC}"
-    echo -e "  ${BLUE}etamil compile <source.etamil> -o <output.qmz>${NC}  # Compile eTamil code"
-    echo -e "  ${BLUE}etamil run <program.qmz>${NC}                      # Run compiled program"
-    echo -e "  ${BLUE}etamil server <port> <etamil_file>${NC}           # Start HTTP server"
-    echo -e "  ${BLUE}etamil --help${NC}                                # Show all commands"
+    echo -e "  ${BLUE}etamil --vm <program.qmz>${NC}                    # Run a program"
+    echo -e "  ${BLUE}etamil --server --port 8080 <program.qmz>${NC}    # Start the HTTP server"
+    echo -e "  ${BLUE}etamil --help${NC}                                # Show all options"
     echo ""
     echo -e "${GREEN}Examples:${NC}"
-    echo -e "  ${BLUE}etamil compile hello.etamil -o hello.qmz${NC}"
-    echo -e "  ${BLUE}etamil run hello.qmz${NC}"
-    echo -e "  ${BLUE}etamil server 8080 examples/backend/crud.etamil${NC}"
+    echo -e "  ${BLUE}etamil --vm examples/basic_samples/example.qmz${NC}"
+    echo -e "  ${BLUE}etamil --server --port 8080 examples/backend/hello_server.qmz${NC}"
     echo ""
     
     # Show binary info

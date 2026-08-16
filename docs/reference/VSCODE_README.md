@@ -68,7 +68,7 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 
 ### Tamil Letter Equivalents
 
-The extension supports both Tamil script and romanized (Latin character) forms from the `ezuqqu.pdf` standard. Learn the complete mapping in the **[Tamil Letter Equivalents Guide](TAMIL_LETTER_EQUIVALENTS.md)**:
+The extension supports both Tamil script and romanized (Latin character) forms from the `ezuqqu.pdf` standard. Learn the complete mapping in the **[Tamil Letter Equivalents Guide](COMPILER_TAMIL_LETTER_EQUIVALENTS.md)**:
 
 - Tamil alphabet system (consonants, vowels, gemination)
 - Romanization rules with detailed examples

@@ -1,5 +1,7 @@
 # eTamil Independent DSL Executor - Implementation Summary
 
+> **Note:** written before the correctness fixes to the bytecode compiler and interpreter. The instruction set and VM behaviour described here are broadly right, but check `src/vm/` for the current details.
+
 **Status**: ✅ **COMPLETE**  
 **Date**: 25 ஜனவரி 2026  
 **Version**: 1.0.0

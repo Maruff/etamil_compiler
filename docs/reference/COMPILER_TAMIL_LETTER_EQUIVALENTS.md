@@ -458,10 +458,10 @@ accu "Profit: " & profit;
 
 ## Related Documentation
 
-- [ACTUAL_KEYWORDS.md](ACTUAL_KEYWORDS.md) - Complete keyword reference
+- [ACTUAL_KEYWORDS.md](KEYWORDS.md) - Complete keyword reference
 - [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Quick syntax guide
-- [HOW_TO_USE.md](HOW_TO_USE.md) - Getting started guide
-- [src/lexer.rs](src/lexer.rs) - Source code with all token definitions
+- [HOW_TO_USE.md](../getting-started/QUICKSTART.md) - Getting started guide
+- [src/lexer.rs](../../etamil_compiler/src/lexer.rs) - Source code with all token definitions
 
 ---
 
