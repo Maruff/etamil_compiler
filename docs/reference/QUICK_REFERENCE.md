@@ -310,7 +310,7 @@ cat output.ll
 **Build Date:** January 25, 2026
 
 For technical details, see [ARCHITECTURE.md](../architecture/OVERVIEW.md)  
-For refactoring details, see [REFACTORING_SUMMARY.md](../archive/REFACTORING_SUMMARY.md)
+For refactoring details, see REFACTORING_SUMMARY.md (removed; see git history)
 
 ---
 

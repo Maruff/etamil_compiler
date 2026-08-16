@@ -1,6 +1,6 @@
 # eTamil Database & Commands System
 
-> **Status: syntax reference only.** Database statements parse, but the VM cannot execute them — running one fails with `not implemented`. `src/db/` is an in-memory simulation that is not connected to the interpreter, and no database driver is currently a dependency. See [ROADMAP](../ROADMAP.md) item 3.
+> **Status: syntax reference only.** Database statements parse, but the VM cannot execute them — running one fails with `not implemented`. There is no database layer and no driver dependency; the previous `src/db/` was an unreachable in-memory simulation and has been removed. See [ROADMAP](../ROADMAP.md) item 3.
 
 ## Overview
 

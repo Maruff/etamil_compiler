@@ -9,7 +9,7 @@ Two unrelated numbering schemes existed in this project, both called Phase 1-N. 
 | Term | Meaning | Where it appears |
 |---|---|---|
 | **Paper Phase 1-5** | The research roadmap: compiler core → domain modules → tooling/REPL → pilot projects → policy engagement | *eTamil: An Indian FinTech DSL* (Maruff & Valli), p.13 |
-| **Backend milestone 1-4** | This repository's HTTP work: sync server → async → logging → auth | source comments, `docs/archive/phases/` |
+| **Backend milestone 1-4** | This repository's HTTP work: sync server → async → logging → auth | source comments in `src/http/` |
 
 They mean entirely different things. Backend milestones 1-4 being "complete" says nothing about paper Phase 2, which has not started. Against the paper's scheme, the project is mid-**Phase 1**: the compiler core exists, the domain modules do not.
 
@@ -39,9 +39,9 @@ This is the single biggest usability gap for learners.
 
 ## 3. Database execution
 
-**Today:** `தளம்_இணை`, `தளம்_வினா` and friends parse into AST nodes, then compile to an `Unsupported` instruction that fails at runtime with a clear message. `src/db/` contains an in-memory `HashMap` simulation that prints `[DB] ...` lines and is not connected to the VM.
+**Today:** `தளம்_இணை`, `தளம்_வினா` and friends parse into AST nodes, then compile to an `Unsupported` instruction that fails at runtime with a clear message. There is no database layer at all — the former `src/db/` was an in-memory `HashMap` simulation that printed `[DB] ...` lines, was never connected to the VM, and has been removed.
 
-**What it involves:** decide whether `src/db/` becomes a real backend or is deleted. For real database work, add `sqlx` back and give the VM an async execution path — the VM is currently synchronous, so this depends on item 4.
+**What it involves:** add `sqlx` and implement the `DB*` instructions against it. The VM is synchronous, so either the driver calls block on a runtime handle or the VM gains an async execution path — which makes this depend on item 4. Start from the AST nodes in `parser.rs`, which already carry table, data and condition.
 
 ---
 

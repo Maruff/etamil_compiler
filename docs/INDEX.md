@@ -52,8 +52,12 @@ Sample programs live in [`../examples/`](../examples/). The basic and file I/O s
 
 ---
 
-## About the archive
+## A note on older documents
 
-`archive/` holds superseded documents — phase completion reports, backend planning drafts, older installation guides, and VS Code extension write-ups. They are kept for history and are **not** maintained. Several describe features as complete that were never wired up, which is exactly why they were archived rather than left in the navigation.
+Superseded documents — phase completion reports, backend planning drafts, older installation guides, VS Code write-ups — were removed rather than kept in the tree. Several described features as complete that were never wired up, which made them actively misleading. They remain in git history if you need them:
 
-When a page here and a page in `archive/` disagree, this side wins. When a page here and the **code** disagree, the code wins — please open an issue or fix the page.
+```bash
+git log --diff-filter=D --name-only -- 'docs/archive/*'
+```
+
+When a page here and the **code** disagree, the code wins — please open an issue or fix the page.
