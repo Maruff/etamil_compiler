@@ -6,7 +6,16 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write as IoWrite;
 use rust_decimal::Decimal;
+use std::str::FromStr;
+use unicode_segmentation::UnicodeSegmentation;
 use crate::vm::{Value, Instruction, Bytecode};
+
+/// Split text the way a reader would: by written letter. A Tamil letter is
+/// frequently several code points (consonant + vowel sign, or + pulli), so
+/// counting chars would make நீளம்("வணக்கம்") 7 instead of 5.
+fn letters(text: &str) -> Vec<&str> {
+    text.graphemes(true).collect()
+}
 
 /// One active function call: where to resume, and that call's local names.
 #[derive(Debug)]
@@ -119,9 +128,9 @@ impl VM {
                 })
             }
             Value::String(s) => {
-                let chars: Vec<char> = s.chars().collect();
-                let i = Self::array_index(chars.len(), index)?;
-                Ok(Value::String(chars[i].to_string()))
+                let parts = letters(s);
+                let i = Self::array_index(parts.len(), index)?;
+                Ok(Value::String(parts[i].to_string()))
             }
             other => Err(format!(
                 "அட்டவணைப்படுத்த முடியாது  (cannot index into {})",
@@ -146,7 +155,7 @@ impl VM {
                 let n = match &args[0] {
                     Value::Array(items) => items.len(),
                     Value::Map(fields) => fields.len(),
-                    Value::String(s) => s.chars().count(),
+                    Value::String(s) => letters(s).len(),
                     other => {
                         return Err(format!(
                             "நீளம் ஒரு அணி/பொருள்/சொல் தேவை  (length needs an array, record or string, got {})",
@@ -225,6 +234,57 @@ impl VM {
                         Self::type_name(other)
                     )),
                 }
+            }
+            // --- Numeric primitives ---
+            // These need the decimal type itself, so they cannot be written
+            // in eTamil. Everything derivable from them lives in nUlakam/.
+            // வட்டமிடு(n, இடங்கள்) — round to n decimal places, half away
+            // from zero, which is what Indian tax rules expect.
+            "வட்டமிடு" | "vattamitu" | "_round" => {
+                Self::expect_args(name, &args, 2)?;
+                let places = rust_decimal::prelude::ToPrimitive::to_u32(&args[1].to_number())
+                    .ok_or("வட்டமிடு: இடங்கள் ஒரு முழு எண்  (round: places must be a whole number)")?;
+                Ok(Value::Number(args[0].to_number().round_dp_with_strategy(
+                    places,
+                    rust_decimal::RoundingStrategy::MidpointAwayFromZero,
+                )))
+            }
+            // தரை(n) — floor
+            "தரை" | "qarY" | "_floor" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Number(args[0].to_number().floor()))
+            }
+            // மேல்(n) — ceiling
+            "மேல்" | "mEl" | "_ceil" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::Number(args[0].to_number().ceil()))
+            }
+            // சொல்லாக்கு(v) — render any value as text
+            "சொல்லாக்கு" | "collAkku" | "_toString" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::String(args[0].to_string()))
+            }
+            // எண்ணாக்கு(s) — parse text as a number, as a result
+            "எண்ணாக்கு" | "eNNAkku" | "_toNumber" => {
+                Self::expect_args(name, &args, 1)?;
+                let text = args[0].to_string();
+                match Decimal::from_str(text.trim()) {
+                    Ok(number) => Ok(Value::Ok(Box::new(Value::Number(number)))),
+                    Err(_) => Ok(Value::Err(Box::new(Value::String(format!(
+                        "'{}' ஒரு எண் அல்ல  ('{}' is not a number)",
+                        text, text
+                    ))))),
+                }
+            }
+            // Case folding matters for PAN/GSTIN style codes; Tamil has no
+            // case, so these only affect the Latin characters.
+            "மேல்_எழுத்து" | "mEl_ezuqqu" | "_upper" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::String(args[0].to_string().to_uppercase()))
+            }
+            "கீழ்_எழுத்து" | "kIz_ezuqqu" | "_lower" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::String(args[0].to_string().to_lowercase()))
             }
             unknown => Err(format!(
                 "அறியப்படாத செயல் '{}'  (unknown function '{}')",
@@ -543,7 +603,7 @@ impl VM {
                     let n = match &value {
                         Value::Array(items) => items.len(),
                         Value::Map(fields) => fields.len(),
-                        Value::String(s) => s.chars().count(),
+                        Value::String(s) => letters(s).len(),
                         other => {
                             return Err(format!(
                                 "இதை சுற்ற முடியாது  (cannot iterate over {})",
@@ -569,9 +629,9 @@ impl VM {
                             Value::String(keys[i].clone())
                         }
                         Value::String(s) => {
-                            let chars: Vec<char> = s.chars().collect();
-                            let i = Self::array_index(chars.len(), &index)?;
-                            Value::String(chars[i].to_string())
+                            let parts = letters(s);
+                            let i = Self::array_index(parts.len(), &index)?;
+                            Value::String(parts[i].to_string())
                         }
                         other => {
                             return Err(format!(

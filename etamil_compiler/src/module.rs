@@ -71,6 +71,37 @@ fn load_inner(path: &Path, visited: &mut HashSet<PathBuf>) -> Result<Vec<Stmt>, 
     resolve(statements, &base_dir, visited)
 }
 
+/// Find an imported file: next to the importer first, then along
+/// `ETAMIL_PATH`, then in a `nUlakam` directory beside the executable. That
+/// last one is what lets `இறக்கு "nUlakam/paNam.qmz";` work from anywhere
+/// once the compiler is installed.
+fn locate(relative: &str, base_dir: &Path) -> Option<PathBuf> {
+    let beside = base_dir.join(relative);
+    if beside.exists() {
+        return Some(beside);
+    }
+
+    if let Ok(search_path) = std::env::var("ETAMIL_PATH") {
+        for entry in std::env::split_paths(&search_path) {
+            let candidate = entry.join(relative);
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidate = dir.join(relative);
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    None
+}
+
 fn resolve(
     statements: Vec<Stmt>,
     base_dir: &Path,
@@ -80,7 +111,14 @@ fn resolve(
     for statement in statements {
         match statement {
             Stmt::Import(relative) => {
-                let imported = load_inner(&base_dir.join(&relative), visited)?;
+                let found = locate(&relative, base_dir).ok_or_else(|| {
+                    format!(
+                        "தொகுதி '{}' கண்டுபிடிக்க முடியவில்லை  (cannot open module '{}'): \
+                         looked beside the importing file, along ETAMIL_PATH, and next to the compiler",
+                        relative, relative
+                    )
+                })?;
+                let imported = load_inner(&found, visited)?;
                 out.extend(imported);
             }
             other => out.push(other),

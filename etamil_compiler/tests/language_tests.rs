@@ -830,6 +830,195 @@ fn an_unresolved_import_fails_loudly_at_runtime() {
     assert!(err.contains("not implemented"), "unexpected error: {}", err);
 }
 
+// --- The eTamil standard library (nUlakam/) --------------------------------
+// These load the real library files from disk and run them, so a broken
+// library is a failing build.
+
+fn stdlib_dir() -> std::path::PathBuf {
+    // ETAMIL_STDLIB lets an out-of-tree harness point at the real library.
+    if let Ok(dir) = std::env::var("ETAMIL_STDLIB") {
+        return std::path::PathBuf::from(dir);
+    }
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("nUlakam")
+}
+
+/// Run a program with the standard library on the import path.
+fn run_with_stdlib(source: &str) -> Result<VM, String> {
+    let ast = etamil_compiler::module::load_source(source, &stdlib_dir())?;
+    let bytecode = BytecodeCompiler::compile_statements(ast);
+    let mut vm = VM::new();
+    vm.execute(bytecode)?;
+    Ok(vm)
+}
+
+#[test]
+fn stdlib_files_all_parse() {
+    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz"] {
+        let path = stdlib_dir().join(file);
+        etamil_compiler::module::load_file(&path)
+            .unwrap_or_else(|e| panic!("nUlakam/{} failed to load: {}", file, e));
+    }
+}
+
+#[test]
+fn stdlib_substring_and_search() {
+    let src = r#"இறக்கு "col.qmz";
+                 a = துண்டு("வணக்கம் உலகம்", 0, 5);
+                 b = தேடு("abcdef", "cd");
+                 c = தேடு("abcdef", "zz");
+                 d = தொடங்குகிறதா("GSTIN123", "GST");
+                 e = முடிகிறதா("invoice.pdf", ".pdf");"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(text(&vm, "a"), "வணக்கம்");
+    assert_eq!(num(&vm, "b"), dec(2));
+    assert_eq!(num(&vm, "c"), dec(-1));
+    assert_eq!(vm.variables.get("d"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("e"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn stdlib_trim_split_and_join() {
+    let src = r#"இறக்கு "col.qmz";
+                 a = ஒழுங்கு("   ravi   ");
+                 parts = பிரி("1,2,3", ",");
+                 n = நீளம்(parts);
+                 first = parts[0];
+                 joined = ஒன்றிணை(["a", "b", "c"], "-");"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(text(&vm, "a"), "ravi");
+    assert_eq!(num(&vm, "n"), dec(3));
+    assert_eq!(text(&vm, "first"), "1");
+    assert_eq!(text(&vm, "joined"), "a-b-c");
+}
+
+#[test]
+fn stdlib_math() {
+    let src = r#"இறக்கு "kaNiqam.qmz";
+                 a = முழுமதிப்பு(0 - 5);
+                 b = சிறியது(3, 7);
+                 c = பெரியது(3, 7);
+                 d = கூட்டு([1, 2, 3, 4]);
+                 e = மதிப்பு(சராசரி([2, 4, 6]));
+                 f = சதவீதம்(1000, 18);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(num(&vm, "a"), dec(5));
+    assert_eq!(num(&vm, "b"), dec(3));
+    assert_eq!(num(&vm, "c"), dec(7));
+    assert_eq!(num(&vm, "d"), dec(10));
+    assert_eq!(num(&vm, "e"), dec(4));
+    assert_eq!(num(&vm, "f"), dec(180));
+}
+
+#[test]
+fn stdlib_average_of_an_empty_array_is_an_error() {
+    let src = r#"இறக்கு "kaNiqam.qmz"; r = சராசரி([]); failed = தவறா(r);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(vm.variables.get("failed"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn stdlib_array_helpers() {
+    let src = r#"இறக்கு "aNi.qmz";
+                 a = உள்ளதா([1, 2, 3], 2);
+                 b = இடம்_காண்(["x", "y"], "y");
+                 c = தலைகீழ்([1, 2, 3]);
+                 d = வெட்டு([1, 2, 3, 4, 5], 1, 3);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(vm.variables.get("a"), Some(&Value::Boolean(true)));
+    assert_eq!(num(&vm, "b"), dec(1));
+    assert_eq!(vm.variables.get("c").unwrap().to_string(), "[3, 2, 1]");
+    assert_eq!(vm.variables.get("d").unwrap().to_string(), "[2, 3, 4]");
+}
+
+#[test]
+fn stdlib_plucks_a_column_from_rows() {
+    let src = r#"இறக்கு "aNi.qmz";
+                 இறக்கு "kaNiqam.qmz";
+                 // Note: a keyword used as a field name is stored under its
+                 // token name — {vari: ...} would become the field "Tax", so
+                 // that Tamil and romanized spellings agree. Plain names like
+                 // these are stored verbatim.
+                 வரிசைகள் = [{peyar: "Ravi", amount_due: 1000},
+                              {peyar: "Priya", amount_due: 2500}];
+                 வரிகள் = புலம்_எடு(வரிசைகள், "amount_due");
+                 மொத்தம் = கூட்டு(வரிகள்);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(num(&vm, "மொத்தம்"), dec(3500));
+}
+
+#[test]
+fn stdlib_formats_money_with_indian_grouping() {
+    let src = r#"இறக்கு "paNam.qmz";
+                 a = காசு_வடிவம்(12345678.5);
+                 b = காசு_வடிவம்(1000);
+                 c = காசு_வடிவம்(999.99);
+                 d = காசு_வடிவம்(0 - 4500.5);
+                 e = ரூபாய்(100000);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(text(&vm, "a"), "1,23,45,678.50");
+    assert_eq!(text(&vm, "b"), "1,000.00");
+    assert_eq!(text(&vm, "c"), "999.99");
+    assert_eq!(text(&vm, "d"), "-4,500.50");
+    assert_eq!(text(&vm, "e"), "₹1,00,000.00");
+}
+
+#[test]
+fn stdlib_lakhs_and_crores() {
+    let src = r#"இறக்கு "paNam.qmz"; a = லட்சம்(2500000); b = கோடி(35000000);"#;
+    let vm = run_with_stdlib(src).unwrap();
+    assert_eq!(num(&vm, "a"), dec(25));
+    assert_eq!(text(&vm, "b"), "3.5");
+}
+
+// Strings are measured and indexed by written letter, not code point. A
+// Tamil letter is often a consonant plus a vowel sign or pulli, so counting
+// chars would give 7 here and every string helper would be off on Tamil text.
+#[test]
+fn strings_count_written_letters_not_code_points() {
+    let vm = run(r#"n = nILam("வணக்கம்"); first = "வணக்கம்"[0]; last = "வணக்கம்"[4];"#).unwrap();
+    assert_eq!(num(&vm, "n"), dec(5));
+    assert_eq!(text(&vm, "first"), "வ");
+    assert_eq!(text(&vm, "last"), "ம்");
+}
+
+// --- Host numeric primitives ----------------------------------------------
+
+#[test]
+fn rounding_is_half_away_from_zero() {
+    let vm = run("a = vattamitu(2.345, 2); b = vattamitu(2.355, 2); c = vattamitu(0 - 2.345, 2);")
+        .unwrap();
+    assert_eq!(text(&vm, "a"), "2.35");
+    assert_eq!(text(&vm, "b"), "2.36");
+    assert_eq!(text(&vm, "c"), "-2.35");
+}
+
+#[test]
+fn floor_and_ceiling() {
+    let vm = run("a = qarY(2.9); b = mEl(2.1); c = qarY(0 - 2.1);").unwrap();
+    assert_eq!(num(&vm, "a"), dec(2));
+    assert_eq!(num(&vm, "b"), dec(3));
+    assert_eq!(num(&vm, "c"), dec(-3));
+}
+
+#[test]
+fn text_to_number_returns_a_result() {
+    let vm = run(r#"a = maqippu(eNNAkku("42.5")); b = qavaRA(eNNAkku("abc"));"#).unwrap();
+    assert_eq!(text(&vm, "a"), "42.5");
+    assert_eq!(vm.variables.get("b"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn case_folding_affects_latin_only() {
+    let vm = run(r#"a = mEl_ezuqqu("gstin27"); b = kIz_ezuqqu("PAN"); c = mEl_ezuqqu("வணக்கம்");"#)
+        .unwrap();
+    assert_eq!(text(&vm, "a"), "GSTIN27");
+    assert_eq!(text(&vm, "b"), "pan");
+    assert_eq!(text(&vm, "c"), "வணக்கம்");
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
