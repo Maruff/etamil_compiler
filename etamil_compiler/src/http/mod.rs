@@ -23,6 +23,7 @@ pub mod resilience; // Backend milestone 4: Circuit breakers, retries, timeouts
 pub use self::router::Router;
 pub use self::request::HttpRequest;
 pub use self::response::HttpResponse;
+pub use self::handler::{bind_request, response_from};
 pub use self::logging::{Logger, LogLevel, LogEntry, generate_request_id};
 pub use self::errors::ErrorResponse;
 pub use self::monitoring::MetricsCollector;
@@ -169,18 +170,86 @@ impl HttpServer {
             .max(1)
     }
 
+    /// Read one whole request: headers first, then exactly as many body bytes
+    /// as `Content-Length` promises.
+    ///
+    /// This used to be a single 4 KB read. Anything larger arrived cut in
+    /// half, and because the request line and headers were intact the parse
+    /// still succeeded — so a truncated journal batch looked like a valid
+    /// request carrying half a payload, which is precisely the silent wrong
+    /// answer this project refuses everywhere else.
+    ///
+    /// Returns None if the connection closes early or the request exceeds
+    /// `MAX_REQUEST`, so a client cannot exhaust memory by promising a body
+    /// it never sends.
+    fn read_request(stream: &mut TcpStream) -> Option<String> {
+        const CHUNK: usize = 4096;
+        const MAX_REQUEST: usize = 1024 * 1024;
+        const SEPARATOR: &[u8] = b"\r\n\r\n";
+
+        let mut raw: Vec<u8> = Vec::with_capacity(CHUNK);
+        let mut chunk = [0u8; CHUNK];
+        let mut searched = 0usize;
+
+        // Headers, up to the blank line that ends them.
+        let header_end = loop {
+            if let Some(offset) = raw[searched..]
+                .windows(SEPARATOR.len())
+                .position(|window| window == SEPARATOR)
+            {
+                break searched + offset + SEPARATOR.len();
+            }
+            // Only the tail can still be part of a split separator, so the
+            // next scan need not start from the beginning again.
+            searched = raw.len().saturating_sub(SEPARATOR.len() - 1);
+
+            if raw.len() > MAX_REQUEST {
+                return None;
+            }
+            match stream.read(&mut chunk) {
+                Ok(0) => return None,
+                Ok(n) => raw.extend_from_slice(&chunk[..n]),
+                Err(_) => return None,
+            }
+        };
+
+        // Content-Length, read off the headers already in hand.
+        let content_length = String::from_utf8_lossy(&raw[..header_end])
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                if name.trim().eq_ignore_ascii_case("content-length") {
+                    value.trim().parse::<usize>().ok()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(0);
+
+        let want = header_end.saturating_add(content_length).min(MAX_REQUEST);
+        while raw.len() < want {
+            match stream.read(&mut chunk) {
+                // The client closed early. Serve what did arrive rather than
+                // dropping the connection without an answer.
+                Ok(0) => break,
+                Ok(n) => raw.extend_from_slice(&chunk[..n]),
+                Err(_) => break,
+            }
+        }
+
+        Some(String::from_utf8_lossy(&raw).into_owned())
+    }
+
     /// Read one request off a connection, run it, and write the response.
     fn serve_connection(&self, mut tcp_stream: TcpStream) {
         let request_id = generate_request_id();
         let start_time = Instant::now();
 
-        let mut buffer = vec![0; 4096];
-        let read = match tcp_stream.read(&mut buffer) {
-            Ok(n) if n > 0 => n,
-            _ => return,
+        let request_str = match Self::read_request(&mut tcp_stream) {
+            Some(raw) => raw,
+            None => return,
         };
 
-        let request_str = String::from_utf8_lossy(&buffer[..read]);
         match HttpRequest::parse(&request_str) {
             Ok(request) => {
                 let mut req_context = std::collections::HashMap::new();
@@ -214,116 +283,44 @@ impl HttpServer {
         }
     }
 
-    /// Handle an incoming HTTP request
+    /// Handle an incoming HTTP request.
+    ///
+    /// An exact route wins; failing that, a pattern with `:params` is tried.
+    /// Both then run the handler identically. These used to be two copies of
+    /// the same code, and the copy behind the pattern match had fallen
+    /// behind — it bound neither the query string nor the headers, so
+    /// `/kaNakku/:id?vakY=varavu` failed with "undefined variable
+    /// 'query_params'" while the same handler on a literal path worked.
     fn handle_request(&self, request: &HttpRequest) -> HttpResponse {
-        // Match route
-        let route_key = format!("{} {}", request.method, request.path);
-        
-        match self.handlers.get(&route_key) {
-            Some(handler_stmts) => {
-                // Execute handler
-                let mut vm = VM::new();
-                
-                // Store request data in VM variables
-                vm.variables.insert("request_method".to_string(), 
-                    crate::vm::Value::String(request.method.clone()));
-                vm.variables.insert("request_path".to_string(),
-                    crate::vm::Value::String(request.path.clone()));
-                
-                // Store query parameters
+        let method = request.method.to_uppercase();
+        let exact_key = format!("{} {}", method, request.path);
+
+        let matched = match self.handlers.get(&exact_key) {
+            Some(bytecode) => Some((bytecode, HashMap::new())),
+            None => self.handlers.iter().find_map(|(route_key, bytecode)| {
+                let (route_method, pattern) = route_key.split_once(' ')?;
+                if route_method != method || !self.path_matches(pattern, &request.path) {
+                    return None;
+                }
                 let mut params = HashMap::new();
-                for (key, value) in &request.query_params {
-                    params.insert(
-                        key.clone(),
-                        crate::vm::Value::String(value.clone())
-                    );
-                }
-                vm.variables.insert("query_params".to_string(),
-                    crate::vm::Value::Map(params));
+                self.extract_path_params(pattern, &request.path, &mut params);
+                Some((bytecode, params))
+            }),
+        };
 
-                // Store headers
-                let mut headers = HashMap::new();
-                for (key, value) in &request.headers {
-                    headers.insert(
-                        key.clone(),
-                        crate::vm::Value::String(value.clone())
-                    );
-                }
-                vm.variables.insert("headers".to_string(),
-                    crate::vm::Value::Map(headers));
+        let (bytecode, path_params) = match matched {
+            Some(found) => found,
+            None => return HttpResponse::not_found(),
+        };
 
-                // Compile and execute handler
-                let bytecode = handler_stmts.clone();
-                match vm.execute(bytecode) {
-                    Ok(_) => {
-                        // Get response from VM
-                        if let Some(crate::vm::Value::String(body)) = vm.variables.get("response_body") {
-                            let status = vm.variables.get("response_status")
-                                .and_then(|v| match v {
-                                    crate::vm::Value::Number(n) => rust_decimal::prelude::ToPrimitive::to_u16(n),
-                                    _ => None
-                                })
-                                .unwrap_or(200);
-                            
-                            HttpResponse::success(status, body.clone())
-                        } else {
-                            HttpResponse::success(200, "Handler executed successfully".to_string())
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("❌ Handler execution error: {}", e);
-                        HttpResponse::internal_error(&format!("Handler error: {}", e))
-                    }
-                }
-            }
-            None => {
-                // Try path matching with parameters
-                for (route_key, handler_stmts) in &self.handlers {
-                    let parts: Vec<&str> = route_key.split(' ').collect();
-                    if parts.len() == 2 && parts[0] == request.method {
-                        if self.path_matches(parts[1], &request.path) {
-                            // Extract path parameters
-                            let mut params = HashMap::new();
-                            self.extract_path_params(parts[1], &request.path, &mut params);
-                            
-                            let mut vm = VM::new();
-                            
-                            // Store path parameters
-                            for (key, value) in params {
-                                vm.variables.insert(format!("param_{}", key),
-                                    crate::vm::Value::String(value));
-                            }
-                            
-                            // Store other request data
-                            vm.variables.insert("request_method".to_string(),
-                                crate::vm::Value::String(request.method.clone()));
-                            vm.variables.insert("request_path".to_string(),
-                                crate::vm::Value::String(request.path.clone()));
-                            
-                            let bytecode = handler_stmts.clone();
-                            match vm.execute(bytecode) {
-                                Ok(_) => {
-                                    if let Some(crate::vm::Value::String(body)) = vm.variables.get("response_body") {
-                                        let status = vm.variables.get("response_status")
-                                            .and_then(|v| match v {
-                                                crate::vm::Value::Number(n) => rust_decimal::prelude::ToPrimitive::to_u16(n),
-                                                _ => None
-                                            })
-                                            .unwrap_or(200);
-                                        
-                                        return HttpResponse::success(status, body.clone());
-                                    }
-                                    return HttpResponse::success(200, "Handler executed successfully".to_string());
-                                }
-                                Err(e) => {
-                                    return HttpResponse::internal_error(&format!("Handler error: {}", e));
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                HttpResponse::not_found()
+        let mut vm = VM::new();
+        bind_request(&mut vm, request, &path_params);
+
+        match vm.execute(bytecode.clone()) {
+            Ok(_) => response_from(&vm),
+            Err(e) => {
+                eprintln!("❌ Handler execution error: {}", e);
+                HttpResponse::internal_error(&format!("Handler error: {}", e))
             }
         }
     }

@@ -210,9 +210,16 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::WriteCSV);
             }
-            Stmt::SendResponse { status_code, body, .. } => {
+            Stmt::SendResponse { status_code, body, headers } => {
                 self.compile_expr(status_code);
                 self.compile_expr(body);
+                // A response always leaves three values for the instruction,
+                // so the stack shape does not depend on whether the author
+                // supplied headers.
+                match headers {
+                    Some(expr) => self.compile_expr(expr),
+                    None => self.bytecode.push(Instruction::Push(Value::Null)),
+                }
                 self.bytecode.push(Instruction::SendResponse);
             }
             Stmt::DBConnect { db_type, connection_string } => {

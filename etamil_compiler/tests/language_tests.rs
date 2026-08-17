@@ -872,9 +872,276 @@ fn run_with_stdlib(source: &str) -> Result<VM, String> {
     Ok(vm)
 }
 
+// Regression: ஒழுங்கு indexed the string directly under a `மற்றும்` guard.
+// The guard was right, but மற்றும் evaluates both sides, so trimming "" or a
+// string of nothing but spaces ran the index off the end and aborted the
+// program.
+#[test]
+fn stdlib_trim_handles_empty_and_all_space_strings() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "col.qmz";
+           காலி = நீளம்(ஒழுங்கு(""));
+           வெளிகள் = நீளம்(ஒழுங்கு("   "));
+           ஒன்று = ஒழுங்கு("  வரி  ");
+           விளிம்பில்லை = ஒழுங்கு("வரவு");"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "காலி"), dec(0));
+    assert_eq!(num(&vm, "வெளிகள்"), dec(0));
+    assert_eq!(text(&vm, "ஒன்று"), "வரி");
+    assert_eq!(text(&vm, "விளிம்பில்லை"), "வரவு");
+}
+
+#[test]
+fn stdlib_character_access_is_bounds_safe() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "col.qmz";
+           முதல் = எழுத்து("வரவு", 0);
+           தாண்டியது = எழுத்து("வரவு", 99);
+           எதிர்மறை = எழுத்து("வரவு", 0 - 1);"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "முதல்"), "வ");
+    assert_eq!(text(&vm, "தாண்டியது"), "");
+    assert_eq!(text(&vm, "எதிர்மறை"), "");
+}
+
+// --- JSON (nUlakam/jEcAZ.qmz) ---------------------------------------------
+// Written in eTamil, not the host: a record key can be computed at runtime,
+// which is the one capability a parser needs to build a record from data.
+
+#[test]
+fn json_serializes_each_kind_of_value() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           எண்ணானது = ஜேசான்_ஆக்கு(1500.5);
+           சரமானது = ஜேசான்_ஆக்கு("வரவு");
+           ஈர்மம் = ஜேசான்_ஆக்கு(மெய்);
+           இல்லாதது = ஜேசான்_ஆக்கு(இன்மை);
+           அணியானது = ஜேசான்_ஆக்கு([1, 2, 3]);"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "எண்ணானது"), "1500.5");
+    assert_eq!(text(&vm, "சரமானது"), r#""வரவு""#);
+    assert_eq!(text(&vm, "ஈர்மம்"), "true");
+    // இன்மை prints as "nil" for people; JSON needs the word null.
+    assert_eq!(text(&vm, "இல்லாதது"), "null");
+    assert_eq!(text(&vm, "அணியானது"), "[1,2,3]");
+}
+
+#[test]
+fn json_escapes_quotes_and_newlines() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           விடை = ஜேசான்_ஆக்கு("he said \"hi\"\nnext");"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "விடை"), r#""he said \"hi\"\nnext""#);
+}
+
+// Record fields come out sorted, because that is the order ஒவ்வொரு walks a
+// record — so a response body is stable enough to assert on.
+#[test]
+fn json_writes_record_fields_in_a_stable_order() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           விடை = ஜேசான்_ஆக்கு({vakY: "செலவு", qokY: 250, active: பொய்});"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        text(&vm, "விடை"),
+        r#"{"active":false,"qokY":250,"vakY":"செலவு"}"#
+    );
+}
+
+#[test]
+fn json_parses_an_object_into_a_usable_record() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           விளைவு = ஜேசான்_படி("{\"vakY\":\"செலவு\",\"qokY\":1500,\"lines\":[1,2,3]}");
+           சரியா_இருந்ததா = சரியா(விளைவு);
+           ப = மதிப்பு(விளைவு);
+           வகைப்_பெயர் = ப["vakY"];
+           // Numbers parse as numbers, not text, so they still add up.
+           கூட்டல் = ப["qokY"] + ப["lines"][2];"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியா_இருந்ததா"), Some(&Value::Boolean(true)));
+    assert_eq!(text(&vm, "வகைப்_பெயர்"), "செலவு");
+    assert_eq!(num(&vm, "கூட்டல்"), dec(1503));
+}
+
+#[test]
+fn json_survives_a_round_trip() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           மூலம் = "{\"a\":[1,2],\"b\":{\"c\":\"வரி\"},\"d\":null,\"e\":true}";
+           மறுபடி = ஜேசான்_ஆக்கு(மதிப்பு(ஜேசான்_படி(மூலம்)));"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        text(&vm, "மறுபடி"),
+        r#"{"a":[1,2],"b":{"c":"வரி"},"d":null,"e":true}"#
+    );
+}
+
+// Malformed input is a தவறு, never a half-read value: accepting trailing text
+// would quietly treat half a request body as the whole of it.
+#[test]
+fn json_refuses_malformed_input() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           முடிவற்றது = தவறா(ஜேசான்_படி("\"abc"));
+           மதிப்பற்றது = தவறா(ஜேசான்_படி("{\"a\": }"));
+           மீதியுள்ளது = தவறா(ஜேசான்_படி("{} extra"));
+           சாவியற்றது = தவறா(ஜேசான்_படி("{1: 2}"));
+           காலியானது = தவறா(ஜேசான்_படி(""));"#,
+    )
+    .unwrap();
+
+    for name in [
+        "முடிவற்றது",
+        "மதிப்பற்றது",
+        "மீதியுள்ளது",
+        "சாவியற்றது",
+        "காலியானது",
+    ] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(true)),
+            "{} should have been refused",
+            name
+        );
+    }
+}
+
+#[test]
+fn json_reads_an_empty_object_and_array() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           பொருள்_நீளம் = நீளம்(மதிப்பு(ஜேசான்_படி("{}")));
+           அணி_நீளம் = நீளம்(மதிப்பு(ஜேசான்_படி("[]")));
+           இடைவெளி = ஜேசான்_ஆக்கு(மதிப்பு(ஜேசான்_படி("  {  \"a\" : 1 }  ")));"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "பொருள்_நீளம்"), dec(0));
+    assert_eq!(num(&vm, "அணி_நீளம்"), dec(0));
+    assert_eq!(text(&vm, "இடைவெளி"), r#"{"a":1}"#);
+}
+
+// --- Authentication -------------------------------------------------------
+// bcrypt and HMAC live in the host because eTamil cannot express them; the
+// policy built on top stays in the language. A token's payload crosses the
+// boundary as JSON text, so the host never learns what a claim means.
+
+#[test]
+fn a_password_hash_verifies_only_the_right_password() {
+    let vm = run(
+        r#"மறையீடு = கடவுச்சொல்_மறை("correct-horse");
+           சரியானது = கடவுச்சொல்_சரியா("correct-horse", மறையீடு);
+           தவறானது = கடவுச்சொல்_சரியா("guess", மறையீடு);
+           காலியானது = கடவுச்சொல்_சரியா("", மறையீடு);"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியானது"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("தவறானது"), Some(&Value::Boolean(false)));
+    assert_eq!(vm.variables.get("காலியானது"), Some(&Value::Boolean(false)));
+}
+
+// The same password hashed twice must not produce the same text, or a stolen
+// table would reveal which accounts share a password.
+#[test]
+fn hashing_the_same_password_twice_gives_different_hashes() {
+    let vm = run(
+        r#"அ = கடவுச்சொல்_மறை("same");
+           ஆ = கடவுச்சொல்_மறை("same");
+           வேறா = அ != ஆ;
+           இரண்டும்_சரி = கடவுச்சொல்_சரியா("same", அ) மற்றும் கடவுச்சொல்_சரியா("same", ஆ);"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("வேறா"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("இரண்டும்_சரி"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_token_round_trips_its_claims() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           சுமை = ஜேசான்_ஆக்கு({sub: "user-1", roles: ["kaNakkar"]});
+           சீட்டு = சீட்டு_ஆக்கு(சுமை, 3600);
+           பகுதிகள் = நீளம்(பிரி(சீட்டு, "."));
+           விளைவு = சீட்டு_சரிபார்(சீட்டு);
+           ஏற்கப்பட்டது = சரியா(விளைவு);
+           கூற்றுகள் = மதிப்பு(ஜேசான்_படி(மதிப்பு(விளைவு)));
+           யார் = கூற்றுகள்["sub"];
+           பங்கு_பெயர் = கூற்றுகள்["roles"][0];
+           காலாவதி_உள்ளதா = கூற்றுகள்["exp"] > 0;"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "பகுதிகள்"), dec(3));
+    assert_eq!(vm.variables.get("ஏற்கப்பட்டது"), Some(&Value::Boolean(true)));
+    assert_eq!(text(&vm, "யார்"), "user-1");
+    assert_eq!(text(&vm, "பங்கு_பெயர்"), "kaNakkar");
+    assert_eq!(
+        vm.variables.get("காலாவதி_உள்ளதா"),
+        Some(&Value::Boolean(true))
+    );
+}
+
+// A rejected token is a தவறு rather than a runtime error, so turning a bad
+// request into a 401 is ordinary control flow.
+#[test]
+fn a_tampered_or_expired_token_is_refused() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           சுமை = ஜேசான்_ஆக்கு({sub: "user-1"});
+           நல்லது = சீட்டு_ஆக்கு(சுமை, 3600);
+           திருத்தப்பட்டது = தவறா(சீட்டு_சரிபார்(நல்லது & "x"));
+           குப்பை = தவறா(சீட்டு_சரிபார்("not.a.token"));
+           காலியானது = தவறா(சீட்டு_சரிபார்(""));
+           // Past its expiry, and beyond the five seconds of clock skew the
+           // verifier tolerates.
+           காலாவதியானது = தவறா(சீட்டு_சரிபார்(சீட்டு_ஆக்கு(சுமை, 0 - 120)));"#,
+    )
+    .unwrap();
+
+    for name in ["திருத்தப்பட்டது", "குப்பை", "காலியானது", "காலாவதியானது"] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(true)),
+            "{} should have been refused",
+            name
+        );
+    }
+}
+
+// The expiry is set by the host, not the caller: an expiry a handler could
+// choose is an expiry an attacker could choose.
+#[test]
+fn a_token_payload_must_be_a_record() {
+    let failure = run(r#"சீட்டு = சீட்டு_ஆக்கு("[1,2,3]", 60);"#);
+
+    assert!(
+        failure.is_err(),
+        "an array payload should be refused, got {:?}",
+        failure.map(|_| ())
+    );
+}
+
 #[test]
 fn stdlib_files_all_parse() {
-    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz"] {
+    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz", "jEcAZ.qmz"] {
         let path = stdlib_dir().join(file);
         etamil_compiler::module::load_file(&path)
             .unwrap_or_else(|e| panic!("nUlakam/{} failed to load: {}", file, e));
@@ -1577,6 +1844,121 @@ fn closing_an_empty_period_is_an_error() {
     )
     .unwrap();
     assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
+// --- String escapes -------------------------------------------------------
+// Regression: literals were kept exactly as written, so "a\nb" was four
+// characters and a double quote could not be put in a string at all — which
+// is why nUlakam/jEcAZ.qmz could not have been written before this.
+
+#[test]
+fn escape_sequences_become_the_characters_they_name() {
+    let vm = run(r#"a = "வரி\nவரவு"; n = nILam(a);"#).unwrap();
+
+    assert_eq!(text(&vm, "a"), "வரி\nவரவு");
+    // Counted as written letters: வ ரி + newline + வ ர வு.
+    assert_eq!(num(&vm, "n"), dec(6));
+}
+
+#[test]
+fn a_string_can_contain_a_double_quote() {
+    let vm = run(r#"a = "{\"vakY\": \"varavu\"}";"#).unwrap();
+
+    assert_eq!(text(&vm, "a"), r#"{"vakY": "varavu"}"#);
+}
+
+#[test]
+fn a_backslash_can_be_written_literally() {
+    let vm = run(r#"a = "one\\two"; n = nILam(a);"#).unwrap();
+
+    assert_eq!(text(&vm, "a"), r"one\two");
+    // o n e \ t w o — the pair collapses to one backslash.
+    assert_eq!(num(&vm, "n"), dec(7));
+}
+
+// An unknown escape keeps both characters, so a path is not silently mangled.
+#[test]
+fn an_unrecognized_escape_is_left_alone() {
+    let vm = run(r#"a = "C:\kaNakku";"#).unwrap();
+
+    assert_eq!(text(&vm, "a"), r"C:\kaNakku");
+}
+
+#[test]
+fn tabs_and_carriage_returns_are_recognized() {
+    let vm = run(r#"a = "a\tb\rc";"#).unwrap();
+
+    assert_eq!(text(&vm, "a"), "a\tb\rc");
+}
+
+// --- Responses (பதில்) -----------------------------------------------------
+// பதில் writes to globals rather than the calling frame, because the server
+// reads them back off the VM after the handler has returned.
+
+#[test]
+fn a_response_records_its_status_and_body() {
+    let vm = run(r#"பதில் 201, "created";"#).unwrap();
+
+    assert_eq!(num(&vm, "response_status"), dec(201));
+    assert_eq!(text(&vm, "response_body"), "created");
+}
+
+#[test]
+fn a_response_without_headers_records_none() {
+    let vm = run(r#"பதில் 200, "ok";"#).unwrap();
+
+    assert_eq!(vm.variables.get("response_headers"), Some(&Value::Null));
+}
+
+// Headers are an ordinary record, so a route can serve something other than
+// the JSON the server assumes by default.
+#[test]
+fn a_response_carries_the_headers_it_was_given() {
+    let vm = run(
+        r#"பதில் 200, "<h1>வணக்கம்</h1>", {"Content-Type": "text/html", "X-Rows": "2"};"#,
+    )
+    .unwrap();
+
+    match vm.variables.get("response_headers") {
+        Some(Value::Map(fields)) => {
+            assert_eq!(
+                fields.get("Content-Type").map(|v| v.to_string()),
+                Some("text/html".to_string())
+            );
+            assert_eq!(
+                fields.get("X-Rows").map(|v| v.to_string()),
+                Some("2".to_string())
+            );
+        }
+        other => panic!("expected a record of headers, got {:?}", other),
+    }
+}
+
+// Regression: headers used to be parsed and thrown away — the parser matched
+// a third argument and substituted an empty list, so Content-Type could never
+// be set and every response claimed to be JSON.
+#[test]
+fn response_headers_are_not_silently_discarded() {
+    let vm = run(r#"பதில் 200, "x", {"Content-Type": "text/csv"};"#).unwrap();
+
+    assert_ne!(vm.variables.get("response_headers"), Some(&Value::Null));
+}
+
+// பதில் is normally reached from inside a route's helper function, so it must
+// not land in that function's locals.
+#[test]
+fn a_response_sent_from_a_function_is_still_visible() {
+    let vm = run(
+        r#"செயல் அனுப்பு(உரை_மதிப்பு) {
+               பதில் 202, உரை_மதிப்பு;
+               திரும்பு 0;
+           }
+           விளைவு = அனுப்பு("from a function");"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "response_status"), dec(202));
+    assert_eq!(text(&vm, "response_body"), "from a function");
 }
 
 // --- Bilingual equivalence ------------------------------------------------

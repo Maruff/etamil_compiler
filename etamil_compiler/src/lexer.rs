@@ -261,8 +261,8 @@ pub enum Token {
     })] Percentage(Decimal),
     #[regex(r"[0-9]+(\.[0-9]+)?", |lex| Decimal::from_str(lex.slice()).ok())] Number(Decimal),
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
-        let s = lex.slice();
-        s[1..s.len()-1].to_string()
+        let raw = lex.slice();
+        unescape(&raw[1..raw.len() - 1])
     })] String(String),
     #[regex(r"[\u0B80-\u0BFFa-zA-Z_][\u0B80-\u0BFFa-zA-Z0-9_]*", |lex| lex.slice().to_string())] Identifier(String),
 
@@ -294,6 +294,45 @@ pub enum Token {
     #[token(";")] Semicolon,
 }
 
+
+/// Turn the escape sequences in a string literal into the characters they name.
+///
+/// The literal text used to be kept exactly as written, so `"a\nb"` was four
+/// characters and there was **no way at all** to put a double quote inside a
+/// string. That made a JSON serializer impossible to write in eTamil, and it
+/// silently broke the three places in the examples that already assumed
+/// escapes worked.
+///
+/// An unrecognized escape keeps both characters rather than dropping the
+/// backslash, so a Windows path written `"C:\kaNakku"` still reads back whole
+/// instead of quietly becoming `C:aNakku`.
+fn unescape(body: &str) -> String {
+    let mut out = String::with_capacity(body.len());
+    let mut chars = body.chars();
+
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            out.push(ch);
+            continue;
+        }
+        match chars.next() {
+            Some('n') => out.push('\n'),
+            Some('t') => out.push('\t'),
+            Some('r') => out.push('\r'),
+            Some('"') => out.push('"'),
+            Some('\\') => out.push('\\'),
+            Some(other) => {
+                out.push('\\');
+                out.push(other);
+            }
+            // A trailing backslash cannot occur: the regex requires an escape
+            // to be followed by a character. Kept literal rather than panicking.
+            None => out.push('\\'),
+        }
+    }
+
+    out
+}
 
 /// A lexical error, carrying the position of the offending input.
 #[derive(Debug, Clone, PartialEq)]
