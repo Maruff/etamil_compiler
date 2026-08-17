@@ -183,10 +183,12 @@ pub enum Stmt {
         port: Expr,
     },
     StopServer,
+    // பதில் 200, உடல்;  or with headers as an ordinary record:
+    // பதில் 200, உடல், {"Content-Type": "text/html"};
     SendResponse {
         status_code: Expr,
         body: Expr,
-        headers: Option<Vec<(String, Expr)>>,
+        headers: Option<Expr>,
     },
     SendJSON {
         data: Expr,
@@ -539,13 +541,18 @@ impl<'a> Parser<'a> {
                 Stmt::StopServer
             }
             Token::Response => {
-                // பதில் 200, "OK", headers;
+                // பதில் 200, "OK";
+                // பதில் 200, உடல், {"Content-Type": "text/html"};
+                //
+                // Headers are an ordinary record, so this needs no syntax of
+                // its own. Quoted keys matter here: written bare, a name like
+                // உரை_வகை would lex as the ContentType keyword and be stored
+                // under its token name rather than as the header it spells.
                 let status_code = self.parse_expression();
                 self.expect(Token::Comma);
                 let body = self.parse_expression();
                 let headers = if self.matches(Token::Comma) {
-                    // Parse headers (simplified)
-                    Some(Vec::new())
+                    Some(self.parse_expression())
                 } else {
                     None
                 };

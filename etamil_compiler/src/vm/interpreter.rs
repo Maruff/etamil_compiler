@@ -362,6 +362,52 @@ impl VM {
                 Self::expect_args(name, &args, 1)?;
                 Ok(Value::String(args[0].to_string().to_lowercase()))
             }
+            // --- Authentication ---
+            // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
+            // in eTamil, so they live in the host. Everything above them —
+            // who a user is, which route needs which role — stays in the
+            // language. A token's payload crosses as JSON text, which
+            // nUlakam/jEcAZ.qmz reads and writes.
+            // கடவுச்சொல்_மறை(கடவுச்சொல்) — hash a password for storage
+            "கடவுச்சொல்_மறை" | "kataveuccol_maRY" | "_hashPassword" => {
+                Self::expect_args(name, &args, 1)?;
+                Ok(Value::String(crate::http::auth::hash_password(
+                    &args[0].to_string(),
+                )?))
+            }
+            // கடவுச்சொல்_சரியா(கடவுச்சொல், மறையீடு) — does it match?
+            "கடவுச்சொல்_சரியா" | "kataveuccol_cariyA" | "_verifyPassword" => {
+                Self::expect_args(name, &args, 2)?;
+                Ok(Value::Boolean(crate::http::auth::verify_password(
+                    &args[0].to_string(),
+                    &args[1].to_string(),
+                )?))
+            }
+            // சீட்டு_ஆக்கு(சுமை_ஜேசான், நொடிகள்) — sign a token.
+            //
+            // Named சீட்டு rather than the more literal குறியீடு because that
+            // word is already the SQL INDEX keyword and is hard reserved: a
+            // caller writing the obvious `குறியீடு = குறியீடு_ஆக்கு(...)`
+            // would get a parse error on their own variable.
+            "சீட்டு_ஆக்கு" | "cIttu_Akku" | "_issueToken" => {
+                Self::expect_args(name, &args, 2)?;
+                let seconds = rust_decimal::prelude::ToPrimitive::to_i64(&args[1].to_number())
+                    .ok_or("நொடிகள் ஒரு முழு எண்  (the lifetime must be a whole number of seconds)")?;
+                Ok(Value::String(crate::http::auth::issue_token(
+                    &args[0].to_string(),
+                    seconds,
+                )?))
+            }
+            // சீட்டு_சரிபார்(சீட்டு) — verify, yielding the claims as JSON
+            // text. A bad or expired token is a தவறு, not an error, so
+            // rejecting a request is ordinary control flow.
+            "சீட்டு_சரிபார்" | "cIttu_caripAr" | "_readToken" => {
+                Self::expect_args(name, &args, 1)?;
+                match crate::http::auth::read_token(&args[0].to_string()) {
+                    Ok(claims) => Ok(Value::Ok(Box::new(Value::String(claims)))),
+                    Err(message) => Ok(Value::Err(Box::new(Value::String(message)))),
+                }
+            }
             unknown => Err(format!(
                 "அறியப்படாத செயல் '{}'  (unknown function '{}')",
                 unknown, unknown
@@ -897,14 +943,18 @@ impl VM {
                     self.stack.push(Value::Array(rows));
                 }
                 Instruction::SendResponse => {
+                    let headers = self.pop()?;
                     let body = self.pop()?;
                     let status = self.pop()?;
                     // Written to globals, not the current frame: the server
-                    // reads them from the VM once the handler has returned.
+                    // reads them from the VM once the handler has returned,
+                    // and பதில் is often called from inside a function.
                     self.variables
                         .insert("response_status".to_string(), status);
                     self.variables
                         .insert("response_body".to_string(), Value::String(body.to_string()));
+                    self.variables
+                        .insert("response_headers".to_string(), headers);
                 }
                 Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(

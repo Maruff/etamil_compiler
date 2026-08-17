@@ -3,6 +3,21 @@
 // Written in eTamil, not Rust. The only primitives borrowed from the host
 // are நீளம், சொல்லாக்கு and indexing; everything here is built from those.
 
+// எழுத்து(சரம், எழுத்திடம்) — the letter at a position, or "" past either end.
+//
+// மற்றும் evaluates both sides, so a guard like
+// `(இ < நீளம்(சரம்) மற்றும் சரம்[இ] == " ")` still indexes out of bounds on
+// the step that fails the first test. Any read that can reach an edge goes
+// through here instead.
+//
+// The parameter is எழுத்திடம் rather than the plainer இடம் because that word
+// is the SQL LEFT keyword and is hard reserved — it cannot be a name at all.
+செயல் எழுத்து(சரம், எழுத்திடம்) {
+    (எழுத்திடம் < 0) எனில் { திரும்பு ""; }
+    (எழுத்திடம் >= நீளம்(சரம்)) எனில் { திரும்பு ""; }
+    திரும்பு சரம்[எழுத்திடம்];
+}
+
 // துண்டு(சரம், தொடக்கம், அளவு) — substring
 செயல் துண்டு(சரம், தொடக்கம், அளவு) {
     விடை = "";
@@ -52,14 +67,17 @@
 }
 
 // ஒழுங்கு(சரம்) — trim spaces from both ends
+//
+// Both scans read through எழுத்து. Written as a direct index this crashed on
+// "" and on a string of nothing but spaces: the loop guard was correct, but
+// மற்றும் evaluates its right side anyway, so the index ran off the end.
 செயல் ஒழுங்கு(சரம்) {
-    மொத்தம் = நீளம்(சரம்);
     தொடக்கம் = 0;
-    (தொடக்கம் < மொத்தம் மற்றும் சரம்[தொடக்கம்] == " ") சுற்று {
+    (எழுத்து(சரம், தொடக்கம்) == " ") சுற்று {
         தொடக்கம் = தொடக்கம் + 1;
     }
-    முடிவு = மொத்தம்;
-    (முடிவு > தொடக்கம் மற்றும் சரம்[முடிவு - 1] == " ") சுற்று {
+    முடிவு = நீளம்(சரம்);
+    (முடிவு > தொடக்கம் மற்றும் எழுத்து(சரம், முடிவு - 1) == " ") சுற்று {
         முடிவு = முடிவு - 1;
     }
     திரும்பு துண்டு(சரம், தொடக்கம், முடிவு - தொடக்கம்);

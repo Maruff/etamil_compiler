@@ -5,6 +5,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::OnceLock;
 use bcrypt::{hash, verify};
 
 const JWT_SECRET_ENV: &str = "ETAMIL_JWT_SECRET";
@@ -16,18 +17,27 @@ const BCRYPT_COST: u32 = 12;
 /// any role, so when the variable is unset we fall back to a random secret
 /// that lives only as long as this process: tokens stop working after a
 /// restart, which is noisy but safe.
-fn jwt_secret() -> Vec<u8> {
-    match std::env::var(JWT_SECRET_ENV) {
-        Ok(secret) if !secret.is_empty() => secret.into_bytes(),
-        _ => {
-            eprintln!(
-                "⚠️  {} is not set — using a random per-process secret. \
-                 Issued tokens will not survive a restart. Set {} in production.",
-                JWT_SECRET_ENV, JWT_SECRET_ENV
-            );
-            format!("{}{}", uuid::Uuid::new_v4(), uuid::Uuid::new_v4()).into_bytes()
-        }
-    }
+///
+/// Resolved once per process. It used to be generated afresh on every call,
+/// which was invisible only because a single `AuthManager` held both keys
+/// from one call — any second caller signed with a different random secret,
+/// so tokens issued through one path could never be verified through another.
+fn jwt_secret() -> &'static [u8] {
+    static SECRET: OnceLock<Vec<u8>> = OnceLock::new();
+
+    SECRET
+        .get_or_init(|| match std::env::var(JWT_SECRET_ENV) {
+            Ok(secret) if !secret.is_empty() => secret.into_bytes(),
+            _ => {
+                eprintln!(
+                    "⚠️  {} is not set — using a random per-process secret. \
+                     Issued tokens will not survive a restart. Set {} in production.",
+                    JWT_SECRET_ENV, JWT_SECRET_ENV
+                );
+                format!("{}{}", uuid::Uuid::new_v4(), uuid::Uuid::new_v4()).into_bytes()
+            }
+        })
+        .as_slice()
 }
 
 /// JWT Claims structure for access tokens
@@ -77,8 +87,8 @@ impl AuthManager {
         let secret = jwt_secret();
         Self {
             users: HashMap::new(),
-            encoding_key: EncodingKey::from_secret(&secret),
-            decoding_key: DecodingKey::from_secret(&secret),
+            encoding_key: EncodingKey::from_secret(secret),
+            decoding_key: DecodingKey::from_secret(secret),
         }
     }
 
@@ -109,8 +119,17 @@ impl AuthManager {
             .find(|u| u.email == email)
             .ok_or("User not found".to_string())?;
 
-        verify(password, &user.password_hash)
+        // `verify` returns Ok(false) for a wrong password and only errors on
+        // a malformed hash. Discarding that bool — keeping just the Err —
+        // meant every password was accepted for any account that existed.
+        // The test suite missed it because its failure case used an unknown
+        // user, which is caught by the lookup above.
+        let password_matches = verify(password, &user.password_hash)
             .map_err(|_| "Invalid credentials".to_string())?;
+
+        if !password_matches {
+            return Err("Invalid credentials".to_string());
+        }
 
         let now = Utc::now();
         let access_exp = now + Duration::hours(1);
@@ -163,6 +182,89 @@ impl AuthManager {
     }
 }
 
+// --- The primitives eTamil calls ------------------------------------------
+//
+// Only what the language genuinely cannot express: bcrypt, HMAC-SHA256,
+// base64 and a source of randomness. Everything above them stays in eTamil —
+// who a user is, which routes need which role, where the accounts live.
+//
+// A token's payload crosses this boundary as **JSON text**, read and written
+// on the other side by nUlakam/jEcAZ.qmz. That keeps the host from having to
+// know what a claim means, and it means no Value-to-serde conversion lives
+// here at all.
+
+/// Hash a password for storage.
+pub fn hash_password(password: &str) -> Result<String, String> {
+    hash(password, BCRYPT_COST).map_err(|_| {
+        "கடவுச்சொல்லை மறைக்க முடியவில்லை  (cannot hash the password)".to_string()
+    })
+}
+
+/// Check a password against a stored hash.
+///
+/// Returns whether it matched; a malformed stored hash is the error case.
+/// Note the shape — an earlier caller threw away exactly this bool and so
+/// accepted every password.
+pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, String> {
+    verify(password, password_hash).map_err(|_| {
+        "சேமித்த மறையீடு செல்லாதது  (the stored password hash is not valid)".to_string()
+    })
+}
+
+/// Sign a JSON payload into a token that expires after `ttl_seconds`.
+///
+/// `iat` and `exp` are set here rather than taken from the caller: an expiry
+/// a handler could choose is an expiry an attacker could choose.
+pub fn issue_token(payload_json: &str, ttl_seconds: i64) -> Result<String, String> {
+    let mut claims: serde_json::Value = serde_json::from_str(payload_json).map_err(|_| {
+        "குறியீட்டுச் சுமை செல்லாத ஜேசான்  (the token payload is not valid JSON)".to_string()
+    })?;
+
+    let object = claims.as_object_mut().ok_or_else(|| {
+        "குறியீட்டுச் சுமை ஒரு பொருளாக இருக்க வேண்டும்  (the token payload must be a record)"
+            .to_string()
+    })?;
+
+    let now = Utc::now().timestamp();
+    object.insert("iat".to_string(), serde_json::json!(now));
+    object.insert("exp".to_string(), serde_json::json!(now + ttl_seconds));
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(jwt_secret()),
+    )
+    .map_err(|_| "குறியீட்டை உருவாக்க முடியவில்லை  (cannot issue the token)".to_string())
+}
+
+/// Verify a token's signature and expiry, yielding its claims as JSON text.
+pub fn read_token(token: &str) -> Result<String, String> {
+    let mut validation = Validation::default();
+    validation.set_required_spec_claims(&["exp"]);
+    // jsonwebtoken allows 60 seconds of clock skew by default, which silently
+    // kept accepting tokens for a minute after they expired. Stated here so
+    // the tolerance is a decision rather than an inherited default; five
+    // seconds still covers ordinary skew between a client and this server.
+    validation.leeway = 5;
+
+    let data = decode::<serde_json::Value>(
+        token,
+        &DecodingKey::from_secret(jwt_secret()),
+        &validation,
+    )
+    .map_err(|e| match e.kind() {
+        jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+            "குறியீடு காலாவதியானது  (the token has expired)".to_string()
+        }
+        _ => "குறியீடு செல்லாதது  (the token is not valid)".to_string(),
+    })?;
+
+    serde_json::to_string(&data.claims).map_err(|_| {
+        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)"
+            .to_string()
+    })
+}
+
 /// RBAC middleware guard
 pub struct RoleGuard {
     required_roles: Vec<String>,
@@ -210,6 +312,21 @@ mod tests {
         let auth = AuthManager::new();
         let result = auth.login("unknown@example.com", "password");
         assert!(result.is_err());
+    }
+
+    // Regression: `verify`'s bool was discarded, so this login succeeded and
+    // handed out a valid token for an account the caller had no password to.
+    // The existing failure test only covered an unknown user, which the
+    // lookup rejects before any password is checked.
+    #[test]
+    fn login_with_the_wrong_password_is_refused() {
+        let mut auth = AuthManager::new();
+        auth.register_user("user@example.com", "correct-horse", vec!["user".to_string()])
+            .unwrap();
+
+        assert!(auth.login("user@example.com", "wrong-password").is_err());
+        assert!(auth.login("user@example.com", "").is_err());
+        assert!(auth.login("user@example.com", "correct-horse").is_ok());
     }
 
     #[test]

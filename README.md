@@ -49,7 +49,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 
 | Area | Status | Notes |
 |---|---|---|
-| Lexer (Tamil / romanized / English keywords) | ✅ Working | ~200 tokens, reports errors with line and column |
+| Lexer (Tamil / romanized / English keywords) | ✅ Working | 201 tokens across ~500 spellings; errors carry line and column |
 | Variables, arithmetic, percentages, strings | ✅ Working | |
 | Comparisons, `எனில்` / `இன்றேல்`, `சுற்று` loops | ✅ Working | |
 | Logical `மற்றும்` / `அல்லது` / `இல்லை` | ✅ Working | both sides always evaluated — no short-circuiting |
@@ -64,8 +64,13 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Standard library (`nUlakam/`) | ✅ Working | strings, math, arrays, money — **written in eTamil** |
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
-| HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes and `பதில்` responses |
-| LLVM backend (`--llvm`) | 🟡 Optional | Linux/macOS, `--features llvm`; refuses what it cannot compile |
+| HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
+| LLVM backend (`--llvm`) | 🟡 Subset | Linux/macOS, `--features llvm`. Compiles far less than the VM — no functions, iteration, collections or modules — and refuses what it cannot build rather than emitting IR that computes something else |
+| Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
+| JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
+| Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
+| String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
+| `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
 | Other databases | ❌ Not implemented | PostgreSQL, MySQL, MongoDB and Redis say so explicitly |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
 | Type checking | ❌ Not implemented | type keywords are parsed and discarded |
@@ -95,7 +100,14 @@ Equality is exact too. Division keeps full precision rather than rounding at eac
 
 ### Build from source (all platforms)
 
-Requires **Rust 1.85+** (edition 2024) and a C toolchain for linking.
+Requires **Rust 1.85+** (edition 2024) and a C toolchain, since the bundled
+SQLite and the crypto crates compile C:
+
+- **Windows** — Visual Studio Build Tools with the "Desktop development with
+  C++" workload. The MSVC linker is not optional: without it even
+  `cargo check` fails, because proc-macro crates link as DLLs.
+- **Linux / macOS** — a working `cc` (build-essential, or the Xcode command
+  line tools).
 
 ```bash
 git clone https://github.com/Maruff/etamil_compiler.git
@@ -312,13 +324,36 @@ All examples live in [`examples/`](examples/):
 | `basic_samples/example.qmz` | Income tax calculator |
 | `io_samples/simple_fileio.qmz` | File read/write |
 | `io_samples/fileio_example.qmz` | Longer file handling |
-| `db_samples/*.qmz` | Database syntax — **these currently fail**, since DB execution is not implemented |
-| `backend/*.qmz` | HTTP server samples for `--server` |
+| `db_samples/*.qmz` | SQLite — parameterised queries, rows returned as records |
+| `finance/*.qmz` | The accounting framework: GST, payroll, a full cycle, receivables ageing |
+| `backend/*.qmz`, `api/*.qmz` | HTTP handlers — run these with `--server`, not `--vm` |
 
 ```bash
 etamil --vm examples/basic_samples/example.qmz
 etamil --server --port 8080 examples/backend/hello_server.qmz
 ```
+
+A route reads its request through plain variables, so the same handler is
+readable in either spelling:
+
+```etamil
+வழி பெறு, "/kaNakku/:id" {
+    பதில் 200, "id=" & param_id & " vakY=" & query_params["vakY"];
+}
+
+வழி பதி, "/pativu" {
+    பதில் 201, "got body: " & request_body;
+}
+
+வழி பெறு, "/aRikkY.csv" {
+    பதில் 200, வரிசைகள், {"Content-Type": "text/csv"};
+}
+```
+
+A handler reads its request through `request_method` · `request_path` ·
+`request_body` · `query_params` · `headers` · `path_params`, and each path
+parameter also arrives as `param_<name>`. Response headers are an ordinary
+record; without one the server answers `application/json`.
 
 ---
 
@@ -326,10 +361,17 @@ etamil --server --port 8080 examples/backend/hello_server.qmz
 
 ```bash
 cd etamil_compiler
-cargo test
+cargo test          # 158 language tests + 50 unit tests
 ```
 
-`tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, and diagnostics — by asserting on **program results**, not exit codes. Unit tests for the HTTP and file modules live beside their source.
+`tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.
+
+Every example also runs with its expected outcome checked, including the ones that are *supposed* to fail:
+
+```bash
+./scripts/run_examples.sh
+python3 scripts/transliterate.py --check   # romanization audit
+```
 
 CI runs the build and the full test suite on Linux and Windows for every push and pull request.
 
@@ -353,6 +395,7 @@ etamil_compiler/
 ├── nUlakam/                # standard library — written in eTamil
 │   ├── col.qmz  kaNiqam.qmz  aNi.qmz  paNam.qmz
 │   └── kaNakkiyal/         # accounting framework — written in eTamil
+├── eTamil_Code/            # VS Code extension: syntax, snippets, config
 ├── examples/               # sample eTamil programs
 ├── scripts/                # keyword generation, romanization audit, runner
 └── docs/                   # guides, reference, roadmap
@@ -383,7 +426,7 @@ See [`nUlakam/README.md`](nUlakam/README.md) for the full list, and `examples/fi
 
 ## Contributing
 
-The most useful contributions right now are on the [roadmap](docs/ROADMAP.md): decimal arithmetic, parser error positions, and wiring the database layer to real drivers.
+The most useful contributions right now are on the [roadmap](docs/ROADMAP.md): keeping the source text of tokens (which also gives parse errors their positions), the async server, type checking, and the remaining database drivers.
 
 Please add a test to `etamil_compiler/tests/language_tests.rs` for any language behaviour you change, and make sure `cargo test` passes on both Linux and Windows.
 
