@@ -1,9 +1,88 @@
-use crate::lexer::Token;
+use crate::lexer::{Spanned, Token};
 use rust_decimal::Decimal;
 use std::iter::Peekable;
 use std::slice::Iter;
 
+/// A parse error, carrying the position of the token that caused it.
+///
+/// The parser used to `panic!` with `Expected Semicolon` and no location,
+/// which was the biggest usability gap in the language for anyone learning
+/// it. Messages are bilingual, as the lexer's already were.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParseError {
+    pub line: usize,
+    pub column: usize,
+    /// What the parser was looking for.
+    pub expected: String,
+    /// The source text actually found, empty at the end of input.
+    pub found: String,
+}
+
+impl std::fmt::Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.found.is_empty() {
+            write!(
+                f,
+                "வரி {}, நெடுவரிசை {}: {} எதிர்பார்க்கப்பட்டது, உள்ளீடு முடிந்தது  \
+                 (line {}, column {}: expected {}, but the input ended)",
+                self.line, self.column, self.expected, self.line, self.column, self.expected
+            )
+        } else {
+            write!(
+                f,
+                "வரி {}, நெடுவரிசை {}: {} எதிர்பார்க்கப்பட்டது, '{}' கிடைத்தது  \
+                 (line {}, column {}: expected {}, found '{}')",
+                self.line,
+                self.column,
+                self.expected,
+                self.found,
+                self.line,
+                self.column,
+                self.expected,
+                self.found
+            )
+        }
+    }
+}
+
 // --- Abstract Syntax Tree (AST) Nodes ---
+
+/// A type written in the source: `எண் வருவாய் = 100000;`
+///
+/// Type keywords used to be parsed and thrown away, so `சொல் x = 5;` was
+/// accepted. Keeping the declaration is what lets the checker hold an
+/// assignment to it.
+///
+/// There is one numeric type. `எண்` and `பின்னம்` both mean Number, because
+/// every value in the language is already a fixed-point decimal — a separate
+/// integer type would be a second decision, not a consequence of this one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DeclaredType {
+    Number,
+    Text,
+    Boolean,
+    Array,
+    Record,
+    Date,
+    /// No constraint: used where a type keyword exists that the checker has
+    /// nothing to say about yet.
+    Any,
+}
+
+impl DeclaredType {
+    /// The keyword an author would have written, for error messages.
+    pub fn name(&self) -> &'static str {
+        match self {
+            DeclaredType::Number => "எண் (eN, a number)",
+            DeclaredType::Text => "சொல் (col, a string)",
+            DeclaredType::Boolean => "ஈர்ம (Irma, a boolean)",
+            DeclaredType::Array => "அணி (aNi, an array)",
+            DeclaredType::Record => "பொருள் (poruL, a record)",
+            DeclaredType::Date => "தேதி (qEqi, a date)",
+            DeclaredType::Any => "any type",
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -63,6 +142,8 @@ pub enum Stmt {
     Assign {
         name: String,
         value: Expr,
+        /// The type the author wrote, if any: `எண் வருவாய் = 100000;`
+        declared: Option<DeclaredType>,
     },
     // ceyal name(params) { body }
     FunctionDef {
@@ -214,529 +295,645 @@ pub enum Stmt {
 // --- Parser Implementation ---
 
 pub struct Parser<'a> {
-    tokens: Peekable<Iter<'a, Token>>,
+    tokens: Peekable<Iter<'a, Spanned>>,
+    /// Where the last consumed token was, so an unexpected end of input can
+    /// still be reported somewhere the author recognizes.
+    last: (usize, usize),
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: Iter<'a, Token>) -> Self {
+    pub fn new(tokens: Iter<'a, Spanned>) -> Self {
         Parser {
             tokens: tokens.peekable(),
+            last: (1, 1),
         }
     }
 
-    /// Entry point: Parses the entire token stream into statements
-    pub fn parse(&mut self) -> Vec<Stmt> {
+    /// Entry point: parse the whole token stream into statements.
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut statements = Vec::new();
         while self.tokens.peek().is_some() {
-            statements.push(self.parse_statement());
+            statements.push(self.parse_statement()?);
         }
-        statements
+        Ok(statements)
     }
 
-    fn parse_statement(&mut self) -> Stmt {
-        let token = self.tokens.next().expect("Unexpected end of input");
+    // --- Position and error helpers ---------------------------------------
 
-        // Skip optional type declaration (eN, piZZam, col, etc.)
-        let current_token = if self.is_type_token(&token) {
-            self.tokens.next().expect("Expected identifier after type")
+    /// Look at the next token without consuming it.
+    ///
+    /// `Iter::peek` hands back a `&&Spanned`; copying the inner reference out
+    /// frees the result from the borrow on `self`, so an error can be built
+    /// from it in the same expression.
+    fn peek_spanned(&mut self) -> Option<&'a Spanned> {
+        self.tokens.peek().copied()
+    }
+
+    fn peek_token(&mut self) -> Option<&'a Token> {
+        self.peek_spanned().map(|spanned| &spanned.token)
+    }
+
+    fn advance(&mut self) -> Option<&'a Spanned> {
+        let spanned = self.tokens.next();
+        if let Some(spanned) = spanned {
+            self.last = (spanned.line, spanned.column);
+        }
+        spanned
+    }
+
+    /// Consume the next token, or report what was wanted instead.
+    fn take(&mut self, expected: &str) -> Result<&'a Spanned, ParseError> {
+        match self.advance() {
+            Some(spanned) => Ok(spanned),
+            None => Err(self.at_end(expected)),
+        }
+    }
+
+    fn mismatch(&self, spanned: &Spanned, expected: &str) -> ParseError {
+        ParseError {
+            line: spanned.line,
+            column: spanned.column,
+            expected: expected.to_string(),
+            found: spanned.text.clone(),
+        }
+    }
+
+    fn at_end(&self, expected: &str) -> ParseError {
+        ParseError {
+            line: self.last.0,
+            column: self.last.1,
+            expected: expected.to_string(),
+            found: String::new(),
+        }
+    }
+
+    /// A readable name for a token the parser was expecting. Punctuation reads
+    /// the same in either language; a keyword shows both spellings.
+    fn describe(token: &Token) -> String {
+        match token {
+            Token::Semicolon => "';'",
+            Token::Comma => "','",
+            Token::Colon => "':'",
+            Token::Assign => "'='",
+            Token::LParen => "'('",
+            Token::RParen => "')'",
+            Token::LBrace => "'{'",
+            Token::RBrace => "'}'",
+            Token::LBracket => "'['",
+            Token::RBracket => "']'",
+            Token::In => "இல் (il)",
+            Token::From => "இதனில் (iqaZil)",
+            Token::Where => "விதி (viqi)",
+            Token::If => "எனில் (eZil)",
+            Token::Loop => "சுற்று (cuRRu)",
+            Token::Else => "இன்றேல் (iZREl)",
+            other => return format!("{:?}", other),
+        }
+        .to_string()
+    }
+
+    fn expect(&mut self, expected: Token) -> Result<(), ParseError> {
+        match self.peek_spanned() {
+            Some(spanned) if spanned.token == expected => {
+                self.advance();
+                Ok(())
+            }
+            Some(spanned) => Err(self.mismatch(spanned, &Self::describe(&expected))),
+            None => Err(self.at_end(&Self::describe(&expected))),
+        }
+    }
+
+    fn matches(&mut self, expected: Token) -> bool {
+        match self.peek_spanned() {
+            Some(spanned) if spanned.token == expected => {
+                self.advance();
+                true
+            }
+            _ => false,
+        }
+    }
+
+    // --- Names -------------------------------------------------------------
+
+    /// A name as the author wrote it.
+    ///
+    /// This is what keeping the source text was for. The spelling used to be
+    /// discarded and only the token kept, so `வங்கி = 5` created a variable
+    /// called `Bank`: a Tamil author's chosen name was silently anglicised,
+    /// printing such a record emitted English field names into Tamil output,
+    /// and looking a field up by string needed the token name rather than the
+    /// written one.
+    ///
+    /// The documented consequence: `{வரி: 1}` and `{vari: 1}` are now
+    /// *different* fields. A field name is data, not a language construct.
+    fn name_of(&self, spanned: &Spanned) -> String {
+        match &spanned.token {
+            // A quoted key carries its parsed contents, not its quotes.
+            Token::String(text) => text.clone(),
+            _ => spanned.text.clone(),
+        }
+    }
+
+    /// Consume a token that must be usable as a name.
+    fn take_name(&mut self, expected: &str) -> Result<String, ParseError> {
+        let spanned = self.take(expected)?;
+        let usable = matches!(spanned.token, Token::String(_))
+            || (Self::is_identifier_like(&spanned.token) && !Self::is_type_token(&spanned.token));
+
+        if !usable {
+            return Err(self.mismatch(spanned, expected));
+        }
+        Ok(self.name_of(spanned))
+    }
+
+    /// The canonical English name of a keyword.
+    ///
+    /// Kept for the two places where a keyword names something the host must
+    /// recognize rather than something the author invented: a database type,
+    /// which `db::open` matches on, and an HTTP method, which the router
+    /// matches on. Those are not the author's names, so they do not follow the
+    /// author's spelling.
+    fn token_name(token: &Token) -> String {
+        match token {
+            Token::Identifier(name) => name.clone(),
+            Token::SQL => "SQL".to_string(),
+            Token::NoSQL => "NoSQL".to_string(),
+            Token::SQLite => "SQLite".to_string(),
+            Token::MySQL => "MySQL".to_string(),
+            Token::PostgreSQL => "PostgreSQL".to_string(),
+            Token::MongoDB => "MongoDB".to_string(),
+            Token::Redis => "Redis".to_string(),
+            Token::JSONdb => "JSONdb".to_string(),
+            Token::HttpGet => "GET".to_string(),
+            Token::HttpPost => "POST".to_string(),
+            Token::HttpPut => "PUT".to_string(),
+            Token::HttpDelete => "DELETE".to_string(),
+            Token::HttpPatch => "PATCH".to_string(),
+            Token::HttpOptions => "OPTIONS".to_string(),
+            Token::HttpHead => "HEAD".to_string(),
+            other => format!("{:?}", other),
+        }
+    }
+
+    // --- Statements --------------------------------------------------------
+
+    fn parse_statement(&mut self) -> Result<Stmt, ParseError> {
+        let first = self.take("a statement")?;
+
+        // An optional type declaration: eN, piZZam, col and the rest. The
+        // declared type is kept so the checker can hold assignments to it.
+        let (declared, current) = if Self::is_type_token(&first.token) {
+            let name = self.take("a name after the type")?;
+            (Some(Self::type_of(&first.token)), name)
         } else {
-            token
+            (None, first)
         };
 
-        if self.is_identifier_like(&current_token) {
-            let name = match &current_token {
-                Token::Identifier(n) => n.clone(),
-                _ => self.token_name(&current_token),
-            };
+        if Self::is_identifier_like(&current.token) && !Self::is_type_token(&current.token) {
+            let name = self.name_of(current);
 
-            // A call used as a statement, e.g. `pqivu_ceyal(x);`
-            if self.tokens.peek() == Some(&&Token::LParen) {
-                let call = self.finish_name_or_call(name);
-                self.expect(Token::Semicolon);
-                return Stmt::Expression(call);
+            // A call used as a statement, e.g. `paqivu_ceyal(x);`
+            if self.peek_token() == Some(&Token::LParen) {
+                let call = self.finish_name_or_call(name)?;
+                self.expect(Token::Semicolon)?;
+                return Ok(Stmt::Expression(call));
             }
 
             // a[i] = value;
             if self.matches(Token::LBracket) {
-                let index = self.parse_expression();
-                self.expect(Token::RBracket);
-                self.expect(Token::Assign);
-                let value = self.parse_expression();
-                self.expect(Token::Semicolon);
-                return Stmt::SetIndex { name, index, value };
+                let index = self.parse_expression()?;
+                self.expect(Token::RBracket)?;
+                self.expect(Token::Assign)?;
+                let value = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                return Ok(Stmt::SetIndex { name, index, value });
             }
 
             // r.field = value;
             if self.matches(Token::Dot) {
-                let field_token = self.tokens.next().expect("Expected a field name");
-                let field = self.token_name(field_token);
-                self.expect(Token::Assign);
-                let value = self.parse_expression();
-                self.expect(Token::Semicolon);
-                return Stmt::SetField { name, field, value };
+                let field = self.take_name("a field name")?;
+                self.expect(Token::Assign)?;
+                let value = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                return Ok(Stmt::SetField { name, field, value });
             }
 
-            // Check if it's just a declaration (semicolon) or assignment
-            if self.tokens.peek() == Some(&&Token::Semicolon) {
-                self.tokens.next(); // consume semicolon
-                // Variable declaration without initialization - assign 0
-                return Stmt::Assign { name, value: Expr::Number(Decimal::ZERO) };
+            // A declaration with no initializer.
+            if self.matches(Token::Semicolon) {
+                return Ok(Stmt::Assign {
+                    name,
+                    value: Expr::Number(Decimal::ZERO),
+                    declared,
+                });
             }
-            
-            self.expect(Token::Assign);
-            let value = self.parse_expression();
-            self.expect(Token::Semicolon);
-            return Stmt::Assign { name, value };
+
+            self.expect(Token::Assign)?;
+            let value = self.parse_expression()?;
+            self.expect(Token::Semicolon)?;
+            return Ok(Stmt::Assign { name, value, declared });
         }
 
-        match current_token {
+        match &current.token {
             Token::Function => {
-                // ceyal name(a, b) { ... }
-                let name_token = self.tokens.next().expect("Expected a function name");
-                let name = self.token_name(name_token);
-                self.expect(Token::LParen);
+                let name = self.take_name("a function name")?;
+                self.expect(Token::LParen)?;
                 let mut params = Vec::new();
                 if !self.matches(Token::RParen) {
                     loop {
-                        let param = self.tokens.next().expect("Expected a parameter name");
-                        params.push(self.token_name(param));
+                        params.push(self.take_name("a parameter name")?);
                         if !self.matches(Token::Comma) {
                             break;
                         }
                     }
-                    self.expect(Token::RParen);
+                    self.expect(Token::RParen)?;
                 }
-                self.expect(Token::LBrace);
-                let mut body = Vec::new();
-                while !self.matches(Token::RBrace) {
-                    body.push(self.parse_statement());
-                }
-                Stmt::FunctionDef { name, params, body }
+                self.expect(Token::LBrace)?;
+                let body = self.parse_block()?;
+                Ok(Stmt::FunctionDef { name, params, body })
             }
             Token::Import => {
-                let path = self.parse_expression();
-                self.expect(Token::Semicolon);
+                let path = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
                 match path {
-                    Expr::String(s) => Stmt::Import(s),
-                    other => panic!(
-                        "இறக்கு needs a quoted file path, got {:?}",
-                        other
-                    ),
+                    Expr::String(path) => Ok(Stmt::Import(path)),
+                    _ => Err(self.at_end("a quoted file path after இறக்கு (iRakku)")),
                 }
             }
             Token::ForEach => {
-                // ovvoru item il collection { ... }
-                let var_token = self.tokens.next().expect("Expected a loop variable");
-                let var = self.token_name(var_token);
-                self.expect(Token::In);
-                let collection = self.parse_expression();
-                self.expect(Token::LBrace);
-                let mut body = Vec::new();
-                while !self.matches(Token::RBrace) {
-                    body.push(self.parse_statement());
-                }
-                Stmt::ForEach { var, collection, body }
+                let var = self.take_name("a loop variable")?;
+                self.expect(Token::In)?;
+                let collection = self.parse_expression()?;
+                self.expect(Token::LBrace)?;
+                let body = self.parse_block()?;
+                Ok(Stmt::ForEach { var, collection, body })
             }
             Token::Return => {
                 if self.matches(Token::Semicolon) {
-                    Stmt::Return(None)
+                    Ok(Stmt::Return(None))
                 } else {
-                    let value = self.parse_expression();
-                    self.expect(Token::Semicolon);
-                    Stmt::Return(Some(value))
+                    let value = self.parse_expression()?;
+                    self.expect(Token::Semicolon)?;
+                    Ok(Stmt::Return(Some(value)))
                 }
             }
             Token::Print => {
-                let val = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::Print(val)
+                let value = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::Print(value))
             }
             Token::Input => {
-                let val = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::Input(val)
+                let value = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::Input(value))
             }
             Token::FileOpen => {
-                // கோப்பு_திற "file.txt";  (optional: , "read")
-                let filename = self.parse_expression();
+                let filename = self.parse_expression()?;
                 let mode = if self.matches(Token::Comma) {
-                    let mode_expr = self.parse_expression();
-                    self.expr_to_string(mode_expr).to_lowercase()
+                    let mode = self.parse_expression()?;
+                    Self::expr_to_string(mode).to_lowercase()
                 } else {
                     "read".to_string()
                 };
-                self.expect(Token::Semicolon);
-                Stmt::FileOpen { filename, mode }
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::FileOpen { filename, mode })
             }
             Token::FileClose => {
-                // கோப்பு_பின்வை "file.txt";
-                let filename = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::FileClose { filename }
+                let filename = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::FileClose { filename })
             }
             Token::FileWrite => {
-                // கோப்பு_எழுது "file.txt", "data to write";
-                let filename = self.parse_expression();
-                self.expect(Token::Comma);
-                let data = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::FileWrite { filename, data }
+                let filename = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let data = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::FileWrite { filename, data })
             }
             Token::FileRead => {
-                // கோப்பு_படி "file.txt", varName;
-                let filename = self.parse_expression();
-                self.expect(Token::Comma);
-                let var_token = self.tokens.next().expect("Expected variable name");
-                let variable = match &var_token {
-                    Token::Identifier(n) => n.clone(),
-                    _ => self.token_name(&var_token),
-                };
-                self.expect(Token::Semicolon);
-                Stmt::FileRead { filename, variable }
+                let filename = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let variable = self.take_name("a variable to read into")?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::FileRead { filename, variable })
             }
             Token::ReadCSV => {
-                // CSV_படி "data.csv", varName;
-                let filename = self.parse_expression();
-                self.expect(Token::Comma);
-                let var_token = self.tokens.next().expect("Expected variable name");
-                let variable = match &var_token {
-                    Token::Identifier(n) => n.clone(),
-                    _ => self.token_name(&var_token),
-                };
-                self.expect(Token::Semicolon);
-                Stmt::ReadCSV { filename, variable }
+                let filename = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let variable = self.take_name("a variable to read into")?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::ReadCSV { filename, variable })
             }
             Token::WriteCSV => {
-                // CSV_எழுது "data.csv", data;
-                let filename = self.parse_expression();
-                self.expect(Token::Comma);
-                let data = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::WriteCSV { filename, data }
+                let filename = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let data = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::WriteCSV { filename, data })
             }
             Token::DBConnect => {
-                // தரவுசேமி_இணை SQL "connection_string";
-                let db_type_token = self.tokens.next().expect("Expected database type");
-                let db_type = self.token_name(&db_type_token);
-                self.expect(Token::Comma);
-                let connection_string = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::DBConnect { db_type, connection_string }
+                // The database type is the host's name for a backend, not a
+                // name the author invented, so it keeps its canonical spelling.
+                let db_type = Self::token_name(&self.take("a database type")?.token);
+                self.expect(Token::Comma)?;
+                let connection_string = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBConnect { db_type, connection_string })
             }
             Token::DBDisconnect => {
-                // தரவுசேமி_பிரிந்து SQL;
-                let db_type_token = self.tokens.next().expect("Expected database type");
-                let db_type = self.token_name(&db_type_token);
-                self.expect(Token::Semicolon);
-                Stmt::DBDisconnect { db_type }
+                let db_type = Self::token_name(&self.take("a database type")?.token);
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBDisconnect { db_type })
             }
             Token::DBQuery => {
-                // தளம்_வினா "SELECT ... WHERE x = ?", [அளவுருக்கள்], முடிவு;
-                //
-                // The parameter array is always required, even when empty.
-                // Values reach the driver bound, never spliced into the SQL.
-                let query = self.parse_expression();
-                self.expect(Token::Comma);
-                let params = self.parse_expression();
-                self.expect(Token::Comma);
-                let var_token = self.tokens.next().expect("Expected a variable to hold the rows");
-                let result_var = self.name_of(var_token);
-                self.expect(Token::Semicolon);
-                Stmt::DBQuery { query, params, result_var }
+                let query = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let params = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let result_var = self.take_name("a variable to hold the rows")?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBQuery { query, params, result_var })
             }
             Token::DBExecute => {
-                // தளம்_செய் "INSERT ... VALUES (?, ?)", [அளவுருக்கள்];
-                let command = self.parse_expression();
-                self.expect(Token::Comma);
-                let params = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::DBExecute { command, params }
+                let command = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let params = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBExecute { command, params })
             }
             Token::DBInsert => {
-                // தரவுசேமி_செருக table_name, data;
-                let table_token = self.tokens.next().expect("Expected table name");
-                let table = self.token_name(&table_token);
-                self.expect(Token::Comma);
-                let data = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::DBInsert { table, data }
+                let table = self.take_name("a table name")?;
+                self.expect(Token::Comma)?;
+                let data = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBInsert { table, data })
             }
             Token::DBUpdate => {
-                // தரவுசேமி_புதுப்பி table_name, data, condition;
-                let table_token = self.tokens.next().expect("Expected table name");
-                let table = self.token_name(&table_token);
-                self.expect(Token::Comma);
-                let data = self.parse_expression();
+                let table = self.take_name("a table name")?;
+                self.expect(Token::Comma)?;
+                let data = self.parse_expression()?;
                 let condition = if self.matches(Token::Comma) {
-                    Some(self.parse_expression())
+                    Some(self.parse_expression()?)
                 } else {
                     None
                 };
-                self.expect(Token::Semicolon);
-                Stmt::DBUpdate { table, data, condition }
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBUpdate { table, data, condition })
             }
             Token::DBDelete => {
-                // தரவுசேமி_நீக்கு table_name, condition;
-                let table_token = self.tokens.next().expect("Expected table name");
-                let table = self.token_name(&table_token);
-                self.expect(Token::Comma);
-                let condition = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::DBDelete { table, condition }
+                let table = self.take_name("a table name")?;
+                self.expect(Token::Comma)?;
+                let condition = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::DBDelete { table, condition })
             }
             Token::CreateTable => {
-                // அட்டை_ஆக்கு table_name, "schema definition";
-                let table_token = self.tokens.next().expect("Expected table name");
-                let table = self.token_name(&table_token);
-                self.expect(Token::Comma);
-                let schema = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::CreateTable { table, schema }
+                let table = self.take_name("a table name")?;
+                self.expect(Token::Comma)?;
+                let schema = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::CreateTable { table, schema })
             }
             Token::Select => {
-                // தேர்வெடு column1, column2 இதனில் table_name விதி condition;
                 let mut columns = Vec::new();
                 loop {
-                    let col_token = self.tokens.next().expect("Expected column name");
-                    columns.push(self.token_name(&col_token));
+                    columns.push(self.take_name("a column name")?);
                     if !self.matches(Token::Comma) {
                         break;
                     }
                 }
-                self.expect(Token::From);
-                let table_token = self.tokens.next().expect("Expected table name");
-                let from_table = self.token_name(&table_token);
+                self.expect(Token::From)?;
+                let from_table = self.take_name("a table name")?;
                 let where_clause = if self.matches(Token::Where) {
-                    Some(self.parse_expression())
+                    Some(self.parse_expression()?)
                 } else {
                     None
                 };
-                self.expect(Token::Semicolon);
-                Stmt::Select { columns, from_table, where_clause }
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::Select { columns, from_table, where_clause })
             }
             Token::Route => {
-                // வழி GET "/api/users" { handler code };
-                let method_token = self.tokens.next().expect("Expected HTTP method");
-                let method = self.token_name(&method_token);
-                self.expect(Token::Comma);
-                let path = self.parse_expression();
-                self.expect(Token::LBrace);
-                let mut handler = Vec::new();
-                while !self.matches(Token::RBrace) {
-                    handler.push(self.parse_statement());
-                }
-                Stmt::DefineRoute { method, path, handler }
+                // The HTTP method is matched by the router, so like a database
+                // type it keeps its canonical spelling rather than the
+                // author's.
+                let method = Self::token_name(&self.take("an HTTP method")?.token);
+                self.expect(Token::Comma)?;
+                let path = self.parse_expression()?;
+                self.expect(Token::LBrace)?;
+                let handler = self.parse_block()?;
+                Ok(Stmt::DefineRoute { method, path, handler })
             }
             Token::StartServer => {
-                // வழங்கி_தொடங்கு "localhost", 8080;
-                let host = self.parse_expression();
-                self.expect(Token::Comma);
-                let port = self.parse_expression();
-                self.expect(Token::Semicolon);
-                Stmt::StartServer { host, port }
+                let host = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let port = self.parse_expression()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::StartServer { host, port })
             }
             Token::StopServer => {
-                // வழங்கி_நிறுத்து;
-                self.expect(Token::Semicolon);
-                Stmt::StopServer
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::StopServer)
             }
             Token::Response => {
-                // பதில் 200, "OK";
-                // பதில் 200, உடல், {"Content-Type": "text/html"};
-                //
-                // Headers are an ordinary record, so this needs no syntax of
-                // its own. Quoted keys matter here: written bare, a name like
-                // உரை_வகை would lex as the ContentType keyword and be stored
-                // under its token name rather than as the header it spells.
-                let status_code = self.parse_expression();
-                self.expect(Token::Comma);
-                let body = self.parse_expression();
+                let status_code = self.parse_expression()?;
+                self.expect(Token::Comma)?;
+                let body = self.parse_expression()?;
                 let headers = if self.matches(Token::Comma) {
-                    Some(self.parse_expression())
+                    Some(self.parse_expression()?)
                 } else {
                     None
                 };
-                self.expect(Token::Semicolon);
-                Stmt::SendResponse { status_code, body, headers }
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::SendResponse { status_code, body, headers })
             }
             Token::JSONBody => {
-                // ஜேசான்_உரை data, 200;
-                let data = self.parse_expression();
+                let data = self.parse_expression()?;
                 let status_code = if self.matches(Token::Comma) {
-                    Some(self.parse_expression())
+                    Some(self.parse_expression()?)
                 } else {
                     None
                 };
-                self.expect(Token::Semicolon);
-                Stmt::SendJSON { data, status_code }
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::SendJSON { data, status_code })
             }
             Token::LParen => {
-                // Handling (condition) eZil { ... }
-                let condition = self.parse_expression();
-                self.expect(Token::RParen);
-                
-                let next = self.tokens.next().expect("Expected keyword after condition");
-                match next {
+                let condition = self.parse_expression()?;
+                self.expect(Token::RParen)?;
+
+                let keyword = self.take("எனில் (eZil) or சுற்று (cuRRu) after a condition")?;
+                match keyword.token {
                     Token::If => self.parse_if_remainder(condition),
                     Token::Loop => self.parse_loop_remainder(condition),
-                    _ => panic!("Expected eZil or cuRRu after condition"),
+                    _ => Err(self.mismatch(
+                        keyword,
+                        "எனில் (eZil) or சுற்று (cuRRu) after a condition",
+                    )),
                 }
             }
-            _ => panic!("Unexpected token: {:?}", current_token),
+            _ => Err(self.mismatch(current, "a statement")),
         }
     }
 
-    // Handles the body of 'eZil' (if) and 'iZREl' (else)
-    fn parse_if_remainder(&mut self, condition: Expr) -> Stmt {
-        self.expect(Token::LBrace);
-        let mut then_branch = Vec::new();
-        while !self.matches(Token::RBrace) {
-            then_branch.push(self.parse_statement());
-        }
-
-        let mut else_branch = None;
-        if self.matches(Token::Else) {
-            self.expect(Token::LBrace);
-            let mut branch = Vec::new();
-            while !self.matches(Token::RBrace) {
-                branch.push(self.parse_statement());
-            }
-            else_branch = Some(branch);
-        }
-
-        Stmt::If { condition, then_branch, else_branch }
-    }
-
-    // Handles the body of 'cuRRu' (loop)
-    fn parse_loop_remainder(&mut self, condition: Expr) -> Stmt {
-        self.expect(Token::LBrace);
+    /// Statements up to a closing brace, which is consumed.
+    fn parse_block(&mut self) -> Result<Vec<Stmt>, ParseError> {
         let mut body = Vec::new();
-        while !self.matches(Token::RBrace) {
-            body.push(self.parse_statement());
+        loop {
+            if self.matches(Token::RBrace) {
+                return Ok(body);
+            }
+            if self.tokens.peek().is_none() {
+                return Err(self.at_end("'}'"));
+            }
+            body.push(self.parse_statement()?);
         }
-        Stmt::Loop { condition, body }
     }
 
-    // --- Expression Parsing (LLOPR & Precedence) ---
+    fn parse_if_remainder(&mut self, condition: Expr) -> Result<Stmt, ParseError> {
+        self.expect(Token::LBrace)?;
+        let then_branch = self.parse_block()?;
 
+        let else_branch = if self.matches(Token::Else) {
+            self.expect(Token::LBrace)?;
+            Some(self.parse_block()?)
+        } else {
+            None
+        };
+
+        Ok(Stmt::If { condition, then_branch, else_branch })
+    }
+
+    fn parse_loop_remainder(&mut self, condition: Expr) -> Result<Stmt, ParseError> {
+        self.expect(Token::LBrace)?;
+        let body = self.parse_block()?;
+        Ok(Stmt::Loop { condition, body })
+    }
+
+    // --- Expressions -------------------------------------------------------
+    //
     // Precedence, loosest first:
-    //   or  <  and  <  not  <  comparison  <  additive  <  term  <  factor
-    fn parse_expression(&mut self) -> Expr {
+    //   or < and < not < comparison < additive < term < factor
+
+    fn parse_expression(&mut self) -> Result<Expr, ParseError> {
         self.parse_or()
     }
 
-    fn parse_or(&mut self) -> Expr {
-        let mut left = self.parse_and();
-        while let Some(Token::Or) = self.tokens.peek() {
-            self.tokens.next();
-            let right = self.parse_and();
+    fn parse_or(&mut self) -> Result<Expr, ParseError> {
+        let mut left = self.parse_and()?;
+        while self.peek_token() == Some(&Token::Or) {
+            self.advance();
+            let right = self.parse_and()?;
             left = Expr::Logical {
                 op: "||".to_string(),
                 left: Box::new(left),
                 right: Box::new(right),
             };
         }
-        left
+        Ok(left)
     }
 
-    fn parse_and(&mut self) -> Expr {
-        let mut left = self.parse_not();
-        while let Some(Token::And) = self.tokens.peek() {
-            self.tokens.next();
-            let right = self.parse_not();
+    fn parse_and(&mut self) -> Result<Expr, ParseError> {
+        let mut left = self.parse_not()?;
+        while self.peek_token() == Some(&Token::And) {
+            self.advance();
+            let right = self.parse_not()?;
             left = Expr::Logical {
                 op: "&&".to_string(),
                 left: Box::new(left),
                 right: Box::new(right),
             };
         }
-        left
+        Ok(left)
     }
 
-    fn parse_not(&mut self) -> Expr {
-        if let Some(Token::Not) = self.tokens.peek() {
-            self.tokens.next();
-            return Expr::Not(Box::new(self.parse_not()));
+    fn parse_not(&mut self) -> Result<Expr, ParseError> {
+        if self.peek_token() == Some(&Token::Not) {
+            self.advance();
+            return Ok(Expr::Not(Box::new(self.parse_not()?)));
         }
         self.parse_comparison()
     }
 
-    fn parse_comparison(&mut self) -> Expr {
-        let mut left = self.parse_additive();
-        while let Some(t) = self.tokens.peek() {
-            match t {
-                Token::GreaterThan | Token::LessThan | Token::Equals | 
-                Token::GreaterThanOrEqual | Token::LessThanOrEqual | Token::NotEquals => {
-                    let op_token = self.tokens.next().unwrap();
-                    let op = match op_token {
-                        Token::GreaterThanOrEqual => ">=".to_string(),
-                        Token::LessThanOrEqual => "<=".to_string(),
-                        Token::GreaterThan => ">".to_string(),
-                        Token::LessThan => "<".to_string(),
-                        Token::Equals => "==".to_string(),
-                        Token::NotEquals => "!=".to_string(),
-                        _ => unreachable!(),
-                    };
-                    let right = self.parse_additive();
-                    left = Expr::Comparison { left: Box::new(left), op, right: Box::new(right) };
-                }
+    fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
+        let mut left = self.parse_additive()?;
+        loop {
+            let op = match self.peek_token() {
+                Some(Token::GreaterThan) => ">",
+                Some(Token::LessThan) => "<",
+                Some(Token::Equals) => "==",
+                Some(Token::NotEquals) => "!=",
+                Some(Token::GreaterThanOrEqual) => ">=",
+                Some(Token::LessThanOrEqual) => "<=",
                 _ => break,
-            }
+            };
+            self.advance();
+            let right = self.parse_additive()?;
+            left = Expr::Comparison {
+                left: Box::new(left),
+                op: op.to_string(),
+                right: Box::new(right),
+            };
         }
-        left
+        Ok(left)
     }
 
-    fn parse_additive(&mut self) -> Expr {
-        let mut left = self.parse_term();
-        while let Some(t) = self.tokens.peek() {
-            match t {
-                Token::Plus | Token::Minus => {
-                    let op = if matches!(t, Token::Plus) { "+" } else { "-" }.to_string();
-                    self.tokens.next();
-                    let right = self.parse_term();
-                    left = Expr::BinaryOp { op, left: Box::new(left), right: Box::new(right) };
-                }
-                Token::Ampersand => {
-                    self.tokens.next();
-                    let right = self.parse_term();
-                    left = Expr::Concat { left: Box::new(left), right: Box::new(right) };
-                }
+    fn parse_additive(&mut self) -> Result<Expr, ParseError> {
+        let mut left = self.parse_term()?;
+        loop {
+            let op = match self.peek_token() {
+                Some(Token::Plus) => "+",
+                Some(Token::Minus) => "-",
+                Some(Token::Ampersand) => "&",
                 _ => break,
-            }
+            };
+            self.advance();
+            let right = self.parse_term()?;
+            left = if op == "&" {
+                Expr::Concat {
+                    left: Box::new(left),
+                    right: Box::new(right),
+                }
+            } else {
+                Expr::BinaryOp {
+                    op: op.to_string(),
+                    left: Box::new(left),
+                    right: Box::new(right),
+                }
+            };
         }
-        left
+        Ok(left)
     }
 
-    fn parse_term(&mut self) -> Expr {
-        let mut left = self.parse_factor();
-        while let Some(t) = self.tokens.peek() {
-            match t {
-                Token::Multiply | Token::Divide => {
-                    let op = if matches!(t, Token::Multiply) { "*" } else { "/" }.to_string();
-                    self.tokens.next();
-                    let right = self.parse_factor();
-                    left = Expr::BinaryOp { op, left: Box::new(left), right: Box::new(right) };
-                }
+    fn parse_term(&mut self) -> Result<Expr, ParseError> {
+        let mut left = self.parse_factor()?;
+        loop {
+            let op = match self.peek_token() {
+                Some(Token::Multiply) => "*",
+                Some(Token::Divide) => "/",
                 _ => break,
-            }
+            };
+            self.advance();
+            let right = self.parse_factor()?;
+            left = Expr::BinaryOp {
+                op: op.to_string(),
+                left: Box::new(left),
+                right: Box::new(right),
+            };
         }
-        left
+        Ok(left)
     }
 
-    /// A primary expression followed by any number of `[i]` and `.name`.
-    fn parse_factor(&mut self) -> Expr {
-        let mut expr = self.parse_primary();
+    /// A primary expression followed by any number of `[i]`, `.name` and `?`.
+    fn parse_factor(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.parse_primary()?;
         loop {
             if self.matches(Token::LBracket) {
-                let index = self.parse_expression();
-                self.expect(Token::RBracket);
+                let index = self.parse_expression()?;
+                self.expect(Token::RBracket)?;
                 expr = Expr::Index {
                     base: Box::new(expr),
                     index: Box::new(index),
                 };
             } else if self.matches(Token::Dot) {
-                let field_token = self.tokens.next().expect("Expected a field name");
-                let name = self.name_of(field_token);
+                let name = self.take_name("a field name")?;
                 expr = Expr::Field {
                     base: Box::new(expr),
                     name,
@@ -747,108 +944,95 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-        expr
+        Ok(expr)
     }
 
-    /// A field or key name: a bare name, or a quoted string.
-    fn name_of(&self, token: &Token) -> String {
-        match token {
-            Token::String(s) => s.clone(),
-            other => self.token_name(other),
-        }
-    }
+    fn parse_primary(&mut self) -> Result<Expr, ParseError> {
+        let spanned = self.take("a value")?;
 
-    fn parse_primary(&mut self) -> Expr {
-        // Base case for numbers/identifiers
-        let token = self.tokens.next()
-            .expect("Unexpected end of input while reading an expression");
-        match token {
+        match &spanned.token {
             // அணி — an array literal: [a, b, c]
             Token::LBracket => {
                 let mut items = Vec::new();
                 if !self.matches(Token::RBracket) {
                     loop {
-                        items.push(self.parse_expression());
+                        items.push(self.parse_expression()?);
                         if !self.matches(Token::Comma) {
                             break;
                         }
                     }
-                    self.expect(Token::RBracket);
+                    self.expect(Token::RBracket)?;
                 }
-                Expr::ArrayLiteral(items)
+                Ok(Expr::ArrayLiteral(items))
             }
             // பொருள் — a record literal: {peyar: "ravi", vayaqu: 20}
             Token::LBrace => {
                 let mut fields = Vec::new();
                 if !self.matches(Token::RBrace) {
                     loop {
-                        let key_token = self.tokens.next().expect("Expected a field name");
-                        let key = self.name_of(key_token);
-                        self.expect(Token::Colon);
-                        let value = self.parse_expression();
+                        let key = self.take_name("a field name")?;
+                        self.expect(Token::Colon)?;
+                        let value = self.parse_expression()?;
                         fields.push((key, value));
                         if !self.matches(Token::Comma) {
                             break;
                         }
                     }
-                    self.expect(Token::RBrace);
+                    self.expect(Token::RBrace)?;
                 }
-                Expr::RecordLiteral(fields)
+                Ok(Expr::RecordLiteral(fields))
             }
-            // Unary minus: -x is compiled as 0 - x
+            // Unary minus, compiled as 0 - x.
             Token::Minus => {
-                let operand = self.parse_factor();
-                Expr::BinaryOp {
+                let operand = self.parse_factor()?;
+                Ok(Expr::BinaryOp {
                     op: "-".to_string(),
                     left: Box::new(Expr::Number(Decimal::ZERO)),
                     right: Box::new(operand),
-                }
+                })
             }
-            Token::Number(n) => Expr::Number(*n),
-            Token::Percentage(n) => Expr::Number(*n),
-            Token::String(s) => Expr::String(s.clone()),
-            Token::True => Expr::Boolean(true),
-            Token::False => Expr::Boolean(false),
-            Token::Null => Expr::Null,
-            Token::Identifier(name) => {
-                let name = name.clone();
-                self.finish_name_or_call(name)
-            }
+            Token::Number(n) => Ok(Expr::Number(*n)),
+            Token::Percentage(n) => Ok(Expr::Number(*n)),
+            Token::String(s) => Ok(Expr::String(s.clone())),
+            Token::True => Ok(Expr::Boolean(true)),
+            Token::False => Ok(Expr::Boolean(false)),
+            Token::Null => Ok(Expr::Null),
             Token::LParen => {
-                // Parenthesized expression
-                let expr = self.parse_expression();
-                self.expect(Token::RParen);
-                expr
+                let expr = self.parse_expression()?;
+                self.expect(Token::RParen)?;
+                Ok(expr)
             }
-            // Handle financial keywords as variable references
-            t if self.is_identifier_like(t) => {
-                let name = self.token_name(t);
+            // An identifier, or a financial keyword used as a name.
+            token if Self::is_identifier_like(token) && !Self::is_type_token(token) => {
+                let name = self.name_of(spanned);
                 self.finish_name_or_call(name)
             }
-            _ => panic!("Expected factor, got {:?}", token),
+            _ => Err(self.mismatch(spanned, "a value")),
         }
     }
 
     /// A name already consumed: a call if `(` follows, otherwise a variable.
-    fn finish_name_or_call(&mut self, name: String) -> Expr {
+    fn finish_name_or_call(&mut self, name: String) -> Result<Expr, ParseError> {
         if !self.matches(Token::LParen) {
-            return Expr::Variable(name);
+            return Ok(Expr::Variable(name));
         }
+
         let mut args = Vec::new();
         if !self.matches(Token::RParen) {
             loop {
-                args.push(self.parse_expression());
+                args.push(self.parse_expression()?);
                 if !self.matches(Token::Comma) {
                     break;
                 }
             }
-            self.expect(Token::RParen);
+            self.expect(Token::RParen)?;
         }
-        Expr::Call { name, args }
+        Ok(Expr::Call { name, args })
     }
 
-    // Helpers to recognize identifier-like tokens (domain keywords or identifiers)
-    fn is_identifier_like(&self, token: &Token) -> bool {
+    // --- Token classification ---------------------------------------------
+
+    fn is_identifier_like(token: &Token) -> bool {
         match token {
             Token::Number(_) | Token::Percentage(_) | Token::String(_) => false,
             Token::If | Token::Else | Token::Loop | Token::Print | Token::Input => false,
@@ -857,6 +1041,8 @@ impl<'a> Parser<'a> {
             Token::Function | Token::Return => false,
             Token::ForEach | Token::In | Token::Import => false,
             Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
+            Token::Question | Token::Dot | Token::Colon => false,
+            Token::LBracket | Token::RBracket => false,
             Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
             Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
             Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => false,
@@ -875,53 +1061,46 @@ impl<'a> Parser<'a> {
             Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
             // Security
             Token::Encrypt | Token::Decrypt | Token::Password | Token::EncryptionKey => false,
-            // Financial & accounting keywords ARE usable as names: வருவாய்,
+            // Financial and accounting keywords ARE usable as names: வருவாய்,
             // வரி and the rest are the domain nouns programs are written
             // about. They have no statement syntax of their own, and listing
             // them here made `எண் வருவாய்;` — the language's own headline
             // example — a parse error.
-            _ if self.is_type_token(token) => false,
-            Token::Identifier(_) => true,
             _ => true,
         }
     }
 
-    fn is_type_token(&self, token: &Token) -> bool {
-        matches!(token, 
-            Token::IntegerType | Token::FloatType | Token::StringType | 
-            Token::BoolType | Token::TextType | Token::ArrayType | 
-            Token::DataType | Token::ObjectType | Token::DateType
+    fn is_type_token(token: &Token) -> bool {
+        matches!(
+            token,
+            Token::IntegerType
+                | Token::FloatType
+                | Token::StringType
+                | Token::BoolType
+                | Token::TextType
+                | Token::ArrayType
+                | Token::DataType
+                | Token::ObjectType
+                | Token::DateType
         )
     }
 
-    fn token_name(&self, token: &Token) -> String {
+    /// The declared type a type keyword names.
+    fn type_of(token: &Token) -> DeclaredType {
         match token {
-            Token::Identifier(name) => name.clone(),
-            Token::SQL => "SQL".to_string(),
-            Token::NoSQL => "NoSQL".to_string(),
-            Token::SQLite => "SQLite".to_string(),
-            Token::MySQL => "MySQL".to_string(),
-            Token::PostgreSQL => "PostgreSQL".to_string(),
-            Token::MongoDB => "MongoDB".to_string(),
-            Token::Redis => "Redis".to_string(),
-            Token::JSONdb => "JSONdb".to_string(),
-            Token::Table => "Table".to_string(),
-            Token::Collection => "Collection".to_string(),
-            Token::Row => "Row".to_string(),
-            Token::Column => "Column".to_string(),
-            // REST API tokens
-            Token::HttpGet => "GET".to_string(),
-            Token::HttpPost => "POST".to_string(),
-            Token::HttpPut => "PUT".to_string(),
-            Token::HttpDelete => "DELETE".to_string(),
-            Token::HttpPatch => "PATCH".to_string(),
-            Token::HttpOptions => "OPTIONS".to_string(),
-            Token::HttpHead => "HEAD".to_string(),
-            _ => format!("{:?}", token),
+            Token::IntegerType | Token::FloatType => DeclaredType::Number,
+            Token::StringType | Token::TextType => DeclaredType::Text,
+            Token::BoolType => DeclaredType::Boolean,
+            Token::ArrayType => DeclaredType::Array,
+            Token::ObjectType | Token::DataType => DeclaredType::Record,
+            Token::DateType => DeclaredType::Date,
+            // is_type_token gates every caller, so this is unreachable in
+            // practice; treated as unconstrained rather than panicking.
+            _ => DeclaredType::Any,
         }
     }
 
-    fn expr_to_string(&self, expr: Expr) -> String {
+    fn expr_to_string(expr: Expr) -> String {
         match expr {
             Expr::String(s) => s,
             Expr::Variable(name) => name,
@@ -939,22 +1118,6 @@ impl<'a> Parser<'a> {
             Expr::Field { name, .. } => name,
             Expr::Try(_) => "try".to_string(),
             Expr::Concat { .. } => "concat".to_string(),
-        }
-    }
-
-    // Utility helpers
-    fn expect(&mut self, expected: Token) {
-        if self.tokens.next() != Some(&expected) {
-            panic!("Expected {:?}", expected);
-        }
-    }
-
-    fn matches(&mut self, expected: Token) -> bool {
-        if self.tokens.peek() == Some(&&expected) {
-            self.tokens.next();
-            true
-        } else {
-            false
         }
     }
 }

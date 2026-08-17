@@ -134,31 +134,59 @@ That is the extension point for new host primitives.
 
 ---
 
-## The known wart: keyword names are translated
+## Names are the author's own — resolved
 
-A keyword used as a variable or record field is stored under its **token
-name**. `வங்கி = 5` creates a variable called `Bank`; `{வரி: 100}` produces
-the field `Tax`.
+A name is now stored exactly as written, keyword or not: `வங்கி = 5` creates
+`வங்கி`, and `{வரி: 100}` produces the field `வரி`.
 
-This is what makes Tamil and romanized spellings interchangeable — both lex
-to the same token — but it has three consequences:
+Until [roadmap item 2](ROADMAP.md) landed, the lexer discarded the text it
+matched and kept only the token, so both spellings of a keyword collapsed onto
+its English name — `Bank`, `Tax`. That made Tamil and romanized source
+interchangeable, at the price of three things:
 
-1. A Tamil author's chosen name is silently anglicised.
-2. Printing such a record emits English field names into Tamil output.
-3. String-keyed lookup needs the token name, not the written name.
+1. A Tamil author's chosen name was silently anglicised.
+2. Printing such a record emitted English field names into Tamil output.
+3. String-keyed lookup needed the token name, not the written one.
 
 It bit **six times** while writing the standard library and the accounting
 framework, because the natural Tamil word for a thing is very often already a
 keyword: `சொல்`, `வரிசை`, `நிலுவை`, `எண்`, `நடப்பு`, `பற்று`, `வரவு`,
-`வங்கி`, `சொத்து`.
+`வங்கி`, `சொத்து`. For a language whose whole purpose is letting people write
+in their own language, that was the sharpest remaining contradiction.
 
-**Workaround today:** use compound names — `வங்கி_இருப்பு`,
-`நிலுவைத்_தொகை`, `பற்றுத்_தொகை`. The Token column in
-[KEYWORDS.md](reference/KEYWORDS.md) lists every reserved word.
+**The tradeoff, taken deliberately:** `{வரி: 1}` and `{vari: 1}` are now
+*different* fields, and `வருவாய்` and `varuvAy` different variables. A name is
+data — what the author typed — not a language construct, so this is the right
+way round; but it is a change in meaning, and a program should pick one
+spelling and keep to it. Nothing in `nUlakam/` or `examples/` needed touching,
+because the workaround at the time was compound names, which were always
+stored as written.
 
-**The fix** is [roadmap item 2](ROADMAP.md): keep the source text of tokens.
-The same change also gives parse errors their positions. Note the tradeoff —
-preserving source text makes `{வரி: 1}` and `{vari: 1}` *different* fields.
+Two positions deliberately keep the canonical English name, because what they
+name belongs to the host rather than the author: the database type in
+`தளம்_இணை`, which `db::open` matches on, and the HTTP method in `வழி`, which
+the router matches on.
+
+Separately, **type keywords and SQL clause keywords are hard reserved** and
+cannot be names at all: `எண்`, `சொல்`, `அணி`, `வரிசை`, `விதி`, `இடம்`,
+`உள்`, `வெளி`, `குழு`, `சேர்`. Financial keywords are *not* reserved. The
+Token column in [KEYWORDS.md](reference/KEYWORDS.md) lists every one.
+
+### The same change gave parse errors their positions
+
+`tokenize` returns `Vec<Spanned>` — token, line, column, and the matched text
+— so the parser knows where it is. It returns `Result<_, ParseError>` rather
+than panicking:
+
+```
+வரி 3, நெடுவரிசை 1: ';' எதிர்பார்க்கப்பட்டது, 'அச்சு' கிடைத்தது
+(line 3, column 1: expected ';', found 'அச்சு')
+```
+
+Columns count written letters rather than bytes, for the same reason string
+length does. Positions are handed out by a cursor that walks the source once,
+because logos yields tokens in order — rescanning from the start for each
+token would make tokenizing quadratic.
 
 Separately, **type keywords and SQL clause keywords are hard reserved** and
 cannot be names at all: `எண்`, `சொல்`, `அணி`, `வரிசை`, `விதி`, `இடம்`,

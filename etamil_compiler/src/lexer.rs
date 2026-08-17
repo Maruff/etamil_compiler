@@ -334,6 +334,68 @@ fn unescape(body: &str) -> String {
     out
 }
 
+/// One token, with where it came from and exactly how it was written.
+///
+/// The lexer used to hand back a bare `Vec<Token>`, which discarded two things
+/// the rest of the compiler needed. Without the text, a keyword used as a name
+/// could only be recorded under its token name, so `வங்கி = 5` created a
+/// variable called `Bank` — a Tamil author's chosen name silently anglicised.
+/// Without the position, the parser had nowhere to point when a statement went
+/// wrong, so a missing semicolon was reported as `Expected Semicolon` and
+/// nothing else.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Spanned {
+    pub token: Token,
+    /// 1-based, counting characters rather than bytes so Tamil text reports
+    /// sensible columns.
+    pub line: usize,
+    pub column: usize,
+    /// The source text this token matched, as written.
+    pub text: String,
+}
+
+/// Walks forward through the source once while positions are handed out.
+///
+/// logos yields tokens in order, so each position lookup can carry on from
+/// the last one. Rescanning from the start every time would make tokenizing
+/// quadratic in the length of the file.
+struct LineCursor {
+    offset: usize,
+    line: usize,
+    column: usize,
+}
+
+impl LineCursor {
+    fn new() -> Self {
+        LineCursor {
+            offset: 0,
+            line: 1,
+            column: 1,
+        }
+    }
+
+    fn at(&mut self, source: &str, target: usize) -> (usize, usize) {
+        if target <= self.offset {
+            return (self.line, self.column);
+        }
+
+        for (index, ch) in source[self.offset..].char_indices() {
+            if self.offset + index >= target {
+                break;
+            }
+            if ch == '\n' {
+                self.line += 1;
+                self.column = 1;
+            } else {
+                self.column += 1;
+            }
+        }
+
+        self.offset = target;
+        (self.line, self.column)
+    }
+}
+
 /// A lexical error, carrying the position of the offending input.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LexError {
@@ -357,7 +419,7 @@ impl std::fmt::Display for LexError {
 /// Every slice the lexer cannot recognize is reported with its position
 /// rather than silently discarded, so a mistyped character is a visible
 /// error instead of a program that quietly means something else.
-pub fn tokenize(source: &str) -> Result<Vec<Token>, Vec<LexError>> {
+pub fn tokenize(source: &str) -> Result<Vec<Spanned>, Vec<LexError>> {
     // Windows editors — Notepad, and VS Code in some configurations — save
     // UTF-8 with a byte-order mark. It is invisible, it is the first thing in
     // the file, and treating it as a lexical error made every such program
@@ -369,18 +431,20 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, Vec<LexError>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
     let mut lexer = Token::lexer(source);
+    let mut cursor = LineCursor::new();
 
     while let Some(result) = lexer.next() {
+        let (line, column) = cursor.at(source, lexer.span().start);
+        let text = lexer.slice().to_string();
+
         match result {
-            Ok(token) => tokens.push(token),
-            Err(_) => {
-                let (line, column) = line_col(source, lexer.span().start);
-                errors.push(LexError {
-                    line,
-                    column,
-                    text: lexer.slice().to_string(),
-                });
-            }
+            Ok(token) => tokens.push(Spanned {
+                token,
+                line,
+                column,
+                text,
+            }),
+            Err(_) => errors.push(LexError { line, column, text }),
         }
     }
 
@@ -389,23 +453,4 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, Vec<LexError>> {
     } else {
         Err(errors)
     }
-}
-
-/// Convert a byte offset into a 1-based (line, column) pair, counting
-/// characters rather than bytes so Tamil text reports sensible columns.
-fn line_col(source: &str, offset: usize) -> (usize, usize) {
-    let mut line = 1;
-    let mut column = 1;
-    for (idx, ch) in source.char_indices() {
-        if idx >= offset {
-            break;
-        }
-        if ch == '\n' {
-            line += 1;
-            column = 1;
-        } else {
-            column += 1;
-        }
-    }
-    (line, column)
 }

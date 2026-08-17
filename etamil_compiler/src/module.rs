@@ -22,7 +22,9 @@ fn parse_source(source: &str) -> Result<Vec<Stmt>, String> {
             .join("\n  ")
     })?;
     let mut parser = Parser::new(tokens.iter());
-    Ok(parser.parse())
+    // Parse errors carry a line and column now, so the message a caller sees
+    // says where to look rather than only what was wrong.
+    parser.parse().map_err(|error| error.to_string())
 }
 
 /// Load a program from disk, resolving its imports.

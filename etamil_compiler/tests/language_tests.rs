@@ -18,7 +18,7 @@ fn run(source: &str) -> Result<VM, String> {
             .join("; ")
     })?;
     let mut parser = Parser::new(tokens.iter());
-    let ast = parser.parse();
+    let ast = parser.parse().map_err(|error| error.to_string())?;
     let bytecode = BytecodeCompiler::compile_statements(ast);
     let mut vm = VM::new();
     vm.execute(bytecode)?;
@@ -176,13 +176,39 @@ fn declaration_without_initializer_defaults_to_zero() {
 }
 
 #[test]
-fn keyword_backed_names_are_stored_under_the_token_name() {
-    // வருவாய் / varuvAy is the Revenue keyword, not a plain identifier, so
-    // the variable lands under "Revenue". That is exactly what makes the
-    // Tamil and romanized spellings name the same variable.
-    let vm = run("eN varuvAy = 5;").unwrap();
-    assert_eq!(num(&vm, "Revenue"), dec(5));
-    assert!(vm.variables.get("varuvAy").is_none());
+fn keyword_backed_names_keep_the_spelling_the_author_used() {
+    // வருவாய் / varuvAy is the Revenue keyword rather than a plain identifier,
+    // and the variable used to land under "Revenue" because the lexer threw
+    // the spelling away. For a language whose purpose is letting people write
+    // in their own language, having their names quietly anglicised was the
+    // sharpest remaining contradiction.
+    let roman = run("eN varuvAy = 5;").unwrap();
+    assert_eq!(num(&roman, "varuvAy"), dec(5));
+    assert!(roman.variables.get("Revenue").is_none());
+
+    let tamil = run("எண் வருவாய் = 5;").unwrap();
+    assert_eq!(num(&tamil, "வருவாய்"), dec(5));
+    assert!(tamil.variables.get("Revenue").is_none());
+}
+
+// The other half of the same change: the two spellings now name two different
+// variables. That is a real change in meaning, and the reason it is right is
+// that a name is data — what the author typed — not a language construct.
+#[test]
+fn the_two_spellings_of_a_keyword_name_different_variables() {
+    let vm = run("வருவாய் = 5; varuvAy = 7;").unwrap();
+
+    assert_eq!(num(&vm, "வருவாய்"), dec(5));
+    assert_eq!(num(&vm, "varuvAy"), dec(7));
+}
+
+// A quoted field name is its contents, so a record can still be reached by a
+// string built at runtime.
+#[test]
+fn a_quoted_field_name_is_its_contents() {
+    let vm = run(r#"r = {"வரி": 100}; சாவி = "வரி"; எடுத்தது = r[சாவி];"#).unwrap();
+
+    assert_eq!(num(&vm, "எடுத்தது"), dec(100));
 }
 
 #[test]
@@ -535,11 +561,13 @@ fn append_extends_an_array() {
 // natural Tamil nouns, so they cannot be used as variable names.
 #[test]
 fn sql_clause_keywords_are_reserved() {
-    let err = std::panic::catch_unwind(|| run("varicY = 1;"))
-        .err()
-        .map(|_| "panicked".to_string())
-        .unwrap_or_else(|| "parsed".to_string());
-    assert_eq!(err, "panicked", "varicY (OrderBy) should still be reserved");
+    // A refusal is now a returned error rather than a panic, so this no longer
+    // needs catch_unwind to observe it.
+    let failure = run("varicY = 1;");
+    assert!(
+        failure.is_err(),
+        "varicY (OrderBy) should still be reserved"
+    );
 }
 
 #[test]
@@ -638,11 +666,12 @@ fn foreach_in_tamil_script() {
 // not — that distinction is what makes `தொகை` above legal.
 #[test]
 fn type_keywords_are_reserved_but_financial_ones_are_not() {
-    let reserved = std::panic::catch_unwind(|| run("eN = 1;")).is_err();
-    assert!(reserved, "eN (IntegerType) should be reserved");
+    assert!(run("eN = 1;").is_err(), "eN (IntegerType) should be reserved");
 
+    // தொகை / toqai is the Amount keyword, and is a perfectly good name for an
+    // amount — which is the whole reason financial keywords are not reserved.
     let vm = run("toqai = 5;").unwrap();
-    assert_eq!(num(&vm, "Amount"), dec(5));
+    assert_eq!(num(&vm, "toqai"), dec(5));
 }
 
 // --- Results (சரி / தவறு), following Rust ---------------------------------
@@ -1846,6 +1875,72 @@ fn closing_an_empty_period_is_an_error() {
     assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
 }
 
+// --- Parse errors carry a position ----------------------------------------
+// Regression: the parser panicked with `Expected Semicolon` and nothing else.
+// tokenize() returned a bare Vec<Token>, so there was no position to report
+// even though the lexer had computed one — the biggest usability gap in the
+// language for anyone learning it.
+
+/// Parse only, so the error text can be inspected without running anything.
+fn parse_error(source: &str) -> String {
+    let tokens = etamil_compiler::lexer::tokenize(source).expect("should lex cleanly");
+    let mut parser = Parser::new(tokens.iter());
+    parser
+        .parse()
+        .map(|_| panic!("expected a parse error, but it parsed"))
+        .unwrap_err()
+        .to_string()
+}
+
+#[test]
+fn a_missing_semicolon_is_reported_with_its_line_and_column() {
+    let error = parse_error("x = 1;\ny = 2\nz = 3;");
+
+    // The offending token is `z`, at the start of line 3.
+    assert!(error.contains("வரி 3"), "no Tamil line number in: {}", error);
+    assert!(error.contains("line 3"), "no English line number in: {}", error);
+    assert!(error.contains("column 1"), "no column in: {}", error);
+    assert!(error.contains("';'"), "does not say what was wanted: {}", error);
+}
+
+#[test]
+fn a_parse_error_names_the_token_it_found() {
+    let error = parse_error("x = 1 y;");
+
+    assert!(error.contains("'y'"), "does not quote the token found: {}", error);
+}
+
+#[test]
+fn running_off_the_end_is_reported_at_the_last_token() {
+    let error = parse_error("செயல் கூட்டு(அ) {");
+
+    assert!(
+        error.contains("உள்ளீடு முடிந்தது") && error.contains("the input ended"),
+        "should say the input ended: {}",
+        error
+    );
+}
+
+#[test]
+fn a_parse_error_message_is_bilingual() {
+    let error = parse_error("(x > 1) { y = 2; }");
+
+    // Both spellings of the keyword it wanted, in one message.
+    assert!(error.contains("எனில்"), "no Tamil keyword in: {}", error);
+    assert!(error.contains("eZil"), "no romanized keyword in: {}", error);
+}
+
+#[test]
+fn a_column_counts_written_letters_not_bytes() {
+    // Each Tamil letter here is several bytes; the column must still read as
+    // the position a person would point at.
+    let error = parse_error("வருவாய் = 5 வரி;");
+
+    assert!(error.contains("வரி 1"), "wrong line: {}", error);
+    // "வருவாய் = 5 " is 12 written letters, so the offending token starts at 13.
+    assert!(error.contains("column 13"), "wrong column: {}", error);
+}
+
 // --- String escapes -------------------------------------------------------
 // Regression: literals were kept exactly as written, so "a\nb" was four
 // characters and a double quote could not be put in a string at all — which
@@ -1964,11 +2059,15 @@ fn a_response_sent_from_a_function_is_still_visible() {
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
-fn tamil_and_romanized_forms_are_equivalent() {
-    let tamil = run("எண் வருவாய் = 950000; வரி = 20%;").unwrap();
-    let roman = run("eN varuvAy = 950000; vari = 20%;").unwrap();
+fn tamil_and_romanized_forms_compute_the_same_answers() {
+    let tamil = run("எண் வருவாய் = 950000; வரி = 20%; விளைவு = (வருவாய் - 800000) * வரி;")
+        .unwrap();
+    let roman = run("eN varuvAy = 950000; vari = 20%; viLYvu = (varuvAy - 800000) * vari;")
+        .unwrap();
 
-    // வருவாய் and varuvAy are the same keyword, so both land under the same name.
-    assert_eq!(num(&tamil, "Revenue"), num(&roman, "Revenue"));
-    assert_eq!(num(&tamil, "Tax"), num(&roman, "Tax"));
+    // The two spellings are the same *program* — same tokens, same bytecode,
+    // same arithmetic. What differs now is only the name each result is filed
+    // under, because a name is what the author wrote.
+    assert_eq!(num(&tamil, "விளைவு"), num(&roman, "viLYvu"));
+    assert_eq!(num(&tamil, "விளைவு"), dec(30000));
 }
