@@ -17,6 +17,9 @@ pub mod sqlite;
 #[cfg(feature = "postgres")]
 pub mod postgres;
 
+#[cfg(feature = "mysql")]
+pub mod mysql;
+
 /// One open connection.
 pub trait Database: Send {
     /// Run a statement that returns no rows. Yields the number affected.
@@ -57,9 +60,19 @@ pub fn open(db_type: &str, connection: &str) -> Result<Box<dyn Database>, String
                 .to_string(),
         ),
 
-        "MySQL" | "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
+        #[cfg(feature = "mysql")]
+        "MySQL" => Ok(Box::new(mysql::MysqlDatabase::open(connection)?)),
+
+        #[cfg(not(feature = "mysql"))]
+        "MySQL" => Err(
+            "மைசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+             (this build has no MySQL support): rebuild with --features mysql"
+                .to_string(),
+        ),
+
+        "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
             "{} இன்னும் ஆதரிக்கப்படவில்லை  ({} is not supported yet); \
-             SQLite and PostgreSQL are the backends today",
+             SQLite, PostgreSQL and MySQL are the backends today",
             db_type, db_type
         )),
 

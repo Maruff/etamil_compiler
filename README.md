@@ -65,6 +65,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
+| MySQL / MariaDB | 🟡 Untested | `--features mysql`; compiles and is complete, but has not yet been run against a live server |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
 | LLVM backend (`--llvm`) | 🟡 Subset | Linux/macOS, `--features llvm`. Compiles far less than the VM — no functions, iteration, collections or modules — and refuses what it cannot build rather than emitting IR that computes something else |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
@@ -72,7 +73,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
 | String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
-| Other databases | ❌ Not implemented | MySQL, MongoDB and Redis say so explicitly |
+| MongoDB, Redis | ❌ Not implemented | they say so explicitly; neither fits the SQL-shaped `Database` trait, so both need a design first |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
 | Type checking | ❌ Not implemented | type keywords are parsed and discarded |
 | Parser error positions | ❌ Not implemented | lexer errors carry line/column; parse errors do not |
@@ -134,13 +135,13 @@ Verify:
 etamil --version
 ```
 
-### Optional: PostgreSQL
+### Optional: PostgreSQL and MySQL
 
-SQLite is built in. PostgreSQL is behind a feature, so a default build does
-not carry its dependencies:
+SQLite is built in. The others are behind features, so a default build does
+not carry their dependencies:
 
 ```bash
-cargo build --release --features postgres
+cargo build --release --features postgres,mysql
 ```
 
 ```etamil
@@ -148,11 +149,26 @@ cargo build --release --features postgres
 தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = $1", ["வரவு"], வரவுகள்;
 ```
 
-Placeholders are `$1, $2, …` rather than SQLite's `?`. Money uses the native
-`NUMERIC` type, so a `TEXT` column stays text on the way back — where the
-SQLite backend, which stores decimals as text, would hand back a number.
-PostgreSQL also folds unquoted identifiers to lower case: write `"qokY"` if
-you want that column name back as you spelled it.
+PostgreSQL placeholders are `$1, $2, …`; SQLite and MySQL use `?`. Both of the
+server backends keep money in the database's own exact decimal type, so a text
+column stays text on the way back — where the SQLite backend, which stores
+decimals as text, hands back a number. PostgreSQL also folds unquoted
+identifiers to lower case: write `"qokY"` if you want that column name back as
+you spelled it.
+
+```etamil
+தளம்_இணை மைசீகுல், "mysql://root@localhost:3306/kaNakku";
+தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ?", ["வரவு"], வரவுகள்;
+```
+
+`examples/db_samples/mYcIkul_qaLam.qmz` checks the things worth checking on a
+real server — exact `DECIMAL` sums, an integer key bound from a number, dates
+as ISO text, `NULL` as `இன்மை`, and an injection payload staying inert. It
+needs a database, so the example runner skips it unless you opt in:
+
+```bash
+ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh
+```
 
 ### Optional: LLVM backend
 
