@@ -76,7 +76,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | MongoDB, Redis | ❌ Not implemented | they say so explicitly; neither fits the SQL-shaped `Database` trait, so both need a design first |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
-| Type checking | ❌ Not implemented | type keywords are now kept on the declaration, but nothing checks them yet |
+| Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
@@ -220,7 +220,20 @@ etamil --vm hello.etamil
 சொல் name = "Ravi";    // string
 ```
 
-Type keywords are currently **accepted but not enforced** — nothing stops `சொல் x = 5;`.
+A declared type is **enforced**, and a later assignment is held to it too:
+
+```
+✗ வரி 2, நெடுவரிசை 6: 'கொடியா' ஈர்ம (Irma, a boolean) என அறிவிக்கப்பட்டது,
+  ஆனால் ஒரு அணி (an array) வழங்கப்பட்டது
+  (line 2, column 6: 'கொடியா' is declared a boolean, but was given an array)
+```
+
+The checker is deliberately narrow: it holds you to what you declared and
+states no rule the rest of the language does not follow. A number satisfies
+`சொல்`, because every value renders as text and `உள்ளிடு` hands back text that
+is routinely compared with numbers. A call, an index and a field access make no
+claim, because functions have no declared signatures yet — silence there is the
+absence of a claim, not approval.
 
 ### Input and output
 
@@ -411,7 +424,7 @@ record; without one the server answers `application/json`.
 
 ```bash
 cd etamil_compiler
-cargo test          # 167 language tests + 50 unit tests
+cargo test          # 176 language tests + 50 unit tests
 ```
 
 `tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.
