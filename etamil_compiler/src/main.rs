@@ -121,6 +121,16 @@ fn main() {
     };
     println!("✓ Parsing complete ({} statements)\n", ast.len());
 
+    // 4. Hold the program to the types it declared. Every error is reported,
+    // not just the first: a wrong declaration is usually one of several, and
+    // stopping at the first would make fixing them a sequence of recompiles.
+    if let Err(errors) = etamil_compiler::check::check(&ast) {
+        for error in &errors {
+            eprintln!("✗ {}", error);
+        }
+        std::process::exit(1);
+    }
+
     // Backend milestone 2: Check if async server mode is enabled
     if use_async_server {
         // Intended to be the concurrent server. The Axum/Tokio modules exist

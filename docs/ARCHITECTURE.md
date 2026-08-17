@@ -120,6 +120,7 @@ source (.etamil / .qmz)
   ↓  module.rs        இறக்கு resolution, splicing imports ahead of the importer
   ↓  lexer.rs         logos; 201 keywords; errors carry line and column
   ↓  parser.rs        hand-written recursive descent → Expr / Stmt
+  ↓  check.rs         holds the program to the types it declared
   ↓  vm/bytecode/compiler.rs
   ↓  vm/interpreter.rs   stack machine, call frames, builtins
 ```
@@ -199,7 +200,7 @@ cannot be names at all: `எண்`, `சொல்`, `அணி`, `வரிச�
 **Build and test**
 
 ```bash
-cd etamil_compiler && cargo test          # 134 tests
+cd etamil_compiler && cargo test          # 226 tests
 cd .. && ./scripts/run_examples.sh        # every example, with expectations
 python3 scripts/transliterate.py --check  # romanization audit
 ```

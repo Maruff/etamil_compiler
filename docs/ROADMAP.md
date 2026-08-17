@@ -110,11 +110,19 @@ Sweeping these is one more breaking change to romanized source, so it should lan
 
 ---
 
-## 7. Type checking
+## 7. ~~Type checking~~ — RESOLVED
 
-**Today:** type keywords (`எண்`, `சொல்`, `ஈர்ம`…) are parsed and then discarded. `சொல் x = 5;` is accepted.
+`Stmt::Assign` carries the declared type and a position, and `src/check.rs` holds the program to it — on the declaring statement and on every later assignment to that name. Errors are bilingual and positioned, and all of them are reported rather than only the first, because a wrong declaration is usually one of several.
 
-**What it involves:** keep the declared type in `Stmt::Assign`, check assignments against it, and report mismatches with the diagnostics from item 2.
+The checker is deliberately narrow: it enforces what the author declared and states **no rule the rest of the language does not follow.**
+
+- Arithmetic on text is legal, because `உள்ளிடு` yields text and the VM converts it when it is used as a number. Flagging it would break the language's own headline example.
+- A number satisfies `சொல்`, since every value renders as text and `&` concatenates whatever it is given.
+- `தேதி` is ISO-8601 text, which is the representation the whole language uses.
+- A call, an index, a field access and `இன்மை` make no claim at all. Functions have no declared signatures, so guessing would reject working programs. Silence is the absence of a claim, not approval.
+- A function parameter and a loop variable drop any outer declaration of the same name, because they are different variables.
+
+**Still open:** function signatures — `செயல்` cannot declare its parameter or return types, so a call is unconstrained. That, and the money type from item 1, are what would let the checker reject adding rupees to a count.
 
 ---
 

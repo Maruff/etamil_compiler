@@ -32,7 +32,7 @@ impl BytecodeCompiler {
             // The declared type is the checker's business, not the VM's: by
             // the time bytecode is emitted the program has already been
             // accepted, so there is nothing left to enforce here.
-            Stmt::Assign { name, value, declared: _ } => {
+            Stmt::Assign { name, value, declared: _, at: _ } => {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
             }

@@ -47,6 +47,15 @@ impl std::fmt::Display for ParseError {
 
 // --- Abstract Syntax Tree (AST) Nodes ---
 
+/// Where something was written, carried on the AST nodes that can be rejected
+/// after parsing, so a type error points at a place rather than only naming a
+/// variable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
+
 /// A type written in the source: `எண் வருவாய் = 100000;`
 ///
 /// Type keywords used to be parsed and thrown away, so `சொல் x = 5;` was
@@ -144,6 +153,8 @@ pub enum Stmt {
         value: Expr,
         /// The type the author wrote, if any: `எண் வருவாய் = 100000;`
         declared: Option<DeclaredType>,
+        /// Where the name was written, for the checker to point at.
+        at: Position,
     },
     // ceyal name(params) { body }
     FunctionDef {
@@ -491,6 +502,10 @@ impl<'a> Parser<'a> {
 
         if Self::is_identifier_like(&current.token) && !Self::is_type_token(&current.token) {
             let name = self.name_of(current);
+            let at = Position {
+                line: current.line,
+                column: current.column,
+            };
 
             // A call used as a statement, e.g. `paqivu_ceyal(x);`
             if self.peek_token() == Some(&Token::LParen) {
@@ -524,13 +539,14 @@ impl<'a> Parser<'a> {
                     name,
                     value: Expr::Number(Decimal::ZERO),
                     declared,
+                    at,
                 });
             }
 
             self.expect(Token::Assign)?;
             let value = self.parse_expression()?;
             self.expect(Token::Semicolon)?;
-            return Ok(Stmt::Assign { name, value, declared });
+            return Ok(Stmt::Assign { name, value, declared, at });
         }
 
         match &current.token {

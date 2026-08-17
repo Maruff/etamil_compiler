@@ -19,6 +19,17 @@ fn run(source: &str) -> Result<VM, String> {
     })?;
     let mut parser = Parser::new(tokens.iter());
     let ast = parser.parse().map_err(|error| error.to_string())?;
+
+    // The same order the compiler uses, so a test exercises the real pipeline
+    // rather than a shortcut through it.
+    etamil_compiler::check::check(&ast).map_err(|errors| {
+        errors
+            .iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
+            .join("; ")
+    })?;
+
     let bytecode = BytecodeCompiler::compile_statements(ast);
     let mut vm = VM::new();
     vm.execute(bytecode)?;
@@ -1873,6 +1884,130 @@ fn closing_an_empty_period_is_an_error() {
     )
     .unwrap();
     assert_eq!(vm.variables.get("மறுக்கப்பட்டதா"), Some(&Value::Boolean(true)));
+}
+
+// --- Type checking --------------------------------------------------------
+// Type keywords used to be parsed and thrown away, so `சொல் x = 5;` was
+// accepted. What the author declared is now held to — and only that: the
+// checker states no rule the rest of the language does not follow.
+
+#[test]
+fn a_declared_type_is_enforced() {
+    let failure = run(r#"ஈர்ம கொடியா = "ஆம்";"#);
+    assert!(failure.is_err(), "a string is not a boolean");
+
+    let message = failure.unwrap_err();
+    assert!(message.contains("கொடியா"), "should name the variable: {}", message);
+    assert!(message.contains("line 1"), "should give a position: {}", message);
+}
+
+#[test]
+fn a_type_error_names_both_the_declared_and_the_actual_type() {
+    let message = run("அணி பட்டியல் = 5;").unwrap_err();
+
+    assert!(message.contains("அணி"), "should name the declared type: {}", message);
+    assert!(message.contains("a number"), "should name what it got: {}", message);
+}
+
+// A later assignment is held to the declaration too, or the check would only
+// cover the line that made it.
+#[test]
+fn a_later_assignment_is_held_to_the_declaration() {
+    let failure = run(r#"ஈர்ம கொடியா = மெய்; கொடியா = [1, 2];"#);
+
+    assert!(failure.is_err(), "an array is not a boolean");
+}
+
+// Every error is reported, not just the first: a wrong declaration is usually
+// one of several, and stopping at the first makes fixing them a sequence of
+// recompiles.
+#[test]
+fn every_type_error_is_reported() {
+    let message = run("ஈர்ம அ = 1; அணி ஆ = 2; பொருள் இ = 3;").unwrap_err();
+
+    assert!(message.contains("அ"), "missing the first: {}", message);
+    assert!(message.contains("ஆ"), "missing the second: {}", message);
+    assert!(message.contains("இ"), "missing the third: {}", message);
+}
+
+// The declarations the language's own examples use must keep working.
+#[test]
+fn correct_declarations_are_accepted() {
+    let vm = run(
+        r#"எண் வருவாய் = 950000;
+           சொல் பெயர் = "ரவி";
+           ஈர்ம செல்லுமா = மெய்;
+           அணி வரிசைகள் = [1, 2, 3];
+           பொருள் பதிவு = {qokY: 500};
+           எண் எண்ணிக்கை;"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "வருவாய்"), dec(950000));
+    assert_eq!(text(&vm, "பெயர்"), "ரவி");
+    assert_eq!(num(&vm, "எண்ணிக்கை"), dec(0));
+}
+
+// A number satisfies சொல், because every value renders as text, `&`
+// concatenates whatever it is given, and உள்ளிடு hands back text that is
+// routinely compared with numbers. Refusing this would be a rule the rest of
+// the language does not follow.
+#[test]
+fn a_number_may_stand_where_text_was_declared() {
+    let vm = run(r#"சொல் குறி = 1234; தேதி நாள் = "2026-04-01";"#).unwrap();
+
+    assert_eq!(text(&vm, "குறி"), "1234");
+    assert_eq!(text(&vm, "நாள்"), "2026-04-01");
+}
+
+// The checker makes no claim about what it cannot know, and silence there is
+// the absence of a claim rather than approval.
+#[test]
+fn what_cannot_be_known_is_not_rejected() {
+    let vm = run(
+        r#"ஈர்ம விளைவு = சரியா(சரி(1));
+           எண் நீ = நீளம்("வணக்கம்");
+           பொருள் ப = {a: 1};
+           எண் உள்ளது = ப["a"];
+           ஈர்ம ஏதுமில்லை = இன்மை;"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "நீ"), dec(5));
+    assert_eq!(num(&vm, "உள்ளது"), dec(1));
+}
+
+// A parameter is a different variable from an outer name that happens to match,
+// so a declaration outside must not be imposed on a function body.
+#[test]
+fn a_function_parameter_does_not_inherit_an_outer_declaration() {
+    let vm = run(
+        r#"ஈர்ம மதிப்பு = மெய்;
+           செயல் இரட்டை(மதிப்பு) {
+               மதிப்பு = மதிப்பு * 2;
+               திரும்பு மதிப்பு;
+           }
+           விளைவு = இரட்டை(21);"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "விளைவு"), dec(42));
+}
+
+// A loop variable takes whatever the collection holds, which the checker
+// cannot see, so an earlier declaration of that name no longer describes it.
+#[test]
+fn a_loop_variable_drops_an_earlier_declaration() {
+    let vm = run(
+        r#"ஈர்ம உறுப்பு = மெய்;
+           மொத்தம் = 0;
+           ஒவ்வொரு உறுப்பு இல் [1, 2, 3] {
+               மொத்தம் = மொத்தம் + உறுப்பு;
+           }"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "மொத்தம்"), dec(6));
 }
 
 // --- Parse errors carry a position ----------------------------------------
