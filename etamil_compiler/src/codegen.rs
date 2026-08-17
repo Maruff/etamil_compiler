@@ -507,8 +507,14 @@ impl Compiler {
                         CString::new("").unwrap().as_ptr(),
                     );
                 }
-                Stmt::DBQuery { query, result_var } => {
-                    // தளம்_வினா "SELECT * FROM table", result;
+                // The bound parameter array is matched but unused: this
+                // backend does not run the query, it only reports it, so
+                // there is nothing to bind the values to. Adding `params` to
+                // the AST for the SQLite work left this arm — and the one
+                // below — naming too few fields, which made `--features llvm`
+                // stop compiling altogether.
+                Stmt::DBQuery { query, params: _, result_var } => {
+                    // தளம்_வினா "SELECT * FROM table", [params], result;
                     let (printf, printf_type) = self.get_printf();
                     
                     // Extract query string
@@ -550,8 +556,8 @@ impl Compiler {
                         self.variables.insert(var_name, alloca);
                     }
                 }
-                Stmt::DBExecute { command } => {
-                    // தரவுசேமி_செய் "CREATE TABLE ...";
+                Stmt::DBExecute { command, params: _ } => {
+                    // தளம்_செய் "CREATE TABLE ...", [params];
                     let (printf, printf_type) = self.get_printf();
                     
                     let cmd_str = match &command {
