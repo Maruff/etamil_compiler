@@ -319,6 +319,14 @@ impl std::fmt::Display for LexError {
 /// rather than silently discarded, so a mistyped character is a visible
 /// error instead of a program that quietly means something else.
 pub fn tokenize(source: &str) -> Result<Vec<Token>, Vec<LexError>> {
+    // Windows editors — Notepad, and VS Code in some configurations — save
+    // UTF-8 with a byte-order mark. It is invisible, it is the first thing in
+    // the file, and treating it as a lexical error made every such program
+    // fail on its first line with an error naming a character the author
+    // cannot see. Tamil source is exactly the kind of file that gets saved
+    // that way, so the mark is skipped rather than reported.
+    let source = source.strip_prefix('\u{FEFF}').unwrap_or(source);
+
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
     let mut lexer = Token::lexer(source);

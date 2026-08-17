@@ -1,0 +1,4 @@
+// loop_only plus one decimal multiply per iteration.
+i = 0; t = 0;
+(i < 100000) cuRRu { t = t * 1; i = i + 1; }
+accu i;

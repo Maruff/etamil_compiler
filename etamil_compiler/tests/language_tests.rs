@@ -204,6 +204,24 @@ fn unrecognized_input_is_reported_with_a_position() {
     assert_eq!(errors[0].text, "@");
 }
 
+// A UTF-8 BOM is invisible and is what Windows editors produce by default.
+// Before this was handled, every such program failed on line 1, column 1
+// with an error naming a character the author could not see.
+#[test]
+fn a_utf8_bom_is_not_a_lexical_error() {
+    let with_bom = "\u{FEFF}அச்சு \"வணக்கம்\";";
+    let tokens = lexer::tokenize(with_bom).expect("a BOM must not fail the lexer");
+    let without = lexer::tokenize("அச்சு \"வணக்கம்\";").unwrap();
+    assert_eq!(tokens.len(), without.len());
+}
+
+#[test]
+fn an_empty_program_lexes_to_nothing() {
+    assert_eq!(lexer::tokenize("").unwrap().len(), 0);
+    assert_eq!(lexer::tokenize("\u{FEFF}").unwrap().len(), 0);
+    assert_eq!(lexer::tokenize("   \n\t ").unwrap().len(), 0);
+}
+
 #[test]
 fn valid_source_lexes_cleanly() {
     assert!(lexer::tokenize("accu \"vaNakkam\";").is_ok());

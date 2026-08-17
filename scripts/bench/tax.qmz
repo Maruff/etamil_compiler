@@ -1,0 +1,11 @@
+// 100,000 slab-tax calculations. Exact decimal throughout.
+// Must print 249997500.
+moqqam = 0;
+i = 0;
+(i < 100000) cuRRu {
+    varumAZam = 300000 + i;
+    vari = (varumAZam - 300000) * 5%;
+    moqqam = moqqam + vari;
+    i = i + 1;
+}
+accu moqqam;
