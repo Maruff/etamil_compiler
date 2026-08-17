@@ -1,0 +1,4 @@
+// 9 bytecode instructions per iteration; isolates dispatch cost.
+i = 0;
+(i < 100000) cuRRu { i = i + 1; }
+accu i;

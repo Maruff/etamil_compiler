@@ -1,0 +1,6 @@
+// Array append cost. Change the bound to see the growth curve:
+// 4000 -> 8000 -> 16000 grows x2.6 then x5.4, i.e. quadratic,
+// because iNY clones the whole array on every call.
+a = []; i = 0;
+(i < 4000) cuRRu { a = iNY(a, i); i = i + 1; }
+accu nILam(a);
