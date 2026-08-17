@@ -14,6 +14,9 @@ use crate::vm::Value;
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
 
+#[cfg(feature = "postgres")]
+pub mod postgres;
+
 /// One open connection.
 pub trait Database: Send {
     /// Run a statement that returns no rows. Yields the number affected.
@@ -44,9 +47,19 @@ pub fn open(db_type: &str, connection: &str) -> Result<Box<dyn Database>, String
              (this build has no SQLite support): rebuild with --features sqlite"
         )),
 
-        "PostgreSQL" | "MySQL" | "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
+        #[cfg(feature = "postgres")]
+        "PostgreSQL" => Ok(Box::new(postgres::PostgresDatabase::open(connection)?)),
+
+        #[cfg(not(feature = "postgres"))]
+        "PostgreSQL" => Err(
+            "போச்குரசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+             (this build has no PostgreSQL support): rebuild with --features postgres"
+                .to_string(),
+        ),
+
+        "MySQL" | "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
             "{} இன்னும் ஆதரிக்கப்படவில்லை  ({} is not supported yet); \
-             SQLite is the only backend today",
+             SQLite and PostgreSQL are the backends today",
             db_type, db_type
         )),
 
