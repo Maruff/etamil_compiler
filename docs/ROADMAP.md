@@ -60,19 +60,27 @@ Queries are **always parameterised** — there is deliberately no way to splice 
 
 Rows return as an array of records, so a result set iterates like any other table. Decimals cross the boundary as text rather than `REAL`, so no precision is lost — using an inexact SQL type would defeat the point of decimal arithmetic.
 
-**Still to do:** PostgreSQL and MySQL (the trait is the only thing they need to implement); transactions; more than one connection open at a time, which the VM currently refuses rather than guessing.
+**PostgreSQL** is implemented behind `--features postgres` and verified against a live server. Binding adapts to the column's type rather than picking one, because PostgreSQL infers each parameter's type from where it appears — a Decimal bound straight through would only satisfy `NUMERIC`, and `WHERE id = $1` against an integer key would fail. Money uses the native `NUMERIC` type, so unlike SQLite a text column stays text on the way back.
+
+**MySQL / MariaDB** is implemented behind `--features mysql` but has **not been run against a live server**. `examples/db_samples/mYcIkul_qaLam.qmz` exists to settle that; `run_examples.sh` skips it unless `ETAMIL_TEST_MYSQL` is set.
+
+**Still to do:** transactions; more than one connection open at a time, which the VM currently refuses rather than guessing. MongoDB and Redis need a design before an implementation — neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
 
 ---
 
-## 4. The async HTTP server
+## 4. ~~The async HTTP server~~ — RESOLVED
 
-**Today:** `--async` prints a warning and runs the synchronous server. `src/http/async_mod.rs` and `src/http/async_handler.rs` are **not declared in `src/http/mod.rs`**, so they are never compiled — and they would not compile as written:
+`--async` runs a tokio accept loop and hands each request to `spawn_blocking`. `--server` keeps its thread pool and is unchanged.
 
-- `use futures::stream::StreamExt;` — `futures` is not a dependency
-- `use signal_hook::consts::signal::*;` — `signal-hook` is unix-only but imported unconditionally
-- `use crate::vm::{VM, bytecode::compiler::Compiler};` — the type is `BytecodeCompiler`
+The drafted `async_mod.rs` / `async_handler.rs` were gone by the time this was written, and nothing was salvaged from them: they wanted axum and futures, and neither turned out to be needed. Routing is this crate's own, and tokio was already a dependency, so the whole thing added **no new crates**.
 
-**What it involves:** fix those three, declare the modules, add `axum` and `futures` back to `Cargo.toml`, gate the signal handling behind `#[cfg(unix)]`, and give the VM a per-request execution model. Also needs item 5, since a server without route statements can only serve one handler.
+**The VM stays synchronous.** Making it async would mean a yield point at every I/O instruction, and it would rule out the blocking database drivers that are far simpler to bind into a synchronous interpreter. What changed is only how connections are accepted: a connection now costs a task rather than a thread, so a slow client no longer occupies one of `2 × cores` workers for as long as it takes to send its request. Handlers still block, on tokio's blocking pool, so every driver keeps working untouched.
+
+A prerequisite that had not been noticed: `main` was `#[tokio::main]`, which made every blocking driver panic with `Cannot start a runtime from within a runtime`. The runtime is now built by `--async` alone, around the async server.
+
+Route matching and handler execution moved to `handler::dispatch`, shared by both servers, so the two cannot drift apart about what a route means — `path_matches` had already been duplicated in `router.rs` and `mod.rs`.
+
+**Still to do:** the async server does not carry the logging and metrics the sync one does, and there is no connection or request timeout.
 
 ---
 
@@ -82,7 +90,9 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 Request data is injected as variables — `request_method`, `request_path`, `query_params`, `headers`, `request_body` — and map indexing makes `query_params["id"]` readable from eTamil.
 
-**Still to do:** `Stmt::SendResponse` discards its headers; `ஜேசான்_உரை` (JSON responses) needs a serializer; path parameters (`/kaNakku/:id`) are not matched; and each request builds a fresh VM, so a database connection opened in the prelude is reopened per request rather than pooled.
+Path parameters (`/kaNakku/:id`) are matched, and arrive as `path_params` and as `param_<name>`. `பதில்` takes its headers as an ordinary record — `பதில் 200, உடல், {"Content-Type": "text/html"}` — which is what lets a route serve HTML or a CSV export instead of the JSON the server otherwise assumes. Request bodies reach eTamil as `request_body`.
+
+**Still to do:** the `ஜேசான்_உரை` *statement* is still unimplemented, though `nUlakam/jEcAZ.qmz` makes it unnecessary — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்`. Each request still builds a fresh VM, so a database connection opened in the prelude is reopened per request rather than pooled.
 
 ---
 

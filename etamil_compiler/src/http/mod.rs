@@ -7,12 +7,12 @@ use std::io::{Read, Write};
 use std::sync::{mpsc, Mutex};
 use std::time::Instant;
 use crate::parser::Stmt;
-use crate::vm::VM;
 
 pub mod router;
 pub mod request;
 pub mod response;
 pub mod handler;
+pub mod async_server;  // --async: tokio accept loop, blocking handlers
 pub mod logging;
 pub mod errors;
 pub mod monitoring;
@@ -24,6 +24,7 @@ pub use self::router::Router;
 pub use self::request::HttpRequest;
 pub use self::response::HttpResponse;
 pub use self::handler::{bind_request, response_from};
+pub use self::async_server::AsyncHttpServer;
 pub use self::logging::{Logger, LogLevel, LogEntry, generate_request_id};
 pub use self::errors::ErrorResponse;
 pub use self::monitoring::MetricsCollector;
@@ -285,75 +286,10 @@ impl HttpServer {
 
     /// Handle an incoming HTTP request.
     ///
-    /// An exact route wins; failing that, a pattern with `:params` is tried.
-    /// Both then run the handler identically. These used to be two copies of
-    /// the same code, and the copy behind the pattern match had fallen
-    /// behind — it bound neither the query string nor the headers, so
-    /// `/kaNakku/:id?vakY=varavu` failed with "undefined variable
-    /// 'query_params'" while the same handler on a literal path worked.
+    /// Route matching and execution live in `handler::dispatch`, shared with
+    /// the async server so the two cannot disagree about what a route means.
     fn handle_request(&self, request: &HttpRequest) -> HttpResponse {
-        let method = request.method.to_uppercase();
-        let exact_key = format!("{} {}", method, request.path);
-
-        let matched = match self.handlers.get(&exact_key) {
-            Some(bytecode) => Some((bytecode, HashMap::new())),
-            None => self.handlers.iter().find_map(|(route_key, bytecode)| {
-                let (route_method, pattern) = route_key.split_once(' ')?;
-                if route_method != method || !self.path_matches(pattern, &request.path) {
-                    return None;
-                }
-                let mut params = HashMap::new();
-                self.extract_path_params(pattern, &request.path, &mut params);
-                Some((bytecode, params))
-            }),
-        };
-
-        let (bytecode, path_params) = match matched {
-            Some(found) => found,
-            None => return HttpResponse::not_found(),
-        };
-
-        let mut vm = VM::new();
-        bind_request(&mut vm, request, &path_params);
-
-        match vm.execute(bytecode.clone()) {
-            Ok(_) => response_from(&vm),
-            Err(e) => {
-                eprintln!("❌ Handler execution error: {}", e);
-                HttpResponse::internal_error(&format!("Handler error: {}", e))
-            }
-        }
-    }
-
-    /// Check if a route pattern matches a request path
-    fn path_matches(&self, pattern: &str, path: &str) -> bool {
-        let pattern_parts: Vec<&str> = pattern.split('/').filter(|p| !p.is_empty()).collect();
-        let path_parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
-
-        if pattern_parts.len() != path_parts.len() {
-            return false;
-        }
-
-        for (pattern_part, path_part) in pattern_parts.iter().zip(path_parts.iter()) {
-            if !pattern_part.starts_with(':') && pattern_part != path_part {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// Extract path parameters from a request path
-    fn extract_path_params(&self, pattern: &str, path: &str, params: &mut HashMap<String, String>) {
-        let pattern_parts: Vec<&str> = pattern.split('/').filter(|p| !p.is_empty()).collect();
-        let path_parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
-
-        for (pattern_part, path_part) in pattern_parts.iter().zip(path_parts.iter()) {
-            if pattern_part.starts_with(':') {
-                let param_name = pattern_part[1..].to_string();
-                params.insert(param_name, path_part.to_string());
-            }
-        }
+        handler::dispatch(&self.handlers, request)
     }
 }
 
@@ -368,11 +304,24 @@ mod tests {
         assert_eq!(server.port, 8080);
     }
 
+    // Matching lives in handler.rs now, shared by both servers so the sync and
+    // async paths cannot disagree about what a route means.
     #[test]
     fn test_path_matching() {
-        let server = HttpServer::new("127.0.0.1", 8080);
-        assert!(server.path_matches("/users/:id", "/users/123"));
-        assert!(server.path_matches("/users/:id/posts/:post_id", "/users/123/posts/456"));
-        assert!(!server.path_matches("/users/:id", "/users/123/invalid"));
+        assert!(handler::path_matches("/users/:id", "/users/123"));
+        assert!(handler::path_matches(
+            "/users/:id/posts/:post_id",
+            "/users/123/posts/456"
+        ));
+        assert!(!handler::path_matches("/users/:id", "/users/123/invalid"));
+    }
+
+    #[test]
+    fn path_parameters_are_named_after_the_pattern() {
+        let params = handler::extract_path_params("/kaNakku/:id/nirY/:row", "/kaNakku/1000/nirY/7");
+
+        assert_eq!(params.get("id").map(String::as_str), Some("1000"));
+        assert_eq!(params.get("row").map(String::as_str), Some("7"));
+        assert!(handler::extract_path_params("/kaNakku", "/kaNakku").is_empty());
     }
 }

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::http::{HttpRequest, HttpResponse};
 use crate::parser::Stmt;
-use crate::vm::{VM, Value};
+use crate::vm::{Bytecode, VM, Value};
 
 /// Make one request readable from eTamil.
 ///
@@ -100,6 +100,76 @@ pub fn response_from(vm: &VM) -> HttpResponse {
     response.set_header("Content-Length", &length);
 
     response
+}
+
+/// Does a route pattern match a path, treating a `:name` segment as a wildcard?
+pub fn path_matches(pattern: &str, path: &str) -> bool {
+    let pattern_parts: Vec<&str> = pattern.split('/').filter(|p| !p.is_empty()).collect();
+    let path_parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
+
+    if pattern_parts.len() != path_parts.len() {
+        return false;
+    }
+
+    pattern_parts
+        .iter()
+        .zip(path_parts.iter())
+        .all(|(pattern_part, path_part)| {
+            pattern_part.starts_with(':') || pattern_part == path_part
+        })
+}
+
+/// The `:name` segments of a pattern, paired with what the path had there.
+pub fn extract_path_params(pattern: &str, path: &str) -> HashMap<String, String> {
+    let pattern_parts = pattern.split('/').filter(|p| !p.is_empty());
+    let path_parts = path.split('/').filter(|p| !p.is_empty());
+
+    pattern_parts
+        .zip(path_parts)
+        .filter_map(|(pattern_part, path_part)| {
+            pattern_part
+                .strip_prefix(':')
+                .map(|name| (name.to_string(), path_part.to_string()))
+        })
+        .collect()
+}
+
+/// Find the handler for a request and run it.
+///
+/// Shared by both servers, so the sync and async paths cannot disagree about
+/// what a route means. An exact match wins; failing that, a pattern with
+/// `:params` is tried, and either way the handler is bound and read back
+/// identically.
+pub fn dispatch(handlers: &HashMap<String, Bytecode>, request: &HttpRequest) -> HttpResponse {
+    let method = request.method.to_uppercase();
+    let exact_key = format!("{} {}", method, request.path);
+
+    let matched = match handlers.get(&exact_key) {
+        Some(bytecode) => Some((bytecode, HashMap::new())),
+        None => handlers.iter().find_map(|(route_key, bytecode)| {
+            let (route_method, pattern) = route_key.split_once(' ')?;
+            if route_method != method || !path_matches(pattern, &request.path) {
+                return None;
+            }
+            Some((bytecode, extract_path_params(pattern, &request.path)))
+        }),
+    };
+
+    let (bytecode, path_params) = match matched {
+        Some(found) => found,
+        None => return HttpResponse::not_found(),
+    };
+
+    let mut vm = VM::new();
+    bind_request(&mut vm, request, &path_params);
+
+    match vm.execute(bytecode.clone()) {
+        Ok(_) => response_from(&vm),
+        Err(e) => {
+            eprintln!("❌ Handler execution error: {}", e);
+            HttpResponse::internal_error(&format!("Handler error: {}", e))
+        }
+    }
 }
 
 pub struct RequestHandler;

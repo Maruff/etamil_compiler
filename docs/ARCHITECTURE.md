@@ -69,17 +69,37 @@ For a compliance language, "this transaction failed validation" is ordinary
 control flow, not an exceptional event. Returned values make the failure path
 visible in the signature and impossible to ignore silently.
 
-### Concurrency is a thread per request, not an async VM
+### The VM stays blocking. Only the socket became async
 
-The HTTP server runs a fixed worker pool; each request gets its own VM.
+*Revised. The original decision — a fixed worker pool, no async anywhere —
+stood until `--async` was implemented, and the half of it that mattered still
+stands.*
 
-Making the VM async would mean yield points at every I/O instruction — a
-rewrite. A pool handles the hundreds-of-concurrent-requests range that Indian
-SME fintech backends actually need, and critically it allows **blocking**
-database drivers (`rusqlite`), which are far simpler to bind into a
-synchronous interpreter than async ones.
+**The VM is synchronous and will remain so.** Making it async would mean a
+yield point at every I/O instruction, which is a rewrite, and it would rule
+out the **blocking** database drivers (`rusqlite`, `postgres`, `mysql`) that
+are far simpler to bind into a synchronous interpreter than async ones. That
+was the real content of the original decision and nothing has changed it.
 
-Revisit only if measured load demands it.
+What was conflated with it, and should not have been, is how connections are
+*accepted*. `--async` now runs a tokio accept loop and hands each request to
+`spawn_blocking`, so:
+
+- accepting a connection no longer occupies a worker, which is what a fixed
+  pool of `2 × cores` spends most of its time doing when clients are slow;
+- handler execution is still blocking, on tokio's blocking pool, so every
+  driver keeps working unchanged;
+- the VM never learns that any of this happened.
+
+`--server` keeps the thread pool and is unchanged. It is the simpler thing,
+has no runtime, and is the right default; `--async` is for many concurrent or
+slow clients.
+
+**A consequence worth recording:** `main` must *not* be `#[tokio::main]`. It
+was, for years, on the stated grounds that the server paths needed a runtime —
+they did not, and being inside a runtime made every blocking driver panic with
+`Cannot start a runtime from within a runtime`. The runtime is now built only
+by `--async`, around the async server alone.
 
 ### Database queries are always parameterised
 

@@ -74,7 +74,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
 | MongoDB, Redis | ❌ Not implemented | they say so explicitly; neither fits the SQL-shaped `Database` trait, so both need a design first |
-| Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
+| Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 
@@ -371,7 +371,7 @@ etamil [FLAGS] [OPTIONS] <FILE>
 |---|---|
 | `--vm` | Run on the bytecode VM (default) |
 | `--server` | Start the synchronous HTTP server |
-| `--async` | Currently an alias for `--server` |
+| `--async` | Concurrent server: async accept, blocking handlers, Ctrl-C to stop |
 | `--llvm` | LLVM backend (requires `--features llvm`; Linux/macOS) |
 | `--port <PORT>` | Server port (default 8080) |
 | `--host <HOST>` | Server host (default 127.0.0.1) |
@@ -424,7 +424,7 @@ record; without one the server answers `application/json`.
 
 ```bash
 cd etamil_compiler
-cargo test          # 176 language tests + 50 unit tests
+cargo test          # 176 language tests + 51 unit tests
 ```
 
 `tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.
