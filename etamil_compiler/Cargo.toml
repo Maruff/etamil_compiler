@@ -59,6 +59,10 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 # system dependency.
 rusqlite = { version = "0.32", features = ["bundled"], optional = true }
 postgres = { version = "0.19", optional = true }
+# "minimal" leaves out TLS and the compression backends: a driver pulling in
+# OpenSSL would put a C build back in the way of a plain `cargo build`, which
+# is the thing the bundled SQLite exists to avoid.
+mysql = { version = "25", optional = true, default-features = false, features = ["minimal"] }
 # Needed to write the ToSql impl that adapts a value to the column's type:
 # without it a number bound to an INT column is refused, because Decimal
 # alone only accepts NUMERIC.
@@ -71,6 +75,7 @@ sqlite = ["rusqlite"]
 # `dep:` keeps the optional dependency from also creating a feature of its
 # own name, so this one can pull in the decimal integration alongside it.
 postgres = ["dep:postgres", "dep:bytes", "rust_decimal/db-postgres"]
+mysql = ["dep:mysql"]
 default = ["sqlite"]
 
 [profile.release]
