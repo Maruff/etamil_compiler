@@ -5,7 +5,7 @@ use std::io::{self, Read};
 use std::env;
 use std::path::Path;
 
-use etamil_compiler::http::HttpServer;
+use etamil_compiler::http::{AsyncHttpServer, HttpServer};
 use etamil_compiler::{module, parser, vm};
 #[cfg(feature = "llvm")]
 use etamil_compiler::codegen;
@@ -38,7 +38,7 @@ fn print_help() {
     println!("OPTIONS:");
     println!("    --vm               Run on the bytecode VM (default)");
     println!("    --server           Start the synchronous HTTP server");
-    println!("    --async            Currently an alias for --server");
+    println!("    --async            Concurrent server: async accept, blocking handlers");
     println!("    --llvm             LLVM backend (requires --features llvm; Linux/macOS)");
     println!("    --host <HOST>      Server bind address (default: 127.0.0.1)");
     println!("    --port <PORT>      Server port (default: 8080)");
@@ -150,41 +150,10 @@ fn main() {
         println!("=== eTamil HTTP Server (Minimum Viable Backend) ===\n");
         
         let mut server = HttpServer::new(&server_host, server_port);
-        
-        // For MVP, register all statements as a single handler
-        // Future: parse route definitions from DSL (वழि / path directives)
-        // Split the program into route definitions and everything else. The
-        // remainder is a prelude — imports, functions, setup — compiled into
-        // every handler so a route can call what the file defines.
-        let (routes, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
-            .clone()
-            .into_iter()
-            .partition(|s| matches!(s, parser::Stmt::DefineRoute { .. }));
+        register_routes(&mut server, ast, |server, method, path, program| {
+            server.register_route(method, path, program)
+        });
 
-        if routes.is_empty() {
-            // No வழி statements: the whole program answers every request,
-            // which is how server programs behaved before routing existed.
-            println!("ℹ️  No வழி routes found; serving the whole program on /");
-            for method in ["GET", "POST", "PUT", "DELETE"] {
-                server.register_route(method, "/", prelude.clone());
-            }
-        } else {
-            for route in routes {
-                if let parser::Stmt::DefineRoute { method, path, handler } = route {
-                    let path = match path {
-                        parser::Expr::String(literal) => literal,
-                        other => {
-                            eprintln!("✗ வழி needs a literal path, got {:?}", other);
-                            std::process::exit(1);
-                        }
-                    };
-                    let mut program = prelude.clone();
-                    program.extend(handler);
-                    server.register_route(&method, &path, program);
-                }
-            }
-        }
-        
         // Also register health check endpoint
         server.register_route("GET", "/health", vec![
             parser::Stmt::Print(parser::Expr::Number(rust_decimal::Decimal::from(200))),
@@ -267,33 +236,71 @@ fn main() {
     }
 }
 
-// ============================================================================
-// Backend milestone 2: ASYNC SERVER IMPLEMENTATION
-// ============================================================================
-// This function starts the high-performance async HTTP server
-// Handles concurrent requests with graceful shutdown support
-// ============================================================================
-
+/// Start the concurrent server: `--async`.
+///
+/// The runtime is built here rather than around `main`, because only this path
+/// needs one. `main` being `#[tokio::main]` made every blocking database driver
+/// panic with "Cannot start a runtime from within a runtime" — and blocking
+/// drivers are the reason the VM is synchronous in the first place. See
+/// docs/ARCHITECTURE.md.
 fn run_async_server(
     host: &str,
     port: u16,
     ast: Vec<parser::Stmt>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Integrate with async_mod.rs AsyncHttpServer. Until then this is
-    // the synchronous server, and --async is an alias for --server.
+    let mut server = AsyncHttpServer::new(host, port);
+    register_routes(&mut server, ast, |server, method, path, program| {
+        server.register_route(method, path, program)
+    });
 
-    // For now, fallback to sync server to prevent breaking existing functionality
-    let mut server = HttpServer::new(host, port);
-    server.register_route("GET", "/", ast.clone());
-    server.register_route("POST", "/", ast.clone());
-    server.register_route("PUT", "/", ast.clone());
-    server.register_route("DELETE", "/", ast.clone());
-    server.register_route("GET", "/health", vec![
-        parser::Stmt::Print(parser::Expr::Number(rust_decimal::Decimal::from(200))),
-    ]);
+    // Handlers run on the blocking pool, so the worker threads here only ever
+    // accept connections and move bytes.
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?;
 
-    println!("✓ Async server started (using Backend milestone 1 handler for compatibility)\n");
-    server.start()?;
-    Ok(())
+    runtime.block_on(server.start())
+}
+
+/// Split a program into `வழி` routes and the prelude they share, and register
+/// each one.
+///
+/// The remainder of the file — imports, functions, setup — is compiled into
+/// every handler, so a route can call what the file defines. Both servers
+/// register the same way, which is why this is written once and handed the
+/// registration function.
+fn register_routes<S>(
+    server: &mut S,
+    ast: Vec<parser::Stmt>,
+    mut register: impl FnMut(&mut S, &str, &str, Vec<parser::Stmt>),
+) {
+    let (routes, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
+        .into_iter()
+        .partition(|s| matches!(s, parser::Stmt::DefineRoute { .. }));
+
+    if routes.is_empty() {
+        // No வழி statements: the whole program answers every request, which is
+        // how server programs behaved before routing existed.
+        println!("ℹ️  No வழி routes found; serving the whole program on /");
+        for method in ["GET", "POST", "PUT", "DELETE"] {
+            register(server, method, "/", prelude.clone());
+        }
+        return;
+    }
+
+    for route in routes {
+        if let parser::Stmt::DefineRoute { method, path, handler } = route {
+            let path = match path {
+                parser::Expr::String(literal) => literal,
+                other => {
+                    eprintln!("✗ வழி needs a literal path, got {:?}", other);
+                    std::process::exit(1);
+                }
+            };
+            let mut program = prelude.clone();
+            program.extend(handler);
+            register(server, &method, &path, program);
+        }
+    }
 }
 
