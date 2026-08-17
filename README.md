@@ -75,14 +75,27 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
 | MongoDB, Redis | ❌ Not implemented | they say so explicitly; neither fits the SQL-shaped `Database` trait, so both need a design first |
 | Async HTTP server (`--async`) | ❌ Not implemented | alias for `--server`; see [ROADMAP](docs/ROADMAP.md) |
-| Type checking | ❌ Not implemented | type keywords are parsed and discarded |
-| Parser error positions | ❌ Not implemented | lexer errors carry line/column; parse errors do not |
+| Parse error positions | ✅ Working | every error carries a line and column, bilingually |
+| Type checking | ❌ Not implemented | type keywords are now kept on the declaration, but nothing checks them yet |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
 ### One thing to know before you write much
 
-A keyword used as a variable or record field is stored under its **token name**. `வங்கி = 5` creates a variable called `Bank`; `{வரி: 100}` produces the field `Tax`. That is what makes Tamil and romanized spellings interchangeable, but it means a keyword name is silently translated, and string-keyed lookup needs the token name. Compound names (`வங்கி_இருப்பு`, `நிலுவைத்_தொகை`) are ordinary identifiers and are stored as written. The Token column in [KEYWORDS.md](docs/reference/KEYWORDS.md) lists every one; fixing this properly is [roadmap item 2](docs/ROADMAP.md).
+**A name is stored exactly as you wrote it**, including when the word you chose is also a keyword: `வங்கி = 5` creates a variable called `வங்கி`, and `{வரி: 100}` produces the field `வரி`. Names used to be filed under their English token name — `Bank`, `Tax` — which anglicised a Tamil author's chosen words and put English field names into Tamil output.
+
+The consequence, which is a real change in meaning: `{வரி: 1}` and `{vari: 1}` are now **different** fields, and `வருவாய்` and `varuvAy` are different variables. Pick one spelling per program. A field name is data — what you typed — not a language construct.
+
+Type keywords and SQL clause keywords remain **hard reserved** and cannot be names at all: `எண்`, `சொல்`, `அணி`, `வரிசை`, `விதி`, `இடம்`, `உள்`, `வெளி`, `குழு`, `சேர்`. Financial keywords are *not* reserved — `தொகை` is a perfectly good name for an amount. [KEYWORDS.md](docs/reference/KEYWORDS.md) lists every one.
+
+### Errors say where
+
+```
+✗ வரி 3, நெடுவரிசை 1: ';' எதிர்பார்க்கப்பட்டது, 'அச்சு' கிடைத்தது
+  (line 3, column 1: expected ';', found 'அச்சு')
+```
+
+Columns count written letters, not bytes, so the position is the one you would point at on the screen.
 
 ### Money is exact
 
@@ -398,7 +411,7 @@ record; without one the server answers `application/json`.
 
 ```bash
 cd etamil_compiler
-cargo test          # 158 language tests + 50 unit tests
+cargo test          # 167 language tests + 50 unit tests
 ```
 
 `tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.

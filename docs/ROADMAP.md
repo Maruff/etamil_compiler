@@ -27,19 +27,24 @@ Equality is exact. The previous `f64` value type compared numbers equal within `
 
 ---
 
-## 2. Keep the source text of tokens
+## 2. ~~Keep the source text of tokens~~ — RESOLVED
 
-This is now the **top priority**, because one missing capability causes two separate problems.
+`tokenize()` returns `Vec<Spanned>` — the token, its line and column, and the text it matched. That one capability fixed both problems it was blocking.
 
-The lexer discards the text it matched. `Token::Bank` records that the word was the Bank keyword, but not whether the author wrote `வங்கி`, `vawki` or `_bank`. That has two consequences.
+**Names are the author's own.** `வங்கி = 5` creates `வங்கி`, not `Bank`; `{வரி: 100}` produces the field `வரி`. Two positions deliberately keep the canonical English name, because what they name belongs to the host rather than the author: the database type in `தளம்_இணை`, which `db::open` matches on, and the HTTP method in `வழி`, which the router matches on.
 
-**A keyword used as a name is silently translated.** `வங்கி = 5` creates a variable called `Bank`; `{வரி: 100}` produces the field `Tax`. Printing such a record emits English field names into Tamil output, and looking a field up by string requires knowing the token name. It bit four times while writing the standard library and the accounting framework — the natural Tamil word for a thing is very often already a keyword. For a language whose purpose is letting people write in their own language, having their chosen names quietly anglicised is the sharpest remaining contradiction.
+**Parse errors carry a position**, and the parser returns `Result<_, ParseError>` rather than panicking:
 
-**Parse errors have no position.** The lexer reports line and column, but `tokenize()` returns a bare `Vec<Token>`, so the parser has none. Failures are `panic!` with `Expected Semicolon` and no location — the biggest usability gap for learners.
+```
+வரி 3, நெடுவரிசை 1: ';' எதிர்பார்க்கப்பட்டது, 'அச்சு' கிடைத்தது
+(line 3, column 1: expected ';', found 'அச்சு')
+```
 
-**What it involves:** return `Vec<(Token, Span)>` from the lexer; use the span's text for variable and field names so an author's spelling is preserved; carry the span through `Parser`; and convert the parser from `panic!` to a `Result` with the diagnostic type the lexer already uses. Bilingual messages, as the lexer's already are.
+Columns count written letters rather than bytes, for the same reason string length does.
 
-Note the tradeoff to decide: preserving source text means `{வரி: 1}` and `{vari: 1}` become *different* fields. That is probably right — a field name is data, not a language construct — but it is a real change in meaning and should be documented rather than slipped in.
+**The tradeoff, taken deliberately:** `{வரி: 1}` and `{vari: 1}` are now *different* fields, and `வருவாய்` and `varuvAy` different variables. A name is data — what the author typed — not a language construct. Nothing in `nUlakam/` or `examples/` needed changing, because the workaround at the time was compound names, which were always stored as written; a program mixing the two spellings of one keyword-backed name is the case that breaks.
+
+**Still open:** the declared type on an assignment is now kept rather than discarded, but nothing checks it yet — see item 7.
 
 ---
 
