@@ -54,14 +54,23 @@ bcrypt = "0.15"
 uuid = { version = "1.6", features = ["v4", "serde"] }
 
 # --- Database ---
-# Blocking driver, which suits a synchronous VM behind a thread-per-request
-# server. "bundled" compiles SQLite itself so there is no system dependency.
+# Blocking drivers throughout, which suit a synchronous VM behind a
+# thread-per-request server. "bundled" compiles SQLite itself so there is no
+# system dependency.
 rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+postgres = { version = "0.19", optional = true }
+# Needed to write the ToSql impl that adapts a value to the column's type:
+# without it a number bound to an INT column is refused, because Decimal
+# alone only accepts NUMERIC.
+bytes = { version = "1", optional = true }
 
 [features]
 # Optional LLVM code generation (not available on Windows)
 llvm = ["llvm-sys"]
 sqlite = ["rusqlite"]
+# `dep:` keeps the optional dependency from also creating a feature of its
+# own name, so this one can pull in the decimal integration alongside it.
+postgres = ["dep:postgres", "dep:bytes", "rust_decimal/db-postgres"]
 default = ["sqlite"]
 
 [profile.release]

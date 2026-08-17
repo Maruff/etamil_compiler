@@ -10,7 +10,18 @@ use etamil_compiler::{module, parser, vm};
 #[cfg(feature = "llvm")]
 use etamil_compiler::codegen;
 
-// main is async so the tokio runtime is available to the server paths.
+// main is deliberately *not* async.
+//
+// It used to be #[tokio::main], on the grounds that the server paths needed a
+// runtime — but nothing here ever did: the VM is synchronous and the HTTP
+// server is thread-per-request over std::net. The only tokio users in the
+// crate are http/cache.rs and http/resilience.rs, neither of which is
+// reachable from this binary, and whose tests carry their own runtime.
+//
+// It was not harmless. Being inside a runtime makes every blocking database
+// driver panic — `Cannot start a runtime from within a runtime` — because
+// they call block_on internally. That is exactly the arrangement
+// docs/ARCHITECTURE.md chose blocking drivers *for*.
 //
 // Note on numbering: "backend milestone N" here refers to this repository's
 // own HTTP work (1 sync server, 2 async, 3 logging, 4 auth). It is unrelated
@@ -40,8 +51,7 @@ fn print_help() {
     println!("    etamil --server --port 8080 examples/backend/hello_server.qmz");
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
     let mut use_vm = true;  // Default: use VM executor
@@ -121,7 +131,7 @@ async fn main() {
         println!("   the synchronous server. See docs/ROADMAP.md.");
         println!("🚀 Starting server on {}:{}\n", server_host, server_port);
         
-        if let Err(e) = run_async_server(&server_host, server_port, ast).await {
+        if let Err(e) = run_async_server(&server_host, server_port, ast) {
             eprintln!("❌ Async server error: {}", e);
             std::process::exit(1);
         }
@@ -254,7 +264,7 @@ async fn main() {
 // Handles concurrent requests with graceful shutdown support
 // ============================================================================
 
-async fn run_async_server(
+fn run_async_server(
     host: &str,
     port: u16,
     ast: Vec<parser::Stmt>,
