@@ -497,7 +497,11 @@ Please add a test to `etamil_compiler/tests/language_tests.rs` for any language 
 
 ## License
 
-Not yet specified.
+[GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
+
+The AGPL matters here because eTamil is a backend language: running a modified
+compiler or runtime as a network service counts as distribution, so the changes
+have to be offered back to the people using that service.
 
 ---
 
