@@ -8,7 +8,7 @@
 //
 //   cargo build --release --features mysql
 //   mysql -u root -e "CREATE DATABASE IF NOT EXISTS kaNakku"
-//   ETAMIL_MYSQL_URL=... etamil --vm examples/db_samples/mYcIkul_qaLam.qmz
+//   etamil --vm examples/db_samples/mYcIkul_qaLam.qmz
 //
 // The URL is written into the இணை line below; edit it for your server.
 
