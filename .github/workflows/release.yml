@@ -1,42 +1,48 @@
 # Publish packages for Windows, Linux and macOS.
 #
-# Triggered by pushing a version tag:
-#
 #   git tag v0.3.0 && git push origin v0.3.0
 #
-# Each platform builds its own package — nothing is cross-compiled except the
-# musl target, which is what makes the Linux binary run on distributions older
-# than the one that built it. macOS ships two packages because Apple Silicon
-# and Intel are genuinely different binaries, and a single "x64" name covering
-# both would be a lie on one of them.
-name: Release
+# Each platform builds on its own runner. Nothing is cross-compiled except the
+# musl target, which is what lets the Linux binary run on distributions older
+# than the one that built it.
+name: Release packages
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   package:
-    name: ${{ matrix.label }}
+    name: package (${{ matrix.package }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - label: linux-x64
-            os: ubuntu-latest
+          - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-          - label: windows-x64
-            os: windows-latest
+            package: etamil-linux-x64.tar.gz
+            setup: musl
+          # macOS is two genuinely different binaries. Shipping only the Intel
+          # one would leave every Apple Silicon machine — which is every Mac
+          # sold for years — with a package it cannot run.
+          - os: macos-13
             target: ''
-          - label: macos-arm64
-            os: macos-latest
+            package: etamil-macos-x64.tar.gz
+            setup: native
+          - os: macos-latest
             target: ''
-          - label: macos-x64
-            os: macos-13
-            target: ''
+            package: etamil-macos-arm64.tar.gz
+            setup: native
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            package: etamil-windows-x64.zip
+            setup: native
 
     steps:
       - uses: actions/checkout@v4
@@ -45,36 +51,39 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      # musl needs its own C compiler, because the bundled SQLite and the
-      # crypto crates compile C.
       - name: Install musl toolchain
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
+        if: matrix.setup == 'musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       # Enabled for the packages only: someone downloading a binary cannot add
       # a cargo feature to it later. LLVM stays out — it needs LLVM present on
       # the machine that runs the compiler.
-      - name: Build the package
+      - name: Build package
         shell: bash
         env:
           TARGET: ${{ matrix.target }}
           FEATURES: postgres,mysql
-        run: ./packaging/build.sh
+        run: bash packaging/build.sh
 
-      # A package that cannot run its own examples is not a package. This is
-      # the same check the repository runs, against the binary about to be
-      # published rather than against the build tree.
-      - name: Test the packaged binary
+      - name: Verify archive exists
+        shell: bash
+        run: test -s "dist/${{ matrix.package }}"
+
+      # A package that cannot run its own examples is not a package, and
+      # finding that out after publishing is worse than failing here.
+      - name: Run the packaged binary
         shell: bash
         run: |
           set -euo pipefail
           cd dist
-          case "${{ matrix.label }}" in
-            windows-x64) unzip -q etamil-windows-x64.zip; DIR=etamil-windows-x64; BIN=$DIR/etamil.exe ;;
-            *)           tar xzf etamil-${{ matrix.label }}.tar.gz; DIR=etamil-${{ matrix.label }}; BIN=$DIR/etamil ;;
+          case "${{ matrix.package }}" in
+            *.zip)  unzip -q "${{ matrix.package }}" ;;
+            *.tar.gz) tar xzf "${{ matrix.package }}" ;;
           esac
+          DIR="$(basename "${{ matrix.package }}" .tar.gz)"
+          DIR="$(basename "$DIR" .zip)"
+          BIN="$DIR/etamil"
+          [ -f "$BIN.exe" ] && BIN="$BIN.exe"
           export ETAMIL_PATH="$PWD/$DIR"
           "$BIN" --version
           echo "950000" | "$BIN" --vm "$DIR/examples/basic_samples/example.qmz" | grep -q "High Tax Bracket"
@@ -85,31 +94,28 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: etamil-${{ matrix.label }}
+          name: ${{ matrix.package }}
           path: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/*.sha256
+            dist/${{ matrix.package }}
+            dist/${{ matrix.package }}.sha256
           if-no-files-found: error
 
   publish:
-    name: Publish the release
+    name: publish release assets
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: package
     runs-on: ubuntu-latest
-    # Creating a release writes to the repository.
-    permissions:
-      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: dist
           merge-multiple: true
 
       - name: List what will be published
-        run: ls -lh artifacts
+        run: ls -lh dist
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: dist/*
           generate_release_notes: true
           fail_on_unmatched_files: true

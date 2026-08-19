@@ -101,6 +101,18 @@ fn locate(relative: &str, base_dir: &Path) -> Option<PathBuf> {
         }
     }
 
+    // Native packages keep the standard library in the platform data
+    // directory rather than beside the executable in /usr/bin.
+    for data_dir in [
+        Path::new("/usr/share/etamil"),
+        Path::new("/usr/local/share/etamil"),
+    ] {
+        let candidate = data_dir.join(relative);
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
+
     None
 }
 

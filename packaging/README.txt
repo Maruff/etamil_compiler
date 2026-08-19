@@ -92,11 +92,11 @@ WHAT IS NOT FINISHED
 
 Being straight with you, since a version number does not say much:
 
-  - PostgreSQL, MySQL, MongoDB and Redis are recognised but not implemented.
-    SQLite works.
-  - Parse errors report no line number yet. Lexical and runtime errors do.
-  - The LLVM backend (--llvm) covers far less of the language than the VM
-    and is not in this package.
+    - PostgreSQL, MySQL, MongoDB and Redis are not included in this default
+        package. SQLite works; server database drivers require a source build with
+        the corresponding Cargo feature.
+    - The LLVM backend (--llvm) requires a source build with LLVM 18 and is not
+        included in this package. The VM is the default execution path.
 
 Anything unimplemented fails with a clear message rather than quietly doing
 nothing. In a tax calculator a silent wrong answer is worse than an error.
