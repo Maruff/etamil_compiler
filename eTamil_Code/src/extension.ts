@@ -57,7 +57,42 @@ const DOWNLOADS: Record<string, { asset: string; commands: string }> = {
       '\n'
     ),
   },
+  // macOS is two genuinely different binaries, so the key carries the
+  // architecture as well. The extra xattr line is not optional: these are not
+  // notarized, and Gatekeeper refuses a quarantined binary outright rather
+  // than asking.
+  'darwin-arm64': {
+    asset: 'etamil-macos-arm64.tar.gz',
+    commands: [
+      'tar -xzf etamil-macos-arm64.tar.gz',
+      './etamil-macos-arm64/install.sh',
+      'xattr -dr com.apple.quarantine ~/.local/lib/etamil',
+    ].join('\n'),
+  },
+  'darwin-x64': {
+    asset: 'etamil-macos-x64.tar.gz',
+    commands: [
+      'tar -xzf etamil-macos-x64.tar.gz',
+      './etamil-macos-x64/install.sh',
+      'xattr -dr com.apple.quarantine ~/.local/lib/etamil',
+    ].join('\n'),
+  },
 };
+
+/**
+ * The package for this machine.
+ *
+ * Keyed by platform and architecture, falling back to platform alone: Windows
+ * and Linux ship one x64 build each, while macOS ships separate Apple Silicon
+ * and Intel packages, and picking by platform alone would offer half of macOS
+ * users a binary that cannot run.
+ */
+function downloadFor(
+  platform: string,
+  arch: string
+): { asset: string; commands: string } | undefined {
+  return DOWNLOADS[`${platform}-${arch}`] ?? DOWNLOADS[platform];
+}
 
 /** How long to wait after a keystroke before checking. */
 const CHECK_DEBOUNCE_MS = 400;
@@ -285,7 +320,7 @@ async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
       ? 'cd etamil_compiler\\etamil_compiler && cargo build --release'
       : 'cd etamil_compiler/etamil_compiler && cargo build --release';
 
-  const download = DOWNLOADS[process.platform];
+  const download = downloadFor(process.platform, process.arch);
 
   const choices: Array<vscode.QuickPickItem & { command?: string; url?: string }> = [
     download
@@ -297,7 +332,7 @@ async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
         }
       : {
           label: 'Open the releases page',
-          detail: `No prebuilt package for ${process.platform} yet`,
+          detail: `No prebuilt package for ${process.platform}-${process.arch} yet`,
           description: 'build from source instead',
           url: RELEASES_URL,
         },

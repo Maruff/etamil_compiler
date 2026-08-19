@@ -33,16 +33,30 @@ TARGET="${TARGET:-}"
 # download URL depends on the same thing:
 #
 #   https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-windows-x64.zip
-NAME="etamil-$OS-x64"
+# The architecture is derived, not assumed. macOS runners are Apple Silicon
+# now, so a hardcoded -x64 would have shipped an arm64 binary under a name
+# promising an Intel one — the kind of quiet wrongness this project refuses
+# everywhere else.
+case "${TARGET:-$(uname -m)}" in
+    aarch64*|arm64*) ARCH=arm64 ;;
+    *)               ARCH=x64   ;;
+esac
+NAME="etamil-$OS-$ARCH"
 STAGE="$DIST/$NAME"
 
-echo "Building eTamil $VERSION for $OS${TARGET:+ ($TARGET)}"
+# Which cargo features the package is built with. Empty keeps a local build
+# exactly as it was; the release workflow sets postgres and mysql, because
+# someone downloading a binary cannot add a feature to it later. LLVM stays
+# out: it needs LLVM installed on the machine that runs it.
+FEATURES="${FEATURES:-}"
+
+echo "Building eTamil $VERSION for $OS-$ARCH${TARGET:+ ($TARGET)}${FEATURES:+ [features: $FEATURES]}"
 
 cd "$ROOT/etamil_compiler"
 if [ "$OS" = windows ]; then
-    RUSTFLAGS="-C target-feature=+crt-static" cargo build --release ${TARGET:+--target "$TARGET"}
+    RUSTFLAGS="-C target-feature=+crt-static" cargo build --release ${TARGET:+--target "$TARGET"} ${FEATURES:+--features "$FEATURES"}
 else
-    cargo build --release ${TARGET:+--target "$TARGET"}
+    cargo build --release ${TARGET:+--target "$TARGET"} ${FEATURES:+--features "$FEATURES"}
 fi
 
 BUILT="target/${TARGET:+$TARGET/}release/etamil$EXE"

@@ -63,7 +63,16 @@ tar -xzf etamil-linux-x64.tar.gz
 ./etamil-linux-x64/install.sh
 ```
 
-Or build it, which is what you want for the optional database drivers and the
+```bash
+# macOS — arm64 for Apple Silicon, x64 for Intel; `uname -m` tells you which.
+tar -xzf etamil-macos-arm64.tar.gz
+./etamil-macos-arm64/install.sh
+# These builds are not notarized, so clear the quarantine flag once or
+# Gatekeeper refuses to run them.
+xattr -dr com.apple.quarantine ~/.local/lib/etamil
+```
+
+The packages carry the PostgreSQL and MySQL drivers. Build from source for the
 LLVM backend — Rust 1.85+ and a C toolchain, MSVC Build Tools with "Desktop
 development with C++" on Windows and `cc` elsewhere:
 
