@@ -404,6 +404,6 @@ Press `Ctrl+Space` while typing to see available keywords and autocomplete sugge
 
 ---
 
-**Version**: 0.2.0  
+**Version**: 0.3.0  
 **Last Updated**: January 31, 2026  
 **Status**: Production Ready
