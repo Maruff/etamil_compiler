@@ -37,6 +37,7 @@ fn print_help() {
     println!();
     println!("OPTIONS:");
     println!("    --vm               Run on the bytecode VM (default)");
+    println!("    --check            Lex, parse and type check only — never runs the program");
     println!("    --server           Start the synchronous HTTP server");
     println!("    --async            Concurrent server: async accept, blocking handlers");
     println!("    --llvm             LLVM backend (requires --features llvm; Linux/macOS)");
@@ -49,6 +50,41 @@ fn print_help() {
     println!("    etamil --vm program.qmz");
     println!("    echo \"950000\" | etamil --vm examples/basic_samples/example.qmz");
     println!("    etamil --server --port 8080 examples/backend/hello_server.qmz");
+    println!("    cat program.qmz | etamil --check     # errors only, nothing runs");
+}
+
+/// `--check`: report every error the front end can find, and run nothing.
+///
+/// This exists for the editor. An editor has to be able to tell an author
+/// about a mistake while they are still typing, and the only way to do that
+/// without a second parser to keep in step is to ask this one — but a mode
+/// that also *executes* the file would mean opening a program in a text editor
+/// wrote its files and issued its queries. So the pipeline stops after the
+/// checker.
+///
+/// Output is errors only, on stderr, one per line, in the same positioned
+/// bilingual form as everywhere else. Nothing is written to stdout, so a
+/// caller can treat any output at all as failure.
+fn check_only(loaded: Result<Vec<parser::Stmt>, String>) -> ! {
+    let ast = match loaded {
+        Ok(ast) => ast,
+        Err(message) => {
+            // Lexical, parse and module-resolution failures arrive already
+            // formatted, and may be several joined by newlines.
+            eprintln!("✗ {}", message);
+            std::process::exit(1);
+        }
+    };
+
+    match etamil_compiler::check::check(&ast) {
+        Ok(()) => std::process::exit(0),
+        Err(errors) => {
+            for error in &errors {
+                eprintln!("✗ {}", error);
+            }
+            std::process::exit(1);
+        }
+    }
 }
 
 fn main() {
@@ -57,27 +93,44 @@ fn main() {
     let mut use_vm = true;  // Default: use VM executor
     let mut use_http_server = false;
     let mut use_async_server = false;  // Backend milestone 2: New async server flag
+    let mut check_only_mode = false;
     let mut server_host = "127.0.0.1".to_string();
     let mut server_port = 8080u16;
     let mut filename = None;
-    
+
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
             "--llvm" => use_vm = false,
             "--vm" => use_vm = true,
+            "--check" => check_only_mode = true,
             "--server" => use_http_server = true,
             "--async" => use_async_server = true,  // Backend milestone 2: Async server mode
             "--host" => {
                 if i + 1 < args.len() {
                     server_host = args[i + 1].clone();
                     i += 1;
+                } else {
+                    eprintln!("✗ --host needs a value");
+                    std::process::exit(2);
                 }
             }
             "--port" => {
+                // A port that does not parse used to fall back to 8080
+                // silently, so a mistyped flag bound a port the author did not
+                // ask for and the program looked like it had started fine.
                 if i + 1 < args.len() {
-                    server_port = args[i + 1].parse().unwrap_or(8080);
+                    match args[i + 1].parse::<u16>() {
+                        Ok(port) => server_port = port,
+                        Err(_) => {
+                            eprintln!("✗ --port needs a number from 0 to 65535, got '{}'", args[i + 1]);
+                            std::process::exit(2);
+                        }
+                    }
                     i += 1;
+                } else {
+                    eprintln!("✗ --port needs a value");
+                    std::process::exit(2);
                 }
             }
             "--version" | "-V" => {
@@ -112,6 +165,12 @@ fn main() {
         }
     };
 
+    // --check answers and exits before anything is printed to stdout, so a
+    // caller can treat any output at all as a failure.
+    if check_only_mode {
+        check_only(loaded);
+    }
+
     let ast = match loaded {
         Ok(ast) => ast,
         Err(message) => {
@@ -133,14 +192,14 @@ fn main() {
 
     // Backend milestone 2: Check if async server mode is enabled
     if use_async_server {
-        // Intended to be the concurrent server. The Axum/Tokio modules exist
-        // in src/http/ but are not compiled in, so this currently falls back
-        // to the synchronous server. See docs/ROADMAP.md item 4.
+        // This used to print a warning saying the async runtime was not wired
+        // up and that the flag fell back to the synchronous server. It was
+        // left behind when ROADMAP item 4 landed: run_async_server below
+        // builds a real tokio runtime and starts the real async server, so the
+        // warning told users a working flag was broken.
         println!("=== eTamil HTTP Server (--async) ===");
-        println!("⚠️  The async runtime is not wired up yet; this falls back to");
-        println!("   the synchronous server. See docs/ROADMAP.md.");
         println!("🚀 Starting server on {}:{}\n", server_host, server_port);
-        
+
         if let Err(e) = run_async_server(&server_host, server_port, ast) {
             eprintln!("❌ Async server error: {}", e);
             std::process::exit(1);

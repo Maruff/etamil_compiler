@@ -47,3 +47,7 @@ test_output/
 # Environment files
 .env
 .env.local
+
+# Release packages. These are published as GitHub release assets, never
+# committed: a binary in git history is permanent and every clone pays for it.
+dist/

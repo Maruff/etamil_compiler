@@ -1,0 +1,9 @@
+# out/ is what ships; the TypeScript sources and tests are not needed at runtime.
+src/**
+test/**
+tsconfig.json
+.eslintrc.json
+.github/**
+node_modules/**
+out/**/*.map
+**/*.tsbuildinfo

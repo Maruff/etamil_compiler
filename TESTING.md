@@ -360,6 +360,54 @@ cd etamil_compiler && cargo build --release && cargo test && cd .. \
 
 Everything except the audit should exit 0.
 
+## 11. Build and test the Linux package
+
+The downloadable package is what an eTamil user actually installs, so it is worth
+testing as one. Build it with musl — the default gnu target links against this
+machine's glibc, and the resulting binary will refuse to start on an older
+distribution:
+
+```bash
+rustup target add x86_64-unknown-linux-musl
+sudo apt install musl-tools
+TARGET=x86_64-unknown-linux-musl ./packaging/build.sh
+```
+
+That writes `dist/etamil-linux-x64.tar.gz` and its `.sha256`.
+
+Test it from a clean extraction, **not** from the repository — the repository has
+`nUlakam/` sitting right there, which will hide a packaging mistake:
+
+```bash
+cd /tmp && rm -rf pkgtest && mkdir pkgtest && cd pkgtest
+tar -xzf ~/…/dist/etamil-linux-x64.tar.gz
+cd etamil-linux-x64
+./etamil --version
+file ./etamil                     # expect: statically linked
+ldd  ./etamil                     # expect: not a dynamic executable
+printf 'இறக்கு "nUlakam/paNam.qmz";\nஅச்சு ரூபாய்(12345678.50);\n' > /tmp/t.qmz
+./etamil --vm /tmp/t.qmz           # expect ₹1,23,45,678.50
+```
+
+Then the installer itself, which needs no root:
+
+```bash
+./install.sh
+exec "$SHELL" -l                   # pick up PATH and ETAMIL_PATH
+cd /tmp && etamil --version
+etamil --vm /tmp/t.qmz             # resolves nUlakam via ETAMIL_PATH, not cwd
+```
+
+That last line is the one that matters: it proves `இறக்கு` finds the standard
+library from an unrelated directory. To undo it all:
+
+```bash
+rm -rf ~/.local/bin/etamil ~/.local/lib/etamil
+```
+
+Release steps and the reasoning behind the archive names are in
+[`packaging/README.md`](packaging/README.md).
+
 ---
 
 ## Developing on Windows without the MSVC linker

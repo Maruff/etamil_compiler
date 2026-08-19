@@ -1,274 +1,376 @@
+// eTamil support for VS Code.
+//
+// Three things changed the shape of this file from what it replaced.
+//
+// 1. Nothing here restates the language. Keywords, spellings, builtins and the
+//    standard library all come from src/generated/language-data.ts, which is
+//    produced from the compiler by scripts/generate_editor_support.py. The
+//    previous version kept its own list, and it drifted until a third of the
+//    language was missing and the romanized spellings it offered were the ones
+//    the compiler rejects.
+//
+// 2. Diagnostics come from the compiler's own front end, via `etamil --check`,
+//    which stops after the type checker. There is no second parser here to
+//    keep in step, and opening a file never runs it.
+//
+// 3. Activation is scoped to eTamil files, and nothing is installed without
+//    being asked. The previous version activated in every window through
+//    `onStartupFinished` and immediately offered to run a shell command that a
+//    workspace's own settings could supply.
+
 import * as vscode from 'vscode';
-import { exec } from 'child_process';
-import * as os from 'os';
-import * as path from 'path';
 
-export async function activate(context: vscode.ExtensionContext) {
-  // Auto-install eTamil on extension activation
-  await autoInstallEtamil(context);
+import { check, compilerPath, toPosition } from './compiler';
+import {
+  COVERAGE,
+  completionProvider,
+  definitionProvider,
+  documentSymbolProvider,
+  hoverProvider,
+  signatureHelpProvider,
+} from './language';
 
-  // Register install command
-  const installCommand = vscode.commands.registerCommand('etamil.install', async () => {
-    const config = vscode.workspace.getConfiguration('etamil');
-    let cmd = config.get<string>('installCommand');
+const LANGUAGE = 'etamil';
+const SKIP_INSTALL_PROMPT = 'etamil.skipInstallPrompt';
 
-    if (!cmd || cmd.trim().length === 0) {
-      await guidedInstall();
-      return;
-    }
+/**
+ * The prebuilt packages, which need neither Rust nor a C toolchain.
+ *
+ * The asset names carry no version on purpose: that is what lets GitHub's
+ * `/releases/latest/download/` redirect resolve, so these constants stay
+ * correct after every release without this file being edited. The version is
+ * still recoverable from README.txt in the archive and from `etamil --version`.
+ */
+const RELEASES_URL = 'https://github.com/Maruff/etamil_compiler/releases/latest';
 
-    const term = vscode.window.createTerminal({ name: 'eTamil Install' });
-    term.show(true);
-    term.sendText(cmd, true);
-    await verifyWithProgress();
-  });
+const DOWNLOADS: Record<string, { asset: string; commands: string }> = {
+  win32: {
+    asset: 'etamil-windows-x64.zip',
+    commands: [
+      'Expand-Archive etamil-windows-x64.zip -DestinationPath .',
+      '.\\etamil-windows-x64\\install.ps1',
+    ].join('\n'),
+  },
+  linux: {
+    asset: 'etamil-linux-x64.tar.gz',
+    commands: ['tar -xzf etamil-linux-x64.tar.gz', './etamil-linux-x64/install.sh'].join(
+      '\n'
+    ),
+  },
+};
 
-  context.subscriptions.push(installCommand);
+/** How long to wait after a keystroke before checking. */
+const CHECK_DEBOUNCE_MS = 400;
 
-  // Register autocomplete provider
-  registerCompletionProvider(context);
+let diagnostics: vscode.DiagnosticCollection;
+let output: vscode.LogOutputChannel;
+
+export function activate(context: vscode.ExtensionContext): void {
+  output = vscode.window.createOutputChannel('eTamil', { log: true });
+  diagnostics = vscode.languages.createDiagnosticCollection(LANGUAGE);
+  context.subscriptions.push(output, diagnostics);
+
+  output.info(
+    `eTamil support ready: ${COVERAGE.keywords} keywords across ` +
+      `${COVERAGE.spellings} spellings, ${COVERAGE.builtins} builtins, ` +
+      `${COVERAGE.stdlib} standard library functions.`
+  );
+
+  registerLanguageFeatures(context);
+  registerDiagnostics(context);
+  registerCommands(context);
 }
 
-export function deactivate() {}
+export function deactivate(): void {
+  diagnostics?.dispose();
+}
 
-async function guidedInstall() {
-  const platform = process.platform;
-  const picks: { label: string; command: string }[] = [];
+// ---------------------------------------------------------------------------
+// Language features
+// ---------------------------------------------------------------------------
 
-  if (platform === 'linux') {
-    picks.push(
-      { label: 'Build from source (Linux)', command: 'git clone https://github.com/Maruff/etamil_compiler.git && cd etamil_compiler/etamil_compiler && cargo build --release' }
-    );
-  } else if (platform === 'darwin') {
-    picks.push(
-      { label: 'Build from source (macOS)', command: 'git clone https://github.com/Maruff/etamil_compiler.git && cd etamil_compiler/etamil_compiler && cargo build --release' }
-    );
-  } else if (platform === 'win32') {
-    picks.push(
-      { label: 'Build from source (Windows)', command: 'git clone https://github.com/Maruff/etamil_compiler.git && cd etamil_compiler\\etamil_compiler && cargo build --release' }
+function registerLanguageFeatures(context: vscode.ExtensionContext): void {
+  const settings = vscode.workspace.getConfiguration('etamil');
+
+  // Honoured, rather than declared and ignored: the previous version shipped
+  // three settings that no code read, so turning them off did nothing.
+  if (settings.get<boolean>('intelliSense', true)) {
+    context.subscriptions.push(
+      // No triggerCharacters. VS Code triggers on word characters already, and
+      // the language configuration's wordPattern now includes Tamil, which is
+      // what makes filtering on a Tamil prefix work. The old provider listed
+      // ~50 trigger characters and still only covered independent vowels.
+      vscode.languages.registerCompletionItemProvider(LANGUAGE, completionProvider()),
+      vscode.languages.registerSignatureHelpProvider(
+        LANGUAGE,
+        signatureHelpProvider(),
+        '(',
+        ','
+      )
     );
   }
 
-  picks.push({ label: 'Custom command…', command: '' });
+  context.subscriptions.push(
+    vscode.languages.registerHoverProvider(LANGUAGE, hoverProvider()),
+    vscode.languages.registerDocumentSymbolProvider(LANGUAGE, documentSymbolProvider()),
+    vscode.languages.registerDefinitionProvider(LANGUAGE, definitionProvider())
+  );
+}
 
-  const choice = await vscode.window.showQuickPick(picks, {
-    placeHolder: 'Choose how to install eTamil'
+// ---------------------------------------------------------------------------
+// Diagnostics
+// ---------------------------------------------------------------------------
+
+function registerDiagnostics(context: vscode.ExtensionContext): void {
+  const pending = new Map<string, NodeJS.Timeout>();
+  // Reported once per session. A missing binary is a real thing to say, but
+  // saying it on every keystroke would be worse than silence.
+  let warnedUnavailable = false;
+
+  const run = async (document: vscode.TextDocument) => {
+    if (document.languageId !== LANGUAGE) {
+      return;
+    }
+    if (!vscode.workspace.getConfiguration('etamil').get<boolean>('checkOnType', true)) {
+      return;
+    }
+
+    const result = await check(document.getText(), document.uri.fsPath);
+
+    if (result.unavailable) {
+      diagnostics.delete(document.uri);
+      if (!warnedUnavailable) {
+        warnedUnavailable = true;
+        output.warn(result.unavailable);
+        // "Don't ask again" has to actually not ask again. The previous
+        // version wrote a workspaceState flag for exactly this and then never
+        // read it, so the prompt returned on every startup.
+        if (!installPromptSilenced(context)) {
+          const choice = await vscode.window.showWarningMessage(
+            `eTamil: ${result.unavailable}`,
+            'Install the compiler',
+            "Don't ask again"
+          );
+          if (choice === 'Install the compiler') {
+            await vscode.commands.executeCommand('etamil.install');
+          } else if (choice === "Don't ask again") {
+            await context.workspaceState.update(SKIP_INSTALL_PROMPT, true);
+          }
+        }
+      }
+      return;
+    }
+
+    warnedUnavailable = false;
+    diagnostics.set(
+      document.uri,
+      result.errors.map((error) => {
+        const diagnostic = new vscode.Diagnostic(
+          toPosition(document, error),
+          error.message,
+          vscode.DiagnosticSeverity.Error
+        );
+        diagnostic.source = 'etamil';
+        return diagnostic;
+      })
+    );
+  };
+
+  const schedule = (document: vscode.TextDocument) => {
+    if (document.languageId !== LANGUAGE) {
+      return;
+    }
+    const key = document.uri.toString();
+    const existing = pending.get(key);
+    if (existing) {
+      clearTimeout(existing);
+    }
+    pending.set(
+      key,
+      setTimeout(() => {
+        pending.delete(key);
+        void run(document);
+      }, CHECK_DEBOUNCE_MS)
+    );
+  };
+
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument((document) => void run(document)),
+    vscode.workspace.onDidSaveTextDocument((document) => void run(document)),
+    vscode.workspace.onDidChangeTextDocument((event) => schedule(event.document)),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      const key = document.uri.toString();
+      const existing = pending.get(key);
+      if (existing) {
+        clearTimeout(existing);
+        pending.delete(key);
+      }
+      diagnostics.delete(document.uri);
+    }),
+    new vscode.Disposable(() => {
+      for (const timer of pending.values()) {
+        clearTimeout(timer);
+      }
+      pending.clear();
+    })
+  );
+
+  // Whatever is already open when the extension wakes up.
+  for (const document of vscode.workspace.textDocuments) {
+    void run(document);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Commands
+// ---------------------------------------------------------------------------
+
+function registerCommands(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('etamil.run', () => runCurrentFile('--vm')),
+    vscode.commands.registerCommand('etamil.serve', () => runCurrentFile('--async')),
+    vscode.commands.registerCommand('etamil.install', () => offerInstall(context)),
+    vscode.commands.registerCommand('etamil.showOutput', () => output.show())
+  );
+}
+
+/**
+ * Run the active file in a terminal.
+ *
+ * A terminal, not a task or a child process: an eTamil program reads stdin
+ * (`உள்ளிடு` is in the language's headline example) and a server keeps
+ * running, and both need a real console the author can type into and stop.
+ */
+async function runCurrentFile(mode: '--vm' | '--async'): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== LANGUAGE) {
+    void vscode.window.showInformationMessage('eTamil: open an eTamil file first.');
+    return;
+  }
+
+  if (editor.document.isDirty) {
+    await editor.document.save();
+  }
+
+  const terminal =
+    vscode.window.terminals.find((candidate) => candidate.name === 'eTamil') ??
+    vscode.window.createTerminal({ name: 'eTamil' });
+  terminal.show(true);
+
+  // The file path is quoted; nothing else in the command line comes from the
+  // workspace. `compilerPath` is machine-scoped for the same reason.
+  terminal.sendText(`${compilerPath()} ${mode} "${editor.document.uri.fsPath}"`, true);
+}
+
+/**
+ * Offer to install the compiler: download a package, or build from source.
+ *
+ * Three things are deliberate here. Nothing runs unless the author asked for it
+ * in this dialog — there is no activation-time prompt and no automatic run. Any
+ * command that does run is fixed in code, never read from settings: a
+ * `.vscode/settings.json` inside a cloned repository is workspace data, and
+ * executing a string from it is remote code execution. The custom option asks
+ * the author to type the command, so what runs is something a person just chose.
+ *
+ * The download option holds that line too. It opens the release URL in a
+ * browser and, if asked, copies the extract-and-install commands to the
+ * clipboard. It does not fetch the archive, and it does not pipe anything
+ * remote into a shell — the author downloads, sees what they have, and runs the
+ * installer themselves.
+ */
+async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
+  const clone = 'git clone https://github.com/Maruff/etamil_compiler.git';
+  const build =
+    process.platform === 'win32'
+      ? 'cd etamil_compiler\\etamil_compiler && cargo build --release'
+      : 'cd etamil_compiler/etamil_compiler && cargo build --release';
+
+  const download = DOWNLOADS[process.platform];
+
+  const choices: Array<vscode.QuickPickItem & { command?: string; url?: string }> = [
+    download
+      ? {
+          label: 'Download the installer',
+          detail: `${download.asset} — extract it, then run the install script`,
+          description: 'no Rust, no C toolchain, no build',
+          url: `${RELEASES_URL}/download/${download.asset}`,
+        }
+      : {
+          label: 'Open the releases page',
+          detail: `No prebuilt package for ${process.platform} yet`,
+          description: 'build from source instead',
+          url: RELEASES_URL,
+        },
+    {
+      label: 'Build from source',
+      detail: `${clone} && ${build}`,
+      description: 'needs Rust 1.85+ and a C toolchain',
+      command: `${clone} && ${build}`,
+    },
+    {
+      label: 'Enter a command…',
+      detail: 'Type the command to run, if you install it another way',
+    },
+    {
+      label: "Don't ask again",
+      detail: 'Silence the missing-compiler warning in this workspace',
+    },
+  ];
+
+  const choice = await vscode.window.showQuickPick(choices, {
+    title: 'Install the eTamil compiler',
+    placeHolder: 'Nothing happens until you pick one',
   });
 
   if (!choice) {
     return;
   }
 
-  let commandToRun = choice.command;
-  if (choice.label.startsWith('Custom')) {
-    const input = await vscode.window.showInputBox({
-      prompt: 'Enter the install command to run in the terminal',
-      placeHolder: 'e.g., git clone <repo> && cd etamil_compiler && ./install.sh'
+  if (choice.label === "Don't ask again") {
+    await context.workspaceState.update(SKIP_INSTALL_PROMPT, true);
+    return;
+  }
+
+  if (choice.url) {
+    await vscode.env.openExternal(vscode.Uri.parse(choice.url));
+
+    if (download) {
+      const copy = 'Copy the commands';
+      const picked = await vscode.window.showInformationMessage(
+        `eTamil: once ${download.asset} has downloaded, extract it and run the ` +
+          'install script — no administrator rights needed. Then reopen an eTamil file.',
+        copy
+      );
+      if (picked === copy) {
+        await vscode.env.clipboard.writeText(download.commands);
+      }
+    }
+    return;
+  }
+
+  let command = choice.command;
+  if (!command) {
+    command = await vscode.window.showInputBox({
+      title: 'Install command',
+      prompt: 'Runs in a terminal in the current folder',
+      placeHolder: 'cargo install --path etamil_compiler',
     });
-    if (!input) {
-      return;
-    }
-    commandToRun = input;
   }
-
-  const term = vscode.window.createTerminal({ name: 'eTamil Install' });
-  term.show(true);
-  term.sendText(commandToRun, true);
-  await verifyWithProgress();
-}
-
-function verifyEtamil(): Promise<string | null> {
-  return new Promise((resolve) => {
-    // Try multiple possible binaries
-    const candidates = ['etamil --version', 'etamilc --version'];
-    let idx = 0;
-    const tryNext = () => {
-      if (idx >= candidates.length) {
-        resolve(null);
-        return;
-      }
-      const cmd = candidates[idx++];
-      exec(cmd, (error: Error | null, stdout: string, stderr: string) => {
-        if (error) {
-          tryNext();
-          return;
-        }
-        const out = (stdout || stderr).trim();
-        resolve(out.length > 0 ? out : '');
-      });
-    };
-    tryNext();
-  });
-}
-
-async function verifyWithProgress() {
-  await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: 'Verifying eTamil installation…',
-      cancellable: false
-    },
-    async (progress) => {
-      const timeoutMs = 60000;
-      const start = Date.now();
-      let verified: string | null = null;
-      while (Date.now() - start < timeoutMs) {
-        verified = await verifyEtamil();
-        if (verified) {
-          break;
-        }
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-      if (verified) {
-        vscode.window.showInformationMessage(`eTamil is installed: ${verified}`);
-      } else {
-        vscode.window.showWarningMessage('Verification timed out. If installation requires elevation or user input, complete it in the terminal and retry.');
-      }
-    }
-  );
-}
-
-// Auto-install eTamil on extension activation for Windows and Linux
-async function autoInstallEtamil(context: vscode.ExtensionContext) {
-  const platform = process.platform;
-  
-  // Skip auto-install for macOS or if already installed
-  if (platform === 'darwin') {
+  if (!command) {
     return;
   }
 
-  const verified = await verifyEtamil();
-  if (verified) {
-    // eTamil is already installed
-    console.log('eTamil compiler already installed:', verified);
-    return;
-  }
+  const terminal = vscode.window.createTerminal({ name: 'eTamil install' });
+  terminal.show(true);
+  terminal.sendText(command, true);
 
-  // Not installed - prompt user for installation
-  const installChoice = await vscode.window.showInformationMessage(
-    'eTamil compiler not found. Would you like to install it now?',
-    'Install',
-    'Remind Later',
-    'Skip'
+  void vscode.window.showInformationMessage(
+    'eTamil: once the build finishes, reopen an eTamil file to pick it up. ' +
+      'If the binary is not on your PATH, set etamil.compilerPath.'
   );
-
-  if (installChoice === 'Install') {
-    await guidedInstall();
-  } else if (installChoice === 'Skip') {
-    // Mark as skipped in workspace state
-    context.workspaceState.update('etamil.skipAutoInstall', true);
-  }
 }
 
-// Register autocomplete and syntax hint provider
-function registerCompletionProvider(context: vscode.ExtensionContext) {
-  const etamilKeywords = [
-    // Control flow
-    { label: 'எனில்', kind: vscode.CompletionItemKind.Keyword, detail: 'if statement', snippet: '(${1:condition}) எனில் {\n  ${0}\n}' },
-    { label: 'enil', kind: vscode.CompletionItemKind.Keyword, detail: 'if statement', snippet: '(${1:condition}) enil {\n  ${0}\n}' },
-    { label: 'இன்றேல்', kind: vscode.CompletionItemKind.Keyword, detail: 'else statement', snippet: 'இன்றேல் {\n  ${0}\n}' },
-    { label: 'inREl', kind: vscode.CompletionItemKind.Keyword, detail: 'else statement', snippet: 'inREl {\n  ${0}\n}' },
-
-    // I/O
-    { label: 'அச்சு', kind: vscode.CompletionItemKind.Function, detail: 'print output', snippet: 'அச்சு ${1:value};' },
-    { label: 'accu', kind: vscode.CompletionItemKind.Function, detail: 'print output', snippet: 'accu ${1:value};' },
-    { label: 'உள்ளிடு', kind: vscode.CompletionItemKind.Function, detail: 'read input', snippet: 'உள்ளிடு ${1:variable};' },
-    { label: 'uLLitu', kind: vscode.CompletionItemKind.Function, detail: 'read input', snippet: 'uLLitu ${1:variable};' },
-
-    // Variables & types
-    { label: 'எண்', kind: vscode.CompletionItemKind.Keyword, detail: 'number type', snippet: 'எண் ${1:var} = ${2:0};' },
-    { label: 'eN', kind: vscode.CompletionItemKind.Keyword, detail: 'number type', snippet: 'eN ${1:var} = ${2:0};' },
-    { label: 'பின்னம்', kind: vscode.CompletionItemKind.Keyword, detail: 'float type', snippet: 'பின்னம் ${1:var} = ${2:0.0};' },
-    { label: 'pinnam', kind: vscode.CompletionItemKind.Keyword, detail: 'float type', snippet: 'pinnam ${1:var} = ${2:0.0};' },
-    { label: 'சொல்', kind: vscode.CompletionItemKind.Keyword, detail: 'string type', snippet: 'சொல் ${1:var} = "${2:text}";' },
-    { label: 'col', kind: vscode.CompletionItemKind.Keyword, detail: 'string type', snippet: 'col ${1:var} = "${2:text}";' },
-    { label: 'பொது', kind: vscode.CompletionItemKind.Keyword, detail: 'boolean type', snippet: 'பொது ${1:var} = ${2:மெய்};' },
-    { label: 'poqu', kind: vscode.CompletionItemKind.Keyword, detail: 'boolean type', snippet: 'poqu ${1:var} = ${2:mey};' },
-    { label: 'உரை', kind: vscode.CompletionItemKind.Keyword, detail: 'text type', snippet: 'உரை ${1:var} = "${2:text}";' },
-    { label: 'urY', kind: vscode.CompletionItemKind.Keyword, detail: 'text type', snippet: 'urY ${1:var} = "${2:text}";' },
-    { label: 'அணி', kind: vscode.CompletionItemKind.Keyword, detail: 'array type', snippet: 'அணி ${1:var};' },
-    { label: 'aNi', kind: vscode.CompletionItemKind.Keyword, detail: 'array type', snippet: 'aNi ${1:var};' },
-    { label: 'தேதி', kind: vscode.CompletionItemKind.Keyword, detail: 'date type', snippet: 'தேதி ${1:var};' },
-    { label: 'qEqi', kind: vscode.CompletionItemKind.Keyword, detail: 'date type', snippet: 'qEqi ${1:var};' },
-    { label: 'மாறி', kind: vscode.CompletionItemKind.Keyword, detail: 'variable declaration', snippet: 'மாறி ${1:var} = ${2:value};' },
-    { label: 'mARi', kind: vscode.CompletionItemKind.Keyword, detail: 'variable declaration', snippet: 'mARi ${1:var} = ${2:value};' },
-    { label: 'நிலை', kind: vscode.CompletionItemKind.Keyword, detail: 'constant declaration', snippet: 'நிலை ${1:var} = ${2:value};' },
-    { label: 'nilY', kind: vscode.CompletionItemKind.Keyword, detail: 'constant declaration', snippet: 'nilY ${1:var} = ${2:value};' },
-
-    // Loops
-    { label: 'சுற்று', kind: vscode.CompletionItemKind.Keyword, detail: 'loop construct', snippet: 'சுற்று ${1:i} = ${2:0}; ${1:i} < ${3:10}; ${1:i} = ${1:i} + 1; {\n  ${0}\n}' },
-    { label: 'cuRRu', kind: vscode.CompletionItemKind.Keyword, detail: 'loop construct', snippet: 'cuRRu ${1:i} = ${2:0}; ${1:i} < ${3:10}; ${1:i} = ${1:i} + 1; {\n  ${0}\n}' },
-
-    // File I/O
-    { label: 'கோப்பு_திற', kind: vscode.CompletionItemKind.Function, detail: 'open file', snippet: 'கோப்பு_திற "${1:filename}";' },
-    { label: 'kOppu_qiRa', kind: vscode.CompletionItemKind.Function, detail: 'open file', snippet: 'kOppu_qiRa "${1:filename}";' },
-    { label: 'கோப்பு_மூடு', kind: vscode.CompletionItemKind.Function, detail: 'close file', snippet: 'கோப்பு_மூடு "${1:filename}";' },
-    { label: 'kOppu_mUtu', kind: vscode.CompletionItemKind.Function, detail: 'close file', snippet: 'kOppu_mUtu "${1:filename}";' },
-    { label: 'கோப்பு_எழுது', kind: vscode.CompletionItemKind.Function, detail: 'write to file', snippet: 'கோப்பு_எழுது "${1:filename}", "${2:data}";' },
-    { label: 'kOppu_ezuqu', kind: vscode.CompletionItemKind.Function, detail: 'write to file', snippet: 'kOppu_ezuqu "${1:filename}", "${2:data}";' },
-    { label: 'கோப்பு_படி', kind: vscode.CompletionItemKind.Function, detail: 'read from file', snippet: 'கோப்பு_படி "${1:filename}", ${2:variable};' },
-    { label: 'kOppu_pati', kind: vscode.CompletionItemKind.Function, detail: 'read from file', snippet: 'kOppu_pati "${1:filename}", ${2:variable};' },
-
-    // CSV
-    { label: 'தரவுரை_எழுது', kind: vscode.CompletionItemKind.Function, detail: 'write CSV', snippet: 'தரவுரை_எழுது "${1:filename}", "${2:data}";' },
-    { label: 'qaravurY_ezuqu', kind: vscode.CompletionItemKind.Function, detail: 'write CSV', snippet: 'qaravurY_ezuqu "${1:filename}", "${2:data}";' },
-    { label: 'தரவுரை_படி', kind: vscode.CompletionItemKind.Function, detail: 'read CSV', snippet: 'தரவுரை_படி "${1:filename}", ${2:variable};' },
-    { label: 'qaravurY_pati', kind: vscode.CompletionItemKind.Function, detail: 'read CSV', snippet: 'qaravurY_pati "${1:filename}", ${2:variable};' },
-    
-    // Operators
-    { label: '+', kind: vscode.CompletionItemKind.Operator, detail: 'addition' },
-    { label: '-', kind: vscode.CompletionItemKind.Operator, detail: 'subtraction' },
-    { label: '*', kind: vscode.CompletionItemKind.Operator, detail: 'multiplication' },
-    { label: '/', kind: vscode.CompletionItemKind.Operator, detail: 'division' },
-    { label: '==', kind: vscode.CompletionItemKind.Operator, detail: 'equal to' },
-    { label: '!=', kind: vscode.CompletionItemKind.Operator, detail: 'not equal to' },
-    { label: '>', kind: vscode.CompletionItemKind.Operator, detail: 'greater than' },
-    { label: '<', kind: vscode.CompletionItemKind.Operator, detail: 'less than' },
-    { label: '>=', kind: vscode.CompletionItemKind.Operator, detail: 'greater than or equal' },
-    { label: '<=', kind: vscode.CompletionItemKind.Operator, detail: 'less than or equal' },
-  ];
-
-  const provider = vscode.languages.registerCompletionItemProvider(
-    'etamil',
-    {
-      provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
-        const items: vscode.CompletionItem[] = [];
-        
-        etamilKeywords.forEach((kw) => {
-          const item = new vscode.CompletionItem(kw.label, kw.kind);
-          item.detail = kw.detail;
-          if (kw.snippet) {
-            item.insertText = new vscode.SnippetString(kw.snippet);
-          }
-          item.documentation = new vscode.MarkdownString(`**${kw.label}** - ${kw.detail}`);
-          items.push(item);
-        });
-        
-        return items;
-      }
-    },
-    // Trigger on any character
-    ...Array.from('abcdefghijklmnopqrstuvwxyz஀஁ஂஃ஄அஆஇஈஉஊ஋஌஍எஏஐ஑ஒஓஔ')
-  );
-
-  context.subscriptions.push(provider);
-
-  // Register hover provider for helpful information
-  const hoverProvider = vscode.languages.registerHoverProvider('etamil', {
-    provideHover(document: vscode.TextDocument, position: vscode.Position) {
-      const range = document.getWordRangeAtPosition(position);
-      if (!range) {
-        return;
-      }
-      
-      const word = document.getText(range);
-      const keyword = etamilKeywords.find(k => k.label === word);
-      
-      if (keyword) {
-        return new vscode.Hover(new vscode.MarkdownString(`**${keyword.label}**\n\n${keyword.detail}`));
-      }
-    }
-  });
-
-  context.subscriptions.push(hoverProvider);
+/** Whether the missing-compiler prompt has been silenced for this workspace. */
+function installPromptSilenced(context: vscode.ExtensionContext): boolean {
+  return context.workspaceState.get<boolean>(SKIP_INSTALL_PROMPT, false);
 }
