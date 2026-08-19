@@ -145,3 +145,32 @@ jobs:
       # documentation regression.
       - name: Run every example
         run: ./scripts/run_examples.sh
+
+  # The LLVM backend is behind a feature nothing else builds, so it has now
+  # broken twice without anyone noticing: both times a field was added to an
+  # AST node and the pattern in codegen.rs was left naming too few, which is a
+  # hard error rather than a warning. Building it here is the only thing that
+  # catches that before someone with LLVM installed tries to use it.
+  llvm-backend:
+    name: LLVM backend builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: etamil_compiler
+
+      # llvm-sys wants a matching llvm-config on PATH; the runner ships
+      # several versions, so name the one Cargo.toml pins.
+      - name: Install LLVM 18
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-18-dev libpolly-18-dev
+          echo "LLVM_SYS_180_PREFIX=/usr/lib/llvm-18" >> "$GITHUB_ENV"
+
+      - name: Build with --features llvm
+        working-directory: etamil_compiler
+        run: cargo build --features llvm

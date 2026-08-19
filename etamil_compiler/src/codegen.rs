@@ -133,7 +133,9 @@ impl Compiler {
     fn compile_stmt(&mut self, stmt: Stmt) {
         unsafe {
             match stmt {
-                Stmt::Assign { name, value } => {
+                // `declared` and `at` are the type checker's, and it has
+                // already run by the time any backend sees the program.
+                Stmt::Assign { name, value, declared: _, at: _ } => {
                     let val = self.compile_expr(&value);
                     
                     // Create or get variable allocation

@@ -1,0 +1,115 @@
+# Publish packages for Windows, Linux and macOS.
+#
+# Triggered by pushing a version tag:
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# Each platform builds its own package — nothing is cross-compiled except the
+# musl target, which is what makes the Linux binary run on distributions older
+# than the one that built it. macOS ships two packages because Apple Silicon
+# and Intel are genuinely different binaries, and a single "x64" name covering
+# both would be a lie on one of them.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - label: windows-x64
+            os: windows-latest
+            target: ''
+          - label: macos-arm64
+            os: macos-latest
+            target: ''
+          - label: macos-x64
+            os: macos-13
+            target: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # musl needs its own C compiler, because the bundled SQLite and the
+      # crypto crates compile C.
+      - name: Install musl toolchain
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+
+      # Enabled for the packages only: someone downloading a binary cannot add
+      # a cargo feature to it later. LLVM stays out — it needs LLVM present on
+      # the machine that runs the compiler.
+      - name: Build the package
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          FEATURES: postgres,mysql
+        run: ./packaging/build.sh
+
+      # A package that cannot run its own examples is not a package. This is
+      # the same check the repository runs, against the binary about to be
+      # published rather than against the build tree.
+      - name: Test the packaged binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          case "${{ matrix.label }}" in
+            windows-x64) unzip -q etamil-windows-x64.zip; DIR=etamil-windows-x64; BIN=$DIR/etamil.exe ;;
+            *)           tar xzf etamil-${{ matrix.label }}.tar.gz; DIR=etamil-${{ matrix.label }}; BIN=$DIR/etamil ;;
+          esac
+          export ETAMIL_PATH="$PWD/$DIR"
+          "$BIN" --version
+          echo "950000" | "$BIN" --vm "$DIR/examples/basic_samples/example.qmz" | grep -q "High Tax Bracket"
+          "$BIN" --vm "$DIR/examples/finance/kaNakkiyal.qmz" | grep -q "சொத்து"
+          printf 'இறக்கு "nUlakam/paNam.qmz";\nஅச்சு ரூபாய்(12345678.5);\n' > money.qmz
+          "$BIN" --vm money.qmz | grep -q "1,23,45,678.50"
+          echo "packaged binary works"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etamil-${{ matrix.label }}
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: package
+    runs-on: ubuntu-latest
+    # Creating a release writes to the repository.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List what will be published
+        run: ls -lh artifacts
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

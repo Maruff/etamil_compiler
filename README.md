@@ -116,16 +116,21 @@ Equality is exact too. Division keeps full precision rather than rounding at eac
 
 ### Download a package (no Rust, no C toolchain)
 
-**[Windows x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-windows-x64.zip)**
-&middot;
-**[Linux x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-linux-x64.tar.gz)**
-&middot;
-[all releases](https://github.com/Maruff/etamil_compiler/releases/latest)
+| Platform | Download |
+|---|---|
+| **Windows** x64 | [etamil-windows-x64.zip](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-windows-x64.zip) |
+| **Linux** x64 | [etamil-linux-x64.tar.gz](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-linux-x64.tar.gz) |
+| **macOS** Apple Silicon | [etamil-macos-arm64.tar.gz](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-macos-arm64.tar.gz) |
+| **macOS** Intel | [etamil-macos-x64.tar.gz](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-macos-x64.tar.gz) |
+
+Every link points at the latest release, so it stays correct across versions.
+Each archive is published with a `.sha256` beside it — see
+[all releases](https://github.com/Maruff/etamil_compiler/releases/latest).
 
 The archive holds the compiler, `nUlakam/` (the eTamil standard library) and the
 examples. The install script copies them into place, puts `etamil` on your `PATH`
 and sets `ETAMIL_PATH` so `இறக்கு "nUlakam/paNam.qmz"` resolves from any
-directory. Neither installer needs administrator rights.
+directory. No installer needs administrator rights.
 
 **Windows (PowerShell)**
 ```powershell
@@ -139,17 +144,34 @@ tar -xzf etamil-linux-x64.tar.gz
 ./etamil-linux-x64/install.sh
 ```
 
+**macOS** — use `arm64` for Apple Silicon (M1 and later), `x64` for Intel.
+`uname -m` tells you which: `arm64` or `x86_64`.
+
+```bash
+tar -xzf etamil-macos-arm64.tar.gz
+./etamil-macos-arm64/install.sh
+```
+
+macOS quarantines anything downloaded from a browser, and these binaries are
+not notarized, so Gatekeeper will refuse the first run with "cannot be opened
+because the developer cannot be verified". Clear the quarantine flag once:
+
+```bash
+xattr -dr com.apple.quarantine ~/.local/lib/etamil
+```
+
 Open a new terminal afterwards — a shell that is already running does not see a
 `PATH` change — then `etamil --version`.
 
 There is nothing else to install. The Windows binary links the C runtime
 statically, so it does not need the Visual C++ Redistributable; the Linux binary
 is built against musl, so it is one static ELF that does not depend on the build
-machine's glibc. Uninstalling is deleting a directory:
-`%LOCALAPPDATA%\Programs\eTamil` on Windows, `~/.local/{bin/etamil,lib/etamil}` on
-Linux.
+machine's glibc. The packaged builds include the PostgreSQL and MySQL drivers,
+which a downloaded binary cannot have added to it afterwards; the LLVM backend
+is not included, because it needs LLVM installed on the machine that runs it.
 
-macOS has no prebuilt package yet — build from source.
+Uninstalling is deleting a directory: `%LOCALAPPDATA%\Programs\eTamil` on
+Windows, `~/.local/{bin/etamil,lib/etamil}` on Linux and macOS.
 
 To build the packages yourself, see [`packaging/`](packaging/).
 
