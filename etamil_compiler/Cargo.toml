@@ -14,8 +14,10 @@ edition = "2024"          # requires Rust 1.85+
 rust-version = "1.85"
 authors = ["Esan Maruff <esan@etamil.in>"]
 description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulatory Compliance"
+# `license` alone. Cargo warns that only one of the two is necessary, and
+# `license-file = "../LICENSE"` pointed outside the package directory, so
+# `cargo package` would not have included the file it named.
 license = "AGPL-3.0-or-later"
-license-file = "../LICENSE"
 repository = "https://github.com/Maruff/etamil_compiler"
 homepage = "https://etamil.in"
 

@@ -77,6 +77,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 23 builtins and 122 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
@@ -113,7 +114,49 @@ Equality is exact too. Division keeps full precision rather than rounding at eac
 
 ## Installation
 
+### Download a package (no Rust, no C toolchain)
+
+**[Windows x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-windows-x64.zip)**
+&middot;
+**[Linux x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-linux-x64.tar.gz)**
+&middot;
+[all releases](https://github.com/Maruff/etamil_compiler/releases/latest)
+
+The archive holds the compiler, `nUlakam/` (the eTamil standard library) and the
+examples. The install script copies them into place, puts `etamil` on your `PATH`
+and sets `ETAMIL_PATH` so `இறக்கு "nUlakam/paNam.qmz"` resolves from any
+directory. Neither installer needs administrator rights.
+
+**Windows (PowerShell)**
+```powershell
+Expand-Archive etamil-windows-x64.zip -DestinationPath .
+.\etamil-windows-x64\install.ps1
+```
+
+**Linux**
+```bash
+tar -xzf etamil-linux-x64.tar.gz
+./etamil-linux-x64/install.sh
+```
+
+Open a new terminal afterwards — a shell that is already running does not see a
+`PATH` change — then `etamil --version`.
+
+There is nothing else to install. The Windows binary links the C runtime
+statically, so it does not need the Visual C++ Redistributable; the Linux binary
+is built against musl, so it is one static ELF that does not depend on the build
+machine's glibc. Uninstalling is deleting a directory:
+`%LOCALAPPDATA%\Programs\eTamil` on Windows, `~/.local/{bin/etamil,lib/etamil}` on
+Linux.
+
+macOS has no prebuilt package yet — build from source.
+
+To build the packages yourself, see [`packaging/`](packaging/).
+
 ### Build from source (all platforms)
+
+Needed for the optional database drivers, the LLVM backend, or work on the
+compiler itself.
 
 Requires **Rust 1.85+** (edition 2024) and a C toolchain, since the bundled
 SQLite and the crypto crates compile C:
@@ -370,6 +413,7 @@ etamil [FLAGS] [OPTIONS] <FILE>
 | Flag | Effect |
 |---|---|
 | `--vm` | Run on the bytecode VM (default) |
+| `--check` | Lex, parse and type check only, then stop — reports every error and **never runs the program** |
 | `--server` | Start the synchronous HTTP server |
 | `--async` | Concurrent server: async accept, blocking handlers, Ctrl-C to stop |
 | `--llvm` | LLVM backend (requires `--features llvm`; Linux/macOS) |
@@ -458,7 +502,7 @@ etamil_compiler/
 ├── nUlakam/                # standard library — written in eTamil
 │   ├── col.qmz  kaNiqam.qmz  aNi.qmz  paNam.qmz
 │   └── kaNakkiyal/         # accounting framework — written in eTamil
-├── eTamil_Code/            # VS Code extension: syntax, snippets, config
+├── eTamil_Code/            # VS Code extension — grammar and completions generated from the lexer
 ├── examples/               # sample eTamil programs
 ├── scripts/                # keyword generation, romanization audit, runner
 └── docs/                   # guides, reference, roadmap
