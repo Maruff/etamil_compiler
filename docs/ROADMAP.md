@@ -62,7 +62,7 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 **PostgreSQL** is implemented behind `--features postgres` and verified against a live server. Binding adapts to the column's type rather than picking one, because PostgreSQL infers each parameter's type from where it appears — a Decimal bound straight through would only satisfy `NUMERIC`, and `WHERE id = $1` against an integer key would fail. Money uses the native `NUMERIC` type, so unlike SQLite a text column stays text on the way back.
 
-**MySQL / MariaDB** is implemented behind `--features mysql` but has **not been run against a live server**. `examples/db_samples/mYcIkul_qaLam.qmz` exists to settle that; `run_examples.sh` skips it unless `ETAMIL_TEST_MYSQL` is set.
+**MySQL / MariaDB** is implemented behind `--features mysql` and verified against a live server. Binding is simpler than PostgreSQL's because the server coerces on the way in, so parameters go over as text and stay exact for `DECIMAL`; reading back dispatches on the column type, so a `VARCHAR` of digits comes back a string while a `DECIMAL` comes back a number. `examples/db_samples/mYcIkul_qaLam.qmz` checks that, and `run_examples.sh` skips it unless `ETAMIL_TEST_MYSQL` is set, since it needs a server this repository does not provide.
 
 **Still to do:** transactions; more than one connection open at a time, which the VM currently refuses rather than guessing. MongoDB and Redis need a design before an implementation — neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
 
