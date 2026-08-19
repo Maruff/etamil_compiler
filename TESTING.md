@@ -306,22 +306,89 @@ cd etamil_compiler && cargo build --release --no-default-features
 
 **Expect:** `this build has no SQLite support: rebuild with --features sqlite`.
 
+### 7c. MySQL / MariaDB connectivity
+
+MySQL support is optional and is enabled with the `mysql` Cargo feature. The
+same backend works with MariaDB because both servers speak the MySQL wire
+protocol. The driver currently uses a plain local TCP connection, so this
+check is intended for a local development server.
+
+Install and start MariaDB (use `mysql-server` and `mysql-client` instead on a
+MySQL installation):
+
+```bash
+sudo apt install -y mariadb-server mariadb-client
+sudo systemctl enable --now mariadb
+sudo mariadb -e "CREATE DATABASE IF NOT EXISTS kaNakku"
+sudo mariadb -e "CREATE USER IF NOT EXISTS 'etamil'@'localhost' IDENTIFIED BY 'etamil-test'; GRANT ALL ON kaNakku.* TO 'etamil'@'localhost'; FLUSH PRIVILEGES"
+```
+
+Build the compiler with the driver enabled:
+
+```bash
+cd etamil_compiler
+cargo build --release --features mysql
+```
+
+The checked-in lockfile keeps `subprocess` at 0.2.9, because newer releases use
+language syntax unavailable in the documented Rust 1.85 minimum.
+
+The sample at `examples/db_samples/mYcIkul_qaLam.qmz` contains the connection
+URL. Before running it, change its `தளம்_இணை` line to match the test account,
+for example:
+
+```etamil
+தளம்_இணை மைசீகுல், "mysql://etamil:etamil-test@127.0.0.1:3306/kaNakku";
+```
+
+Then run the end-to-end connectivity check from the repository root:
+
+```bash
+ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh
+```
+
+Or run only the MySQL sample:
+
+```bash
+ETAMIL_PATH="$PWD" etamil_compiler/target/release/etamil --vm examples/db_samples/mYcIkul_qaLam.qmz
+```
+
+**Expect:** the ledger rows are inserted and queried, `0.1 + 0.2` is reported
+as exactly `0.3`, the integer-key lookup returns one row, `VARCHAR` and
+`DECIMAL` are reported as different types, the date is returned as ISO text,
+and the injection check leaves the table intact. The script skips this sample
+unless `ETAMIL_TEST_MYSQL=1` is set; it must not be counted as a passing test
+when no MySQL/MariaDB server is available.
+
+Verified on 2026-08-20 against a local MySQL server using the checked-in sample
+with `root` configured without a password. The direct run completed all checks,
+including `0.1 + 0.2 = 0.3`, typed result conversion, NULL/date handling, and
+the injection check. Prefer the dedicated `etamil` test account above instead
+of an empty root password outside a disposable development database.
+
 ---
 
 ## 8. The LLVM backend
 
-Linux only, and the least-exercised path in the repository — treat a failure
-here as likely rather than surprising.
+Linux/macOS only. The backend is a deliberately smaller subset than the VM:
+unsupported constructs are reported and no IR is emitted for those programs.
+The build and a minimal arithmetic smoke test are verified.
 
 ```bash
 cd etamil_compiler
 cargo build --release --features llvm
-./target/release/etamil --llvm ../examples/basic_samples/example.qmz
-cat output.ll
+printf 'எண் x = 2 + 3;\nஅச்சு x;\n' >/tmp/etamil_llvm_smoke.qmz
+./target/release/etamil --llvm /tmp/etamil_llvm_smoke.qmz
+test -s output.ll
+head -n 12 output.ll
 ```
 
-**Expect:** LLVM IR written to `output.ll`. Without the feature, `--llvm`
-prints an explanatory error and exits 1, which is also correct.
+**Expect:** the command succeeds and writes non-empty LLVM IR to `output.ll`.
+The verified LLVM subset also covers numeric functions, imported modules,
+numeric array iteration/indexing, and numeric record field access. Heterogeneous
+values and other unsupported constructs are correctly refused; run those
+programs with `--vm` instead. Without the feature, `--llvm` prints an
+explanatory error and exits 1, which is also correct.
 
 ---
 

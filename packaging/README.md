@@ -37,15 +37,22 @@ deleting the directory and undoing those two variables.
 Writes `dist/etamil-<os>-x64.{zip,tar.gz}` plus a `.sha256`. `dist/` is
 gitignored.
 
-Build each platform on that platform — there is no cross-compilation here, and
-the CI runners are not currently wired to produce release assets. On Linux, use
-musl so the binary is not tied to the build machine's glibc:
+Build each platform on that platform, or use `.github/workflows/release.yml`.
+On Linux, use musl so the binary is not tied to the build machine's glibc:
 
 ```bash
 rustup target add x86_64-unknown-linux-musl
 sudo apt install musl-tools                 # for the linker
 TARGET=x86_64-unknown-linux-musl ./packaging/build.sh
 ```
+
+The Linux archive is a single-click installer for Ubuntu, Debian, Fedora, and
+other x86_64 Linux distributions. It is intentionally not a distro-specific
+`.deb` or `.rpm`; the same self-contained archive works across those systems.
+The macOS and Windows archives are built on native CI runners because their
+SDKs and linkers are not available on Linux. Those files are created only when
+the release workflow runs for a version tag; they are not present in a normal
+checkout until published as release assets.
 
 Then check the archive from a clean extraction, not from the build tree — the
 build tree has `nUlakam/` sitting next to it and will mask a packaging mistake:

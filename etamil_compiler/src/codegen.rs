@@ -4,7 +4,7 @@ use llvm_sys::prelude::*;
 #[cfg(feature = "llvm")]
 use llvm_sys::core::*;
 #[cfg(feature = "llvm")]
-use llvm_sys::LLVMRealPredicate;
+use llvm_sys::{LLVMIntPredicate, LLVMRealPredicate};
 #[cfg(feature = "llvm")]
 use std::ffi::CString;
 #[cfg(feature = "llvm")]
@@ -17,6 +17,16 @@ use crate::parser::Expr;
 #[cfg(feature = "llvm")]
 use crate::fileio::csv_handler::FileIOHandler;
 
+#[cfg(feature = "llvm")]
+#[derive(Clone, Copy)]
+struct ArrayInfo {
+    pointer: LLVMValueRef,
+    element_count: usize,
+    array_type: LLVMTypeRef,
+}
+
+#[cfg(feature = "llvm")]
+type RecordInfo = HashMap<String, LLVMValueRef>;
 
 
 #[cfg(feature = "llvm")]
@@ -26,6 +36,11 @@ pub struct Compiler {
     builder: LLVMBuilderRef,
     function: LLVMValueRef,
     variables: HashMap<String, LLVMValueRef>, // Variable name -> alloca pointer
+    arrays: HashMap<String, ArrayInfo>,
+    records: HashMap<String, RecordInfo>,
+    functions: HashMap<String, LLVMValueRef>,
+    in_function: bool,
+    terminated: bool,
     /// Constructs this backend cannot build. The VM supports considerably
     /// more of the language than the LLVM path does, and emitting IR that
     /// drops a statement or evaluates an expression as 0.0 would make the
@@ -75,6 +90,11 @@ impl Compiler {
                 builder,
                 function,
                 variables: HashMap::new(),
+                arrays: HashMap::new(),
+                records: HashMap::new(),
+                functions: HashMap::new(),
+                in_function: false,
+                terminated: false,
                 unsupported: Vec::new(),
             }
         }
@@ -117,9 +137,22 @@ impl Compiler {
     /// Compile the entire AST
     pub fn compile(&mut self, statements: Vec<Stmt>) {
         unsafe {
-            // Compile each statement
+            for statement in &statements {
+                if let Stmt::FunctionDef { name, params, .. } = statement {
+                    self.declare_function(name, params.len());
+                }
+            }
+
+            for statement in &statements {
+                if let Stmt::FunctionDef { name, params, body } = statement {
+                    self.compile_function(name, params, body);
+                }
+            }
+
             for stmt in statements {
-                self.compile_stmt(stmt);
+                if !matches!(stmt, Stmt::FunctionDef { .. }) {
+                    self.compile_stmt(stmt);
+                }
             }
             
             // Return 0 from main
@@ -133,9 +166,22 @@ impl Compiler {
     fn compile_stmt(&mut self, stmt: Stmt) {
         unsafe {
             match stmt {
-                // `declared` and `at` are the type checker's, and it has
-                // already run by the time any backend sees the program.
-                Stmt::Assign { name, value, declared: _, at: _ } => {
+                Stmt::Assign { name, value, .. } => {
+                    if let Expr::ArrayLiteral(items) = &value {
+                        let array = self.compile_array_literal(items);
+                        self.variables.remove(&name);
+                        self.records.remove(&name);
+                        self.arrays.insert(name, array);
+                        return;
+                    }
+                    if let Expr::RecordLiteral(fields) = &value {
+                        let record = self.compile_record_literal(fields);
+                        self.variables.remove(&name);
+                        self.arrays.remove(&name);
+                        self.records.insert(name, record);
+                        return;
+                    }
+
                     let val = self.compile_expr(&value);
                     
                     // Create or get variable allocation
@@ -151,6 +197,51 @@ impl Compiler {
                     
                     let var_ptr = self.variables.get(&name).unwrap();
                     LLVMBuildStore(self.builder, val, *var_ptr);
+                }
+                Stmt::FunctionDef { .. } => {}
+                Stmt::Return(value) => {
+                    if self.in_function {
+                        let val = value
+                            .as_ref()
+                            .map(|expr| self.compile_expr(expr))
+                            .unwrap_or_else(|| {
+                                LLVMConstReal(
+                                    LLVMDoubleTypeInContext(self.context),
+                                    0.0,
+                                )
+                            });
+                        LLVMBuildRet(self.builder, val);
+                        self.terminated = true;
+                    } else {
+                        self.unsupported.push("திரும்பு (return)".to_string());
+                    }
+                }
+                Stmt::SetIndex { name, index, value } => {
+                    if let Some(array) = self.arrays.get(&name).copied() {
+                        let index = self.compile_array_index(&index);
+                        let value = self.compile_expr(&value);
+                        let mut indices = [LLVMConstInt(LLVMInt32TypeInContext(self.context), 0, 0), index];
+                        let element = LLVMBuildGEP2(
+                            self.builder,
+                            array.array_type,
+                            array.pointer,
+                            indices.as_mut_ptr(),
+                            2,
+                            CString::new("array_element").unwrap().as_ptr(),
+                        );
+                        LLVMBuildStore(self.builder, value, element);
+                    } else {
+                        self.unsupported.push("array assignment".to_string());
+                    }
+                }
+                Stmt::SetField { name, field, value } => {
+                    let pointer = self.records.get(&name).and_then(|record| record.get(&field).copied());
+                    if let Some(pointer) = pointer {
+                        let value = self.compile_expr(&value);
+                        LLVMBuildStore(self.builder, value, pointer);
+                    } else {
+                        self.unsupported.push(format!("record field {}", field));
+                    }
                 }
                 Stmt::Print(expr) => {
                     // Emit a printf call; strings and numbers are handled differently
@@ -383,6 +474,19 @@ impl Compiler {
                     // After loop
                     LLVMPositionBuilderAtEnd(self.builder, after_loop_bb);
                 }
+                Stmt::ForEach { var, collection, body } => {
+                    let array = match &collection {
+                        Expr::Variable(name) => self.arrays.get(name).copied(),
+                        Expr::ArrayLiteral(items) => Some(self.compile_array_literal(items)),
+                        _ => None,
+                    };
+
+                    if let Some(array) = array {
+                        self.compile_array_foreach(&var, array, &body);
+                    } else {
+                        self.unsupported.push("ஒவ்வொரு (for-each) over a numeric array".to_string());
+                    }
+                }
                 // File I/O operations
                 Stmt::FileOpen { filename: _, mode } => {
                     // Create a file handler and delegate to it
@@ -544,19 +648,16 @@ impl Compiler {
                         CString::new("").unwrap().as_ptr(),
                     );
                     
-                    // If result_var is specified, create a variable to store result count
-                    if let Some(var_name) = result_var {
-                        let f64_type = LLVMDoubleTypeInContext(self.context);
-                        let alloca = LLVMBuildAlloca(
-                            self.builder,
-                            f64_type,
-                            CString::new(var_name.as_str()).unwrap().as_ptr(),
-                        );
-                        // Store a placeholder value (e.g., number of rows)
-                        let val = LLVMConstReal(f64_type, 0.0);
-                        LLVMBuildStore(self.builder, val, alloca);
-                        self.variables.insert(var_name, alloca);
-                    }
+                    // Create a variable to store the placeholder result count.
+                    let f64_type = LLVMDoubleTypeInContext(self.context);
+                    let alloca = LLVMBuildAlloca(
+                        self.builder,
+                        f64_type,
+                        CString::new(result_var.as_str()).unwrap().as_ptr(),
+                    );
+                    let val = LLVMConstReal(f64_type, 0.0);
+                    LLVMBuildStore(self.builder, val, alloca);
+                    self.variables.insert(result_var, alloca);
                 }
                 Stmt::DBExecute { command, params: _ } => {
                     // தளம்_செய் "CREATE TABLE ...", [params];
@@ -974,6 +1075,240 @@ impl Compiler {
         }
     }
 
+    fn llvm_function_type(&self, parameter_count: usize) -> LLVMTypeRef {
+        unsafe {
+            let f64_type = LLVMDoubleTypeInContext(self.context);
+            let mut parameters = vec![f64_type; parameter_count];
+            LLVMFunctionType(
+                f64_type,
+                parameters.as_mut_ptr(),
+                parameters.len() as u32,
+                0,
+            )
+        }
+    }
+
+    fn declare_function(&mut self, name: &str, parameter_count: usize) -> LLVMValueRef {
+        if let Some(function) = self.functions.get(name).copied() {
+            return function;
+        }
+
+        unsafe {
+            let function = LLVMAddFunction(
+                self.module,
+                CString::new(name).unwrap().as_ptr(),
+                self.llvm_function_type(parameter_count),
+            );
+            self.functions.insert(name.to_string(), function);
+            function
+        }
+    }
+
+    fn compile_function(&mut self, name: &str, params: &[String], body: &[Stmt]) {
+        unsafe {
+            let function = self.declare_function(name, params.len());
+            let saved_function = self.function;
+            let saved_block = LLVMGetInsertBlock(self.builder);
+            let saved_variables = std::mem::take(&mut self.variables);
+            let saved_arrays = std::mem::take(&mut self.arrays);
+            let saved_records = std::mem::take(&mut self.records);
+            let saved_in_function = self.in_function;
+            let saved_terminated = self.terminated;
+
+            self.function = function;
+            self.in_function = true;
+            self.terminated = false;
+            let entry = LLVMAppendBasicBlockInContext(
+                self.context,
+                function,
+                CString::new("entry").unwrap().as_ptr(),
+            );
+            LLVMPositionBuilderAtEnd(self.builder, entry);
+
+            let f64_type = LLVMDoubleTypeInContext(self.context);
+            for (index, parameter) in params.iter().enumerate() {
+                let pointer = LLVMBuildAlloca(
+                    self.builder,
+                    f64_type,
+                    CString::new(parameter.as_str()).unwrap().as_ptr(),
+                );
+                LLVMBuildStore(self.builder, LLVMGetParam(function, index as u32), pointer);
+                self.variables.insert(parameter.clone(), pointer);
+            }
+
+            for statement in body {
+                if self.terminated {
+                    break;
+                }
+                self.compile_stmt(statement.clone());
+            }
+
+            if !self.terminated {
+                LLVMBuildRet(
+                    self.builder,
+                    LLVMConstReal(f64_type, 0.0),
+                );
+            }
+
+            self.function = saved_function;
+            self.variables = saved_variables;
+            self.arrays = saved_arrays;
+            self.records = saved_records;
+            self.in_function = saved_in_function;
+            self.terminated = saved_terminated;
+            LLVMPositionBuilderAtEnd(self.builder, saved_block);
+        }
+    }
+
+    fn compile_array_literal(&mut self, items: &[Expr]) -> ArrayInfo {
+        unsafe {
+            let f64_type = LLVMDoubleTypeInContext(self.context);
+            let element_count = items.len();
+            let array_type = LLVMArrayType2(f64_type, element_count.max(1) as u64);
+            let pointer = LLVMBuildAlloca(
+                self.builder,
+                array_type,
+                CString::new("array").unwrap().as_ptr(),
+            );
+
+            for (index, item) in items.iter().enumerate() {
+                let mut indices = [
+                    LLVMConstInt(LLVMInt32TypeInContext(self.context), 0, 0),
+                    LLVMConstInt(LLVMInt32TypeInContext(self.context), index as u64, 0),
+                ];
+                let element = LLVMBuildGEP2(
+                    self.builder,
+                    array_type,
+                    pointer,
+                    indices.as_mut_ptr(),
+                    2,
+                    CString::new("array_element").unwrap().as_ptr(),
+                );
+                LLVMBuildStore(self.builder, self.compile_expr(item), element);
+            }
+
+            ArrayInfo {
+                pointer,
+                element_count,
+                array_type,
+            }
+        }
+    }
+
+    fn compile_record_literal(&mut self, fields: &[(String, Expr)]) -> RecordInfo {
+        let mut record = HashMap::new();
+        for (field, value) in fields {
+            unsafe {
+                let pointer = LLVMBuildAlloca(
+                    self.builder,
+                    LLVMDoubleTypeInContext(self.context),
+                    CString::new(format!("record_{}", field)).unwrap().as_ptr(),
+                );
+                LLVMBuildStore(self.builder, self.compile_expr(value), pointer);
+                record.insert(field.clone(), pointer);
+            }
+        }
+        record
+    }
+
+    fn compile_array_index(&mut self, index: &Expr) -> LLVMValueRef {
+        unsafe {
+            LLVMBuildFPToSI(
+                self.builder,
+                self.compile_expr(index),
+                LLVMInt32TypeInContext(self.context),
+                CString::new("array_index").unwrap().as_ptr(),
+            )
+        }
+    }
+
+    fn compile_array_foreach(&mut self, variable: &str, array: ArrayInfo, body: &[Stmt]) {
+        unsafe {
+            let i32_type = LLVMInt32TypeInContext(self.context);
+            let index_pointer = LLVMBuildAlloca(
+                self.builder,
+                i32_type,
+                CString::new("each_index").unwrap().as_ptr(),
+            );
+            LLVMBuildStore(self.builder, LLVMConstInt(i32_type, 0, 0), index_pointer);
+
+            let condition_block = LLVMAppendBasicBlockInContext(
+                self.context,
+                self.function,
+                CString::new("each_condition").unwrap().as_ptr(),
+            );
+            let body_block = LLVMAppendBasicBlockInContext(
+                self.context,
+                self.function,
+                CString::new("each_body").unwrap().as_ptr(),
+            );
+            let after_block = LLVMAppendBasicBlockInContext(
+                self.context,
+                self.function,
+                CString::new("each_after").unwrap().as_ptr(),
+            );
+            LLVMBuildBr(self.builder, condition_block);
+
+            LLVMPositionBuilderAtEnd(self.builder, condition_block);
+            let index = LLVMBuildLoad2(
+                self.builder,
+                i32_type,
+                index_pointer,
+                CString::new("each_index_value").unwrap().as_ptr(),
+            );
+            let limit = LLVMConstInt(i32_type, array.element_count as u64, 0);
+            let condition = LLVMBuildICmp(
+                self.builder,
+                LLVMIntPredicate::LLVMIntULT,
+                index,
+                limit,
+                CString::new("each_has_value").unwrap().as_ptr(),
+            );
+            LLVMBuildCondBr(self.builder, condition, body_block, after_block);
+
+            LLVMPositionBuilderAtEnd(self.builder, body_block);
+            let mut indices = [LLVMConstInt(i32_type, 0, 0), index];
+            let element = LLVMBuildGEP2(
+                self.builder,
+                array.array_type,
+                array.pointer,
+                indices.as_mut_ptr(),
+                2,
+                CString::new("each_element").unwrap().as_ptr(),
+            );
+            let value = LLVMBuildLoad2(
+                self.builder,
+                LLVMDoubleTypeInContext(self.context),
+                element,
+                CString::new("each_value").unwrap().as_ptr(),
+            );
+            let variable_pointer = self.variables.entry(variable.to_string()).or_insert_with(|| {
+                LLVMBuildAlloca(
+                    self.builder,
+                    LLVMDoubleTypeInContext(self.context),
+                    CString::new(variable).unwrap().as_ptr(),
+                )
+            });
+            LLVMBuildStore(self.builder, value, *variable_pointer);
+
+            for statement in body {
+                self.compile_stmt(statement.clone());
+            }
+            if !self.terminated {
+                let next = LLVMBuildAdd(
+                    self.builder,
+                    index,
+                    LLVMConstInt(i32_type, 1, 0),
+                    CString::new("each_next").unwrap().as_ptr(),
+                );
+                LLVMBuildStore(self.builder, next, index_pointer);
+                LLVMBuildBr(self.builder, condition_block);
+            }
+
+            LLVMPositionBuilderAtEnd(self.builder, after_block);
+        }
+    }
+
     /// Get or declare printf
     fn get_printf(&self) -> (LLVMValueRef, LLVMTypeRef) {
         unsafe {
@@ -1021,7 +1356,7 @@ impl Compiler {
     }
 
     /// Compile an expression to an LLVM value
-    fn compile_expr(&self, expr: &Expr) -> LLVMValueRef {
+    fn compile_expr(&mut self, expr: &Expr) -> LLVMValueRef {
         unsafe {
             match expr {
                 Expr::Number(n) => {
@@ -1074,6 +1409,71 @@ impl Compiler {
                     
                     LLVMBuildFCmp(self.builder, pred, lhs, rhs, CString::new("cmp").unwrap().as_ptr())
                 }
+                Expr::Call { name, args } => {
+                    let function = self.functions.get(name).copied();
+                    if let Some(function) = function {
+                        let mut values: Vec<LLVMValueRef> =
+                            args.iter().map(|arg| self.compile_expr(arg)).collect();
+                        LLVMBuildCall2(
+                            self.builder,
+                            self.llvm_function_type(values.len()),
+                            function,
+                            values.as_mut_ptr(),
+                            values.len() as u32,
+                            CString::new("call").unwrap().as_ptr(),
+                        )
+                    } else {
+                        self.unsupported.push(format!("function call {}", name));
+                        LLVMConstReal(LLVMDoubleTypeInContext(self.context), 0.0)
+                    }
+                }
+                Expr::Index { base, index } => {
+                    let array = match base.as_ref() {
+                        Expr::Variable(name) => self.arrays.get(name).copied(),
+                        _ => None,
+                    };
+                    if let Some(array) = array {
+                        let index = self.compile_array_index(index);
+                        let mut indices = [LLVMConstInt(LLVMInt32TypeInContext(self.context), 0, 0), index];
+                        let element = LLVMBuildGEP2(
+                            self.builder,
+                            array.array_type,
+                            array.pointer,
+                            indices.as_mut_ptr(),
+                            2,
+                            CString::new("array_element").unwrap().as_ptr(),
+                        );
+                        LLVMBuildLoad2(
+                            self.builder,
+                            LLVMDoubleTypeInContext(self.context),
+                            element,
+                            CString::new("array_value").unwrap().as_ptr(),
+                        )
+                    } else {
+                        self.unsupported.push("array index".to_string());
+                        LLVMConstReal(LLVMDoubleTypeInContext(self.context), 0.0)
+                    }
+                }
+                Expr::Field { base, name } => {
+                    let pointer = match base.as_ref() {
+                        Expr::Variable(variable) => self
+                            .records
+                            .get(variable)
+                            .and_then(|record| record.get(name).copied()),
+                        _ => None,
+                    };
+                    if let Some(pointer) = pointer {
+                        LLVMBuildLoad2(
+                            self.builder,
+                            LLVMDoubleTypeInContext(self.context),
+                            pointer,
+                            CString::new("record_value").unwrap().as_ptr(),
+                        )
+                    } else {
+                        self.unsupported.push(format!("record field {}", name));
+                        LLVMConstReal(LLVMDoubleTypeInContext(self.context), 0.0)
+                    }
+                }
                 Expr::Concat { left, right: _ } => {
                     // For concat in expression context, just evaluate left side
                     // (concat is mainly for print statements)
@@ -1092,7 +1492,7 @@ impl Compiler {
     }
 
     /// Helper to print concatenated expressions
-    fn print_concat(&self, expr: &Expr) {
+    fn print_concat(&mut self, expr: &Expr) {
         unsafe {
             let (printf, printf_type) = self.get_printf();
             
@@ -1125,7 +1525,7 @@ impl Compiler {
         }
     }
 
-    fn print_concat_part(&self, expr: &Expr) {
+    fn print_concat_part(&mut self, expr: &Expr) {
         unsafe {
             let (printf, printf_type) = self.get_printf();
             
@@ -1175,7 +1575,7 @@ impl Compiler {
     }
 
     /// Compile a comparison expression (helper for If/Loop)
-    fn compile_comparison(&self, expr: &Expr) -> LLVMValueRef {
+    fn compile_comparison(&mut self, expr: &Expr) -> LLVMValueRef {
         self.compile_expr(expr)
     }
 

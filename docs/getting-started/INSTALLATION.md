@@ -95,6 +95,17 @@ Off by default. It requires **LLVM 18 specifically** — `llvm-sys` is pinned to
 cargo build --release --features llvm
 ```
 
+The LLVM backend currently covers a smaller subset than the VM. Verify the
+build and IR path with a minimal arithmetic program:
+
+```bash
+printf 'எண் x = 2 + 3;\nஅச்சு x;\n' >/tmp/etamil_llvm_smoke.qmz
+target/release/etamil --llvm /tmp/etamil_llvm_smoke.qmz
+```
+
+This writes `output.ll`. Programs using unsupported features are refused with
+an explicit diagnostic; use `--vm` for the full language.
+
 ## Troubleshooting
 
 **`etamil: command not found`** — the install directory is not on `PATH`.
