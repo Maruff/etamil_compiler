@@ -571,4 +571,4 @@ have to be offered back to the people using that service.
 
 ---
 
-**Version**: 0.2.0 · **Authors**: Esan Maruff
+**Version**: 0.3.0 · **Authors**: Esan Maruff

@@ -2,14 +2,15 @@
 # eTamil-Compiler: A Rust-based DSL Compiler for Tamil/Latin Bilingual FinTech
 #
 # Dependency policy: this file lists only crates the compiled code actually
-# uses. Crates for planned work (sqlx/mongodb/oracle for real database
-# backends, axum/futures for the async server drafted in
-# src/http/async_mod.rs) are deliberately absent — add them back in the commit
-# that starts using them. See docs/ROADMAP.md.
+# uses. Crates for planned work — a MongoDB or Redis driver, for instance — are
+# deliberately absent; add them back in the commit that starts using them.
+# The async server needed none: routing is this crate's own and tokio was
+# already here, so axum and futures never became dependencies. See
+# docs/ROADMAP.md.
 
 [package]
 name = "etamil_compiler"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"          # requires Rust 1.85+
 rust-version = "1.85"
 authors = ["Esan Maruff <esan@etamil.in>"]

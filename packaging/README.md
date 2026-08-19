@@ -64,7 +64,7 @@ and the package will fail on a clean machine.
 
 ## The names are deliberately unversioned
 
-`etamil-windows-x64.zip`, not `etamil-0.2.0-windows-x64.zip` — and the directory
+`etamil-windows-x64.zip`, not `etamil-0.3.0-windows-x64.zip` — and the directory
 inside the archive matches. This is what makes GitHub's *latest* redirect
 resolve:
 
@@ -91,21 +91,21 @@ rewriting history for everyone who already cloned.
 With the [GitHub CLI](https://cli.github.com):
 
 ```bash
-gh release create v0.2.0 dist/etamil-*-x64.zip dist/etamil-*-x64.tar.gz dist/*.sha256 \
-  --title "eTamil 0.2.0" --generate-notes
+gh release create v0.3.0 dist/etamil-*-x64.zip dist/etamil-*-x64.tar.gz dist/*.sha256 \
+  --title "eTamil 0.3.0" --generate-notes
 ```
 
 To add the Linux archive to a release that already exists:
 
 ```bash
-gh release upload v0.2.0 dist/etamil-linux-x64.tar.gz dist/etamil-linux-x64.tar.gz.sha256
+gh release upload v0.3.0 dist/etamil-linux-x64.tar.gz dist/etamil-linux-x64.tar.gz.sha256
 ```
 
 `--generate-notes` builds the notes from the commits since the last tag, which
 is a starting point rather than a release note. Prefer `--notes-file` pointing at
 something written for readers.
 
-Or in a browser: **Releases → Draft a new release**, tag `v0.2.0`, then drag the
+Or in a browser: **Releases → Draft a new release**, tag `v0.3.0`, then drag the
 files from `dist/` onto the attachment box.
 
 ### Checklist

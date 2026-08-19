@@ -2,7 +2,7 @@
 #
 # Triggered by pushing a version tag:
 #
-#   git tag v0.2.0 && git push origin v0.2.0
+#   git tag v0.3.0 && git push origin v0.3.0
 #
 # Each platform builds its own package — nothing is cross-compiled except the
 # musl target, which is what makes the Linux binary run on distributions older
