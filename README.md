@@ -65,9 +65,9 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
-| MySQL / MariaDB | 🟡 Untested | `--features mysql`; compiles and is complete, but has not yet been run against a live server |
+| MySQL / MariaDB | ✅ Live verified | `--features mysql`; the live sample passes with `ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh`; setup details are in `TESTING.md` |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
-| LLVM backend (`--llvm`) | 🟡 Subset | Linux/macOS, `--features llvm`. Compiles far less than the VM — no functions, iteration, collections or modules — and refuses what it cannot build rather than emitting IR that computes something else |
+| LLVM backend (`--llvm`) | 🟡 Subset; build and smoke verified | Linux/macOS, `--features llvm`. Supports numeric functions, arrays, records, array iteration, and imports resolved before codegen; heterogeneous values and other unsupported constructs are rejected rather than emitted as incorrect IR |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
 | JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
 | Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
@@ -114,44 +114,16 @@ Equality is exact too. Division keeps full precision rather than rounding at eac
 
 ## Installation
 
-### Download a package (no Rust, no C toolchain)
+### Prebuilt packages
 
-**[Windows x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-windows-x64.zip)**
-&middot;
-**[Linux x64](https://github.com/Maruff/etamil_compiler/releases/latest/download/etamil-linux-x64.tar.gz)**
-&middot;
-[all releases](https://github.com/Maruff/etamil_compiler/releases/latest)
+No prebuilt release assets are currently published. The local Linux archive in
+`dist/` is a build artifact and is intentionally gitignored; Windows and macOS
+archives are not present in this checkout. The tagged-release workflow in
+`.github/workflows/release.yml` will create and publish those assets when a
+release is actually made.
 
-The archive holds the compiler, `nUlakam/` (the eTamil standard library) and the
-examples. The install script copies them into place, puts `etamil` on your `PATH`
-and sets `ETAMIL_PATH` so `இறக்கு "nUlakam/paNam.qmz"` resolves from any
-directory. Neither installer needs administrator rights.
-
-**Windows (PowerShell)**
-```powershell
-Expand-Archive etamil-windows-x64.zip -DestinationPath .
-.\etamil-windows-x64\install.ps1
-```
-
-**Linux**
-```bash
-tar -xzf etamil-linux-x64.tar.gz
-./etamil-linux-x64/install.sh
-```
-
-Open a new terminal afterwards — a shell that is already running does not see a
-`PATH` change — then `etamil --version`.
-
-There is nothing else to install. The Windows binary links the C runtime
-statically, so it does not need the Visual C++ Redistributable; the Linux binary
-is built against musl, so it is one static ELF that does not depend on the build
-machine's glibc. Uninstalling is deleting a directory:
-`%LOCALAPPDATA%\Programs\eTamil` on Windows, `~/.local/{bin/etamil,lib/etamil}` on
-Linux.
-
-macOS has no prebuilt package yet — build from source.
-
-To build the packages yourself, see [`packaging/`](packaging/).
+Until then, build from source below. Package creation and installer testing are
+documented in [`packaging/README.md`](packaging/README.md).
 
 ### Build from source (all platforms)
 
