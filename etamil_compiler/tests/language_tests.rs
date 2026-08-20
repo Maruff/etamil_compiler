@@ -1077,6 +1077,99 @@ fn json_reads_an_empty_object_and_array() {
     assert_eq!(text(&vm, "இடைவெளி"), r#"{"a":1}"#);
 }
 
+// --- Signing (HMAC) -------------------------------------------------------
+// What makes a payment webhook trustworthy. HMAC needs bytes and a
+// constant-time comparison, so it is a host primitive; what gets signed, and
+// what a signature means, stays in eTamil.
+
+#[test]
+fn a_signature_is_sha256_hex() {
+    let vm = run(r#"கை = கையொப்பம்("secret", "hello"); நீ = நீளம்(கை);"#).unwrap();
+
+    // Checked against the published HMAC-SHA256("secret", "hello").
+    assert_eq!(
+        text(&vm, "கை"),
+        "88aab3ede8d3adf94d26ab90d3bafd4a2083070c3bcce9c014ee04a443847c0b"
+    );
+    assert_eq!(num(&vm, "நீ"), dec(64));
+}
+
+// The attack this exists to stop: an amount changed in transit must invalidate
+// the signature that came with it.
+#[test]
+fn tampering_with_a_signed_payload_invalidates_it() {
+    let vm = run(
+        r#"இரகசியம் = "wh_secret";
+           உண்மை = "{\"amount\":45000}";
+           போலி = "{\"amount\":1}";
+           கை = கையொப்பம்(இரகசியம், உண்மை);
+
+           உண்மையா = கையொப்பம்_சரியா(இரகசியம், உண்மை, கை);
+           திருத்தியது = கையொப்பம்_சரியா(இரகசியம், போலி, கை);
+           வேறு_விசை = கையொப்பம்_சரியா("guess", உண்மை, கை);
+           குப்பை = கையொப்பம்_சரியா(இரகசியம், உண்மை, "deadbeef");
+           காலி = கையொப்பம்_சரியா(இரகசியம், உண்மை, "");"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("உண்மையா"), Some(&Value::Boolean(true)));
+    for refused in ["திருத்தியது", "வேறு_விசை", "குப்பை", "காலி"] {
+        assert_eq!(
+            vm.variables.get(refused),
+            Some(&Value::Boolean(false)),
+            "{} should not verify",
+            refused
+        );
+    }
+}
+
+// Gateways disagree about the case of the hex they send.
+#[test]
+fn a_signature_verifies_in_either_case() {
+    let vm = run(
+        r#"கை = கையொப்பம்("k", "payload");
+           பெரிய = கையொப்பம்_சரியா("k", "payload", மேல்_எழுத்து(கை));"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("பெரிய"), Some(&Value::Boolean(true)));
+}
+
+// Signing the same thing twice must agree, or a webhook check would be a
+// coin toss.
+#[test]
+fn signing_is_deterministic() {
+    let vm = run(
+        r#"அ = கையொப்பம்("k", "m"); ஆ = கையொப்பம்("k", "m"); ஒன்றா = அ == ஆ;"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
+}
+
+// --- Outbound HTTP --------------------------------------------------------
+// Only the offline behaviour is asserted here. A test that reached the network
+// would fail on a machine without it, and would be testing the network rather
+// than this code.
+
+#[test]
+fn an_unreachable_host_is_a_failure_not_an_error() {
+    let vm = run(
+        r#"விளைவு = வலை_பெறு("https://no-such-host-etamil-test.invalid", {});
+           தோல்வியா = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+
+    // A தவறு, so a caller handles it — not a runtime error that stops the VM.
+    assert_eq!(vm.variables.get("தோல்வியா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_request_needs_the_right_number_of_arguments() {
+    assert!(run(r#"விளைவு = வலை_பெறு("https://example.invalid");"#).is_err());
+    assert!(run(r#"கை = கையொப்பம்("only-a-key");"#).is_err());
+}
+
 // --- Authentication -------------------------------------------------------
 // bcrypt and HMAC live in the host because eTamil cannot express them; the
 // policy built on top stays in the language. A token's payload crosses the
