@@ -72,30 +72,13 @@ jobs:
         shell: bash
         run: test -s "dist/${{ matrix.package }}"
 
-      # A package that cannot run its own examples is not a package, and
-      # finding that out after publishing is worse than failing here.
+      # Kept in packaging/smoke-test.sh rather than inline: the checks involve
+      # Tamil literals and a piped stdin, which are easy to get wrong through a
+      # workflow's quoting and impossible to test without pushing a tag. As a
+      # script it runs locally exactly as it runs here.
       - name: Run the packaged binary
         shell: bash
-        run: |
-          set -euo pipefail
-          cd dist
-          case "${{ matrix.package }}" in
-            *.zip)  unzip -q "${{ matrix.package }}" ;;
-            *.tar.gz) tar xzf "${{ matrix.package }}" ;;
-          esac
-          DIR="$(basename "${{ matrix.package }}" .tar.gz)"
-          DIR="$(basename "$DIR" .zip)"
-          BIN="$DIR/etamil"
-          if [ -f "$BIN.exe" ]; then
-            BIN="$BIN.exe"
-          fi
-          export ETAMIL_PATH="$PWD/$DIR"
-          "$BIN" --version
-          echo "950000" | "$BIN" --vm "$DIR/examples/basic_samples/example.qmz" | grep -q "High Tax Bracket"
-          "$BIN" --vm "$DIR/examples/finance/kaNakkiyal.qmz" | grep -q "சொத்து"
-          printf 'இறக்கு "nUlakam/paNam.qmz";\nஅச்சு ரூபாய்(12345678.5);\n' > money.qmz
-          "$BIN" --vm money.qmz | grep -q "1,23,45,678.50"
-          echo "packaged binary works"
+        run: ./packaging/smoke-test.sh "dist/${{ matrix.package }}"
 
       - uses: actions/upload-artifact@v4
         with:
