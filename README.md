@@ -19,6 +19,11 @@ eN varuvAy = 100000;       // romanized (ezuqqu scheme)
 
 That is the core idea: Tamil semantics you can type on a plain keyboard.
 
+📖 **[Read the user manual at etamil.in/manual](https://etamil.in/manual/)** —
+installation through to a database-backed HTTP service, in
+[English](https://etamil.in/manual/) and
+[தமிழ்](https://etamil.in/ta/manual/).
+
 ### Real example
 
 ```etamil
@@ -565,6 +570,18 @@ See [`nUlakam/README.md`](nUlakam/README.md) for the full list, and `examples/fi
 The most useful contributions right now are on the [roadmap](docs/ROADMAP.md): keeping the source text of tokens (which also gives parse errors their positions), the async server, type checking, and the remaining database drivers.
 
 Please add a test to `etamil_compiler/tests/language_tests.rs` for any language behaviour you change, and make sure `cargo test` passes on both Linux and Windows.
+
+---
+
+## Documentation
+
+| Where | What |
+|---|---|
+| [etamil.in/manual](https://etamil.in/manual/) | The user manual — the complete guide, [also in Tamil](https://etamil.in/ta/manual/) |
+| [etamil.in/keywords](https://etamil.in/keywords/) | Every keyword in all three spellings |
+| [etamil.in/finance](https://etamil.in/finance/) | The accounting and GST framework |
+| [etamil.in/status](https://etamil.in/status/) | What works, what is partial, what is planned |
+| [`docs/`](docs/) | Architecture, roadmap and reference material in this repository |
 
 ---
 
