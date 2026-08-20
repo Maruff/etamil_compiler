@@ -8,6 +8,7 @@ pub mod lexer;
 pub mod parser;
 pub mod check;
 pub mod module;
+pub mod net;
 pub mod db;
 pub mod codegen;
 pub mod fileio;

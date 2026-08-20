@@ -408,6 +408,53 @@ impl VM {
                     Err(message) => Ok(Value::Err(Box::new(Value::String(message)))),
                 }
             }
+            // --- Signing ---
+            // HMAC needs bytes and a constant-time comparison, neither of
+            // which the language has. What is signed, and what a signature
+            // means, stays in eTamil.
+            // கையொப்பம்(விசை, செய்தி) — HMAC-SHA256 as lowercase hex
+            "கையொப்பம்" | "kYyoppam" | "_sign" => {
+                Self::expect_args(name, &args, 2)?;
+                Ok(Value::String(crate::net::sign(
+                    &args[0].to_string(),
+                    &args[1].to_string(),
+                )))
+            }
+            // கையொப்பம்_சரியா(விசை, செய்தி, கையொப்பம்) — verify one
+            //
+            // Use this rather than comparing கையொப்பம்(...) with `==`: that
+            // comparison stops at the first wrong character, and how long it
+            // took reveals how much of the signature was right.
+            "கையொப்பம்_சரியா" | "kYyoppam_cariyA" | "_verifySignature" => {
+                Self::expect_args(name, &args, 3)?;
+                Ok(Value::Boolean(crate::net::verify(
+                    &args[0].to_string(),
+                    &args[1].to_string(),
+                    &args[2].to_string(),
+                )))
+            }
+            // --- Outbound HTTP ---
+            // வலை_பெறு(உரலி, தலைப்புகள்)
+            "வலை_பெறு" | "valY_peRu" | "_httpGet" => {
+                Self::expect_args(name, &args, 2)?;
+                Ok(Self::http_call("GET", &args[0], None, &args[1]))
+            }
+            // வலை_பதி(உரலி, உடலுரை, தலைப்புகள்)
+            "வலை_பதி" | "valY_paqi" | "_httpPost" => {
+                Self::expect_args(name, &args, 3)?;
+                Ok(Self::http_call("POST", &args[0], Some(&args[1]), &args[2]))
+            }
+            // வலை_அனுப்பு(முறை, உரலி, உடலுரை, தலைப்புகள்) — any method
+            "வலை_அனுப்பு" | "valY_aZuppu" | "_httpRequest" => {
+                Self::expect_args(name, &args, 4)?;
+                let method = args[0].to_string().to_uppercase();
+                let body = match &args[2] {
+                    // A method with no body passes இன்மை rather than "".
+                    Value::Null => None,
+                    other => Some(other),
+                };
+                Ok(Self::http_call(&method, &args[1], body, &args[3]))
+            }
             unknown => Err(format!(
                 "அறியப்படாத செயல் '{}'  (unknown function '{}')",
                 unknown, unknown
@@ -472,6 +519,54 @@ impl VM {
     fn format_date(days: i64) -> String {
         let (year, month, day) = Self::civil_from_days(days);
         format!("{:04}-{:02}-{:02}", year, month, day)
+    }
+
+    /// Make one HTTP request, handing the language back a result.
+    ///
+    /// A non-2xx status is a *successful* call: a gateway declining a charge
+    /// answers 402 with a body saying why, and reporting that as a தவறு would
+    /// throw the explanation away. Only a request that never got an answer —
+    /// DNS, TLS, connection, timeout — is a failure.
+    fn http_call(
+        method: &str,
+        url: &Value,
+        body: Option<&Value>,
+        headers: &Value,
+    ) -> Value {
+        let headers: Vec<(String, String)> = match headers {
+            Value::Map(fields) => fields
+                .iter()
+                .map(|(name, value)| (name.clone(), value.to_string()))
+                .collect(),
+            // இன்மை or anything else means "no headers", which is the common
+            // case and not worth an error.
+            _ => Vec::new(),
+        };
+
+        let body = body.map(|value| value.to_string());
+
+        match crate::net::request(method, &url.to_string(), body.as_deref(), &headers) {
+            Ok(response) => {
+                let mut record = HashMap::with_capacity(3);
+                record.insert(
+                    "நிலைக்_குறி".to_string(),
+                    Value::Number(Decimal::from(response.status)),
+                );
+                record.insert("உடலுரை".to_string(), Value::String(response.body));
+                record.insert(
+                    "தலைப்புகள்".to_string(),
+                    Value::Map(
+                        response
+                            .headers
+                            .into_iter()
+                            .map(|(name, value)| (name, Value::String(value)))
+                            .collect(),
+                    ),
+                );
+                Value::Ok(Box::new(Value::Map(record)))
+            }
+            Err(message) => Value::Err(Box::new(Value::String(message))),
+        }
     }
 
     fn expect_args(name: &str, args: &[Value], want: usize) -> Result<(), String> {

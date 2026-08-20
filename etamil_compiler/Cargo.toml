@@ -60,6 +60,24 @@ jsonwebtoken = "9.2"
 bcrypt = "0.15"
 uuid = { version = "1.6", features = ["v4", "serde"] }
 
+# --- Signing ---
+# HMAC-SHA256, for verifying a signed webhook. All three were already in the
+# tree through jsonwebtoken; naming them directly costs nothing new. `subtle`
+# is what makes the comparison constant-time, which is the whole point of a
+# verify function — a byte-by-byte `==` leaks the signature one position at a
+# time.
+hmac = "0.13"
+sha2 = "0.11"
+subtle = "2.6"
+
+# --- Outbound HTTP ---
+# ureq with rustls, deliberately, and not reqwest with its defaults: those pull
+# native-tls and therefore OpenSSL, which would break the static musl Linux
+# package and falsify the README's "there is nothing else to install". ureq is
+# also blocking, which is what a synchronous VM wants — no runtime, no
+# spawn_blocking.
+ureq = { version = "2.10", default-features = false, features = ["tls", "gzip"], optional = true }
+
 # --- Database ---
 # Blocking drivers throughout, which suit a synchronous VM behind a
 # thread-per-request server. "bundled" compiles SQLite itself so there is no
@@ -82,8 +100,12 @@ sqlite = ["rusqlite"]
 # `dep:` keeps the optional dependency from also creating a feature of its
 # own name, so this one can pull in the decimal integration alongside it.
 postgres = ["dep:postgres", "dep:bytes", "rust_decimal/db-postgres"]
+# Outbound HTTP is a feature so a build that does not need it does not carry a
+# TLS stack. On by default: an API that cannot call a payment gateway is not
+# much of an API.
+http-client = ["dep:ureq"]
 mysql = ["dep:mysql"]
-default = ["sqlite"]
+default = ["sqlite", "http-client"]
 
 [profile.release]
 # The headline feature is a small standalone binary, so optimize for that.

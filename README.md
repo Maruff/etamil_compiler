@@ -70,6 +70,8 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | LLVM backend (`--llvm`) | 🟡 Subset; build and smoke verified | Linux/macOS, `--features llvm`. Supports numeric functions, arrays, records, array iteration, and imports resolved before codegen; heterogeneous values and other unsupported constructs are rejected rather than emitted as incorrect IR |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
 | JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
+| Signing (HMAC-SHA256) | ✅ Working | `கையொப்பம்` / `கையொப்பம்_சரியா` — verify a signed webhook; the comparison is constant-time |
+| Outbound HTTP | ✅ Working | `--features http-client` (on by default); `வலை_பெறு` `வலை_பதி` `வலை_அனுப்பு`. A non-2xx is a result, not a failure |
 | Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
 | String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
@@ -490,7 +492,7 @@ record; without one the server answers `application/json`.
 
 ```bash
 cd etamil_compiler
-cargo test          # 176 language tests + 51 unit tests
+cargo test          # 182 language tests + 55 unit tests + 8 --check tests
 ```
 
 `tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.
