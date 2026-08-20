@@ -457,6 +457,7 @@ All examples live in [`examples/`](examples/):
 | `io_samples/fileio_example.qmz` | Longer file handling |
 | `db_samples/*.qmz` | SQLite — parameterised queries, rows returned as records |
 | `finance/*.qmz` | The accounting framework: GST, payroll, a full cycle, receivables ageing |
+| `kadai/` | An eCommerce backend — catalogue, per-line GST, atomic orders, a signed payment webhook, and the same orders posted to a double-entry ledger |
 | `backend/*.qmz`, `api/*.qmz` | HTTP handlers — run these with `--server`, not `--vm` |
 
 ```bash

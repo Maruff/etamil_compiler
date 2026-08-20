@@ -1,0 +1,159 @@
+// examples/kadai/kadai_cEvY.qmz — the shop's REST API
+//
+//   etamil --server --port 8090 examples/kadai/kadai_cEvY.qmz
+//
+// Run kadai_kAttu.qmz first, in the same directory: it creates kadai.db and
+// the catalogue this serves.
+//
+// Under --vm this fails on the first வழி, and that is correct — route
+// statements need a server. scripts/run_examples.sh expects that failure.
+//
+// Every response is built with ஜேசான்_ஆக்கு, which is eTamil, not a host
+// builtin. Each request gets its own VM, so the connection is opened per
+// handler; that is the next thing to fix.
+
+இறக்கு "kadai.qmz";
+இறக்கு "../../nUlakam/jEcAZ.qmz";
+
+// The webhook secret the payment gateway signs with. Read from the
+// environment in anything real; written here so the example runs.
+செயல் வலைக்கொக்கி_இரகசியம்() { திரும்பு "wh_test_secret"; }
+
+செயல் பிழை_பதில்(செய்தி) {
+    திரும்பு ஜேசான்_ஆக்கு({பிழை: செய்தி});
+}
+
+// GET /carakku — the catalogue
+வழி பெறு, "/carakku" {
+    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL
+               WHERE iruppu > 0 ORDER BY kuRi", [], பட்டியல்;
+
+    விடை = [];
+    ஒவ்வொரு ஒரு_சரக்கு இல் பட்டியல் {
+        விடை = இணை(விடை, {
+            குறி: ஒரு_சரக்கு.kuRi,
+            பெயர்: ஒரு_சரக்கு.peyar,
+            விலை: ஒரு_சரக்கு.vilY,
+            வரி_விகிதம்: ஒரு_சரக்கு.vari_viqam,
+            இருப்பு: ஒரு_சரக்கு.iruppu
+        });
+    }
+    பதில் 200, ஜேசான்_ஆக்கு({சரக்குகள்: விடை});
+}
+
+// GET /carakku/:kuRi — one product
+வழி பெறு, "/carakku/:kuRi" {
+    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL WHERE kuRi = ?",
+              [param_kuRi], கிடைப்பு;
+
+    (நீளம்(கிடைப்பு) == 0) எனில் {
+        பதில் 404, பிழை_பதில்("சரக்கு காணவில்லை: " & param_kuRi);
+    }
+    இன்றேல் {
+        ஒன்று = கிடைப்பு[0];
+        பதில் 200, ஜேசான்_ஆக்கு({
+            குறி: ஒன்று.kuRi, பெயர்: ஒன்று.peyar, விலை: ஒன்று.vilY,
+            வரி_விகிதம்: ஒன்று.vari_viqam, இருப்பு: ஒன்று.iruppu
+        });
+    }
+}
+
+// POST /vaNti/kaNakku — price a cart, GST and all
+//
+//   {"uL_mAnilam": true,
+//    "varicYkaL": [{"kuRi": "P1", "aLavu": 2}, {"kuRi": "P2", "aLavu": 3}]}
+//
+// Prices come from the database, never from the request: a client that could
+// send its own price could set it to zero.
+வழி பதி, "/vaNti/kaNakku" {
+    படித்தது = ஜேசான்_படி(request_body);
+    (தவறா(படித்தது)) எனில் {
+        பதில் 400, பிழை_பதில்("செல்லாத ஜேசான்");
+    }
+    இன்றேல் {
+        வேண்டுகோள் = மதிப்பு(படித்தது);
+        தளம்_இணை சீகுலைட், "kadai.db";
+
+        வண்டி = [];
+        தவறானது = "";
+        ஒவ்வொரு கேட்டது இல் வேண்டுகோள்["varicYkaL"] {
+            தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam FROM carakkukaL WHERE kuRi = ?",
+                      [கேட்டது["kuRi"]], கிடைப்பு;
+            (நீளம்(கிடைப்பு) == 0) எனில் {
+                தவறானது = கேட்டது["kuRi"];
+            }
+            இன்றேல் {
+                ஒன்று = கிடைப்பு[0];
+                வண்டி = இணை(வண்டி, வண்டி_ஒரு_வரிசை(ஒன்று.kuRi, ஒன்று.peyar,
+                                                     ஒன்று.vilY, கேட்டது["aLavu"],
+                                                     ஒன்று.vari_viqam));
+            }
+        }
+
+        (நீளம்(தவறானது) > 0) எனில் {
+            பதில் 404, பிழை_பதில்("அறியப்படாத சரக்கு: " & தவறானது);
+        }
+        இன்றேல் {
+            கணக்கு = வண்டி_கணக்கு(வண்டி, வேண்டுகோள்["uL_mAnilam"]);
+            பதில் 200, ஜேசான்_ஆக்கு(கணக்கு);
+        }
+    }
+}
+
+// POST /paNam/vaLYkkokki — the payment gateway's callback
+//
+// The signature is the whole point. Without checking it this endpoint is an
+// unauthenticated POST that marks orders paid, so anyone who learns the URL
+// can have the shop's stock for nothing. கையொப்பம்_சரியா compares in constant
+// time, which is why it is a primitive rather than == in eTamil.
+வழி பதி, "/paNam/vaLYkkokki" {
+    வந்த_கையொப்பம் = headers["x-etamil-signature"];
+
+    (இல்லை கையொப்பம்_சரியா(வலைக்கொக்கி_இரகசியம்(), request_body, வந்த_கையொப்பம்)) எனில் {
+        // No detail in the reply: telling a caller *why* it failed helps them
+        // work out what a valid signature looks like.
+        பதில் 401, பிழை_பதில்("கையொப்பம் சரியில்லை");
+    }
+    இன்றேல் {
+        படித்தது = ஜேசான்_படி(request_body);
+        (தவறா(படித்தது)) எனில் {
+            பதில் 400, பிழை_பதில்("செல்லாத ஜேசான்");
+        }
+        இன்றேல் {
+            செய்தி = மதிப்பு(படித்தது);
+            தளம்_இணை சீகுலைட், "kadai.db";
+            தளம்_செய் "UPDATE ANYkaL SET nilY = ? WHERE kuRi = ?",
+                      ["செலுத்தப்பட்டது", செய்தி["ANY_kuRi"]];
+            பதில் 200, ஜேசான்_ஆக்கு({நிலை: "ஏற்கப்பட்டது", ஆணை: செய்தி["ANY_kuRi"]});
+        }
+    }
+}
+
+// GET /ANY/:kuRi — an order and its lines
+வழி பெறு, "/ANY/:kuRi" {
+    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_வினா "SELECT kuRi, vAtikkYyALar, naaL, qokY, nilY FROM ANYkaL WHERE kuRi = ?",
+              [param_kuRi], கிடைப்பு;
+
+    (நீளம்(கிடைப்பு) == 0) எனில் {
+        பதில் 404, பிழை_பதில்("ஆணை காணவில்லை: " & param_kuRi);
+    }
+    இன்றேல் {
+        ஆணை = கிடைப்பு[0];
+        தளம்_வினா "SELECT carakku_kuRi, aLavu, alaku_vilY, vari_viqam
+                   FROM ANY_varicYkaL WHERE ANY_kuRi = ?", [param_kuRi], வரிசைகள்;
+        விடை = [];
+        ஒவ்வொரு ஒரு_வரிசை இல் வரிசைகள் {
+            விடை = இணை(விடை, {
+                சரக்கு: ஒரு_வரிசை.carakku_kuRi, அளவு: ஒரு_வரிசை.aLavu,
+                விலை: ஒரு_வரிசை.alaku_vilY, வரி_விகிதம்: ஒரு_வரிசை.vari_viqam
+            });
+        }
+        பதில் 200, ஜேசான்_ஆக்கு({
+            குறி: ஆணை.kuRi, வாடிக்கையாளர்: ஆணை.vAtikkYyALar, நாள்: ஆணை.naaL,
+            தொகை: ஆணை.qokY, நிலை: ஆணை.nilY, வரிசைகள்: விடை
+        });
+    }
+}
