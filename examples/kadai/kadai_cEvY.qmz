@@ -158,3 +158,34 @@
         });
     }
 }
+
+// --- A timed job ----------------------------------------------------------
+//
+// இடைவெளி runs a block on a timer under either server. The number is the gap
+// *between* runs, not a fixed rate: a job slower than its interval runs late
+// rather than twice at once, and two settlement runs overlapping is worse than
+// one running behind.
+//
+// Every ten minutes here so the example is watchable; a real shop would want
+// this nightly. It borrows its connection from the same pool the routes use,
+// and a failure is logged rather than taking the server down — there is no
+// caller to return an error to.
+இடைவெளி 600 {
+    தளம்_இணை சீகுலைட், "kadai.db";
+
+    தளம்_வினா "SELECT COUNT(*) AS eNNikkY, COALESCE(SUM(qokY), 0) AS moqqam
+               FROM ANYkaL WHERE nilY = ?", ["இடப்பட்டது"], நிலுவை;
+
+    அச்சு "--- நிலுவை ஆய்வு ---";
+    அச்சு "  செலுத்தப்படாத ஆணைகள்: " & நிலுவை[0].eNNikkY
+          & "   மொத்தம் " & ரூபாய்(நிலுவை[0].moqqam);
+
+    // Anything still unpaid after a week is worth a human looking at.
+    தளம்_வினா "SELECT kuRi, naaL, qokY FROM ANYkaL
+               WHERE nilY = ? AND naaL < ?", ["இடப்பட்டது", நாள்_கூட்டு(இன்று(), 0 - 7)],
+              பழையவை;
+    ஒவ்வொரு ஒரு_ஆணை இல் பழையவை {
+        அச்சு "  ⚠ " & ஒரு_ஆணை.kuRi & " (" & ஒரு_ஆணை.naaL & ") "
+              & ரூபாய்(ஒரு_ஆணை.qokY) & " — ஒரு வாரத்திற்கும் மேல்";
+    }
+}

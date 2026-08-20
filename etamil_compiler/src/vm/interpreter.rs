@@ -421,6 +421,73 @@ impl VM {
                     Err(message) => Ok(Value::Err(Box::new(Value::String(message)))),
                 }
             }
+            // --- Bytes ---
+            //
+            // A byte array is an ordinary array of numbers, not a new kind of
+            // value. That is deliberate: a Value::Bytes variant would touch
+            // every exhaustive match in the value path — the interpreter, all
+            // three database drivers, the JSON library, the checker, the LLVM
+            // backend — to add a type the language could otherwise represent
+            // already. The cost is space, since each byte becomes a Decimal;
+            // the gain is that base64 and hex are ordinary eTamil in
+            // nUlakam/kuRiyAkkam.qmz rather than more host code.
+            //
+            // The limit worth knowing: a சொல் is valid UTF-8, so arbitrary
+            // bytes can live in an array but not in a string. Encode them
+            // first — which is what base64 is for.
+            // பைட்டுகள்(சரம்) — the UTF-8 bytes of some text
+            "பைட்டுகள்" | "pYttukaL" | "_bytes" => {
+                Self::expect_args(name, &args, 1)?;
+                let bytes = args[0]
+                    .to_string()
+                    .into_bytes()
+                    .into_iter()
+                    .map(|byte| Value::Number(Decimal::from(byte)))
+                    .collect();
+                Ok(Value::Array(bytes))
+            }
+            // பைட்டுச்_சரம்(அணி) — text from bytes, as a result
+            //
+            // A result rather than an error: bytes that are not valid UTF-8
+            // are an ordinary thing to receive from outside, and a caller
+            // should be able to handle it.
+            "பைட்டுச்_சரம்" | "pYttuc_caram" | "_fromBytes" => {
+                Self::expect_args(name, &args, 1)?;
+                let items = match &args[0] {
+                    Value::Array(items) => items,
+                    other => {
+                        return Err(format!(
+                            "பைட்டுச்_சரம் ஒரு அணி தேவை  (fromBytes needs an array, got {})",
+                            Self::type_name(other)
+                        ));
+                    }
+                };
+
+                let mut bytes = Vec::with_capacity(items.len());
+                for (position, item) in items.iter().enumerate() {
+                    let raw = item.to_number();
+                    let byte = rust_decimal::prelude::ToPrimitive::to_u16(&raw)
+                        .filter(|value| *value <= 255)
+                        .filter(|_| raw.fract() == Decimal::ZERO);
+                    match byte {
+                        Some(byte) => bytes.push(byte as u8),
+                        None => {
+                            return Err(format!(
+                                "இடம் {} இல் '{}' ஒரு பைட்டு அல்ல                                   (position {}: '{}' is not a byte, expected a whole number 0-255)",
+                                position, raw, position, raw
+                            ));
+                        }
+                    }
+                }
+
+                match String::from_utf8(bytes) {
+                    Ok(text) => Ok(Value::Ok(Box::new(Value::String(text)))),
+                    Err(_) => Ok(Value::Err(Box::new(Value::String(
+                        "இந்தப் பைட்டுகள் செல்லுபடியான UTF-8 அல்ல                           (these bytes are not valid UTF-8)"
+                            .to_string(),
+                    )))),
+                }
+            }
             // --- Signing ---
             // HMAC needs bytes and a constant-time comparison, neither of
             // which the language has. What is signed, and what a signature

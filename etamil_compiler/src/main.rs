@@ -40,6 +40,7 @@ fn print_help() {
     println!("    --check            Lex, parse and type check only — never runs the program");
     println!("    --server           Start the synchronous HTTP server");
     println!("    --async            Concurrent server: async accept, blocking handlers");
+    println!("                       இடைவெளி blocks run on a timer under either server");
     println!("    --llvm             LLVM backend (requires --features llvm; Linux/macOS)");
     println!("    --host <HOST>      Server bind address (default: 127.0.0.1)");
     println!("    --port <PORT>      Server port (default: 8080)");
@@ -209,9 +210,12 @@ fn main() {
         println!("=== eTamil HTTP Server (Minimum Viable Backend) ===\n");
         
         let mut server = HttpServer::new(&server_host, server_port);
-        register_routes(&mut server, ast, |server, method, path, program| {
-            server.register_route(method, path, program)
-        });
+        register_routes(
+            &mut server,
+            ast,
+            |server, method, path, program| server.register_route(method, path, program),
+            |server, seconds, program| server.register_schedule(seconds, program),
+        );
 
         // Also register health check endpoint
         server.register_route("GET", "/health", vec![
@@ -308,9 +312,12 @@ fn run_async_server(
     ast: Vec<parser::Stmt>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut server = AsyncHttpServer::new(host, port);
-    register_routes(&mut server, ast, |server, method, path, program| {
-        server.register_route(method, path, program)
-    });
+    register_routes(
+        &mut server,
+        ast,
+        |server, method, path, program| server.register_route(method, path, program),
+        |server, seconds, program| server.register_schedule(seconds, program),
+    );
 
     // Handlers run on the blocking pool, so the worker threads here only ever
     // accept connections and move bytes.
@@ -332,8 +339,19 @@ fn register_routes<S>(
     server: &mut S,
     ast: Vec<parser::Stmt>,
     mut register: impl FnMut(&mut S, &str, &str, Vec<parser::Stmt>),
+    register_schedule: impl Fn(&mut S, u64, Vec<parser::Stmt>),
 ) {
-    let (routes, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
+    // Routes and timed jobs are both lifted out; what is left is the prelude
+    // they share.
+    let (lifted, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
+        .into_iter()
+        .partition(|s| {
+            matches!(
+                s,
+                parser::Stmt::DefineRoute { .. } | parser::Stmt::Schedule { .. }
+            )
+        });
+    let (routes, schedules): (Vec<parser::Stmt>, Vec<parser::Stmt>) = lifted
         .into_iter()
         .partition(|s| matches!(s, parser::Stmt::DefineRoute { .. }));
 
@@ -345,6 +363,23 @@ fn register_routes<S>(
             register(server, method, "/", prelude.clone());
         }
         return;
+    }
+
+    for schedule in schedules {
+        if let parser::Stmt::Schedule { seconds, body } = schedule {
+            let seconds = match seconds {
+                parser::Expr::Number(n) => {
+                    rust_decimal::prelude::ToPrimitive::to_u64(&n).unwrap_or(0)
+                }
+                other => {
+                    eprintln!("✗ இடைவெளி needs a literal number of seconds, got {:?}", other);
+                    std::process::exit(1);
+                }
+            };
+            let mut program = prelude.clone();
+            program.extend(body);
+            register_schedule(server, seconds, program);
+        }
     }
 
     for route in routes {
