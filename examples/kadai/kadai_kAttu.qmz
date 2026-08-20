@@ -1,0 +1,173 @@
+// examples/kadai/kadai_kAttu.qmz — a shop's whole day, end to end
+//
+// Catalogue in SQLite, a cart priced with per-line GST, an order placed
+// atomically against stock, the same order posted into a double-entry ledger,
+// and the three statements that come out of it.
+//
+//   etamil --vm examples/kadai/kadai_kAttu.qmz
+//
+// Self-contained: it creates its own kadai.db in the working directory.
+
+இறக்கு "kadai.qmz";
+இறக்கு "../../nUlakam/kaNakkiyal/aRikkYkaL.qmz";
+
+தளம்_இணை சீகுலைட், "kadai.db";
+
+// --- The catalogue --------------------------------------------------------
+
+தளம்_செய் "DROP TABLE IF EXISTS carakkukaL", [];
+தளம்_செய் "CREATE TABLE carakkukaL (
+              kuRi TEXT PRIMARY KEY,
+              peyar TEXT NOT NULL,
+              vilY TEXT NOT NULL,
+              vari_viqam TEXT NOT NULL,
+              iruppu INTEGER NOT NULL)", [];
+
+தளம்_செய் "INSERT INTO carakkukaL VALUES (?, ?, ?, ?, ?)", ["P1", "பட்டுப் புடவை", 4500, 5, 12];
+தளம்_செய் "INSERT INTO carakkukaL VALUES (?, ?, ?, ?, ?)", ["P2", "கைப்பேசி உறை", 349.50, 18, 40];
+தளம்_செய் "INSERT INTO carakkukaL VALUES (?, ?, ?, ?, ?)", ["P3", "வெண்கல விளக்கு", 1250, 12, 3];
+
+அச்சு "=== கடை பட்டியல் (catalogue) ===";
+தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL ORDER BY kuRi",
+          [], பட்டியல்;
+ஒவ்வொரு ஒரு_சரக்கு இல் பட்டியல் {
+    அச்சு "  " & ஒரு_சரக்கு.kuRi & "  " & இடமிருந்து_நிரப்பு(ஒரு_சரக்கு.peyar, 18, " ")
+          & "  " & இடமிருந்து_நிரப்பு(ரூபாய்(ஒரு_சரக்கு.vilY), 12, " ")
+          & "  வரி " & ஒரு_சரக்கு.vari_viqam & "%   இருப்பு " & ஒரு_சரக்கு.iruppu;
+}
+
+// --- Order placement ------------------------------------------------------
+
+// ஆணை_இடு(ஆணை_எண், வாடிக்கையாளர், வரிசைகள்)
+//
+// Wrapped in a transaction, because two things have to happen together: stock
+// comes down and the order goes in. Driven as plain SQL through தளம்_செய் —
+// the VM holds one connection across statements, so BEGIN and COMMIT mean what
+// they say. Without this an order could be recorded against stock that was
+// never reserved, or stock could vanish with no order to show for it.
+செயல் ஆணை_இடு(ஆணை_எண், வாடிக்கையாளர்_பெயர், நாள், ஆணை_வரிசைகள், செலுத்தவேண்டியது) {
+    தளம்_செய் "BEGIN", [];
+
+    // Every line is checked before anything is written: a partial order is
+    // worse than a refused one.
+    ஒவ்வொரு ஒரு_வரிசை இல் ஆணை_வரிசைகள் {
+        தளம்_வினா "SELECT iruppu FROM carakkukaL WHERE kuRi = ?",
+                  [ஒரு_வரிசை.சரக்கு_குறி], கிடைப்பு;
+        (நீளம்(கிடைப்பு) == 0) எனில் {
+            தளம்_செய் "ROLLBACK", [];
+            திரும்பு தவறு("அறியப்படாத சரக்கு: " & ஒரு_வரிசை.சரக்கு_குறி);
+        }
+        (கிடைப்பு[0].iruppu < ஒரு_வரிசை.அளவு) எனில் {
+            தளம்_செய் "ROLLBACK", [];
+            திரும்பு தவறு("இருப்பு போதவில்லை: " & ஒரு_வரிசை.பெயர்
+                            & " (கேட்டது " & ஒரு_வரிசை.அளவு
+                            & ", உள்ளது " & கிடைப்பு[0].iruppu & ")");
+        }
+    }
+
+    தளம்_செய் "INSERT INTO ANYkaL (kuRi, vAtikkYyALar, naaL, qokY, nilY)
+               VALUES (?, ?, ?, ?, ?)",
+              [ஆணை_எண், வாடிக்கையாளர்_பெயர், நாள், செலுத்தவேண்டியது, "இடப்பட்டது"];
+
+    ஒவ்வொரு ஒரு_வரிசை இல் ஆணை_வரிசைகள் {
+        தளம்_செய் "INSERT INTO ANY_varicYkaL (ANY_kuRi, carakku_kuRi, aLavu, alaku_vilY, vari_viqam)
+                   VALUES (?, ?, ?, ?, ?)",
+                  [ஆணை_எண், ஒரு_வரிசை.சரக்கு_குறி, ஒரு_வரிசை.அளவு,
+                   ஒரு_வரிசை.அலகு_விலை, ஒரு_வரிசை.வரி_விகிதம்];
+        தளம்_செய் "UPDATE carakkukaL SET iruppu = iruppu - ? WHERE kuRi = ?",
+                  [ஒரு_வரிசை.அளவு, ஒரு_வரிசை.சரக்கு_குறி];
+    }
+
+    தளம்_செய் "COMMIT", [];
+    திரும்பு சரி(ஆணை_எண்);
+}
+
+தளம்_செய் "DROP TABLE IF EXISTS ANYkaL", [];
+தளம்_செய் "DROP TABLE IF EXISTS ANY_varicYkaL", [];
+தளம்_செய் "CREATE TABLE ANYkaL (
+              kuRi TEXT PRIMARY KEY, vAtikkYyALar TEXT NOT NULL,
+              naaL TEXT NOT NULL, qokY TEXT NOT NULL, nilY TEXT NOT NULL)", [];
+தளம்_செய் "CREATE TABLE ANY_varicYkaL (
+              ANY_kuRi TEXT NOT NULL, carakku_kuRi TEXT NOT NULL,
+              aLavu INTEGER NOT NULL, alaku_vilY TEXT NOT NULL,
+              vari_viqam TEXT NOT NULL)", [];
+
+// --- A customer buys something -------------------------------------------
+
+வண்டி = [
+    வண்டி_ஒரு_வரிசை("P1", "பட்டுப் புடவை", 4500, 2, 5),
+    வண்டி_ஒரு_வரிசை("P2", "கைப்பேசி உறை", 349.50, 3, 18)
+];
+
+கணக்கு = வண்டி_கணக்கு(வண்டி, மெய்);      // மெய் = within the state
+
+அச்சு "";
+விலைப்பட்டியல்_அச்சிடு("INV-001", "ரவி குமார்", "2026-08-20", வண்டி, கணக்கு);
+
+விளைவு = ஆணை_இடு("ORD-001", "ரவி குமார்", "2026-08-20", வண்டி, கணக்கு.செலுத்தவேண்டியது);
+அச்சு "";
+அச்சு "ஆணை: " & இயல்பு(விளைவு, "மறுக்கப்பட்டது");
+
+// --- And one that cannot be filled ---------------------------------------
+
+பெரிய_வண்டி = [வண்டி_ஒரு_வரிசை("P3", "வெண்கல விளக்கு", 1250, 10, 12)];
+மறுப்பு = ஆணை_இடு("ORD-002", "பிரியா", "2026-08-20", பெரிய_வண்டி, 14000);
+அச்சு "மறுக்கப்பட்டதா: " & தவறா(மறுப்பு);
+
+// The rollback has to have put the stock back exactly as it was.
+தளம்_வினா "SELECT iruppu FROM carakkukaL WHERE kuRi = ?", ["P3"], மீதி;
+அச்சு "P3 இருப்பு: " & மீதி[0].iruppu & "  (3 = rollback restored it)";
+
+தளம்_வினா "SELECT COUNT(*) AS எண்ணிக்கை FROM ANYkaL", [], ஆணைகள்;
+அச்சு "பதிந்த ஆணைகள்: " & ஆணைகள்[0].எண்ணிக்கை & "  (1 = the refused one left nothing)";
+
+// --- The books ------------------------------------------------------------
+// The same order, posted as double entry. This is the part a shop usually
+// bolts on afterwards.
+
+கணக்குகள் = கடை_கணக்குகள்();
+பேரேடு = [];
+
+// Opening capital.
+தொடக்கம் = பரிவர்த்தனை_ஆக்கு("JV-000", "2026-04-01", "தொடக்க மூலதனம்", [
+    பற்று_வரிசை(கணக்கு_வங்கி(), 200000),
+    வரவு_வரிசை(கணக்கு_மூலதனம்(), 200000)
+]);
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, தொடக்கம்));
+
+// The sale: the customer owes the gross, revenue takes the net, and the tax
+// sits in a liability until it is paid over.
+// Posted with பரிவர்த்தனை_ஆக்கு rather than விற்பனை_பரிவர்த்தனை: that helper
+// applies one rate to the whole invoice, and the tax here was already worked
+// out per line, so recomputing it would disagree with what the customer was
+// charged.
+விற்பனை = பரிவர்த்தனை_ஆக்கு("INV-001", "2026-08-20", "ரவி குமார் — INV-001", [
+    பற்று_வரிசை(கணக்கு_வாடிக்கையாளர்(), கணக்கு.செலுத்தவேண்டியது),
+    வரவு_வரிசை(கணக்கு_விற்பனை(), கணக்கு.அடிப்படை),
+    வரவு_வரிசை(கணக்கு_வரி_செலுத்த(), கணக்கு.வரி)
+]);
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, விற்பனை));
+
+// The customer pays.
+வரவு_பணம் = பணம்_பெறு("RCT-001", "2026-08-21", "ரவி குமார் — INV-001",
+                        கணக்கு_வங்கி(), கணக்கு_வாடிக்கையாளர்(),
+                        கணக்கு.செலுத்தவேண்டியது);
+பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, வரவு_பணம்));
+
+அச்சு "";
+அச்சு "=== நிலுவை (what the customer still owes) ===";
+அச்சு "  " & ரூபாய்(கணக்கு_இருப்பு(பேரேடு, கணக்கு_வாடிக்கையாளர்(), "சொத்து"))
+      & "  (0 = paid in full)";
+அச்சு "=== வணிகவரி செலுத்தவேண்டியது (GST owed to the government) ===";
+அச்சு "  " & ரூபாய்(கணக்கு_இருப்பு(பேரேடு, கணக்கு_வரி_செலுத்த(), "பொறுப்பு"));
+
+அச்சு "";
+இருப்பாய்வு_அச்சிடு(இருப்பாய்வு(பேரேடு, கணக்குகள்));
+
+அச்சு "";
+வருமான_அறிக்கை_அச்சிடு(வருமான_அறிக்கை(பேரேடு, கணக்குகள்));
+
+அச்சு "";
+இருப்புநிலை_அச்சிடு(இருப்புநிலை(பேரேடு, கணக்குகள்));
+
+தளம்_பிரி சீகுலைட்;

@@ -2,9 +2,9 @@
 #
 # Run every example and check each one behaves as expected.
 #
-# Two examples are expected to FAIL: they use route statements the VM cannot
+# Three examples are expected to FAIL: they use route statements the VM cannot
 # execute, and failing loudly is the intended behaviour. This script fails if
-# any other example breaks, or if one of those two starts passing without the
+# any other example breaks, or if one of those starts passing without the
 # expectation being updated.
 #
 # Examples needing a database server that this repository does not provide are
@@ -32,6 +32,7 @@ export ETAMIL_PATH="$ROOT"
 declare -A EXPECT_FAIL=(
     ["examples/api/simple_api.qmz"]="not implemented"
     ["examples/api/vari_cEvY.qmz"]="not implemented"
+    ["examples/kadai/kadai_cEvY.qmz"]="not implemented"
 )
 
 # Examples needing an external server, and the variable that opts them in.
