@@ -78,7 +78,7 @@ jobs:
       # script it runs locally exactly as it runs here.
       - name: Run the packaged binary
         shell: bash
-        run: ./packaging/smoke-test.sh "dist/${{ matrix.package }}"
+        run: bash packaging/smoke-test.sh "dist/${{ matrix.package }}"
 
       - uses: actions/upload-artifact@v4
         with:
