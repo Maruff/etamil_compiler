@@ -64,10 +64,11 @@ romanized and an `_english` name — see `docs/reference/KEYWORDS.md`.
 sign or pulli, so counting code points would give 7 and every helper here
 would be wrong on Tamil text.
 
-**A keyword used as a record field is stored under its token name.**
-`{வரி: 1000}` and `{vari: 1000}` both produce the field `Tax` — which is what
-makes the two spellings interchangeable. If you look a field up by string,
-use the canonical name, or use a field name that is not a keyword.
+**A field name is stored exactly as written**, keyword or not: `{வரி: 1000}`
+produces the field `வரி`. It used to be filed under the English token name
+`Tax`, which anglicised the author's own words; that changed with roadmap item
+2. The consequence is that `{வரி: 1}` and `{vari: 1}` are now *different*
+fields, so a program should pick one spelling and keep to it.
 
 ## Import paths
 
