@@ -114,6 +114,7 @@ TOKEN_SCOPES = {
     "HttpOptions": "support.constant.http-method.etamil",
     "HttpHead": "support.constant.http-method.etamil",
     "Route": "keyword.control.route.etamil",
+    "Every": "keyword.control.every.etamil",
     "Response": "keyword.other.response.etamil",
 }
 
@@ -201,6 +202,10 @@ SNIPPETS = {
     "Route": (
         '{kw} ${1|பெறு,பதி,இடு,அழி|}, "${2:/kaNakku/:id}" {\n\tபதில் 200, ${3:"ok"};\n}',
         '{kw} ${1|peRu,paqi,itu,azi|}, "${2:/kaNakku/:id}" {\n\tpaDil 200, ${3:"ok"};\n}',
+    ),
+    "Every": (
+        '{kw} ${1:3600} {\n\t${2:அச்சு "ஒவ்வொரு மணிநேரமும்";}\n}',
+        '{kw} ${1:3600} {\n\t${2:accu "every hour";}\n}',
     ),
     "Response": ('{kw} ${1:200}, ${2:"ok"};', '{kw} ${1:200}, ${2:"ok"};'),
     "StartServer": ('{kw} "${1:127.0.0.1}", ${2:8080};', '{kw} "${1:127.0.0.1}", ${2:8080};'),
@@ -552,6 +557,7 @@ def build_grammar(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) 
         "keyword.control.flow.return.etamil",
         "keyword.control.import.etamil",
         "keyword.control.route.etamil",
+        "keyword.control.every.etamil",
         "keyword.control.etamil",
         "keyword.declaration.function.etamil",
         "keyword.operator.logical.etamil",

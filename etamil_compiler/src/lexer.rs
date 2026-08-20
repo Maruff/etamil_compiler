@@ -212,6 +212,9 @@ pub enum Token {
     #[regex("தள_இடை|qaLa_itY|_api")] API,
     #[regex("இறுதி_புள்ளி|iraqi_pulli|_endpoint")] Endpoint,
     #[regex("வழி|vazhi|_route")] Route,
+    // Runs a block on a timer under --server / --async. Romanization from
+    // scripts/transliterate.py, never by hand.
+    #[regex("இடைவெளி|itYveLi|_every")] Every,
     #[regex("கோரிக்கை|kOrikkY|_request")] Request,
     #[regex("பதில்|paDil|_response")] Response,
     #[regex("தலைப்பு|talYppu|_header")] Header,

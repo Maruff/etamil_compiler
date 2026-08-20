@@ -39,6 +39,8 @@ pub struct AsyncHttpServer {
     /// Compiled once at registration and shared with every task; a request
     /// should not pay to recompile its handler.
     handlers: HashMap<String, Bytecode>,
+    /// Timed jobs: how often, and what to run.
+    schedules: Vec<(u64, Bytecode)>,
 }
 
 impl AsyncHttpServer {
@@ -47,6 +49,7 @@ impl AsyncHttpServer {
             host: host.to_string(),
             port,
             handlers: HashMap::new(),
+            schedules: Vec::new(),
         }
     }
 
@@ -54,6 +57,17 @@ impl AsyncHttpServer {
         let bytecode = BytecodeCompiler::compile_statements(handler);
         self.handlers
             .insert(format!("{} {}", method.to_uppercase(), path), bytecode);
+    }
+
+    /// Register a block to run on a timer.
+    ///
+    /// The interval is the gap *between* runs. A tick waits for the previous
+    /// one, so a job slower than its interval runs late rather than twice at
+    /// once — two copies of a reconciliation overlapping is worse than one
+    /// running behind.
+    pub fn register_schedule(&mut self, seconds: u64, body: Vec<Stmt>) {
+        let bytecode = BytecodeCompiler::compile_statements(body);
+        self.schedules.push((seconds.max(1), bytecode));
     }
 
     pub fn routes(&self) -> impl Iterator<Item = &String> {
@@ -78,6 +92,26 @@ impl AsyncHttpServer {
         println!("🧵 Handlers run on tokio's blocking pool; the VM stays synchronous");
         println!("   Press Ctrl-C to stop.");
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+        // Timed jobs run on the blocking pool like handlers, for the same
+        // reason: the VM blocks, and so does whatever driver a job reaches for.
+        for (index, (seconds, bytecode)) in self.schedules.into_iter().enumerate() {
+            let label = format!("#{} every {}s", index + 1, seconds);
+            println!("⏱️  Scheduled job {}", label);
+            tokio::spawn(async move {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(seconds)).await;
+                    let bytecode = bytecode.clone();
+                    let label = label.clone();
+                    // Awaited, so the next tick cannot start before this one
+                    // finishes.
+                    let _ = tokio::task::spawn_blocking(move || {
+                        crate::http::handler::run_scheduled(&label, &bytecode)
+                    })
+                    .await;
+                }
+            });
+        }
 
         // Shared rather than cloned per request: the handlers are read-only
         // once the server has started.

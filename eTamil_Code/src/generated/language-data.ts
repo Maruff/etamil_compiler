@@ -2281,6 +2281,20 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "snippetLatin": "{kw} ${1|peRu,paqi,itu,azi|}, \"${2:/kaNakku/:id}\" {\n\tpaDil 200, ${3:\"ok\"};\n}"
   },
   {
+    "token": "Every",
+    "forms": [
+      "இடைவெளி",
+      "itYveLi",
+      "_every"
+    ],
+    "group": "REST API & HTTP",
+    "scope": "keyword.control.every.etamil",
+    "reserved": true,
+    "noSyntax": false,
+    "snippetTamil": "{kw} ${1:3600} {\n\t${2:அச்சு \"ஒவ்வொரு மணிநேரமும்\";}\n}",
+    "snippetLatin": "{kw} ${1:3600} {\n\t${2:accu \"every hour\";}\n}"
+  },
+  {
     "token": "Request",
     "forms": [
       "கோரிக்கை",
@@ -3077,6 +3091,104 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "params": null,
     "arity": 1,
     "doc": "சீட்டு_சரிபார்(சீட்டு) — verify, yielding the claims as JSON",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "பைட்டுகள்",
+    "forms": [
+      "பைட்டுகள்",
+      "pYttukaL",
+      "_bytes"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "பைட்டுகள்(சரம்) — the UTF-8 bytes of some text",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "பைட்டுச்_சரம்",
+    "forms": [
+      "பைட்டுச்_சரம்",
+      "pYttuc_caram",
+      "_fromBytes"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "பைட்டுச்_சரம்(அணி) — text from bytes, as a result",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "கையொப்பம்",
+    "forms": [
+      "கையொப்பம்",
+      "kYyoppam",
+      "_sign"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "கையொப்பம்(விசை, செய்தி) — HMAC-SHA256 as lowercase hex",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "கையொப்பம்_சரியா",
+    "forms": [
+      "கையொப்பம்_சரியா",
+      "kYyoppam_cariyA",
+      "_verifySignature"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "கையொப்பம்_சரியா(விசை, செய்தி, கையொப்பம்) — verify one",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வலை_பெறு",
+    "forms": [
+      "வலை_பெறு",
+      "valY_peRu",
+      "_httpGet"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "வலை_பெறு(உரலி, தலைப்புகள்)",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வலை_பதி",
+    "forms": [
+      "வலை_பதி",
+      "valY_paqi",
+      "_httpPost"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "வலை_பதி(உரலி, உடலுரை, தலைப்புகள்)",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வலை_அனுப்பு",
+    "forms": [
+      "வலை_அனுப்பு",
+      "valY_aZuppu",
+      "_httpRequest"
+    ],
+    "params": null,
+    "arity": 4,
+    "doc": "வலை_அனுப்பு(முறை, உரலி, உடலுரை, தலைப்புகள்) — any method",
     "kind": "builtin",
     "module": null,
     "line": null
@@ -4878,6 +4990,101 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kaNiqam.qmz",
     "line": 70
+  },
+  {
+    "name": "மீதி",
+    "forms": [
+      "மீதி"
+    ],
+    "params": [
+      "எண்_மதிப்பு",
+      "வகுப்பான்"
+    ],
+    "arity": 2,
+    "doc": "மீதி(எண், வகுப்பான்) — the remainder, since there is no % operator",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNiqam.qmz",
+    "line": 78
+  },
+  {
+    "name": "அறுபத்துநான்கு_எழுத்துகள்",
+    "forms": [
+      "அறுபத்துநான்கு_எழுத்துகள்"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 21
+  },
+  {
+    "name": "பதினாறு_எழுத்துகள்",
+    "forms": [
+      "பதினாறு_எழுத்துகள்"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 25
+  },
+  {
+    "name": "அறுபத்துநான்கு_ஆக்கு",
+    "forms": [
+      "அறுபத்துநான்கு_ஆக்கு"
+    ],
+    "params": [
+      "மூலம்"
+    ],
+    "arity": 1,
+    "doc": "அறுபத்துநான்கு_ஆக்கு(சரம்) — text as base64",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 34
+  },
+  {
+    "name": "அறுபத்துநான்கு_படி",
+    "forms": [
+      "அறுபத்துநான்கு_படி"
+    ],
+    "params": [
+      "குறியிட்டது"
+    ],
+    "arity": 1,
+    "doc": "அறுபத்துநான்கு_படி(சரம்) — base64 back to text",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 76
+  },
+  {
+    "name": "பதினாறு_ஆக்கு",
+    "forms": [
+      "பதினாறு_ஆக்கு"
+    ],
+    "params": [
+      "மூலம்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 123
+  },
+  {
+    "name": "பதினாறு_படி",
+    "forms": [
+      "பதினாறு_படி"
+    ],
+    "params": [
+      "குறியிட்டது"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/kuRiyAkkam.qmz",
+    "line": 132
   },
   {
     "name": "குழுக்கள்",

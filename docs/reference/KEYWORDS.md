@@ -277,6 +277,7 @@ for an amount.
 | தள_இடை | `qaLa_itY` | `_api` | `API` |
 | இறுதி_புள்ளி | `iraqi_pulli` | `_endpoint` | `Endpoint` |
 | வழி | `vazhi` | `_route` | `Route` |
+| இடைவெளி | `itYveLi` | `_every` | `Every` |
 | கோரிக்கை | `kOrikkY` | `_request` | `Request` |
 | பதில் | `paDil` | `_response` | `Response` |
 | தலைப்பு | `talYppu` | `_header` | `Header` |

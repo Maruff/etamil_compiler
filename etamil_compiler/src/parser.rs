@@ -274,6 +274,12 @@ pub enum Stmt {
         host: Expr,
         port: Expr,
     },
+    // இடைவெளி 60 { … } — run the block every 60 seconds. Lifted out of the
+    // program at startup like வழி, and needs a server for the same reason.
+    Schedule {
+        seconds: Expr,
+        body: Vec<Stmt>,
+    },
     StopServer,
     // பதில் 200, உடல்;  or with headers as an ordinary record:
     // பதில் 200, உடல், {"Content-Type": "text/html"};
@@ -738,6 +744,12 @@ impl<'a> Parser<'a> {
                 let handler = self.parse_block()?;
                 Ok(Stmt::DefineRoute { method, path, handler })
             }
+            Token::Every => {
+                let seconds = self.parse_expression()?;
+                self.expect(Token::LBrace)?;
+                let body = self.parse_block()?;
+                Ok(Stmt::Schedule { seconds, body })
+            }
             Token::StartServer => {
                 let host = self.parse_expression()?;
                 self.expect(Token::Comma)?;
@@ -1071,7 +1083,7 @@ impl<'a> Parser<'a> {
             // Database types
             Token::SQL | Token::NoSQL | Token::SQLite | Token::MySQL | Token::PostgreSQL | Token::MongoDB | Token::Redis | Token::JSONdb => false,
             // REST API operations
-            Token::Route | Token::StartServer | Token::StopServer | Token::Response | Token::JSONBody => false,
+            Token::Route | Token::Every | Token::StartServer | Token::StopServer | Token::Response | Token::JSONBody => false,
             Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body | Token::Param | Token::QueryParam | Token::PathParam => false,
             Token::URL | Token::Host | Token::Port | Token::Method | Token::StatusCode | Token::StatusMessage | Token::Auth | Token::BearerToken | Token::ContentType | Token::Serve => false,
             Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,

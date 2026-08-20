@@ -1068,13 +1068,221 @@ fn json_reads_an_empty_object_and_array() {
         r#"இறக்கு "jEcAZ.qmz";
            பொருள்_நீளம் = நீளம்(மதிப்பு(ஜேசான்_படி("{}")));
            அணி_நீளம் = நீளம்(மதிப்பு(ஜேசான்_படி("[]")));
-           இடைவெளி = ஜேசான்_ஆக்கு(மதிப்பு(ஜேசான்_படி("  {  \"a\" : 1 }  ")));"#,
+           வெண்மையுடன் = ஜேசான்_ஆக்கு(மதிப்பு(ஜேசான்_படி("  {  \"a\" : 1 }  ")));"#,
     )
     .unwrap();
 
     assert_eq!(num(&vm, "பொருள்_நீளம்"), dec(0));
     assert_eq!(num(&vm, "அணி_நீளம்"), dec(0));
-    assert_eq!(text(&vm, "இடைவெளி"), r#"{"a":1}"#);
+    assert_eq!(text(&vm, "வெண்மையுடன்"), r#"{"a":1}"#);
+}
+
+// --- Scheduled blocks (இடைவெளி) -------------------------------------------
+// Lifted out of the program at startup like வழி, and needing a server for the
+// same reason: the VM has no clock to hang them on.
+
+#[test]
+fn a_schedule_needs_a_server() {
+    let failure = run(r#"இடைவெளி 60 { அச்சு "நள்ளிரவு"; }"#);
+
+    let message = failure.unwrap_err();
+    assert!(
+        message.contains("இடைவெளி") && message.contains("not implemented"),
+        "should refuse loudly under the VM: {}",
+        message
+    );
+}
+
+// It parses, and the body is ordinary code — which is what lets --check find a
+// mistake inside one without a server.
+#[test]
+fn a_schedule_body_is_checked() {
+    let tokens = etamil_compiler::lexer::tokenize(
+        r#"இடைவெளி 3600 { ஈர்ம கொடியா = [1, 2]; }"#,
+    )
+    .expect("should lex");
+    let ast = Parser::new(tokens.iter()).parse().expect("should parse");
+
+    let errors = etamil_compiler::check::check(&ast)
+        .expect_err("an array is not a boolean, even inside a schedule");
+    assert!(errors[0].to_string().contains("கொடியா"));
+}
+
+#[test]
+fn a_schedule_takes_an_interval_and_a_block() {
+    let tokens = etamil_compiler::lexer::tokenize(
+        r#"இடைவெளி 900 { அச்சு "x"; அச்சு "y"; }"#,
+    )
+    .expect("should lex");
+    let ast = Parser::new(tokens.iter()).parse().expect("should parse");
+
+    assert_eq!(ast.len(), 1);
+    match &ast[0] {
+        etamil_compiler::parser::Stmt::Schedule { body, .. } => {
+            assert_eq!(body.len(), 2, "both statements belong to the block");
+        }
+        other => panic!("expected a schedule, got {:?}", other),
+    }
+}
+
+#[test]
+fn a_schedule_without_a_block_is_a_parse_error() {
+    let error = parse_error(r#"இடைவெளி 60;"#);
+    assert!(error.contains("'{'"), "should want a block: {}", error);
+}
+
+// --- Bytes and encoding ---------------------------------------------------
+// A byte array is an ordinary array of numbers, so no new value type was
+// needed. The host supplies only the two conversions a language cannot reach —
+// the UTF-8 bytes of a string, and the string back — and base64 and hex are
+// written in eTamil on top of them.
+
+#[test]
+fn bytes_are_the_utf8_of_the_text() {
+    let vm = run(
+        r#"ascii = பைட்டுகள்("A");
+           தமிழ் = பைட்டுகள்("வ");
+           காலி = நீளம்(பைட்டுகள்(""));
+           முதல் = ascii[0];
+           நீ = நீளம்(தமிழ்);"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "முதல்"), dec(65));
+    // வ is U+0BB5, three bytes in UTF-8 — not one "character".
+    assert_eq!(num(&vm, "நீ"), dec(3));
+    assert_eq!(num(&vm, "காலி"), dec(0));
+}
+
+#[test]
+fn bytes_round_trip_through_a_string() {
+    let vm = run(
+        r#"மூலம் = "வணக்கம் உலகம்";
+           மறுபடி = மதிப்பு(பைட்டுச்_சரம்(பைட்டுகள்(மூலம்)));
+           ஒன்றா = மறுபடி == மூலம்;"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
+}
+
+// Bytes that are not valid UTF-8 arrive from outside all the time, so this is
+// a தவறு a caller can handle rather than an error that stops the program.
+#[test]
+fn bytes_that_are_not_utf8_are_refused() {
+    let vm = run(
+        r#"தவறியது = தவறா(பைட்டுச்_சரம்([255, 254]));
+           சரியது = சரியா(பைட்டுச்_சரம்([104, 105]));"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறியது"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("சரியது"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_byte_must_be_a_whole_number_in_range() {
+    assert!(run(r#"விடை = பைட்டுச்_சரம்([300]);"#).is_err(), "300 is not a byte");
+    assert!(run(r#"விடை = பைட்டுச்_சரம்([1.5]);"#).is_err(), "1.5 is not a byte");
+    assert!(run(r#"விடை = பைட்டுச்_சரம்(65);"#).is_err(), "needs an array");
+}
+
+// The RFC 4648 vectors, so the answers are checked against something this
+// project did not produce. The padding cases are the ones that go wrong.
+#[test]
+fn base64_matches_the_published_vectors() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kuRiyAkkam.qmz";
+           காலி = அறுபத்துநான்கு_ஆக்கு("");
+           ஒன்று = அறுபத்துநான்கு_ஆக்கு("f");
+           இரண்டு = அறுபத்துநான்கு_ஆக்கு("fo");
+           மூன்று = அறுபத்துநான்கு_ஆக்கு("foo");
+           ஆறு = அறுபத்துநான்கு_ஆக்கு("foobar");"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "காலி"), "");
+    assert_eq!(text(&vm, "ஒன்று"), "Zg==");
+    assert_eq!(text(&vm, "இரண்டு"), "Zm8=");
+    assert_eq!(text(&vm, "மூன்று"), "Zm9v");
+    assert_eq!(text(&vm, "ஆறு"), "Zm9vYmFy");
+}
+
+#[test]
+fn base64_round_trips_tamil() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kuRiyAkkam.qmz";
+           மூலம் = "வணக்கம் உலகம் — ₹1,23,456.78";
+           மறுபடி = மதிப்பு(அறுபத்துநான்கு_படி(அறுபத்துநான்கு_ஆக்கு(மூலம்)));
+           ஒன்றா = மறுபடி == மூலம்;"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn base64_refuses_what_is_not_base64() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kuRiyAkkam.qmz";
+           குப்பை = தவறா(அறுபத்துநான்கு_படி("!!!"));
+           நல்லது = சரியா(அறுபத்துநான்கு_படி("Zm9v"));"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("குப்பை"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("நல்லது"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn hex_encodes_and_decodes() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kuRiyAkkam.qmz";
+           அ = பதினாறு_ஆக்கு("abc");
+           தமிழ் = பதினாறு_ஆக்கு("வ");
+           மறுபடி = மதிப்பு(பதினாறு_படி("616263"));
+           பெரிய = மதிப்பு(பதினாறு_படி("616263"));"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "அ"), "616263");
+    assert_eq!(text(&vm, "தமிழ்"), "e0aeb5");
+    assert_eq!(text(&vm, "மறுபடி"), "abc");
+    assert_eq!(text(&vm, "பெரிய"), "abc");
+}
+
+#[test]
+fn hex_refuses_bad_input() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kuRiyAkkam.qmz";
+           ஒற்றை = தவறா(பதினாறு_படி("abc"));
+           எழுத்து = தவறா(பதினாறு_படி("zz"));"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒற்றை"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("எழுத்து"), Some(&Value::Boolean(true)));
+}
+
+// மீதி follows from தரை and the arithmetic already present, so it belongs in
+// nUlakam rather than the host — and base64 cannot be written without it,
+// there being no % operator.
+#[test]
+fn stdlib_remainder() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "kaNiqam.qmz";
+           அ = மீதி(17, 5);
+           ஆ = மீதி(64, 64);
+           இ = மீதி(3, 5);
+           ஈ = மீதி(5, 0);"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "அ"), dec(2));
+    assert_eq!(num(&vm, "ஆ"), dec(0));
+    assert_eq!(num(&vm, "இ"), dec(3));
+    // Dividing by zero would otherwise be a runtime error; 0 is the safe answer.
+    assert_eq!(num(&vm, "ஈ"), dec(0));
 }
 
 // --- Signing (HMAC) -------------------------------------------------------
@@ -1274,7 +1482,7 @@ fn a_token_payload_must_be_a_record() {
 
 #[test]
 fn stdlib_files_all_parse() {
-    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz", "jEcAZ.qmz"] {
+    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz", "jEcAZ.qmz", "kuRiyAkkam.qmz"] {
         let path = stdlib_dir().join(file);
         etamil_compiler::module::load_file(&path)
             .unwrap_or_else(|e| panic!("nUlakam/{} failed to load: {}", file, e));

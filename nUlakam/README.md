@@ -19,6 +19,7 @@ frameworks built on top of it.
 | `aNi.qmz` | arrays — `உள்ளதா` `இடம்_காண்` `தலைகீழ்` `வெட்டு` `புலம்_எடு` `காலியா` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
+| `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
 
 ## JSON is written here, not in the host
 
@@ -46,11 +47,14 @@ Only what cannot be expressed in the language itself:
 `வட்டமிடு` `தரை` `மேல்` · `சொல்லாக்கு` `எண்ணாக்கு` · `மேல்_எழுத்து` `கீழ்_எழுத்து` ·
 `இன்று` `நாள்_வேறுபாடு` `நாள்_கூட்டு` ·
 `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்` ·
-`கையொப்பம்` `கையொப்பம்_சரியா` · `வலை_பெறு` `வலை_பதி` `வலை_அனுப்பு`
+`கையொப்பம்` `கையொப்பம்_சரியா` · `வலை_பெறு` `வலை_பதி` `வலை_அனுப்பு` ·
+`பைட்டுகள்` `பைட்டுச்_சரம்`
 
 The last nine are bcrypt, JWT, HMAC and HTTP: hashing and signing need bytes,
 randomness and a constant-time comparison the language cannot reach, and opening
-a socket is a syscall. Everything above them — who a user is,
+a socket is a syscall. The last two are the only thing base64 needed: a byte is
+not something the language can reach on its own, but once it has an array of
+them the encoding is arithmetic, so `kuRiyAkkam.qmz` is ordinary eTamil. Everything above them — who a user is,
 which route needs which role — stays in eTamil, and a token's payload crosses
 the boundary as JSON text that `jEcAZ.qmz` reads and writes.
 

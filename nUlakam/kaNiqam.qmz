@@ -70,3 +70,12 @@
 செயல் முழு_எண்ணா(மதிப்பு) {
     திரும்பு தரை(மதிப்பு) == மதிப்பு;
 }
+
+// மீதி(எண், வகுப்பான்) — the remainder, since there is no % operator
+//
+// Written here rather than added to the host: it follows from தரை and the
+// arithmetic the language already has, so Layer 0 gains nothing by owning it.
+செயல் மீதி(எண்_மதிப்பு, வகுப்பான்) {
+    (வகுப்பான் == 0) எனில் { திரும்பு 0; }
+    திரும்பு எண்_மதிப்பு - தரை(எண்_மதிப்பு / வகுப்பான்) * வகுப்பான்;
+}

@@ -169,6 +169,7 @@ impl Checker {
                 self.check_block(body);
             }
             Stmt::DefineRoute { handler, .. } => self.check_block(handler),
+            Stmt::Schedule { body, .. } => self.check_block(body),
 
             // These bind a name to a value whose type the host decides — rows
             // from a query, text from a file — so any earlier declaration no

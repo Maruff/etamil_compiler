@@ -269,6 +269,7 @@ impl BytecodeCompiler {
             Stmt::CreateTable { .. } => "அட்டை_ஆக்கு (create table)",
             Stmt::Select { .. } => "தேர்வெடு (select)",
             Stmt::DefineRoute { .. } => "வழி (route)",
+            Stmt::Schedule { .. } => "இடைவெளி (schedule)",
             Stmt::StartServer { .. } => "வழங்கி_தொடங்கு (start server)",
             Stmt::StopServer => "வழங்கி_நிறுத்து (stop server)",
             Stmt::SendResponse { .. } => "பதில் (response)",

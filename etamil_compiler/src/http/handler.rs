@@ -172,6 +172,21 @@ pub fn dispatch(handlers: &HashMap<String, Bytecode>, request: &HttpRequest) -> 
     }
 }
 
+/// Run one tick of a scheduled job.
+///
+/// A fresh VM, like a request — so a job sees no leftover state from its last
+/// run, and borrows its database connection from the same pool a handler uses.
+///
+/// A failure is logged and swallowed. A scheduled job is nobody's request:
+/// there is no caller to return an error to, and a nightly reconciliation that
+/// throws should not take the server down with it.
+pub fn run_scheduled(label: &str, bytecode: &Bytecode) {
+    let mut vm = VM::new();
+    if let Err(e) = vm.execute(bytecode.clone()) {
+        eprintln!("❌ இடைவெளி {} failed: {}", label, e);
+    }
+}
+
 pub struct RequestHandler;
 
 impl RequestHandler {

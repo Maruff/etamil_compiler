@@ -43,6 +43,8 @@ pub struct HttpServer {
     pub logger: Logger,
     pub metrics: MetricsCollector,
     pub health_checker: HealthChecker,
+    /// Timed jobs: how often, and what to run.
+    pub schedules: Vec<(u64, crate::vm::Bytecode)>,
 }
 
 impl HttpServer {
@@ -56,6 +58,7 @@ impl HttpServer {
             logger: Logger::new(LogLevel::Info),
             metrics: MetricsCollector::new(),
             health_checker: HealthChecker::new(),
+            schedules: Vec::new(),
         }
     }
 
@@ -69,7 +72,18 @@ impl HttpServer {
             logger,
             metrics: MetricsCollector::new(),
             health_checker: HealthChecker::new(),
+            schedules: Vec::new(),
         }
+    }
+
+    /// Register a block to run on a timer.
+    ///
+    /// The interval is the gap *between* runs, not a fixed rate: a job slower
+    /// than its interval would otherwise pile up on itself, and two copies of
+    /// a reconciliation running at once is worse than one running late.
+    pub fn register_schedule(&mut self, seconds: u64, body: Vec<Stmt>) {
+        let bytecode = crate::vm::BytecodeCompiler::compile_statements(body);
+        self.schedules.push((seconds.max(1), bytecode));
     }
 
     /// Register a route with an eTamil handler.
@@ -118,6 +132,17 @@ impl HttpServer {
         let receiver = Mutex::new(receiver);
 
         std::thread::scope(|scope| {
+            // Timed jobs get their own threads, outside the request pool, so a
+            // long-running job cannot starve requests of a worker.
+            for (index, (seconds, bytecode)) in self.schedules.iter().enumerate() {
+                let label = format!("#{} every {}s", index + 1, seconds);
+                println!("⏱️  Scheduled job {}", label);
+                scope.spawn(move || loop {
+                    std::thread::sleep(std::time::Duration::from_secs(*seconds));
+                    handler::run_scheduled(&label, bytecode);
+                });
+            }
+
             for _ in 0..workers {
                 scope.spawn(|| {
                     loop {
