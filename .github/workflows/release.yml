@@ -31,8 +31,11 @@ jobs:
           # macOS is two genuinely different binaries. Shipping only the Intel
           # one would leave every Apple Silicon machine — which is every Mac
           # sold for years — with a package it cannot run.
-          - os: macos-13
-            target: ''
+          # Cross-compiled on the Apple Silicon runner: the macos-13 label is
+          # being retired and a job asking for it queues forever rather than
+          # failing, which is the worst of both.
+          - os: macos-latest
+            target: x86_64-apple-darwin
             package: etamil-macos-x64.tar.gz
             setup: native
           - os: macos-latest
@@ -83,7 +86,9 @@ jobs:
           DIR="$(basename "${{ matrix.package }}" .tar.gz)"
           DIR="$(basename "$DIR" .zip)"
           BIN="$DIR/etamil"
-          [ -f "$BIN.exe" ] && BIN="$BIN.exe"
+          if [ -f "$BIN.exe" ]; then
+            BIN="$BIN.exe"
+          fi
           export ETAMIL_PATH="$PWD/$DIR"
           "$BIN" --version
           echo "950000" | "$BIN" --vm "$DIR/examples/basic_samples/example.qmz" | grep -q "High Tax Bracket"
