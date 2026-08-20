@@ -11,6 +11,8 @@
 
 use crate::vm::Value;
 
+pub mod pool;
+
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
 

@@ -30,10 +30,17 @@ pub struct Frame {
 /// Guards against runaway recursion before the host stack is exhausted.
 const MAX_CALL_DEPTH: usize = 256;
 
-/// Open database connections, keyed by the type name written in source.
-/// Wrapped so the VM can still derive Debug — a driver handle cannot.
+/// Database connections this VM has borrowed, keyed by the type name written
+/// in source. Wrapped so the VM can still derive Debug — a driver handle
+/// cannot.
+///
+/// These are *leases*, not owned connections: dropping one hands it back to
+/// the process-wide idle cache instead of closing it, so the next request does
+/// not pay for a connect, a TLS handshake and an authentication round trip.
+/// A lease is exclusive for as long as it is held, which is what keeps one
+/// request's transaction out of another's — see db::pool.
 #[derive(Default)]
-pub struct Connections(HashMap<String, Box<dyn crate::db::Database>>);
+pub struct Connections(HashMap<String, crate::db::pool::Lease>);
 
 impl std::fmt::Debug for Connections {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -42,11 +49,11 @@ impl std::fmt::Debug for Connections {
 }
 
 impl Connections {
-    pub fn insert(&mut self, name: String, handle: Box<dyn crate::db::Database>) {
-        self.0.insert(name, handle);
+    pub fn insert(&mut self, name: String, lease: crate::db::pool::Lease) {
+        self.0.insert(name, lease);
     }
 
-    pub fn remove(&mut self, name: &str) -> Option<Box<dyn crate::db::Database>> {
+    pub fn remove(&mut self, name: &str) -> Option<crate::db::pool::Lease> {
         self.0.remove(name)
     }
 
@@ -82,9 +89,15 @@ impl VM {
 
     /// The connection to use for a query. There is one per database type, and
     /// with a single type open the choice is unambiguous.
-    fn connection_mut(&mut self) -> Result<&mut Box<dyn crate::db::Database>, String> {
+    fn connection_mut(&mut self) -> Result<&mut dyn crate::db::Database, String> {
         if self.connections.0.len() == 1 {
-            return Ok(self.connections.0.values_mut().next().expect("checked"));
+            return Ok(self
+                .connections
+                .0
+                .values_mut()
+                .next()
+                .expect("checked")
+                .as_mut());
         }
         if self.connections.is_empty() {
             return Err(
@@ -1008,12 +1021,19 @@ impl VM {
                 }
                 Instruction::DBConnect(db_type) => {
                     let connection = self.pop()?.to_string();
-                    let handle = crate::db::open(&db_type, &connection)?;
-                    self.connections.insert(db_type, handle);
+                    // Borrowed rather than opened: under --server every request
+                    // runs on a fresh VM, so this statement is reached once per
+                    // request and used to mean a new connection each time.
+                    let lease = crate::db::pool::checkout(&db_type, &connection)?;
+                    self.connections.insert(db_type, lease);
                 }
                 Instruction::DBDisconnect(db_type) => {
+                    // Returns the connection to the cache rather than closing
+                    // it. தளம்_பிரி means "I am done with this", which is what
+                    // a program actually wants to say; keeping the socket open
+                    // for the next request is the host's business.
                     match self.connections.remove(&db_type) {
-                        Some(mut handle) => handle.close()?,
+                        Some(lease) => drop(lease),
                         None => {
                             return Err(format!(
                                 "'{}' இணைக்கப்படவில்லை  (not connected to {})",

@@ -64,6 +64,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Standard library (`nUlakam/`) | ✅ Working | strings, math, arrays, money — **written in eTamil** |
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
+| Connection reuse | ✅ Working | `தளம்_இணை` borrows from a process-wide idle cache instead of reconnecting per request; leases are exclusive, so transactions stay isolated. `ETAMIL_DB_IDLE` caps it |
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
 | MySQL / MariaDB | ✅ Live verified | `--features mysql`; the live sample passes with `ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh`; setup details are in `TESTING.md` |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |

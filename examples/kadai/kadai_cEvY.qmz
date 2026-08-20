@@ -9,8 +9,9 @@
 // statements need a server. scripts/run_examples.sh expects that failure.
 //
 // Every response is built with ஜேசான்_ஆக்கு, which is eTamil, not a host
-// builtin. Each request gets its own VM, so the connection is opened per
-// handler; that is the next thing to fix.
+// builtin. தளம்_இணை appears in every handler because each request gets its own
+// VM — but it borrows from a cache rather than opening a socket, so saying it
+// per route costs nothing.
 
 இறக்கு "kadai.qmz";
 இறக்கு "../../nUlakam/jEcAZ.qmz";
