@@ -1,3 +1,8 @@
+> 📖 New to eTamil? Start with the
+> **[user manual at etamil.in/manual](https://etamil.in/manual/)**
+> ([தமிழ்](https://etamil.in/ta/manual/)), or the
+> [keyword reference](https://etamil.in/keywords/).
+
 # eTamil for VS Code
 
 Language support for [eTamil](https://etamil.in) — a programming language whose
