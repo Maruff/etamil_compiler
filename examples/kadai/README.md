@@ -73,5 +73,4 @@ Prices come from the database, never from the request — a client that could
 send its own price could send zero. But this is an MVP, and it is missing
 things a shop needs: no login on the routes (the pieces exist —
 `கடவுச்சொல்_மறை` and `சீட்டு_ஆக்கு`), no refunds, no shipping, and the
-webhook secret is in the source rather than the environment. Each request also
-opens its own database connection, because every request gets a fresh VM.
+webhook secret is in the source rather than the environment.

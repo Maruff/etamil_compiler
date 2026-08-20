@@ -1,0 +1,258 @@
+//! Keeping connections alive between requests.
+//!
+//! Every HTTP request gets a fresh VM, so a handler that opens a database
+//! opened a new connection each time and threw it away — a TCP connect, a TLS
+//! handshake and an authentication round trip per request, to run one query.
+//!
+//! What this is **not** is a shared connection. Two requests using one
+//! connection would share its transaction state: a `BEGIN` in one would
+//! enclose the other's queries, and a `COMMIT` in one would commit the other's
+//! half-finished work. Order placement in examples/kadai depends on exactly
+//! that not happening. So a connection is leased *exclusively* for as long as
+//! a VM holds it, and only returns to the cache when the VM is done with it.
+//!
+//! It is an idle cache with a cap rather than a fixed-size pool: if nothing is
+//! idle, a new connection is opened rather than waiting for one. A fixed pool
+//! would need blocking and a bound on how long to block, and a request that
+//! deadlocks waiting for a connection is worse than one that opens a second.
+
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
+
+use super::Database;
+
+/// How many idle connections to keep per database. Beyond this, a returning
+/// connection is closed instead of cached.
+fn idle_cap() -> usize {
+    std::env::var("ETAMIL_DB_IDLE")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(8)
+}
+
+/// One database, identified the way the program named it: the same connection
+/// string against a different backend is a different pool.
+type Key = (String, String);
+
+fn cache() -> &'static Mutex<HashMap<Key, Vec<Box<dyn Database>>>> {
+    static CACHE: OnceLock<Mutex<HashMap<Key, Vec<Box<dyn Database>>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// A connection borrowed from the cache, returned when dropped.
+pub struct Lease {
+    /// None only after `close` has taken it.
+    handle: Option<Box<dyn Database>>,
+    /// Which cache to return to, or None for a connection that never came
+    /// from one — see `detached`.
+    key: Option<Key>,
+}
+
+impl Lease {
+    pub fn as_mut(&mut self) -> &mut dyn Database {
+        // Held for the whole life of the Lease; `close` consumes self.
+        self.handle
+            .as_mut()
+            .expect("a lease holds its connection until it is dropped")
+            .as_mut()
+    }
+
+    /// Wrap a connection that did not come from the cache.
+    ///
+    /// For driving the VM against a stand-in backend: the `Database` trait has
+    /// no driver dependency precisely so that is possible. A detached lease is
+    /// neither rolled back nor cached on release — a test asserting on the SQL
+    /// a program issued should not find a ROLLBACK it never wrote, and a fake
+    /// has no business in a pool of real connections.
+    pub fn detached(handle: Box<dyn Database>) -> Self {
+        Lease {
+            handle: Some(handle),
+            key: None,
+        }
+    }
+
+    /// Close for real, rather than returning to the cache.
+    pub fn close(mut self) -> Result<(), String> {
+        match self.handle.take() {
+            Some(mut handle) => handle.close(),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Drop for Lease {
+    fn drop(&mut self) {
+        let Some(mut handle) = self.handle.take() else {
+            return;
+        };
+        let Some(key) = self.key.clone() else {
+            return; // detached: just close it
+        };
+
+        // A handler that opened a transaction and then failed — or simply
+        // forgot to COMMIT — would otherwise hand the next request a
+        // connection sitting mid-transaction, where its first statement joins
+        // someone else's unit of work. Rolling back on return makes a leaked
+        // transaction impossible.
+        //
+        // The error is ignored on purpose: with no transaction open, SQLite
+        // reports "cannot rollback - no transaction is active", while
+        // PostgreSQL and MySQL succeed with a warning. Nothing here can tell
+        // the difference, and there is nothing to do about it either way.
+        let _ = handle.execute("ROLLBACK", &[]);
+
+        if let Ok(mut cache) = cache().lock() {
+            let idle = cache.entry(key).or_default();
+            if idle.len() < idle_cap() {
+                idle.push(handle);
+            }
+            // Otherwise `handle` drops here and the driver closes it.
+        }
+        // A poisoned cache means another thread panicked holding the lock.
+        // Dropping the connection is the safe response; the alternative is
+        // propagating a panic out of a destructor.
+    }
+}
+
+/// Borrow a connection, opening one if none is idle.
+pub fn checkout(db_type: &str, connection: &str) -> Result<Lease, String> {
+    let key = (db_type.to_string(), connection.to_string());
+
+    if let Ok(mut cache) = cache().lock() {
+        if let Some(idle) = cache.get_mut(&key) {
+            if let Some(handle) = idle.pop() {
+                return Ok(Lease {
+                    handle: Some(handle),
+                    key: Some(key),
+                });
+            }
+        }
+    }
+
+    Ok(Lease {
+        handle: Some(super::open(db_type, connection)?),
+        key: Some(key),
+    })
+}
+
+/// How many connections are cached for a database. For tests and diagnostics.
+pub fn idle_count(db_type: &str, connection: &str) -> usize {
+    cache()
+        .lock()
+        .map(|cache| {
+            cache
+                .get(&(db_type.to_string(), connection.to_string()))
+                .map(Vec::len)
+                .unwrap_or(0)
+        })
+        .unwrap_or(0)
+}
+
+#[cfg(all(test, feature = "sqlite"))]
+mod tests {
+    use super::*;
+
+    /// A distinct database per test: the cache is process-wide, so tests
+    /// sharing a connection string would see each other's idle connections.
+    fn temp_db(name: &str) -> String {
+        std::env::temp_dir()
+            .join(format!("etamil_pool_{}.db", name))
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    #[test]
+    fn a_returned_connection_is_reused() {
+        let path = temp_db("reuse");
+        let _ = std::fs::remove_file(&path);
+
+        assert_eq!(idle_count("SQLite", &path), 0, "nothing cached yet");
+
+        {
+            let mut lease = checkout("SQLite", &path).unwrap();
+            lease
+                .as_mut()
+                .execute("CREATE TABLE IF NOT EXISTS t (a INTEGER)", &[])
+                .unwrap();
+            assert_eq!(idle_count("SQLite", &path), 0, "still checked out");
+        }
+
+        assert_eq!(idle_count("SQLite", &path), 1, "returned to the cache");
+
+        {
+            let _lease = checkout("SQLite", &path).unwrap();
+            assert_eq!(idle_count("SQLite", &path), 0, "taken from the cache");
+        }
+        assert_eq!(idle_count("SQLite", &path), 1);
+    }
+
+    /// The reason a lease is exclusive. If a handler opens a transaction and
+    /// then fails, the connection must not carry that transaction to whoever
+    /// borrows it next — their first statement would silently join someone
+    /// else's unit of work, and a later COMMIT would publish half of it.
+    #[test]
+    fn a_leaked_transaction_does_not_follow_the_connection() {
+        let path = temp_db("leak");
+        let _ = std::fs::remove_file(&path);
+
+        {
+            let mut lease = checkout("SQLite", &path).unwrap();
+            let db = lease.as_mut();
+            db.execute("CREATE TABLE t (a INTEGER)", &[]).unwrap();
+            db.execute("INSERT INTO t VALUES (1)", &[]).unwrap();
+
+            // Opened and deliberately never closed.
+            db.execute("BEGIN", &[]).unwrap();
+            db.execute("INSERT INTO t VALUES (99)", &[]).unwrap();
+        }
+
+        // The same connection comes back out of the cache.
+        let mut lease = checkout("SQLite", &path).unwrap();
+        let rows = lease.as_mut().query("SELECT a FROM t", &[]).unwrap();
+
+        // One row: the uncommitted 99 was rolled back on return. Two would
+        // mean the next borrower inherited an open transaction.
+        assert_eq!(rows.len(), 1, "the abandoned INSERT should have rolled back");
+
+        // And a fresh transaction works, which it could not if the old one
+        // were still open.
+        let db = lease.as_mut();
+        db.execute("BEGIN", &[]).unwrap();
+        db.execute("INSERT INTO t VALUES (2)", &[]).unwrap();
+        db.execute("COMMIT", &[]).unwrap();
+        assert_eq!(db.query("SELECT a FROM t", &[]).unwrap().len(), 2);
+    }
+
+    /// Two leases at once must be two connections, or they would share
+    /// transaction state.
+    #[test]
+    fn two_leases_are_two_connections() {
+        let path = temp_db("two");
+        let _ = std::fs::remove_file(&path);
+
+        let mut first = checkout("SQLite", &path).unwrap();
+        first
+            .as_mut()
+            .execute("CREATE TABLE IF NOT EXISTS t (a INTEGER)", &[])
+            .unwrap();
+
+        let mut second = checkout("SQLite", &path).unwrap();
+        second.as_mut().query("SELECT 1", &[]).unwrap();
+
+        drop(first);
+        drop(second);
+        assert_eq!(idle_count("SQLite", &path), 2, "both were cached");
+    }
+
+    /// close() means close: the connection must not go back to the cache.
+    #[test]
+    fn closing_a_lease_does_not_cache_it() {
+        let path = temp_db("close");
+        let _ = std::fs::remove_file(&path);
+
+        let lease = checkout("SQLite", &path).unwrap();
+        lease.close().unwrap();
+
+        assert_eq!(idle_count("SQLite", &path), 0);
+    }
+}

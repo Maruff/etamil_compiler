@@ -1488,9 +1488,14 @@ fn run_with_db(source: &str, rows: Vec<Value>) -> (Result<VM, String>, Arc<Mutex
     };
     let bytecode = BytecodeCompiler::compile_statements(ast);
     let mut vm = VM::new();
+    // Detached: not from the pool, so it is neither rolled back nor cached on
+    // release — the log below would otherwise show a ROLLBACK no program wrote.
     vm.connections.insert(
         "SQLite".to_string(),
-        Box::new(FakeDb { log: Arc::clone(&log), rows }),
+        etamil_compiler::db::pool::Lease::detached(Box::new(FakeDb {
+            log: Arc::clone(&log),
+            rows,
+        })),
     );
     let outcome = vm.execute(bytecode).map(|_| vm);
     (outcome, log)

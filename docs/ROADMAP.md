@@ -64,7 +64,9 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 **MySQL / MariaDB** is implemented behind `--features mysql` and verified against a live server. Binding is simpler than PostgreSQL's because the server coerces on the way in, so parameters go over as text and stay exact for `DECIMAL`; reading back dispatches on the column type, so a `VARCHAR` of digits comes back a string while a `DECIMAL` comes back a number. `examples/db_samples/mYcIkul_qaLam.qmz` checks that, and `run_examples.sh` skips it unless `ETAMIL_TEST_MYSQL` is set, since it needs a server this repository does not provide.
 
-**Still to do:** transactions; more than one connection open at a time, which the VM currently refuses rather than guessing. MongoDB and Redis need a design before an implementation — neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
+Transactions work, driven as plain SQL — `தளம்_செய் "BEGIN", []` and its COMMIT — because the VM holds one connection across statements. `examples/kadai` depends on that for order placement. There is no language-level transaction *construct*, which is a different thing and still open.
+
+**Still to do:** more than one connection open at a time, which the VM refuses rather than guessing. MongoDB and Redis need a design before an implementation — neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
 
 ---
 
@@ -92,7 +94,9 @@ Request data is injected as variables — `request_method`, `request_path`, `que
 
 Path parameters (`/kaNakku/:id`) are matched, and arrive as `path_params` and as `param_<name>`. `பதில்` takes its headers as an ordinary record — `பதில் 200, உடல், {"Content-Type": "text/html"}` — which is what lets a route serve HTML or a CSV export instead of the JSON the server otherwise assumes. Request bodies reach eTamil as `request_body`.
 
-**Still to do:** the `ஜேசான்_உரை` *statement* is still unimplemented, though `nUlakam/jEcAZ.qmz` makes it unnecessary — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்`. Each request still builds a fresh VM, so a database connection opened in the prelude is reopened per request rather than pooled.
+Each request still builds a fresh VM, but a connection is no longer reopened with it: `தளம்_இணை` borrows from a process-wide idle cache and the lease returns on release. Exclusively — two requests sharing one connection would share its transaction state, and a `BEGIN` in one would enclose the other's queries. A connection is rolled back as it goes back, so a handler that opened a transaction and failed cannot hand the next request a connection sitting mid-transaction.
+
+**Still to do:** the `ஜேசான்_உரை` *statement* is still unimplemented, though `nUlakam/jEcAZ.qmz` makes it unnecessary — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்`.
 
 ---
 
