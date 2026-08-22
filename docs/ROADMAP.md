@@ -11,7 +11,23 @@ Two unrelated numbering schemes existed in this project, both called Phase 1-N. 
 | **Paper Phase 1-5** | The research roadmap: compiler core → domain modules → tooling/REPL → pilot projects → policy engagement | *eTamil: An Indian FinTech DSL* (Maruff & Valli), p.13 |
 | **Backend milestone 1-4** | This repository's HTTP work: sync server → async → logging → auth | source comments in `src/http/` |
 
-They mean entirely different things. Backend milestones 1-4 being "complete" says nothing about paper Phase 2, which has not started. Against the paper's scheme, the project is mid-**Phase 1**: the compiler core exists, the domain modules do not.
+They mean entirely different things. Backend milestones being "complete" says nothing about the paper's phases.
+
+### Where the paper's five phases stand
+
+| Phase | Status | What exists, and what does not |
+|---|---|---|
+| **1. Compiler and core language** | 🟢 Substantially complete | Lexer (202 keywords × 3 spellings), parser with positions on every error, bytecode VM, fixed-point decimal throughout, functions, arrays and records, results, modules, a narrow type checker. **Open:** `செயல்` cannot declare parameter or return types; `மற்றும்`/`அல்லது` evaluate both sides; `a > b > c` parses as `(a > b) > c`; 20 of 202 keywords are off-scheme romanized; the LLVM backend computes in `f64` and supports no builtin |
+| **2. Domain modules — accounting, taxation, banking** | 🟡 Two of three started | **Accounting:** `nUlakam/kaNakkiyal/` — chart of accounts, ledger, the three statements, reporting periods, period close, company and currency, clearing; double entry throughout. **Taxation:** GST on transactions (`vari.qmz`). **Banking: not started** — nothing addresses account numbers, IFSC, UPI, NEFT or settlement. TDS and depreciation schedules are also absent |
+| **3. Tooling, a REPL shell, database integration** | 🟡 Two of three | **Database:** SQLite, PostgreSQL and MySQL, each verified against a live server; one database at a time, and the second is now refused rather than swapped. **Tooling:** VS Code extension with grammar and completions generated from `lexer.rs` and a CI gate against drift, `--check`, prebuilt packages, install scripts. **REPL: not started** — nothing in the repository provides one |
+| **4. Pilot projects and open-source release** | 🟡 Released; no pilot deployed | **Released:** AGPL-3.0 on GitHub, prebuilt packages for Windows, Linux and macOS (Intel and Apple Silicon), install scripts needing no administrator rights, a bilingual manual at etamil.in, CI on two operating systems. **Pilots:** the examples carry an eCommerce backend, a ledger, payroll and inventory, but none is deployed against a real product. The nearest thing is the document pipeline — `.odt`, `.ods`, `.docx` and `.xlsx` filled from real project templates and converted to PDF — which was built and verified but is not yet running anywhere |
+| **5. Policy engagement — MCA, RBI, GSTN** | ⚪ Not started | Nothing in this repository bears on it. It also depends on Phase 2 being further along than it is: a GST module that handles transactions is not the same as one a regulator would recognise |
+
+Against the paper's scheme the project is **mid-Phase 2 and mid-Phase 3**, working on both at once, with Phase 1 close enough to done that what remains in it are known defects rather than missing pieces.
+
+### Backend milestones, continued
+
+The `src/http/` comments number four milestones — sync server, async, logging, auth. A fifth cluster landed after them and is not numbered there: ODF and OOXML packages, a document renderer in `nUlakam/AvaNam.qmz`, running another program for PDF conversion, response bodies that are not text, multipart uploads, and RS256 single sign-on against a provider's published keys. Together those are what let a real document-generating backend be written in eTamil.
 
 ---
 
@@ -66,7 +82,16 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 Transactions work, driven as plain SQL — `தளம்_செய் "BEGIN", []` and its COMMIT — because the VM holds one connection across statements. `examples/kadai` depends on that for order placement. There is no language-level transaction *construct*, which is a different thing and still open.
 
-**Still to do:** more than one connection open at a time, which the VM refuses rather than guessing. MongoDB and Redis need a design before an implementation — neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
+**One database at a time, and it says so.** `தளம்_வினா` names no handle, so with two open there would be no way to say which one a query meant. Two *drivers* at once was already refused. Two databases through the *same* driver was not: connections are keyed by driver, so a second `தளம்_இணை சீகுலைட்` overwrote the first, the count stayed at one, and every query afterwards went to the second database while the program still believed it was talking to the first. That is now refused, naming the database already open:
+
+```
+'SQLite' ஏற்கனவே 'one.db' உடன் இணைக்கப்பட்டுள்ளது
+  ('SQLite' is already connected to 'one.db'): தளம்_பிரி first
+```
+
+Connecting again to the *same* database is not an error — it asks for nothing new. Disconnecting first and then connecting elsewhere works as it always did.
+
+**Still to do:** genuinely concurrent connections, which needs the language to be able to name one — a handle returned by `தளம்_இணை` and taken by `தளம்_வினா`. MongoDB and Redis need a design before an implementation: neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
 
 ---
 
@@ -142,11 +167,14 @@ The checker is deliberately narrow: it enforces what the author declared and sta
 
 ## Smaller known issues
 
-- **No short-circuiting.** `மற்றும்` and `அல்லது` evaluate both sides. Harmless today because expressions have no side effects, but it must change when function calls arrive.
-- **Chained comparisons parse oddly.** `a > b > c` becomes `(a > b) > c`.
-- **Functions are not implemented.** `Call` and `Return` instructions exist but nothing emits them.
-- **`src/finance/` is empty.** `calculator.rs` and `mod.rs` are zero-byte files.
-- **`src/api/` duplicates parser and codegen logic** and is not reachable from `main.rs`.
-- **`CommandExecutor` in `src/commands.rs` is never called** from either binary.
+- **No short-circuiting, and it now costs something.** `மற்றும்` and `அல்லது` evaluate both sides. This was listed as harmless "until function calls arrive"; they have arrived, and the problem is not side effects but errors — a guard cannot guard:
+
+  ```etamil
+  அ = [];
+  (நீளம்(அ) > 0 மற்றும் அ[0] == 1) எனில் { ... }   // ✗ index 0 out of bounds
+  ```
+
+  Two places in the library exist only to work around it: `எழுத்து` in `col.qmz`, and `பகுதியை_எடு` in `AvaNam.qmz`. This is the most expensive item left in Phase 1.
+- **Chained comparisons parse oddly.** `a > b > c` becomes `(a > b) > c`, so `3 > 2 > 1` is `false`.
 - **Encryption is XOR, not AES.** `src/fileio/crypto.rs` uses a repeating-key XOR cipher with a default key. It should not be described as encryption in user-facing docs until it uses a real AEAD.
 - **`rustfmt` and `clippy` are not clean.** CI runs both with `continue-on-error: true`; remove that once the backlog is cleared.
