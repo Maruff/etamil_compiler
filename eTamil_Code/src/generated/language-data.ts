@@ -3437,6 +3437,162 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 60
   },
   {
+    "name": "உள்ளதா",
+    "forms": [
+      "உள்ளதா"
+    ],
+    "params": [
+      "பாடம்",
+      "தேடல்"
+    ],
+    "arity": 2,
+    "doc": "Containment through பிரி, so it costs one pass rather than one scan per",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 41
+  },
+  {
+    "name": "xml_ஆக்கு",
+    "forms": [
+      "xml_ஆக்கு"
+    ],
+    "params": [
+      "உள்ளீடு"
+    ],
+    "arity": 1,
+    "doc": "XML escaping. & goes first, or it would escape the escapes.",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 46
+  },
+  {
+    "name": "பகுதியை_எடு",
+    "forms": [
+      "பகுதியை_எடு"
+    ],
+    "params": [
+      "பட்டியல்",
+      "எங்கே"
+    ],
+    "arity": 2,
+    "doc": "A piece by position, or \"\" past the end. மற்றும் evaluates both sides, so",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 55
+  },
+  {
+    "name": "வரிசைக்குப்_பின்",
+    "forms": [
+      "வரிசைக்குப்_பின்"
+    ],
+    "params": [
+      "பகுதி",
+      "முடிவுக்_குறி"
+    ],
+    "arity": 2,
+    "doc": "Splitting on the row marker gives a piece that is one row PLUS whatever",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 64
+  },
+  {
+    "name": "மாறிப்_பெயர்",
+    "forms": [
+      "மாறிப்_பெயர்"
+    ],
+    "params": [
+      "பகுதி"
+    ],
+    "arity": 1,
+    "doc": "The loop variable named in `{%tr for o in charter.objectives %}`.",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 77
+  },
+  {
+    "name": "உறுப்பை_நிரப்பு",
+    "forms": [
+      "உறுப்பை_நிரப்பு"
+    ],
+    "params": [
+      "படிவம்",
+      "மாற்றுப்_பெயர்",
+      "புலங்கள்",
+      "உறுப்பு"
+    ],
+    "arity": 4,
+    "doc": "One item's worth of a repeating row group.",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 85
+  },
+  {
+    "name": "தொகுதியைத்_தேடு",
+    "forms": [
+      "தொகுதியைத்_தேடு"
+    ],
+    "params": [
+      "தொகுதிகள்",
+      "தேடல்"
+    ],
+    "arity": 2,
+    "doc": "Which declared group owns this loop variable.",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 95
+  },
+  {
+    "name": "ஆவணம்_நிரப்பு",
+    "forms": [
+      "ஆவணம்_நிரப்பு"
+    ],
+    "params": [
+      "மூலம்",
+      "வடிவம்",
+      "மதிப்புகள்",
+      "தொகுதிகள்"
+    ],
+    "arity": 4,
+    "doc": "The whole of it: XML in, XML out.",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 103
+  },
+  {
+    "name": "பொதியை_நிரப்பு",
+    "forms": [
+      "பொதியை_நிரப்பு"
+    ],
+    "params": [
+      "மூலப்_பொதி",
+      "விளைவுப்_பொதி",
+      "வடிவம்",
+      "மதிப்புகள்",
+      "தொகுதிகள்"
+    ],
+    "arity": 5,
+    "doc": "A template package rendered into a new package of the same kind. Only the",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 169
+  },
+  {
+    "name": "pdf_ஆக்கு",
+    "forms": [
+      "pdf_ஆக்கு"
+    ],
+    "params": [
+      "நிரல்",
+      "ஆவணக்_கோப்பு",
+      "சேமிப்பிடம்"
+    ],
+    "arity": 3,
+    "doc": "The PDF of a rendered package. LibreOffice does the conversion, so",
+    "kind": "stdlib",
+    "module": "nUlakam/AvaNam.qmz",
+    "line": 183
+  },
+  {
     "name": "எழுத்து",
     "forms": [
       "எழுத்து"

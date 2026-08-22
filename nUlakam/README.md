@@ -14,12 +14,13 @@ frameworks built on top of it.
 
 | File | Contents |
 |---|---|
-| `col.qmz` | strings — `துண்டு` `தேடு` `பிரி` `ஒன்றிணை` `ஒழுங்கு` `தொடங்குகிறதா` `முடிகிறதா` `இடமிருந்து_நிரப்பு` |
+| `col.qmz` | strings — `துண்டு` `தேடு` `ஒழுங்கு` `தொடங்குகிறதா` `முடிகிறதா` `திரும்பச்செய்` `இடமிருந்து_நிரப்பு` |
 | `kaNiqam.qmz` | math — `முழுமதிப்பு` `சிறியது` `பெரியது` `கூட்டு` `சராசரி` `சதவீதம்` |
 | `aNi.qmz` | arrays — `உள்ளதா` `இடம்_காண்` `தலைகீழ்` `வெட்டு` `புலம்_எடு` `காலியா` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
+| `AvaNam.qmz` | documents — `ஆவணம்_நிரப்பு` `பொதியை_நிரப்பு` `pdf_ஆக்கு`, and the `ODT_வடிவம்` / `ODS_வடிவம்` / `DOCX_வடிவம்` / `XLSX_வடிவம்` shapes |
 
 ## JSON is written here, not in the host
 
@@ -88,3 +89,44 @@ etamil --vm my_program.qmz
 
 No `map` or `filter`: the language has no first-class functions yet. When
 function values arrive, several loops here collapse to one line.
+
+## பிரி and ஒன்றிணை moved to the host
+
+They were written here, like everything else. Both walked the string one
+letter at a time, and every read re-segmented the whole string into written
+letters, so splitting a document cost O(n²) segmentations — measured at 14
+seconds over 8 KB, and 400 KB never finished. They are host builtins now,
+along with `மாற்று`, doing one segmentation pass and then a byte search.
+
+A separator still only matches on a letter boundary, so `பிரி("கா", "ா")`
+does not cut a letter in half. The pieces are the same pieces; only the cost
+differs. A function defined here would shadow a builtin, so they are gone
+from `col.qmz` rather than left to delegate.
+
+## Documents are rendered here, not in the host
+
+`.odt`, `.ods`, `.docx` and `.xlsx` are all zip archives of XML. The host
+opens and rewrites the archive — `பொதி_படி` and `பொதி_மாற்று` — because a
+picture inside one is not text and could not survive being a `சரம்`. What a
+template *means* is decided in `AvaNam.qmz`: which placeholder gets which
+value, which rows repeat, what has to be escaped.
+
+```etamil
+இறக்கு "nUlakam/AvaNam.qmz";
+
+மதிப்புகள் = [{"குறி": "project.name", "மதிப்பு": "Beak PMO"}];
+தொகுதிகள் = [{"பெயர்": "o",
+              "புலங்கள்": ["no", "objective"],
+              "வரிசைகள்": [{"no": "1", "objective": "One source of truth"}]}];
+
+பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+```
+
+A `வடிவம்` is the whole of the difference between the formats: which entry
+holds the text, and what a table row is called there. `{{ name }}` is a value
+and `{%tr for x in list %}` … `{%tr endfor %}` repeats the rows between them,
+which is the convention the templates already used.
+
+An `.xlsx` keeps its text in a shared table and its rows in the sheet, so a
+repeating row there would have to renumber shared-string indexes. Scalars
+work; row groups do not, and `XLSX_வடிவம்` says so rather than half-doing it.
