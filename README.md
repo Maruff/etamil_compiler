@@ -66,7 +66,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Results (`சரி` / `தவறு` / `?`) | ✅ Working | Rust semantics; failure is a value, not an exception |
 | Modules (`இறக்கு`) | ✅ Working | resolves beside the file, then `ETAMIL_PATH` |
 | Decimal arithmetic | ✅ Working | fixed point, not `f64` |
-| Standard library (`nUlakam/`) | ✅ Working | strings, math, arrays, money — **written in eTamil** |
+| Standard library (`nUlakam/`) | ✅ Working | strings, math, arrays, money, JSON, encoding, and the document renderer — **written in eTamil** |
 | Search and replace (`மாற்று`, `பிரி`, `ஒன்றிணை`) | ✅ Working | host builtins. A separator only matches on a letter boundary, so `பிரி("கா", "ா")` does not cut a letter in half. These were `nUlakam` functions that re-read the string letter by letter — 14 seconds over 8 KB — which put a document-sized string out of reach |
 | Whole-file write (`கோப்பு_சேமி`) | ✅ Working | exactly the bytes of the string, no trailing newline, answering with the byte count as a result. `கோப்பு_எழுது` still appends a line, which is what a CSV row wants |
 | ODF and OOXML packages (`பொதி_படி`, `பொதி_மாற்று`) | ✅ Working | `.odt`, `.ods`, `.docx` and `.xlsx` are zip archives of XML. A template is copied entry by entry with the text entry swapped, so pictures arrive byte-for-byte and the ODF `mimetype` rule — first, and stored uncompressed — is kept. Replacing an entry that is not there is refused rather than written |
@@ -95,7 +95,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 41 builtins and 127 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 41 builtins and 137 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 

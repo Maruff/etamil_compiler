@@ -1482,7 +1482,15 @@ fn a_token_payload_must_be_a_record() {
 
 #[test]
 fn stdlib_files_all_parse() {
-    for file in ["col.qmz", "kaNiqam.qmz", "aNi.qmz", "paNam.qmz", "jEcAZ.qmz", "kuRiyAkkam.qmz"] {
+    for file in [
+        "col.qmz",
+        "kaNiqam.qmz",
+        "aNi.qmz",
+        "paNam.qmz",
+        "jEcAZ.qmz",
+        "kuRiyAkkam.qmz",
+        "AvaNam.qmz",
+    ] {
         let path = stdlib_dir().join(file);
         etamil_compiler::module::load_file(&path)
             .unwrap_or_else(|e| panic!("nUlakam/{} failed to load: {}", file, e));
@@ -2863,6 +2871,111 @@ fn a_token_signed_by_a_different_key_is_refused() {
     .unwrap();
 
     assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+// --- nUlakam/AvaNam.qmz — the document renderer ----------------------------
+// The renderer is eTamil, not host code: what a template means is decided in
+// the language. These go through the real module rather than a copy of it.
+//
+// The XML below is the shape ODF uses. The .docx shape differs only in what a
+// row is called, which is what வடிவம் carries.
+
+/// A template with a scalar, and a row group repeated per item.
+const TEMPLATE: &str = concat!(
+    "<office:body>",
+    "<table:table>",
+    "<table:table-row><text:p>#</text:p></table:table-row>",
+    "<table:table-row><text:p>{%tr for o in objectives %}</text:p></table:table-row>",
+    "<table:table-row><text:p>{{ o.no }}</text:p><text:p>{{ o.what }}</text:p></table:table-row>",
+    "<table:table-row><text:p>{%tr endfor %}</text:p></table:table-row>",
+    "</table:table>",
+    "<text:p>{{ project.name }}</text:p>",
+    "</office:body>"
+);
+
+fn render(values: &str, groups: &str) -> Result<VM, String> {
+    run_with_stdlib(&format!(
+        r#"இறக்கு "AvaNam.qmz";
+           மூலம் = "{}";
+           விளைவு = ஆவணம்_நிரப்பு(மூலம், ODT_வடிவம், {}, {});"#,
+        TEMPLATE.replace('"', "\\\""),
+        values,
+        groups
+    ))
+}
+
+#[test]
+fn a_row_group_repeats_once_per_item() {
+    let vm = render(
+        r#"[]"#,
+        r#"[{"பெயர்": "o", "புலங்கள்": ["no", "what"], "வரிசைகள்": [
+               {"no": "1", "what": "first"},
+               {"no": "2", "what": "second"}
+           ]}]"#,
+    )
+    .unwrap();
+
+    let out = text(&vm, "விளைவு");
+    assert!(out.contains("<text:p>1</text:p><text:p>first</text:p>"), "{}", out);
+    assert!(out.contains("<text:p>2</text:p><text:p>second</text:p>"), "{}", out);
+    // The header row survives; the for and endfor rows do not.
+    assert_eq!(out.matches("<table:table-row").count(), 3, "header + two items");
+    assert!(!out.contains("{%tr"), "no loop tag is left behind");
+}
+
+#[test]
+fn the_tag_after_a_row_group_is_not_swallowed_with_it() {
+    // The endfor row is not its own piece: splitting on the row marker leaves
+    // whatever followed it — here </table:table> — attached to that piece.
+    // Dropping the piece rather than the row lost the end of the table.
+    let vm = render(
+        r#"[]"#,
+        r#"[{"பெயர்": "o", "புலங்கள்": ["no", "what"], "வரிசைகள்": [{"no": "1", "what": "x"}]}]"#,
+    )
+    .unwrap();
+
+    let out = text(&vm, "விளைவு");
+    assert!(out.contains("</table:table>"), "the table still closes: {}", out);
+    assert!(out.ends_with("</office:body>"), "the body still closes: {}", out);
+}
+
+#[test]
+fn a_scalar_is_substituted_by_its_dotted_name() {
+    let vm = render(
+        r#"[{"குறி": "project.name", "மதிப்பு": "Beak PMO"}]"#,
+        r#"[{"பெயர்": "o", "புலங்கள்": ["no", "what"], "வரிசைகள்": []}]"#,
+    )
+    .unwrap();
+
+    assert!(text(&vm, "விளைவு").contains("<text:p>Beak PMO</text:p>"));
+}
+
+#[test]
+fn a_value_that_looks_like_markup_is_escaped() {
+    // Otherwise "<5 min" closes nothing and opens a tag, and the document
+    // stops being well-formed XML — which LibreOffice reports as a corrupt
+    // file rather than as the value someone typed.
+    let vm = render(
+        r#"[{"குறி": "project.name", "மதிப்பு": "a <b> & c"}]"#,
+        r#"[{"பெயர்": "o", "புலங்கள்": ["no", "what"], "வரிசைகள்": []}]"#,
+    )
+    .unwrap();
+
+    let out = text(&vm, "விளைவு");
+    assert!(out.contains("a &lt;b&gt; &amp; c"), "{}", out);
+}
+
+#[test]
+fn an_empty_group_leaves_no_rows_and_no_tags() {
+    let vm = render(
+        r#"[]"#,
+        r#"[{"பெயர்": "o", "புலங்கள்": ["no", "what"], "வரிசைகள்": []}]"#,
+    )
+    .unwrap();
+
+    let out = text(&vm, "விளைவு");
+    assert_eq!(out.matches("<table:table-row").count(), 1, "only the header");
+    assert!(!out.contains("{%tr"), "{}", out);
 }
 
 // --- Bilingual equivalence ------------------------------------------------
