@@ -1,0 +1,109 @@
+// nUlakam/vawki/coqqu.qmz — சொத்து வகைப்பாடு (asset classification)
+//
+// Which bucket a loan falls into, and what has to be set aside against it.
+//
+// Not one number in this file. The day counts that make an account
+// sub-standard, and the percentages provisioned against each class, are
+// regulatory figures: they are set by circular, they change, and a library
+// that hardcoded them would be quietly wrong from the first amendment. They
+// live in a table — see coqqu_viqimuRY.sql — and this reads it.
+//
+// So this file holds the *shape* of the rule and never the rule itself:
+//   - a loan is classified by how many days it has been overdue
+//   - a class carries a provisioning percentage
+//   - both are read as they stood on a given date, because a review is done
+//     against the rules in force then, not the rules in force now
+//
+// விதிமுறைகளை_ஏற்று reads them. வகைப்படுத்து and ஒதுக்கீடு apply them.
+
+இறக்கு "../poruL.qmz";
+இறக்கு "../kaNiqam.qmz";
+
+// விதிமுறைகளை_ஏற்று(நாள்) — the rules in force on that date
+//
+// Requires a database to be connected already, which is the caller's business:
+// a library that opens its own connection decides for the program where its
+// data lives.
+செயல் விதிமுறைகளை_ஏற்று(நாள்) {
+    தளம்_வினா "SELECT vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam, mUlam
+                 FROM coqqu_viqimuRY
+                WHERE amal_qotakkam <= ?
+                  AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+             ORDER BY nAtkaL_muqal",
+              [நாள், நாள்], கிடைத்தவை;
+    திரும்பு கிடைத்தவை;
+}
+
+// வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) — the class this account is in
+//
+// The rules are ordered by the day they start at, so the last one whose start
+// this account has reached is the one that applies. An account with no rule
+// matching it is not silently called standard: that would be the most
+// dangerous possible default, since standard is the class that provisions
+// least. It answers a தவறு instead.
+செயல் வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) {
+    பொருத்தம் = 0;
+    கிடைத்ததா = பொய்;
+
+    ஒவ்வொரு விதிமுறை இல் விதிமுறைகள் {
+        முடிவு = விதிமுறை["nAtkaL_varY"];
+        // The last class has no upper bound, written NULL in the table. A SQL
+        // NULL arrives as nil, and nil compares equal to nothing — including
+        // to a number — so it has to be recognised by வகை rather than by
+        // testing the value. Comparing it against 0 or "" looked right and
+        // quietly put every very old account outside every rule.
+        மேல்_எல்லை_உள்ளதா = வகை(முடிவு) != "nil";
+
+        (தாமத_நாட்கள் >= விதிமுறை["nAtkaL_muqal"]) எனில் {
+            (மேல்_எல்லை_உள்ளதா == பொய் அல்லது தாமத_நாட்கள் <= முடிவு) எனில் {
+                பொருத்தம் = விதிமுறை;
+                கிடைத்ததா = மெய்;
+            }
+        }
+    }
+
+    (கிடைத்ததா == பொய்) எனில் {
+        திரும்பு தவறு("இந்தத் தாமதத்திற்கு விதிமுறை இல்லை  "
+                       & "(no rule covers " & தாமத_நாட்கள் & " days overdue)");
+    }
+    திரும்பு சரி(பொருத்தம்);
+}
+
+// ஒதுக்கீடு(விதிமுறைகள், தாமத_நாட்கள், நிலுவைத்_தொகை)
+//
+// What must be set aside against this account: the outstanding amount times
+// the percentage its class carries. Answers {வகை, விழுக்காடு, ஒதுக்கீடு}, so
+// a report can show why the figure is what it is rather than only the figure.
+செயல் ஒதுக்கீடு(விதிமுறைகள், தாமத_நாட்கள், நிலுவைத்_தொகை) {
+    வகைப்பாடு = வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்);
+    (தவறா(வகைப்பாடு)) எனில் { திரும்பு வகைப்பாடு; }
+
+    விதிமுறை = மதிப்பு(வகைப்பாடு);
+    விழுக்காடு = விதிமுறை["oqukkItu_viziqam"];
+    திரும்பு சரி({"வகைப்பாடு": விதிமுறை["vakY"],
+                  "விழுக்காடு": விழுக்காடு,
+                  "ஒதுக்கீடு": சதவீதம்(நிலுவைத்_தொகை, விழுக்காடு)});
+}
+
+// சரிபார்க்கப்படாதவை(விதிமுறைகள்) — the rows nobody has vouched for yet
+//
+// The table ships with placeholder figures so that the shape can be tested,
+// and a placeholder provisioning percentage in a live return is worse than no
+// figure at all. This lists what is still marked as one, so a program can
+// refuse to run rather than report a number it should not.
+செயல் சரிபார்க்கப்படாதவை(விதிமுறைகள்) {
+    விடை = [];
+    ஒவ்வொரு விதிமுறை இல் விதிமுறைகள் {
+        (தொடங்குகிறதா_எளிது(விதிமுறை["mUlam"], "PLACEHOLDER")) எனில் {
+            விடை = இணை(விடை, விதிமுறை["vakY"]);
+        }
+    }
+    திரும்பு விடை;
+}
+
+// A local prefix test, so this module needs nothing from col.qmz.
+செயல் தொடங்குகிறதா_எளிது(பாடம், முன்னொட்டு) {
+    கூறுகள் = பிரி(பாடம், முன்னொட்டு);
+    (நீளம்(கூறுகள்) < 2) எனில் { திரும்பு பொய்; }
+    திரும்பு கூறுகள்[0] == "";
+}

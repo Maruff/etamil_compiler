@@ -1,0 +1,115 @@
+// nUlakam/vawki/kadaZ.qmz — கடன் (loans): the instalment, and the schedule
+//
+// Rates are per annum and written as a number out of a hundred, as everywhere
+// else here: 9.25% is 9.25.
+//
+// The schedule is the part worth getting right. An instalment is rounded to
+// the paisa, twelve or two hundred and forty of them are paid, and the sum of
+// the rounded parts does not equal the loan. Every bank resolves that in the
+// last instalment, and so does this: the final row is whatever actually clears
+// the balance. A schedule that ends owing four paise is not a rounding detail,
+// it is an account that will not close.
+
+இறக்கு "vatti.qmz";
+இறக்கு "../kaNiqam.qmz";
+
+// மாத_விகிதம்(ஆண்டு_விகிதம்) — the monthly rate as a fraction
+செயல் மாத_விகிதம்(ஆண்டு_விகிதம்) {
+    திரும்பு ஆண்டு_விகிதம் / 1200;
+}
+
+// மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) — the EMI
+//
+//        P · i · (1+i)^n
+//   E = ─────────────────
+//         (1+i)^n − 1
+//
+// A rate of zero is not a special case anyone writes down, and it is the one
+// that divides by zero: with no interest the instalment is simply the loan
+// spread evenly.
+செயல் மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) {
+    (எத்தனை_மாதங்கள் <= 0) எனில் { திரும்பு 0; }
+
+    வட்டி_விகிதம் = மாத_விகிதம்(ஆண்டு_விகிதம்);
+    (வட்டி_விகிதம் == 0) எனில் {
+        திரும்பு வட்டமிடு(கடன்_தொகை / எத்தனை_மாதங்கள், 2);
+    }
+
+    வளர்ச்சி = அடுக்கு(1 + வட்டி_விகிதம், எத்தனை_மாதங்கள்);
+    திரும்பு வட்டமிடு(கடன்_தொகை * வட்டி_விகிதம் * வளர்ச்சி / (வளர்ச்சி - 1), 2);
+}
+
+// தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்)
+//
+// One record per instalment: {மாதம், தவணை, வட்டி, அசலுக்கு, மீதம்}.
+//
+// Interest is taken on the balance that stood at the start of the month and
+// rounded to the paisa, because that is the figure posted to the account. What
+// is left of the instalment reduces the balance. The last row pays whatever
+// remains, which is why it is rarely equal to the others.
+செயல் தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) {
+    தவணை = மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்);
+    வட்டி_விகிதம் = மாத_விகிதம்(ஆண்டு_விகிதம்);
+
+    அட்டவணை = [];
+    மீதி_தொகை = கடன்_தொகை;
+    மாதம் = 1;
+
+    (மாதம் <= எத்தனை_மாதங்கள்) சுற்று {
+        மாத_வட்டி = வட்டமிடு(மீதி_தொகை * வட்டி_விகிதம், 2);
+
+        (மாதம் == எத்தனை_மாதங்கள்) எனில் {
+            // The last one closes the account: whatever is owed, plus the
+            // interest on it, and not a paisa more or less.
+            இந்தத்_தவணை = மீதி_தொகை + மாத_வட்டி;
+            அசலுக்கு = மீதி_தொகை;
+        }
+        இன்றேல் {
+            இந்தத்_தவணை = தவணை;
+            அசலுக்கு = தவணை - மாத_வட்டி;
+        }
+
+        மீதி_தொகை = வட்டமிடு(மீதி_தொகை - அசலுக்கு, 2);
+        அட்டவணை = இணை(அட்டவணை, {"மாதம்": மாதம்,
+                                  "தவணை": இந்தத்_தவணை,
+                                  "வட்டி": மாத_வட்டி,
+                                  "அசலுக்கு": அசலுக்கு,
+                                  "மீதம்": மீதி_தொகை});
+        மாதம் = மாதம் + 1;
+    }
+
+    திரும்பு அட்டவணை;
+}
+
+// மொத்த_வட்டி(அட்டவணை) — what the borrowing cost, over the whole term
+செயல் மொத்த_வட்டி(அட்டவணை) {
+    கூட்டல் = 0;
+    ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
+        கூட்டல் = கூட்டல் + வரிசைப்_பதிவு["வட்டி"];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// மொத்தத்_திருப்பி(அட்டவணை) — every instalment added up
+செயல் மொத்தத்_திருப்பி(அட்டவணை) {
+    கூட்டல் = 0;
+    ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
+        கூட்டல் = கூட்டல் + வரிசைப்_பதிவு["தவணை"];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) — what is owed to settle
+// after that instalment has been paid
+//
+// The balance in that row is what closing the loan then would cost, before any
+// charge the lender adds for the privilege. That charge is a term of the
+// contract, not arithmetic, so it is not here.
+செயல் முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) {
+    ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
+        (வரிசைப்_பதிவு["மாதம்"] == எத்தனாவது_மாதம்) எனில் {
+            திரும்பு வரிசைப்_பதிவு["மீதம்"];
+        }
+    }
+    திரும்பு 0;
+}

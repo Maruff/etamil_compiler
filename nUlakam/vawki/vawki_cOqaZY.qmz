@@ -1,0 +1,97 @@
+// வங்கி சோதனை — tests for interest and loans
+//
+//   etamil --vm nUlakam/vawki/vawki_cOqaZY.qmz
+//
+// No rate here is a claim about what any bank charges. They are arguments,
+// chosen so the arithmetic can be checked by hand.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "kadaZ.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("வங்கி — வட்டி, கடன்");
+
+// --- the rate is a number out of a hundred --------------------------------
+//
+// The same trap as in the GST module, and worth pinning in both: the language
+// has a % literal, 8.5% is 0.085, and these functions want 8.5. Writing the
+// natural thing gives an answer a hundred times too small, silently.
+ஓட்டம் = சமம்(ஓட்டம், எளிய_வட்டி(100000, 8.5, 365, உண்மை_365), 8500,
+              "8.5 for a year on 1,00,000 is 8,500");
+ஓட்டம் = வேறுபடு(ஓட்டம், எளிய_வட்டி(100000, 8.5%, 365, உண்மை_365), 8500,
+                  "8.5% would be 85 — the rate is written 8.5");
+
+// --- simple interest and the day count ------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், எளிய_வட்டி(100000, 8.5, 90, உண்மை_365), 2095.89,
+              "ninety days of it, to the paisa");
+ஓட்டம் = சமம்(ஓட்டம், எளிய_வட்டி(100000, 8.5, 0, உண்மை_365), 0,
+              "no days, no interest");
+ஓட்டம் = சமம்(ஓட்டம், எளிய_வட்டி(0, 8.5, 365, உண்மை_365), 0,
+              "no principal, no interest");
+
+// Which year you count in is a real difference in money, not a detail.
+ஓட்டம் = வேறுபடு(ஓட்டம், எளிய_வட்டி(100000, 8.5, 90, உண்மை_360),
+                  எளிய_வட்டி(100000, 8.5, 90, உண்மை_365),
+                  "Actual/360 and Actual/365 do not agree");
+
+ஓட்டம் = சமம்(ஓட்டம், நாட்கள்("2026-01-01", "2026-04-01"), 90,
+              "days between two dates");
+
+// --- powers stay exact ----------------------------------------------------
+//
+// The reason அடுக்கு multiplies rather than borrowing a float: 1.1^3 is
+// 1.331 exactly, and a float would make it 1.3310000000000004.
+ஓட்டம் = சமம்(ஓட்டம், அடுக்கு(1.1, 3), 1.331, "1.1 cubed is exact");
+ஓட்டம் = சமம்(ஓட்டம், அடுக்கு(5, 0), 1, "anything to the power of nothing is one");
+ஓட்டம் = சமம்(ஓட்டம், அடுக்கு(2, 10), 1024, "and the ordinary case still works");
+
+// --- compound interest ----------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், கூட்டு_வட்டி(100000, 10, 1, 1), 10000,
+              "compounded once a year for one year is simple interest");
+ஓட்டம் = சமம்(ஓட்டம், முதிர்வுத்_தொகை(100000, 10, 1, 1), 110000,
+              "and the maturity value is the two added");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                    கூட்டு_வட்டி(100000, 10, 1, 4) > கூட்டு_வட்டி(100000, 10, 1, 1),
+                    "compounding quarterly earns more than annually");
+
+// --- the instalment -------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், மாதத்_தவணை(120000, 0, 12), 10000,
+              "with no interest the loan is simply spread evenly");
+ஓட்டம் = சமம்(ஓட்டம், மாதத்_தவணை(100000, 12, 0), 0,
+              "a loan over no months has no instalment");
+
+தவணை = மாதத்_தவணை(2500000, 9.25, 240);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவணை > 22000 மற்றும் தவணை < 24000,
+                    "25,00,000 at 9.25 over 240 months is about 22,900 a month");
+
+// --- the schedule closes --------------------------------------------------
+//
+// The property that matters. An instalment is rounded to the paisa and paid
+// two hundred and forty times, so the rounded parts do not add up to the loan.
+// If the last row does not absorb that, the account ends owing a few paise and
+// never closes.
+அட்டவணை = தவணை_அட்டவணை(2500000, 9.25, 240);
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(அட்டவணை), 240, "one row per instalment");
+ஓட்டம் = சமம்(ஓட்டம், அட்டவணை[239]["மீதம்"], 0,
+              "and the balance is exactly nothing at the end");
+ஓட்டம் = சமம்(ஓட்டம்,
+              மொத்தத்_திருப்பி(அட்டவணை) - மொத்த_வட்டி(அட்டவணை), 2500000,
+              "everything repaid, less the interest, is the loan to the paisa");
+ஓட்டம் = வேறுபடு(ஓட்டம், அட்டவணை[239]["தவணை"], அட்டவணை[0]["தவணை"],
+                  "which is why the last instalment differs from the first");
+
+// Interest falls and principal rises across the term — the shape of any
+// amortising loan, and a schedule that does not do this is wrong.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், அட்டவணை[0]["வட்டி"] > அட்டவணை[239]["வட்டி"],
+                    "interest is heaviest at the start");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், அட்டவணை[0]["அசலுக்கு"] < அட்டவணை[239]["அசலுக்கு"],
+                    "and principal repayment heaviest at the end");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், அட்டவணை[0]["மீதம்"] < 2500000,
+                    "the balance falls from the first instalment");
+
+// --- settling early -------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், முன்கூட்டியே_அடைத்தால்(அட்டவணை, 240), 0,
+              "settling after the last instalment costs nothing");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முன்கூட்டியே_அடைத்தால்(அட்டவணை, 60) > 0,
+                    "and settling at five years still owes the balance");
+
+சோதனை_முடிவு(ஓட்டம்);
