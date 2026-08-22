@@ -3138,6 +3138,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "பதில்_கோப்பு",
+    "forms": [
+      "பதில்_கோப்பு",
+      "paDil_kOppu",
+      "_respondFile"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "பதில்_கோப்பு(நிலை, கோப்பு, தலைப்புகள்) — send a file as the body",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

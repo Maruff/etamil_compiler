@@ -71,6 +71,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Whole-file write (`கோப்பு_சேமி`) | ✅ Working | exactly the bytes of the string, no trailing newline, answering with the byte count as a result. `கோப்பு_எழுது` still appends a line, which is what a CSV row wants |
 | ODF and OOXML packages (`பொதி_படி`, `பொதி_மாற்று`) | ✅ Working | `.odt`, `.ods`, `.docx` and `.xlsx` are zip archives of XML. A template is copied entry by entry with the text entry swapped, so pictures arrive byte-for-byte and the ODF `mimetype` rule — first, and stored uncompressed — is kept. Replacing an entry that is not there is refused rather than written |
 | Running another program (`கட்டளை_ஓட்டு`) | ✅ Working | for the PDF, which comes out of LibreOffice. Deny by default: nothing runs unless `ETAMIL_EXEC_ALLOW` names it, arguments are a list and never reach a shell, and a program that will not finish is killed |
+| Sending a file (`பதில்_கோப்பு`) | ✅ Working | a response body that is not text — a PDF, an .odt, a picture. The language names the file and the server reads it, because a body built as a `சரம்` loses every byte that is not valid UTF-8. Content-Length counts what is actually sent; a missing file is a result, not an empty 200 |
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
 | Connection reuse | ✅ Working | `தளம்_இணை` borrows from a process-wide idle cache instead of reconnecting per request; leases are exclusive, so transactions stay isolated. `ETAMIL_DB_IDLE` caps it |
@@ -92,7 +93,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 37 builtins and 127 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 38 builtins and 127 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 

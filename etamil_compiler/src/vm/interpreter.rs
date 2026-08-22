@@ -578,6 +578,35 @@ impl VM {
                 }
             }
 
+            // --- Answering with a file --------------------------------------
+            // பதில்_கோப்பு(நிலை, கோப்பு, தலைப்புகள்) — send a file as the body
+            //
+            // The same shape as பதில், and for the same reason as பொதி_மாற்று:
+            // a PDF or an .odt is not a சரம், so the language names the file
+            // and the server reads it. Nothing else can send one — a body
+            // built as text would lose every byte that is not valid UTF-8.
+            //
+            // Content-Type defaults to application/octet-stream. Set it in
+            // தலைப்புகள் when the browser should know better than that.
+            "பதில்_கோப்பு" | "paDil_kOppu" | "_respondFile" => {
+                Self::expect_args(name, &args, 3)?;
+                let status = args[0].to_number();
+                let path = args[1].to_string();
+                if !std::path::Path::new(&path).is_file() {
+                    return Ok(Value::Err(Box::new(Value::String(format!(
+                        "கோப்பு '{}' இல்லை  (no such file '{}')",
+                        path, path
+                    )))));
+                }
+                self.variables
+                    .insert("response_status".to_string(), Value::Number(status));
+                self.variables
+                    .insert("response_file".to_string(), Value::String(path));
+                self.variables
+                    .insert("response_headers".to_string(), args[2].clone());
+                Ok(Value::Ok(Box::new(Value::Null)))
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —

@@ -164,7 +164,7 @@ async fn serve_connection(mut stream: TcpStream, handlers: Arc<HashMap<String, B
         Err(e) => HttpResponse::bad_request(&e.to_string()),
     };
 
-    let _ = stream.write_all(response.to_http_string().as_bytes()).await;
+    let _ = stream.write_all(&response.to_http_bytes()).await;
     let _ = stream.flush().await;
 }
 
