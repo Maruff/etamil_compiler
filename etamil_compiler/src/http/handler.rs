@@ -32,6 +32,72 @@ pub fn bind_request(vm: &mut VM, request: &HttpRequest, path_params: &HashMap<St
         Value::String(request.body.clone()),
     );
 
+    // A multipart request carries form fields and files. The fields become
+    // text; the files stay as bytes in the VM and the handler is told what
+    // arrived, so it can save the one it wants with பதிவேற்றம்_சேமி. Both are
+    // always bound, empty when the request is not multipart, so a handler
+    // never has to ask whether the name exists.
+    let mut fields: HashMap<String, Value> = HashMap::new();
+    let mut files: Vec<Value> = Vec::new();
+    vm.uploads.clear();
+
+    if let Some(boundary) = request
+        .headers
+        .get("content-type")
+        .and_then(|value| crate::http::multipart::boundary_of(value))
+    {
+        for part in crate::http::multipart::parse(&request.body_bytes, &boundary) {
+            match part.filename {
+                Some(filename) => {
+                    let mut described = HashMap::new();
+                    described.insert(
+                        "குறியீடு".to_string(),
+                        Value::Number(rust_decimal::Decimal::from(vm.uploads.len())),
+                    );
+                    described.insert("பெயர்".to_string(), Value::String(part.name.clone()));
+                    described.insert(
+                        "கோப்புப்_பெயர்".to_string(),
+                        Value::String(filename.clone()),
+                    );
+                    described.insert(
+                        "வகை".to_string(),
+                        Value::String(
+                            part.content_type
+                                .clone()
+                                .unwrap_or_else(|| "application/octet-stream".to_string()),
+                        ),
+                    );
+                    described.insert(
+                        "அளவு".to_string(),
+                        Value::Number(rust_decimal::Decimal::from(part.data.len())),
+                    );
+                    files.push(Value::Map(described));
+
+                    vm.uploads.push(crate::vm::Upload {
+                        name: part.name,
+                        filename,
+                        content_type: part
+                            .content_type
+                            .unwrap_or_else(|| "application/octet-stream".to_string()),
+                        data: part.data,
+                    });
+                }
+                // A field is text by definition — it is what someone typed.
+                None => {
+                    fields.insert(
+                        part.name,
+                        Value::String(String::from_utf8_lossy(&part.data).into_owned()),
+                    );
+                }
+            }
+        }
+    }
+
+    vm.variables
+        .insert("request_fields".to_string(), Value::Map(fields));
+    vm.variables
+        .insert("request_files".to_string(), Value::Array(files));
+
     vm.variables.insert(
         "query_params".to_string(),
         Value::Map(as_value_map(&request.query_params)),
@@ -252,6 +318,7 @@ mod tests {
             headers: HashMap::new(),
             query_params: HashMap::new(),
             body: String::new(),
+            body_bytes: Vec::new(),
         }
     }
 

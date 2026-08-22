@@ -3152,6 +3152,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "பதிவேற்றம்_சேமி",
+    "forms": [
+      "பதிவேற்றம்_சேமி",
+      "paqivERRam_cEmi",
+      "_saveUpload"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "பதிவேற்றம்_சேமி(குறியீடு, கோப்பு) — write an uploaded file out",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

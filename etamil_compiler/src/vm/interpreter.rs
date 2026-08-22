@@ -44,6 +44,20 @@ fn cluster_matches(haystack: &str, needle: &str) -> Vec<usize> {
         .collect()
 }
 
+/// A file that arrived in a multipart request.
+///
+/// The bytes stay here rather than becoming a சரம். A handler is told what
+/// was uploaded and decides where to put it; பதிவேற்றம்_சேமி does the writing.
+/// Nothing that is not text ever becomes a value the language can hold, which
+/// is the same rule the ODF package builtins follow.
+#[derive(Debug, Clone)]
+pub struct Upload {
+    pub name: String,
+    pub filename: String,
+    pub content_type: String,
+    pub data: Vec<u8>,
+}
+
 /// One active function call: where to resume, and that call's local names.
 #[derive(Debug)]
 pub struct Frame {
@@ -100,6 +114,9 @@ pub struct VM {
     pub frames: Vec<Frame>,
     /// Open database connections.
     pub connections: Connections,
+    /// Files that came with this request, in the order they were sent.
+    /// Empty except while a multipart request is being handled.
+    pub uploads: Vec<Upload>,
 }
 
 impl VM {
@@ -109,6 +126,7 @@ impl VM {
             variables: HashMap::new(),
             instruction_pointer: 0,
             file_modes: HashMap::new(),
+            uploads: Vec::new(),
             frames: Vec::new(),
             connections: Connections::default(),
         }
@@ -605,6 +623,37 @@ impl VM {
                 self.variables
                     .insert("response_headers".to_string(), args[2].clone());
                 Ok(Value::Ok(Box::new(Value::Null)))
+            }
+
+            // --- Uploads ----------------------------------------------------
+            // பதிவேற்றம்_சேமி(குறியீடு, கோப்பு) — write an uploaded file out
+            //
+            // request_files says what arrived and in what order; this writes
+            // one of them where the handler wants it. The bytes never become
+            // a value, so an upload cannot be corrupted by being looked at,
+            // and nothing is spooled to a temporary file that someone then
+            // has to remember to delete.
+            "பதிவேற்றம்_சேமி" | "paqivERRam_cEmi" | "_saveUpload" => {
+                Self::expect_args(name, &args, 2)?;
+                let wanted = rust_decimal::prelude::ToPrimitive::to_usize(&args[0].to_number());
+                let path = args[1].to_string();
+                let found = wanted.and_then(|index| self.uploads.get(index));
+                match found {
+                    Some(upload) => match fs::write(&path, &upload.data) {
+                        Ok(()) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(
+                            upload.data.len(),
+                        ))))),
+                        Err(e) => Ok(Value::Err(Box::new(Value::String(format!(
+                            "கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}",
+                            path, path, e
+                        ))))),
+                    },
+                    None => Ok(Value::Err(Box::new(Value::String(format!(
+                        "பதிவேற்றம் {} இல்லை  (no upload at {})",
+                        args[0].to_number(),
+                        args[0].to_number()
+                    ))))),
+                }
             }
 
             // --- Authentication ---
