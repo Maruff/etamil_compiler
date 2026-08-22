@@ -228,3 +228,29 @@ This catches every type error and every borrow error. It cannot catch invalid
 IR, and it cannot catch a wrong answer. Those are what Ubuntu and
 `run_parity.sh` are for, and a clean run here is not evidence the backend
 works.
+
+all 68 accounted for
+
+  What the LLVM backend still cannot build, most frequent first:
+         48 array index
+         48 a comparison used as a value (மெய்/பொய் has no representation here)
+         47 ஒவ்வொரு (for-each) over a numeric array
+         45 function call நீளம்
+         45 function call சரி
+         43 function call தவறு
+         41 expression உரை (a text value)
+         41 expression a boolean literal
+         38 expression a logical operator
+         36 வகுத்தல் — தரை() அல்லது மேல்() இல்லாமல்  (a bare division: whole-number division is exact here, but only under தரை() or மேல் — on its own its result has a fractional part and i64 has nowhere to put it)
+         35 வகுத்தல் without தரை() or மேல் (a bare division)
+         33 the name விடை (nothing here defines it)
+         32 expression a record literal
+         27 function call இணை
+         25 function call மதிப்பு
+         19 function call சொல்லாக்கு
+         15 statement an expression statement
+         15 function call தவறா
+         13 record field தொடக்கம்
+         13 expression இல்லை (not)
+
+  No disagreement: where the LLVM backend accepted a program, it agreed with the VM.
