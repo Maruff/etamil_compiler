@@ -51,3 +51,12 @@ test_output/
 # Release packages. These are published as GitHub release assets, never
 # committed: a binary in git history is permanent and every clone pays for it.
 dist/
+
+# Written by the io_samples examples when they run. run_parity.sh runs each
+# example beside itself so that a relative data-file path resolves, unlike
+# run_examples.sh which runs in a temp directory — so a parity run leaves
+# these behind. input.txt, numbers.txt, sample.txt and tamil_sample.txt are
+# inputs and stay tracked.
+examples/io_samples/data.txt
+examples/io_samples/output.txt
+examples/io_samples/transactions.csv
