@@ -373,6 +373,34 @@ impl VM {
                     )),
                 }
             }
+            // தவறு_மதிப்பு(r) — what the failure carried
+            //
+            // மதிப்பு opens a சரி and nothing opened the other one, so a
+            // program could tell that something failed and never read why. It
+            // could construct a தவறு holding a record and then not get the
+            // record back. That is half a result type: handling a failure
+            // usually means looking at it — deciding whether this is the one
+            // error worth retrying, or the ninety-nine that are not.
+            //
+            // A சரி here is a runtime error, exactly as a தவறு is to மதிப்பு.
+            // Answering nil instead would make "it succeeded" and "it failed
+            // with nothing in it" the same answer.
+            "தவறு_மதிப்பு" | "qavaRu_maqippu" | "_unwrapErr" => {
+                Self::expect_args(name, &args, 1)?;
+                match &args[0] {
+                    Value::Err(error) => Ok((**error).clone()),
+                    Value::Ok(inner) => Err(format!(
+                        "வெற்றியான முடிவில் பிழை இல்லை: {}  \
+                         (there is no error in a successful result: {})",
+                        inner.to_string(),
+                        inner.to_string()
+                    )),
+                    other => Err(format!(
+                        "தவறு_மதிப்பு க்கு ஒரு முடிவு தேவை  (it needs a result, got {})",
+                        Self::type_name(other)
+                    )),
+                }
+            }
             // இயல்பு(r, d) — unwrap_or
             "இயல்பு" | "iyalpu" | "_unwrapOr" => {
                 Self::expect_args(name, &args, 2)?;
@@ -786,6 +814,31 @@ impl VM {
                 ) {
                     Ok(held) => Ok(Value::Ok(Box::new(Value::Boolean(held)))),
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+
+            // --- The environment a program runs in --------------------------
+            // சூழல்(பெயர், இயல்பு_மதிப்பு) — an environment variable, or a
+            // fallback when it is not set.
+            //
+            // The host already reads several of these for itself —
+            // ETAMIL_TLS_CERT, ETAMIL_EXEC_ALLOW, ETAMIL_JWT_SECRET — but a
+            // program has deployment settings of its own: which gateway to
+            // call, which key to send, which database to open. Those belong
+            // outside the source for the same reason: a URL that differs
+            // between test and production is not something to edit code for,
+            // and a credential written into a program is a credential in the
+            // repository.
+            //
+            // A fallback rather than a result, because "not set" is the
+            // ordinary case for an optional setting and forcing every caller
+            // to unwrap would make the common path the loud one.
+            "சூழல்" | "cUzal" | "_env" => {
+                Self::expect_args(name, &args, 2)?;
+                let wanted = args[0].to_string();
+                match std::env::var(&wanted) {
+                    Ok(found) => Ok(Value::String(found)),
+                    Err(_) => Ok(args[1].clone()),
                 }
             }
 

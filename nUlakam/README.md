@@ -22,6 +22,7 @@ frameworks built on top of it.
 | `vawki/vatti.qmz` | interest — `எளிய_வட்டி` `நாளாந்த_வட்டி` `கூட்டு_வட்டி` `முதிர்வுத்_தொகை` `அடுக்கு` `நாட்கள்` |
 | `vawki/kadaZ.qmz` | loans — `மாதத்_தவணை` `தவணை_அட்டவணை` `மொத்த_வட்டி` `மொத்தத்_திருப்பி` `முன்கூட்டியே_அடைத்தால்` |
 | `vawki/coqqu.qmz` | asset classification — `விதிமுறைகளை_ஏற்று` `வகைப்படுத்து` `ஒதுக்கீடு` `சரிபார்க்கப்படாதவை` |
+| `cawkili/fabric.qmz` | Hyperledger Fabric — `நுழைவு` `மதிப்பிடு` `சமர்ப்பி` `மீண்டும்_சமர்ப்பி` `மோதலா` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -180,3 +181,26 @@ a program can refuse to report a number nobody has vouched for.
 An account no rule covers is refused rather than called standard. Standard
 provisions least, and that is the one direction a provisioning error must
 never go.
+
+## Fabric, without gRPC
+
+Fabric's peer Gateway speaks gRPC, which eTamil does not. `cawkili/fabric.qmz`
+talks to a REST gateway instead — Firefly is one, and Hyperledger's own
+`fabric-rest-sample` is a reference for writing one. The alternative was months
+of HTTP/2 and protobuf to reach the same ledger.
+
+Gateways disagree about their paths, so paths are configuration rather than
+something baked in. Two operations, and the difference between them is the
+whole of Fabric: `மதிப்பிடு` asks a peer and changes nothing, `சமர்ப்பி`
+proposes, endorses, orders and commits.
+
+`மோதலா` is the part worth having. Two transactions that read the same key and
+both write it cannot both commit: the second is rejected at validation with
+`MVCC_READ_CONFLICT`, *after* endorsement and ordering have already succeeded.
+It means "someone got there first", not "this was wrong", and it is the one
+Fabric error worth retrying. `மீண்டும்_சமர்ப்பி` retries that and nothing
+else — retrying a chaincode refusal turns one rejection into several.
+
+`gateway.py` beside the module is a mock that answers the way a gateway does,
+including failing the first write to a contended key. The suite runs against it
+when `ETAMIL_FABRIC` names one and skips cleanly when it does not.

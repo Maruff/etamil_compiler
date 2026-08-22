@@ -1,0 +1,106 @@
+// fabric சோதனை — tests for the Fabric gateway client
+//
+// Needs a gateway to talk to, so it is not part of the plain example run:
+//
+//   python gateway.py 8977 &
+//   ETAMIL_FABRIC=http://127.0.0.1:8977 etamil --vm nUlakam/cawkili/fabric_cOqaZY.qmz
+//
+// Without ETAMIL_FABRIC set it says so and exits 0, the same way the MySQL
+// sample does — a machine with no gateway is not a failing machine.
+//
+// The parts that need no gateway — building a URL, telling a conflict from a
+// refusal — are tested either way.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "fabric.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("Fabric நுழைவாயில்");
+
+// --- what can be checked without a network --------------------------------
+
+நு = நுழைவு("https://gw.example/api", "mychannel", "basic", {});
+
+ஓட்டம் = சமம்(ஓட்டம், முழு_முகவரி(நு, நு["வினவல்_பாதை"]),
+              "https://gw.example/api/channels/mychannel/chaincodes/basic/query",
+              "the channel and chaincode fill the template");
+
+வேறு = பாதையை_அமை(நு, "/q", "/i");
+ஓட்டம் = சமம்(ஓட்டம், முழு_முகவரி(வேறு, வேறு["எழுதும்_பாதை"]),
+              "https://gw.example/api/i",
+              "and a gateway with different paths is configuration, not a fork");
+
+ஓட்டம் = சமம்(ஓட்டம், உடலைக்_கட்டு("ReadAsset", ["a", "b"]),
+              "{\"args\":[\"a\",\"b\"],\"function\":\"ReadAsset\"}",
+              "the body names the function and its arguments, fields in sorted order");
+
+// --- telling a conflict from a refusal ------------------------------------
+//
+// The distinction the retry rests on. Retrying a business refusal turns one
+// rejection into several; not retrying a conflict fails a transaction that
+// would have succeeded.
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                    மோதலா({"விவரம்": "transaction invalidated with status MVCC_READ_CONFLICT"}),
+                    "an MVCC conflict is a conflict");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                    மோதலா({"விவரம்": "PHANTOM_READ_CONFLICT at validation"}),
+                    "and so is a phantom read");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                    மோதலா({"விவரம்": "caller is not authorised"}) == பொய்,
+                    "a refusal by the chaincode is not");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மோதலா("just a string") == பொய்,
+                    "and neither is something that is not an error record");
+
+// --- against a running gateway --------------------------------------------
+
+முகவரி_சூழல் = சூழல்("ETAMIL_FABRIC", "");
+
+// Branching rather than returning early: சோதனை_முடிவு answers 0 when nothing
+// failed, and only exits when something did, so calling it in the skip path
+// printed a summary and then carried straight on into the tests it was meant
+// to skip. There is no way to leave a program early except வெளியேறு, and
+// leaving through the summary is what the summary is for.
+(முகவரி_சூழல் == "") எனில் {
+    அச்சு "";
+    அச்சு "  (ETAMIL_FABRIC is not set, so the gateway tests are skipped)";
+}
+இன்றேல் {
+
+உண்மையான = நுழைவு(முகவரி_சூழல், "mychannel", "basic",
+                    {"Content-Type": "application/json"});
+
+// Reading what is there, and what is not.
+படித்தது = மதிப்பிடு(உண்மையான, "ReadAsset", ["asset1"]);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(படித்தது), "an asset that exists reads back");
+
+இல்லாதது = மதிப்பிடு(உண்மையான, "ReadAsset", ["இல்லை"]);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இல்லாதது), "one that does not is a தவறு");
+ஓட்டம் = சமம்(ஓட்டம், தவறு_மதிப்பு(இல்லாதது)["வகைப்பாடு"], "நிரல்பொருள்",
+              "and it says the chaincode refused, not that the network broke");
+
+// Writing.
+எழுதியது = சமர்ப்பி(உண்மையான, "CreateAsset", ["asset_new", "குமார்", "700"]);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(எழுதியது), "a write is accepted");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(மதிப்பிடு(உண்மையான, "ReadAsset", ["asset_new"])),
+                    "and what was written can be read");
+
+// The conflict, and the retry. The gateway fails the first write to this key
+// with MVCC_READ_CONFLICT and accepts the second — which is exactly what a
+// contended key does on a real network.
+ஒரே_முயற்சி = சமர்ப்பி(உண்மையான, "CreateAsset", ["asset_busy", "மோதல்", "1"]);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(ஒரே_முயற்சி),
+                    "a contended key fails on the first attempt");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மோதலா(தவறு_மதிப்பு(ஒரே_முயற்சி)),
+                    "and fails with a conflict, not a refusal");
+
+மீண்டும் = மீண்டும்_சமர்ப்பி(உண்மையான, "CreateAsset", ["asset_busy", "மோதல்", "1"], 3);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(மீண்டும்),
+                    "trying again gets the same transaction committed");
+
+// A refusal must not be retried, however many attempts are allowed.
+மறுத்தது = மீண்டும்_சமர்ப்பி(உண்மையான, "RejectMe", [], 5);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(மறுத்தது),
+                    "a chaincode refusal is not retried into a success");
+
+}
+
+சோதனை_முடிவு(ஓட்டம்);
