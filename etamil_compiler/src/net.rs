@@ -72,10 +72,19 @@ pub fn request(
 ) -> Result<Response, String> {
     // A request with no timeout can hang a worker thread for as long as the
     // other end feels like holding the socket open.
-    let agent = ureq::AgentBuilder::new()
+    let mut builder = ureq::AgentBuilder::new()
         .timeout_connect(std::time::Duration::from_secs(10))
-        .timeout(std::time::Duration::from_secs(30))
-        .build();
+        .timeout(std::time::Duration::from_secs(30));
+
+    // A bank will not discuss an account with a caller it cannot identify, so
+    // when a client certificate is configured every request offers it. With
+    // none configured this is untouched, and HTTPS works as it always did
+    // against the public roots.
+    if let Some(identity) = crate::mtls::client_config() {
+        builder = builder.tls_config(identity);
+    }
+
+    let agent = builder.build();
 
     let mut request = agent.request(method, url);
     for (name, value) in headers {

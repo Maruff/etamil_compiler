@@ -105,6 +105,9 @@ p256 = { version = "0.14.0", features = ["ecdsa"] }
 # because that version is already in the tree through other crates; naming 0.4
 # would add a second copy of the same thing.
 getrandom = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+rustls-pemfile = { version = "2", optional = true }
+webpki-roots = { version = "0.26", optional = true }
 
 [features]
 # Optional LLVM code generation (not available on Windows)
@@ -116,9 +119,12 @@ postgres = ["dep:postgres", "dep:bytes", "rust_decimal/db-postgres"]
 # Outbound HTTP is a feature so a build that does not need it does not carry a
 # TLS stack. On by default: an API that cannot call a payment gateway is not
 # much of an API.
-http-client = ["dep:ureq"]
+http-client = ["dep:ureq", "dep:rustls", "dep:rustls-pemfile", "dep:webpki-roots"]
 mysql = ["dep:mysql"]
 default = ["sqlite", "http-client"]
+rustls = ["dep:rustls"]
+rustls-pemfile = ["dep:rustls-pemfile"]
+webpki-roots = ["dep:webpki-roots"]
 
 [profile.release]
 # The headline feature is a small standalone binary, so optimize for that.
