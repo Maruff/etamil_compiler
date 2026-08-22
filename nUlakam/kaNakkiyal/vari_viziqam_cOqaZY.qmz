@@ -1,0 +1,123 @@
+// வரி விகித சோதனை — finding the rate that applied
+//
+//   etamil --vm nUlakam/kaNakkiyal/vari_viziqam_cOqaZY.qmz
+//
+// Builds its own table in memory, so it needs no fixture and every figure it
+// asserts on is visibly its own. Nothing here is a claim about what any real
+// rate is — they are invented to make the lookup rules checkable.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "vari_viziqam.qmz";
+இறக்கு "vari.qmz";
+
+தளம்_இணை சீகுலைட், ":memory:";
+
+தளம்_செய் "CREATE TABLE vari_viziqam (
+             vari_vakY TEXT NOT NULL, kuRi TEXT NOT NULL, mAnilam TEXT NOT NULL,
+             viziqam REAL, nilYq_qokY REAL,
+             varampu_muqal REAL NOT NULL DEFAULT 0, varampu_varY REAL,
+             amal_qotakkam TEXT NOT NULL, amal_muDivu TEXT, mUlam TEXT NOT NULL)", [];
+தளம்_செய் "CREATE TABLE mAnilawkaL (
+             kuRi TEXT NOT NULL, peyar TEXT NOT NULL, vakY TEXT NOT NULL,
+             mUlam TEXT NOT NULL)", [];
+
+// A rate that changed: 12 until 2023, 18 after. Both rows stay.
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam,
+              amal_muDivu, mUlam)
+             VALUES ('GST','9999','',12,0,'2017-07-01','2023-04-01','சோதனை')", [];
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('GST','9999','',18,0,'2023-04-01','சோதனை')", [];
+
+// An all-India rule, and a state that differs from it.
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('VAT','petrol','',20,0,'2020-01-01','சோதனை')", [];
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('VAT','petrol','33',25,0,'2020-01-01','சோதனை')", [];
+
+// A slab tax, in bands. One row marked for checking.
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('ITR','band1','',0,0,'2020-01-01','சோதனை')", [];
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('ITR','band2','',5,300000,'2020-01-01','சோதனை')", [];
+தளம்_செய் "INSERT INTO vari_viziqam
+             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+             VALUES ('ITR','band3','',10,700000,'2020-01-01','PLACEHOLDER — invented')", [];
+
+தளம்_செய் "INSERT INTO mAnilawkaL VALUES ('33','Tamil Nadu','மாநிலம்','சோதனை')", [];
+தளம்_செய் "INSERT INTO mAnilawkaL VALUES ('27','Maharashtra','மாநிலம்','சோதனை')", [];
+
+ஓட்டம் = சோதனை_தொடக்கம்("வரி விகிதம்");
+
+// --- the rate that applied on the day -------------------------------------
+//
+// The reason every function takes a date. A return for 2022 is computed on the
+// 2022 rate, and looking the rate up "as of now" rewrites what was filed.
+பழையது = விகிதம்_தேடு("GST", "9999", "", "2022-06-01");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பழையது)["viziqam"], 12,
+              "a supply in 2022 is taxed at the 2022 rate");
+
+புதியது = விகிதம்_தேடு("GST", "9999", "", "2026-06-01");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(புதியது)["viziqam"], 18,
+              "and one today at today's");
+
+முன்னதாக = விகிதம்_தேடு("GST", "9999", "", "2015-01-01");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முன்னதாக),
+                    "before any rule existed there is no rate — not zero");
+
+// --- a state rule beats an all-India one ----------------------------------
+நாட்டளவு = விகிதம்_தேடு("VAT", "petrol", "27", "2026-01-01");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நாட்டளவு)["viziqam"], 20,
+              "a state with no rule of its own takes the all-India one");
+
+மாநிலம் = விகிதம்_தேடு("VAT", "petrol", "33", "2026-01-01");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாநிலம்)["viziqam"], 25,
+              "and a state that has one takes that instead");
+
+// --- nothing found is not nothing due -------------------------------------
+கிடைக்கவில்லை = விகிதம்_தேடு("GST", "does-not-exist", "", "2026-01-01");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(கிடைக்கவில்லை),
+                    "a missing rate is a தவறு, because zero would understate a liability");
+
+// --- slabs, loaded and applied --------------------------------------------
+படிகள் = படிகளை_ஏற்று("ITR", "", "2026-01-01");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(படிகள்), 3, "three bands load");
+ஓட்டம் = சமம்(ஓட்டம், படிகள்[0]["முதல்"], 0, "ordered from the bottom");
+ஓட்டம் = சமம்(ஓட்டம், படிகள்[2]["முதல்"], 700000, "up to the top");
+
+கணக்கு = படி_வரி_கணக்கிடு("ITR", "", "2026-01-01", 800000);
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கணக்கு), 30000,
+              "and the tax is marginal: the top rate only on the top part");
+
+எதுவுமில்லை = படி_வரி_கணக்கிடு("PT", "", "2026-01-01", 50000);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(எதுவுமில்லை),
+                    "a tax with no bands loaded is refused rather than charged as nil");
+
+// --- where the supply happened --------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், உள்_மாநிலமா("33", "33"), "the same state is within a state");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், உள்_மாநிலமா("33", "27") == பொய், "two states are not");
+
+// Which is the question vari.qmz's splitting asks.
+உள்ளே = மாநில_பிரிப்பு(180, உள்_மாநிலமா("33", "33"));
+ஓட்டம் = சமம்(ஓட்டம், உள்ளே.cgst, 90, "within a state it splits in two");
+வெளியே = மாநில_பிரிப்பு(180, உள்_மாநிலமா("33", "27"));
+ஓட்டம் = சமம்(ஓட்டம், வெளியே.igst, 180, "across states it does not");
+
+// --- the states -----------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், மாநிலப்_பெயர்("33"), "Tamil Nadu", "a code names a state");
+ஓட்டம் = சமம்(ஓட்டம், மாநிலப்_பெயர்("99"), "", "and one that names none answers nothing");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(மாநிலங்கள்()), 2, "the states on record can be listed");
+
+// --- and what it will not vouch for ---------------------------------------
+சரிபார்க்காதவை = சரிபார்க்கப்படாத_விகிதங்கள்("2026-01-01");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(சரிபார்க்காதவை), 1,
+              "the row marked PLACEHOLDER is named");
+ஓட்டம் = சமம்(ஓட்டம், சரிபார்க்காதவை[0]["kuRi"], "band3",
+              "and it is the right one");
+
+சோதனை_முடிவு(ஓட்டம்);

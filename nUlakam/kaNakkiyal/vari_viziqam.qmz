@@ -1,0 +1,128 @@
+// nUlakam/kaNakkiyal/vari_viziqam.qmz — finding the rate that applied
+//
+// vari.qmz computes a tax once you know the rate. This is where the rate comes
+// from, and it holds none: they live in the table described by
+// vari_viziqam.sql, effective-dated, and this reads them as they stood on a
+// given day.
+//
+// That date is the point. A return for last quarter is computed on the rates
+// in force last quarter, and a rate looked up "as of now" quietly rewrites
+// history the first time one changes. Every function here takes the day it is
+// being asked about, and none of them defaults it to today.
+//
+// One table serves GST by HSN, TDS by section, income tax and professional tax
+// as slabs, and whatever else is stated as a rate on a thing in a place.
+// Jurisdiction is a GST state code, or "" for a rule that applies everywhere.
+
+இறக்கு "../poruL.qmz";
+இறக்கு "Uqiyam.qmz";
+
+// விகிதம்_தேடு(வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள்)
+//
+// The rate for one thing, in one place, on one day.
+//
+// A state rule wins over an all-India one, because that is what a state rule
+// is for. Nothing found is a தவறு rather than zero: a missing rate and a rate
+// of nothing are different, and returning zero for the first understates a
+// liability without saying so.
+செயல் விகிதம்_தேடு(வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள்) {
+    தளம்_வினா "SELECT vari_vakY, kuRi, mAnilam, viziqam, nilYq_qokY,
+                       varampu_muqal, varampu_varY, mUlam
+                  FROM vari_viziqam
+                 WHERE vari_vakY = ?
+                   AND kuRi = ?
+                   AND (mAnilam = ? OR mAnilam = '')
+                   AND amal_qotakkam <= ?
+                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+              ORDER BY CASE WHEN mAnilam = '' THEN 1 ELSE 0 END,
+                       amal_qotakkam DESC",
+              [வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள், நாள்], கிடைத்தவை;
+
+    (நீளம்(கிடைத்தவை) == 0) எனில் {
+        திரும்பு தவறு("விகிதம் இல்லை  (no rate found): " & வரி_வகை & " / "
+                       & குறியீட்டெண் & " / " & மாநிலக்_குறி & " on " & நாள்);
+    }
+    திரும்பு சரி(கிடைத்தவை[0]);
+}
+
+// படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்)
+//
+// Every band of a slab tax, ordered by where it starts, in the shape
+// படிநிலை_வரி in Uqiyam.qmz takes. Income tax, professional tax and anything
+// else stated as bands go through the same two functions.
+செயல் படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்) {
+    தளம்_வினா "SELECT varampu_muqal, viziqam, nilYq_qokY, mUlam
+                  FROM vari_viziqam
+                 WHERE vari_vakY = ?
+                   AND (mAnilam = ? OR mAnilam = '')
+                   AND amal_qotakkam <= ?
+                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+              ORDER BY varampu_muqal",
+              [வரி_வகை, மாநிலக்_குறி, நாள், நாள்], வரிசைகள்;
+
+    படிகள் = [];
+    ஒவ்வொரு ஒரு_வரிசை இல் வரிசைகள் {
+        விகித_மதிப்பு = ஒரு_வரிசை["viziqam"];
+        (வகை(விகித_மதிப்பு) == "nil") எனில் { விகித_மதிப்பு = 0; }
+
+        நிலைத்தது = ஒரு_வரிசை["nilYq_qokY"];
+        (வகை(நிலைத்தது) == "nil") எனில் { நிலைத்தது = 0; }
+
+        படிகள் = இணை(படிகள், {"முதல்": ஒரு_வரிசை["varampu_muqal"],
+                                "விகிதம்": விகித_மதிப்பு,
+                                "நிலைத்_தொகை": நிலைத்தது});
+    }
+    திரும்பு படிகள்;
+}
+
+// படி_வரி_கணக்கிடு(வரி_வகை, மாநிலக்_குறி, நாள், வரிக்குரிய_தொகை)
+//
+// The two steps together: load the bands in force that day, and apply them.
+// A tax kind with no bands loaded is a தவறு, not nil tax.
+செயல் படி_வரி_கணக்கிடு(வரி_வகை, மாநிலக்_குறி, நாள், வரிக்குரிய_தொகை) {
+    படிகள் = படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்);
+    (நீளம்(படிகள்) == 0) எனில் {
+        திரும்பு தவறு("படிகள் இல்லை  (no bands are loaded for): " & வரி_வகை
+                       & " / " & மாநிலக்_குறி & " on " & நாள்);
+    }
+    திரும்பு சரி(படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்));
+}
+
+// --- where a supply happened ----------------------------------------------
+//
+// உள்_மாநிலமா(விற்பனையாளர்_மாநிலம், வாங்குபவர்_மாநிலம்)
+//
+// Within a state it is CGST and SGST; across states, IGST. vari.qmz's
+// மாநில_பிரிப்பு does the splitting and this answers the question it asks.
+செயல் உள்_மாநிலமா(விற்பனையாளர்_மாநிலம், வாங்குபவர்_மாநிலம்) {
+    திரும்பு விற்பனையாளர்_மாநிலம் == வாங்குபவர்_மாநிலம்;
+}
+
+// மாநிலப்_பெயர்(மாநிலக்_குறி) — the state a GST code names
+செயல் மாநிலப்_பெயர்(மாநிலக்_குறி) {
+    தளம்_வினா "SELECT peyar FROM mAnilawkaL WHERE kuRi = ?", [மாநிலக்_குறி], கிடைத்தவை;
+    (நீளம்(கிடைத்தவை) == 0) எனில் { திரும்பு ""; }
+    திரும்பு கிடைத்தவை[0]["peyar"];
+}
+
+// மாநிலங்கள்() — every state and union territory on record
+செயல் மாநிலங்கள்() {
+    தளம்_வினா "SELECT kuRi, peyar, vakY FROM mAnilawkaL ORDER BY kuRi", [], கிடைத்தவை;
+    திரும்பு கிடைத்தவை;
+}
+
+// --- what nobody has vouched for ------------------------------------------
+//
+// சரிபார்க்கப்படாத_விகிதங்கள்(நாள்) — rates whose source still says otherwise
+//
+// A rate marked PLACEHOLDER or CHECK in a filed return is worse than no
+// return. This lists them so a program can stop rather than file.
+செயல் சரிபார்க்கப்படாத_விகிதங்கள்(நாள்) {
+    தளம்_வினா "SELECT vari_vakY, kuRi, mAnilam, mUlam
+                  FROM vari_viziqam
+                 WHERE (mUlam LIKE 'PLACEHOLDER%' OR mUlam LIKE 'CHECK%')
+                   AND amal_qotakkam <= ?
+                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)",
+              [நாள், நாள்], கிடைத்தவை;
+    திரும்பு கிடைத்தவை;
+}
