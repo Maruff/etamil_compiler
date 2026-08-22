@@ -15,7 +15,7 @@
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
-use crate::parser::{Expr, Stmt};
+use crate::parser::Stmt;
 use crate::vm::{BytecodeCompiler, VM};
 
 const BANNER: &str = "eTamil — வணக்கம். :help for help, :quit to leave.";
