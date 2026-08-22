@@ -82,19 +82,30 @@ argument types.
 
 ## Two sessions, one checkout
 
-Another session has been working in this same working tree throughout — a wasm
-build for the browser editor (`src/wasm.rs`, `src/wasm_stubs.rs`,
-`src/vm/host.rs`). One commit, `5bb806c`, accidentally swept its `wasm.rs` in
-alongside MongoDB work.
+A second session worked in this same working tree for a while — a wasm build for
+the browser editor — and landed it in `3db8985`. One commit, `5bb806c`,
+accidentally swept its `wasm.rs` in alongside MongoDB work before that.
 
 **Check `git status` before staging, and stage files by name rather than `-A`.**
-Better: give the other session its own git worktree.
+Better: give a concurrent session its own git worktree. Staging by name is what
+kept `0dbffe1` clean while `3db8985` was being written beside it.
 
-The editor-support files (`eTamil_Code/src/generated/`) were deliberately *not*
-regenerated in the last commit, because regenerating reads `interpreter.rs` and
-would have baked the other session's uncommitted builtins into the data.
-**Once the wasm work lands, run `python scripts/generate_editor_support.py` and
-commit the result**, or the CI drift check will fail.
+### Editor support drifts silently
+
+`eTamil_Code/src/generated/` and `eTamil_Code/syntaxes/` are generated from the
+compiler and from nUlakam, and nothing regenerates them for you:
+
+```bash
+python scripts/generate_editor_support.py --check    # what CI runs
+python scripts/generate_editor_support.py            # fix it
+```
+
+**Run the check before pushing, whenever a nUlakam function or a builtin was
+added or renamed.** An earlier note here guessed the outstanding drift came from
+the wasm session's `interpreter.rs` edits; it did not. It was ten `stdlib`
+entries from `nUlakam/kAcu.qmz`, drifting since `b2de386` — a plain nUlakam
+commit, no builtins involved. Adding a function to nUlakam is enough to fail
+that gate.
 
 ## Traps that cost real time
 
