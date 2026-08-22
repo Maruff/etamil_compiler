@@ -3418,6 +3418,34 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "தளம்_செய்_முயற்சி",
+    "forms": [
+      "தளம்_செய்_முயற்சி",
+      "qaLam_cey_muyaRci",
+      "_tryExecute"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "தளம்_செய்_முயற்சி(வினா, அளபுருக்கள்) — attempt it; answers the",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "தளம்_வினா_முயற்சி",
+    "forms": [
+      "தளம்_வினா_முயற்சி",
+      "qaLam_viZA_muyaRci",
+      "_tryQuery"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "தளம்_வினா_முயற்சி(வினா, அளபுருக்கள்) — attempt a query; answers",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

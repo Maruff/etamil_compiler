@@ -1059,6 +1059,70 @@ impl VM {
                     .to_string(),
             ),
 
+            // --- A database write that can fail without ending the program ---
+            //
+            // தளம்_செய் and தளம்_வினா are statements, and a statement has
+            // nowhere to put an answer. Two things followed from that, and both
+            // are real:
+            //
+            // The row count went nowhere. The driver returns how many rows a
+            // statement touched and the VM dropped it, so a program could not
+            // tell an UPDATE that matched a row from one that matched none —
+            // and an UPDATE matching nothing is a silent no-op, which is
+            // exactly the class of failure this language refuses elsewhere.
+            //
+            // A constraint violation ended the program. A duplicate key is not
+            // a broken program: it is the database enforcing a rule, and the
+            // ordinary answer is 409, not a crash. Under the server it took the
+            // request handler with it and became a 500. The workaround —
+            // SELECT first, then insert — is both slower and racy, because two
+            // requests can pass the check before either writes.
+            //
+            // So these two attempt the statement and answer a முடிவு. The
+            // statements stay: `தளம்_செய்` still insists, and insisting is
+            // right when a failure really is unrecoverable.
+
+            // தளம்_செய்_முயற்சி(வினா, அளபுருக்கள்) — attempt it; answers the
+            // number of rows touched, or why not
+            "தளம்_செய்_முயற்சி" | "qaLam_cey_muyaRci" | "_tryExecute" => {
+                Self::expect_args(name, &args, 2)?;
+                let sql = args[0].to_string();
+                let params = match crate::db::params_from(&args[1]) {
+                    Ok(params) => params,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                match self.connection_mut() {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(handle) => match handle.execute(&sql, &params) {
+                        Ok(touched) => Ok(Value::Ok(Box::new(Value::Number(
+                            Decimal::from(touched),
+                        )))),
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+            // தளம்_வினா_முயற்சி(வினா, அளபுருக்கள்) — attempt a query; answers
+            // the rows, or why not
+            //
+            // No rows is a successful query answering nothing, and stays a
+            // சரி holding an empty array. Only a query that could not run is a
+            // தவறு — a missing column, a syntax error, a lost connection.
+            "தளம்_வினா_முயற்சி" | "qaLam_viZA_muyaRci" | "_tryQuery" => {
+                Self::expect_args(name, &args, 2)?;
+                let sql = args[0].to_string();
+                let params = match crate::db::params_from(&args[1]) {
+                    Ok(params) => params,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                match self.connection_mut() {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(handle) => match handle.query(&sql, &params) {
+                        Ok(rows) => Ok(Value::Ok(Box::new(Value::Array(rows)))),
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
