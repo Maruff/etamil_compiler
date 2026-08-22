@@ -1,0 +1,104 @@
+// examples/finance/paicA_kaNakku.qmz — பைசா கணக்கு: money as whole paise
+//
+// This is the example that runs on *both* backends and answers the same thing.
+//
+// The VM computes in a fixed-point decimal and always could. The LLVM backend
+// computes in whole numbers, and until recently computed in f64 — where a
+// division could be out by one in the last place, which for money is a paisa,
+// and nothing said so. Holding money in paise and dividing with தரை() is exact
+// in an i64, so the two backends now agree here:
+//
+//   etamil --vm     examples/finance/paicA_kaNakku.qmz
+//   etamil --llvm   examples/finance/paicA_kaNakku.qmz && clang output.ll -o m && ./m
+//
+// scripts/run_parity.sh does exactly that comparison for every example. This
+// one is deliberately written inside the backend's limits: no இறக்கு, no
+// arrays, no text beyond the labels, because those need a value representation
+// the backend does not have yet. See docs/llvm-backend-gaps.md.
+
+பைசா_ஒரு_ரூபாய் = 100;
+
+// A global a செயல் reads. Worth saying out loud, because the LLVM backend
+// used to compile a name a function could not see as 0 and carry on, so this
+// line answered 0 rather than 205.
+செயல் ரூபாயும்_பைசாவும்(ரூபாய், பைசா) {
+    திரும்பு ரூபாய் * பைசா_ஒரு_ரூபாய் + பைசா;
+}
+
+செயல் முழு_ரூபாய்(மொத்த_பைசா) {
+    திரும்பு தரை(மொத்த_பைசா / பைசா_ஒரு_ரூபாய்);
+}
+
+செயல் மீதிப்_பைசா(மொத்த_பைசா) {
+    திரும்பு மொத்த_பைசா - முழு_ரூபாய்(மொத்த_பைசா) * பைசா_ஒரு_ரூபாய்;
+}
+
+// விழுக்காடு_காசு(மொத்த_பைசா, விகித_மேல், விகித_கீழ்)
+//
+// 18% is 18 and 100. A rate of 7.5% is 75 and 1000, because writing 7.5 would
+// be the fractional literal this whole approach exists to avoid.
+//
+// Adding விகித_கீழ்/2 before dividing is half-up rounding done in whole
+// numbers, and it rounds once rather than at every step: rounding each line of
+// a calculation is how a total stops matching the sum of its lines.
+செயல் விழுக்காடு_காசு(மொத்த_பைசா, விகித_மேல், விகித_கீழ்) {
+    // A guard clause. This is also the shape that used to make the backend
+    // emit a branch after a return — invalid IR, unreachable until a function
+    // like this one could compile at all.
+    (விகித_கீழ் == 0) எனில் { திரும்பு 0; }
+    திரும்பு தரை((மொத்த_பைசா * விகித_மேல் + தரை(விகித_கீழ் / 2)) / விகித_கீழ்);
+}
+
+அச்சு "=== பைசா கணக்கு ===";
+அச்சு "";
+
+விலை = ரூபாயும்_பைசாவும்(2, 5);
+அச்சு "விலை (பைசா)          : " & விலை;
+அச்சு "ரூபாய்ப் பகுதி        : " & முழு_ரூபாய்(விலை);
+அச்சு "பைசாப் பகுதி          : " & மீதிப்_பைசா(விலை);
+அச்சு "";
+
+// A price times a quantity: exact on any backend, because whole numbers are.
+மொத்தம் = விலை * 7;
+வரி = விழுக்காடு_காசு(மொத்தம், 18, 100);
+அச்சு "ஏழு பொருள் (பைசா)     : " & மொத்தம்;
+அச்சு "18% வரி (பைசா)        : " & வரி;
+// The brackets are not decoration: & and + bind equally and associate left,
+// so `"..." & மொத்தம் + வரி` is `("..." & மொத்தம்) + வரி`, which is a number
+// and prints without the label.
+அச்சு "வரியுடன் (பைசா)       : " & (மொத்தம் + வரி);
+அச்சு "பூஜ்ஜிய கீழ் (காவல்)   : " & விழுக்காடு_காசு(மொத்தம், 18, 0);
+அச்சு "";
+
+// A split that adds up. Ten rupees three ways is 334, 333, 333 — the odd paisa
+// handed out rather than lost, which is the classic way money leaves a ledger.
+அடிப்படை = தரை(1000 / 3);
+மீதம் = 1000 - அடிப்படை * 3;
+அச்சு "1000 பைசா ÷ 3        : " & அடிப்படை;
+அச்சு "விட்டுச் சென்ற பைசா    : " & மீதம்;
+அச்சு "";
+
+// தரை is the floor and மேல் is the ceiling, and for a negative quotient those
+// are not the same as throwing the fraction away. Integer division truncates
+// towards zero, so exactly one of the two needs a correction of one — and
+// which one depends on the sign of the answer.
+அச்சு "தரை(1000 / 3)        : " & தரை(1000 / 3);
+அச்சு "மேல்(1000 / 3)        : " & மேல்(1000 / 3);
+அச்சு "தரை((0 - 1000) / 3)  : " & தரை((0 - 1000) / 3);
+அச்சு "மேல்((0 - 1000) / 3)  : " & மேல்((0 - 1000) / 3);
+அச்சு "";
+
+// A loop, accumulating.
+எண்ணி = 1;
+கூட்டல் = 0;
+(எண்ணி <= 5) சுற்று {
+    கூட்டல் = கூட்டல் + விலை * எண்ணி;
+    எண்ணி = எண்ணி + 1;
+}
+அச்சு "விலை × 1..5 (பைசா)    : " & கூட்டல்;
+
+// And the range the f64 backend used to lose. A double is exact to 2^53, about
+// ₹90,000 crore expressed in paise; an i64 is exact to 2^63. This figure is
+// past the first and inside the second, so a double would print it as
+// 123456789012345680.
+அச்சு "பெரிய தொகை (பைசா)     : " & 123456789012345678;

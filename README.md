@@ -83,7 +83,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
 | MySQL / MariaDB | ✅ Live verified | `--features mysql`; the live sample passes with `ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh`; setup details are in `TESTING.md` |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
-| LLVM backend (`--llvm`) | 🟡 Subset; refuses what it would get wrong | Linux/macOS, `--features llvm`. It computes in `f64`, not fixed-point decimal — so **decimal arithmetic is now refused** rather than compiled to IR that answers `0.30000000000000004`; integer arithmetic still compiles, since a double holds those exactly. No builtin is reachable, and strings, arrays and records have no representation in the emitted IR. `docs/llvm-backend-gaps.md` counts what is missing and `scripts/run_parity.sh` measures it |
+| LLVM backend (`--llvm`) | 🟡 Subset; refuses what it would get wrong | Linux/macOS, `--features llvm`. It computes in whole numbers as `i64`, so **decimal arithmetic is refused** rather than compiled to IR that answers `0.30000000000000004` — and division under `தரை`/`மேல்` is exact, which is what makes money held in whole paise work here. Three builtins are reachable (`தரை`, `மேல்`, `வட்டமிடு`); the other fifty-six are not, and strings, arrays, records and booleans have no representation in the emitted IR. `docs/llvm-backend-gaps.md` counts what is missing and `scripts/run_parity.sh` measures it |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
 | JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
 | Scheduled blocks (`இடைவெளி`) | ✅ Working | `இடைவெளி 3600 { … }` under either server; the number is the gap *between* runs, so a slow job runs late rather than twice at once |
@@ -282,6 +282,19 @@ Only needed for `--llvm`, and only available on Linux/macOS:
 
 ```bash
 cargo build --release --features llvm
+./scripts/run_parity.sh            # does it still agree with the VM?
+```
+
+`run_parity.sh` runs every example under both backends. A refusal is expected
+and only counted; a program the backend accepts and then answers differently
+from the VM is a failure, because that is the case nobody would notice from the
+outside.
+
+On a machine without LLVM the backend cannot be built, but it can still be
+type-checked — which is what makes it editable there at all:
+
+```bash
+python scripts/check_llvm_backend.py
 ```
 
 ---
