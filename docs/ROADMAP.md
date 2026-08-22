@@ -91,7 +91,7 @@ Transactions work, driven as plain SQL — `தளம்_செய் "BEGIN", [
 
 Connecting again to the *same* database is not an error — it asks for nothing new. Disconnecting first and then connecting elsewhere works as it always did.
 
-**Still to do:** genuinely concurrent connections, which needs the language to be able to name one — a handle returned by `தளம்_இணை` and taken by `தளம்_வினா`. MongoDB and Redis need a design before an implementation: neither has SQL, so neither fits a trait shaped as `execute(sql, params)` / `query(sql, params)`.
+**Still to do:** genuinely concurrent connections, which needs the language to be able to name one — a handle returned by `தளம்_இணை` and taken by `தளம்_வினா`. ~~MongoDB and Redis need a design before an implementation~~ — both are done, and neither went through the `Database` trait, because neither should have. Redis is a command and a reply, so the host offers exactly one command generically and every Redis command works through it. MongoDB is documents, and a document is already a `பொருள்` — the mapping needed no invention, only care about numbers, which are stored as `Decimal128` rather than as doubles.
 
 ---
 
@@ -175,7 +175,7 @@ The checker is deliberately narrow: it enforces what the author declared and sta
   ```
 
   The answer is still a Boolean and still the same Boolean — only what runs to produce it changed. `எழுத்து` in `col.qmz` and `பகுதியை_எடு` in `AvaNam.qmz` were written to work around this and stay because they read well, not because they are needed.
-- ~~**Arrays and records never compared equal.**~~ — RESOLVED. 's equality had no arm for either, so they fell to its catch-all and  was false. So was . Nothing warned, which is the worst way for an equality to be wrong: a program checking whether a result matched what it expected was told no and read that as a difference in the data. An array now compares by position and a record by field, since a record has no order. Found by a BSON round-trip test that could not be made to pass.
+- ~~**Arrays and records never compared equal.**~~ — RESOLVED. `Value`'s equality had no arm for either, so both fell to its catch-all: `[1, 2] == [1, 2]` was false, and so was `[] == []`. Nothing warned, which is the worst way for an equality to be wrong — a program checking whether a result matched what it expected was told no, and read the no as a difference in the data. An array now compares by position, because an array is ordered; a record compares by field, because a record is not. Found by a BSON round trip that could not be made to pass: the numbers compared equal one at a time and the structures holding them did not.
 - **Chained comparisons parse oddly.** `a > b > c` becomes `(a > b) > c`, so `3 > 2 > 1` is `false`.
 - **Encryption is XOR, not AES.** `src/fileio/crypto.rs` uses a repeating-key XOR cipher with a default key. It should not be described as encryption in user-facing docs until it uses a real AEAD.
 - **`rustfmt` and `clippy` are not clean.** CI runs both with `continue-on-error: true`; remove that once the backlog is cleared.
