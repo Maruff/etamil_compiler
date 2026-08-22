@@ -4566,6 +4566,154 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 311
   },
   {
+    "name": "ரூபாயும்_பைசாவும்",
+    "forms": [
+      "ரூபாயும்_பைசாவும்"
+    ],
+    "params": [
+      "ரூபாய்",
+      "பைசா"
+    ],
+    "arity": 2,
+    "doc": "ரூபாயும்_பைசாவும்(ரூபாய், பைசா) — ₹2.05 is ரூபாயும்_பைசாவும்(2, 5)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 38
+  },
+  {
+    "name": "ரூபாயாக",
+    "forms": [
+      "ரூபாயாக"
+    ],
+    "params": [
+      "ரூபாய்"
+    ],
+    "arity": 1,
+    "doc": "ரூபாயாக(ரூபாய்) — whole rupees",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 43
+  },
+  {
+    "name": "காசு_உரை",
+    "forms": [
+      "காசு_உரை"
+    ],
+    "params": [
+      "மொத்த_பைசா"
+    ],
+    "arity": 1,
+    "doc": "காசு_உரை(மொத்த_பைசா) — \"2.05\", built from the two halves rather than by",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 51
+  },
+  {
+    "name": "காசு_கூட்டு",
+    "forms": [
+      "காசு_கூட்டு"
+    ],
+    "params": [
+      "அ",
+      "ஆ"
+    ],
+    "arity": 2,
+    "doc": "Addition, subtraction and multiplication by a count: exact on any backend,",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 72
+  },
+  {
+    "name": "காசு_கழி",
+    "forms": [
+      "காசு_கழி"
+    ],
+    "params": [
+      "அ",
+      "ஆ"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 73
+  },
+  {
+    "name": "காசு_மடங்கு",
+    "forms": [
+      "காசு_மடங்கு"
+    ],
+    "params": [
+      "மொத்த_பைசா",
+      "எண்ணிக்கை"
+    ],
+    "arity": 2,
+    "doc": "காசு_மடங்கு(மொத்த_பைசா, எண்ணிக்கை) — a price times a quantity",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 76
+  },
+  {
+    "name": "காசு_கூட்டல்",
+    "forms": [
+      "காசு_கூட்டல்"
+    ],
+    "params": [
+      "பட்டியல்"
+    ],
+    "arity": 1,
+    "doc": "காசு_கூட்டல்(பட்டியல்) — a column of money",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 81
+  },
+  {
+    "name": "விழுக்காடு_காசு",
+    "forms": [
+      "விழுக்காடு_காசு"
+    ],
+    "params": [
+      "மொத்த_பைசா",
+      "மேல்",
+      "கீழ்"
+    ],
+    "arity": 3,
+    "doc": "விழுக்காடு_காசு(மொத்த_பைசா, மேல், கீழ்) — a rate as a fraction",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 98
+  },
+  {
+    "name": "சமமாகப்_பிரி",
+    "forms": [
+      "சமமாகப்_பிரி"
+    ],
+    "params": [
+      "மொத்த_பைசா",
+      "எத்தனை"
+    ],
+    "arity": 2,
+    "doc": "சமமாகப்_பிரி(மொத்த_பைசா, எத்தனை)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 117
+  },
+  {
+    "name": "விகிதத்தில்_பிரி",
+    "forms": [
+      "விகிதத்தில்_பிரி"
+    ],
+    "params": [
+      "மொத்த_பைசா",
+      "எடைகள்"
+    ],
+    "arity": 2,
+    "doc": "விகிதத்தில்_பிரி(மொத்த_பைசா, எடைகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAcu.qmz",
+    "line": 143
+  },
+  {
     "name": "இருப்பாய்வு",
     "forms": [
       "இருப்பாய்வு"
