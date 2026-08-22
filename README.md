@@ -73,6 +73,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Running another program (`கட்டளை_ஓட்டு`) | ✅ Working | for the PDF, which comes out of LibreOffice. Deny by default: nothing runs unless `ETAMIL_EXEC_ALLOW` names it, arguments are a list and never reach a shell, and a program that will not finish is killed |
 | Sending a file (`பதில்_கோப்பு`) | ✅ Working | a response body that is not text — a PDF, an .odt, a picture. The language names the file and the server reads it, because a body built as a `சரம்` loses every byte that is not valid UTF-8. Content-Length counts what is actually sent; a missing file is a result, not an empty 200 |
 | File uploads (`request_files`, `பதிவேற்றம்_சேமி`) | ✅ Working | `multipart/form-data`, parsed over bytes. The request body is no longer decoded to text before parsing, which used to replace every byte of an upload that was not valid UTF-8. Text fields arrive in `request_fields`; files stay as bytes and the handler saves the one it wants, so nothing is spooled to a temporary file for someone to clean up |
+| Single sign-on (`சீட்டு_தலைப்பு`, `சீட்டு_பொதுச்_சரிபார்`) | ✅ Working | RS256 against a public key from an identity provider's JWKS, for Entra ID and the like. Fetching the JWKS, choosing the key and caching it are ordinary work for `வலை_பெறு` and `nUlakam/jEcAZ.qmz`; only reading a token's header and checking a signature live in the host. The issuer and the audience are required arguments, not options — a token a provider really signed, for a different application, is a real token and is still refused |
 | Accounting framework | ✅ Working | double entry, GST, three statements — **written in eTamil** |
 | SQLite (`தளம்_இணை` etc.) | ✅ Working | parameterised queries only; rows return as an array of records |
 | Connection reuse | ✅ Working | `தளம்_இணை` borrows from a process-wide idle cache instead of reconnecting per request; leases are exclusive, so transactions stay isolated. `ETAMIL_DB_IDLE` caps it |
@@ -94,7 +95,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 39 builtins and 127 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 41 builtins and 127 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 

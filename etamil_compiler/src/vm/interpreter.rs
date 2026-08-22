@@ -656,6 +656,47 @@ impl VM {
                 }
             }
 
+            // --- Single sign-on ---------------------------------------------
+            // An identity provider signs with RS256 and publishes its public
+            // keys as a JWKS document. Fetching that document, picking the key
+            // and caching it are ordinary work the language can do with
+            // வலை_பெறு and nUlakam/jEcAZ.qmz. Only the two things it cannot
+            // do live here: reading a token's header, and checking a signature
+            // against an RSA key.
+
+            // சீட்டு_தலைப்பு(சீட்டு) — {kid, alg}, read but not trusted
+            "சீட்டு_தலைப்பு" | "cIttu_qalYppu" | "_tokenHeader" => {
+                Self::expect_args(name, &args, 1)?;
+                match crate::http::auth::token_header(&args[0].to_string()) {
+                    Ok((kid, algorithm)) => {
+                        let mut described = HashMap::new();
+                        described.insert("kid".to_string(), Value::String(kid));
+                        described.insert("alg".to_string(), Value::String(algorithm));
+                        Ok(Value::Ok(Box::new(Value::Map(described))))
+                    }
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // சீட்டு_பொதுச்_சரிபார்(சீட்டு, n, e, வழங்குநர், பார்வையாளர்)
+            //   — verify against a public key from a JWKS
+            //
+            // The issuer and audience are arguments and not optional: a token
+            // an identity provider really signed, for somebody else's
+            // application, is a real token and must still be refused.
+            "சீட்டு_பொதுச்_சரிபார்" | "cIttu_poquc_caripAr" | "_verifyTokenRSA" => {
+                Self::expect_args(name, &args, 5)?;
+                match crate::http::auth::verify_rsa_token(
+                    &args[0].to_string(),
+                    &args[1].to_string(),
+                    &args[2].to_string(),
+                    &args[3].to_string(),
+                    &args[4].to_string(),
+                ) {
+                    Ok(claims) => Ok(Value::Ok(Box::new(Value::String(claims)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
