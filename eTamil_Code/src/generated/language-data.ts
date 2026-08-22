@@ -4186,6 +4186,168 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 86
   },
   {
+    "name": "மதிப்பிடத்தக்க_மதிப்பு",
+    "forms": [
+      "மதிப்பிடத்தக்க_மதிப்பு"
+    ],
+    "params": [
+      "பொருள்_விலை",
+      "கப்பற்_கட்டணம்",
+      "காப்பீட்டுக்_கட்டணம்"
+    ],
+    "arity": 3,
+    "doc": "மதிப்பிடத்தக்க_மதிப்பு(பொருள்_விலை, கப்பற்_கட்டணம், காப்பீட்டுக்_கட்டணம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 30
+  },
+  {
+    "name": "சுங்கக்_கணக்கு",
+    "forms": [
+      "சுங்கக்_கணக்கு"
+    ],
+    "params": [
+      "மதிப்பு",
+      "அடிப்படை_விகிதம்",
+      "மேலதிக_விகிதம்",
+      "ஜிஎஸ்டி_விகிதம்"
+    ],
+    "arity": 4,
+    "doc": "சுங்கக்_கணக்கு(மதிப்பு, அடிப்படை_விகிதம், மேலதிக_விகிதம், ஜிஎஸ்டி_விகிதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 46
+  },
+  {
+    "name": "தலைப்பு_சரியா",
+    "forms": [
+      "தலைப்பு_சரியா"
+    ],
+    "params": [
+      "குறியீட்டெண்"
+    ],
+    "arity": 1,
+    "doc": "தலைப்பு_சரியா(குறியீட்டெண்) — is this a well-formed tariff heading?",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 80
+  },
+  {
+    "name": "எண்களே",
+    "forms": [
+      "எண்களே"
+    ],
+    "params": [
+      "பாடம்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 89
+  },
+  {
+    "name": "அத்தியாயம்",
+    "forms": [
+      "அத்தியாயம்"
+    ],
+    "params": [
+      "குறியீட்டெண்"
+    ],
+    "arity": 1,
+    "doc": "அத்தியாயம்(குறியீட்டெண்) — the chapter a heading belongs to",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 100
+  },
+  {
+    "name": "பொருந்துமா",
+    "forms": [
+      "பொருந்துமா"
+    ],
+    "params": [
+      "குறியீட்டெண்",
+      "தலைப்புக்_குறி"
+    ],
+    "arity": 2,
+    "doc": "பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) — does a code fall under a heading?",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 110
+  },
+  {
+    "name": "தேவையா",
+    "forms": [
+      "தேவையா"
+    ],
+    "params": [
+      "மதிப்பு",
+      "வரம்புத்_தொகை"
+    ],
+    "arity": 2,
+    "doc": "தேவையா(மதிப்பு, வரம்புத்_தொகை) — does this consignment need one at all?",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 121
+  },
+  {
+    "name": "செல்லுபடி_நாட்கள்",
+    "forms": [
+      "செல்லுபடி_நாட்கள்"
+    ],
+    "params": [
+      "தூரம்",
+      "ஒரு_நாள்_தூரம்"
+    ],
+    "arity": 2,
+    "doc": "செல்லுபடி_நாட்கள்(தூரம், ஒரு_நாள்_தூரம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 134
+  },
+  {
+    "name": "வழிச்சீட்டு_சரிபார்",
+    "forms": [
+      "வழிச்சீட்டு_சரிபார்"
+    ],
+    "params": [
+      "விவரங்கள்"
+    ],
+    "arity": 1,
+    "doc": "வழிச்சீட்டு_சரிபார்(விவரங்கள்) — is this complete enough to generate?",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 148
+  },
+  {
+    "name": "ஜிஎஸ்டி_எண்_சரியா",
+    "forms": [
+      "ஜிஎஸ்டி_எண்_சரியா"
+    ],
+    "params": [
+      "எண்_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "ஜிஎஸ்டி_எண்_சரியா(எண்) — the shape of a GSTIN",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 189
+  },
+  {
+    "name": "ஜிஎஸ்டி_மாநிலம்",
+    "forms": [
+      "ஜிஎஸ்டி_மாநிலம்"
+    ],
+    "params": [
+      "எண்_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "ஜிஎஸ்டி_மாநிலம்(எண்) — the state code a GSTIN begins with",
+    "kind": "stdlib",
+    "module": "nUlakam/cuwkam/cuwkam.qmz",
+    "line": 195
+  },
+  {
     "name": "எழுத்து_மறை",
     "forms": [
       "எழுத்து_மறை"
@@ -6086,6 +6248,143 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kaNiqam.qmz",
     "line": 78
+  },
+  {
+    "name": "முனைமம்",
+    "forms": [
+      "முனைமம்"
+    ],
+    "params": [
+      "காப்பீட்டுத்_தொகை",
+      "விகிதம்"
+    ],
+    "arity": 2,
+    "doc": "முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) — a premium at a percentage rate",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 25
+  },
+  {
+    "name": "ஆயிரத்திற்கு_முனைமம்",
+    "forms": [
+      "ஆயிரத்திற்கு_முனைமம்"
+    ],
+    "params": [
+      "காப்பீட்டுத்_தொகை",
+      "ஆயிரத்திற்கு"
+    ],
+    "arity": 2,
+    "doc": "ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 34
+  },
+  {
+    "name": "ஏற்ற_இறக்கத்துடன்",
+    "forms": [
+      "ஏற்ற_இறக்கத்துடன்"
+    ],
+    "params": [
+      "அடிப்படை_முனைமம்",
+      "ஏற்ற_விகிதம்",
+      "தள்ளுபடி_விகிதம்"
+    ],
+    "arity": 3,
+    "doc": "ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 43
+  },
+  {
+    "name": "குறுகிய_காலம்",
+    "forms": [
+      "குறுகிய_காலம்"
+    ],
+    "params": [
+      "ஆண்டு_முனைமம்",
+      "நாட்கள்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 52
+  },
+  {
+    "name": "கழிவுக்குப்_பின்",
+    "forms": [
+      "கழிவுக்குப்_பின்"
+    ],
+    "params": [
+      "இழப்புத்_தொகை",
+      "கழிவு"
+    ],
+    "arity": 2,
+    "doc": "கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) — the excess the insured bears",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 65
+  },
+  {
+    "name": "சராசரி_விதி",
+    "forms": [
+      "சராசரி_விதி"
+    ],
+    "params": [
+      "இழப்புத்_தொகை",
+      "காப்பீட்டுத்_தொகை",
+      "உண்மை_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 81
+  },
+  {
+    "name": "கோரல்_தீர்வு",
+    "forms": [
+      "கோரல்_தீர்வு"
+    ],
+    "params": [
+      "விவரங்கள்"
+    ],
+    "arity": 1,
+    "doc": "கோரல்_தீர்வு(விவரங்கள்) — what is actually payable",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 104
+  },
+  {
+    "name": "கோரல்_இல்லா_சலுகை",
+    "forms": [
+      "கோரல்_இல்லா_சலுகை"
+    ],
+    "params": [
+      "ஆண்டு_முனைமம்",
+      "தொடர்_ஆண்டுகள்",
+      "படிகள்"
+    ],
+    "arity": 3,
+    "doc": "கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 147
+  },
+  {
+    "name": "நிலுவைக்_கோரல்கள்",
+    "forms": [
+      "நிலுவைக்_கோரல்கள்"
+    ],
+    "params": [
+      "கோரல்கள்"
+    ],
+    "arity": 1,
+    "doc": "நிலுவைக்_கோரல்கள்(கோரல்கள்) — what is reported and not yet paid",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "line": 167
   },
   {
     "name": "அறுபத்துநான்கு_எழுத்துகள்",

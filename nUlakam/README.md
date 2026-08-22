@@ -28,6 +28,8 @@ frameworks built on top of it.
 | `kaNakkiyal/qEymAZam.qmz` | depreciation — `நேர்கோட்டு_ஆண்டு` `குறையும்_ஆண்டு` `பகுதி_ஆண்டு` `நேர்கோட்டு_அட்டவணை` `குறையும்_அட்டவணை` `தொகுதி_தேய்வு` |
 | `kaNakkiyal/Uqiyam.qmz` | payroll — `மொத்தச்_சம்பளம்` `நாட்களுக்கு_ஏற்ப` `வரம்புடன்_பங்களிப்பு` `தகுதிக்குள்_பங்களிப்பு` `படிநிலை_வரி` `பணிக்கொடை` `சம்பளச்_சீட்டு` |
 | `kaNakkiyal/vari_viziqam.qmz` | tax rates — `விகிதம்_தேடு` `படிகளை_ஏற்று` `படி_வரி_கணக்கிடு` `உள்_மாநிலமா` `மாநிலப்_பெயர்` |
+| `kAppIttu/kAppIttu.qmz` | insurance — `முனைமம்` `ஆயிரத்திற்கு_முனைமம்` `சராசரி_விதி` `கோரல்_தீர்வு` `கோரல்_இல்லா_சலுகை` `நிலுவைக்_கோரல்கள்` |
+| `cuwkam/cuwkam.qmz` | customs and trade — `மதிப்பிடத்தக்க_மதிப்பு` `சுங்கக்_கணக்கு` `தலைப்பு_சரியா` `பொருந்துமா` `செல்லுபடி_நாட்கள்` `வழிச்சீட்டு_சரிபார்` |
 | `qaLam/retis.qmz` | Redis — `சேமி` `காலத்துடன்_சேமி` `எடு` `இருக்கிறதா` `நீக்கு` `ஒன்று_கூட்டு` `முன்_சேர்` `வரிசைப்_பகுதி` `இல்லையெனில்_இயல்பு` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
@@ -324,3 +326,54 @@ lease, which the SQL side has and this does not yet.
 
 `retis_pOli.py` is a small mock Redis, so the suite runs on a machine with none
 installed.
+
+## Insurance: the average clause
+
+`kAppIttu/` is policy, premium and claim. Most of it is small arithmetic. One
+part is not, and it is the reason the module exists.
+
+When a property is insured for less than it is worth, the insurer pays only the
+proportion that was insured — **even for a partial loss well inside the sum
+insured**. A building worth fifty lakh insured for twenty-five is insured for
+half its value, so a five-lakh loss pays two and a half lakh, not five.
+Policyholders find this surprising, and an implementation that pays the full
+partial loss overpays every under-insured claim.
+
+The order of a settlement is also not interchangeable: average on the whole
+loss, *then* the excess, then co-payment, then any sub-limit, and the sum
+insured as a ceiling throughout. Taking the excess off before averaging pays
+more than the policy promises, and a test asserts the two differ.
+
+`கோரல்_தீர்வு` answers a record rather than a number, so a settlement letter can
+show how it got there — which is the first thing a policyholder disputing it
+will ask.
+
+## Customs: the cascade
+
+`cuwkam/` centres on the order duties are applied in, because that is what
+implementations get wrong.
+
+Basic duty is on the assessable value. The surcharge is on **the duty**, not on
+the value. And IGST is on the value **plus** the duty and the surcharge. On a
+one-lakh consignment at ten per cent duty, computing IGST on the assessable
+value instead understates the tax by ₹2,247.30 — and by more the higher the
+duty rate. The suite asserts that figure, so the mistake cannot be
+reintroduced quietly.
+
+The surcharge is the step most often written against the wrong base, and on the
+worked example ten per cent of the value happens to equal the basic duty
+exactly — which is why the error is easy to make and hard to spot.
+
+Assessable value is cost, insurance and freight: duty is on the goods delivered
+to the border, not on the invoice. An importer computing duty on the invoice
+alone underpays on every consignment that had to be shipped.
+
+E-way bill validity **rounds up**. A single kilometre past a distance band earns
+the extra day, because rounding down expires a bill while the lorry is still
+moving. And `வழிச்சீட்டு_சரிபார்` answers the list of what is missing rather
+than a yes or no: the useful answer to "is this valid" is "no, and here is what
+to fix", especially with a lorry waiting.
+
+`ஜிஎஸ்டி_எண்_சரியா` checks the **shape** of a GSTIN and says so. The check digit
+is a published algorithm and worth adding; claiming to validate a GSTIN without
+it would be the more dangerous half-measure.

@@ -1,0 +1,120 @@
+// சுங்கம் சோதனை — the duty cascade, tariff headings and the e-way bill
+//
+//   etamil --vm nUlakam/cuwkam/cuwkam_cOqaZY.qmz
+//
+// No rate here is a claim about any real tariff. They are arguments, chosen so
+// the cascade can be checked by hand.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "cuwkam.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("சுங்கம்");
+
+// --- assessable value -----------------------------------------------------
+//
+// Duty is on the goods delivered to the border, not on the invoice.
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பிடத்தக்க_மதிப்பு(100000, 12000, 1500), 113500,
+              "cost, insurance and freight");
+ஓட்டம் = வேறுபடு(ஓட்டம், மதிப்பிடத்தக்க_மதிப்பு(100000, 12000, 1500), 100000,
+                  "which is not the invoice value");
+
+// --- the cascade ----------------------------------------------------------
+//
+// The centre of the module. Each duty on the base the law gives it.
+க = சுங்கக்_கணக்கு(113500, 10, 10, 18);
+
+ஓட்டம் = சமம்(ஓட்டம், க["அடிப்படை"], 11350, "basic duty on the assessable value");
+
+// On the duty, not on the value. Ten per cent of the value would be 11,350 —
+// the same number as the basic duty, which is exactly why the mistake is easy
+// to make and hard to spot.
+ஓட்டம் = சமம்(ஓட்டம், க["மேலதிகம்"], 1135, "the surcharge is on the duty");
+ஓட்டம் = வேறுபடு(ஓட்டம், க["மேலதிகம்"], 11350, "and not on the value");
+
+// IGST on the duty-inclusive value.
+ஓட்டம் = சமம்(ஓட்டம், க["ஜிஎஸ்டி_அடிப்படை"], 125985,
+              "IGST is charged on the value plus what has been charged on it");
+ஓட்டம் = சமம்(ஓட்டம், க["ஜிஎஸ்டி"], 22677.3, "eighteen per cent of that");
+
+// The consequence, stated as a number: computing IGST on the assessable value
+// understates the tax, by more the higher the duty rate.
+தவறான_ஜிஎஸ்டி = வட்டமிடு(113500 * 18 / 100, 2);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், க["ஜிஎஸ்டி"] - தவறான_ஜிஎஸ்டி == 2247.3,
+                    "getting the base wrong understates the duty by 2,247.30 here");
+
+ஓட்டம் = சமம்(ஓட்டம், க["மொத்தம்"], 35162.3, "the duties add up");
+ஓட்டம் = சமம்(ஓட்டம், க["இறங்கு_விலை"], 148662.3, "and the landed cost is value plus duty");
+
+// A zero-rated import still computes, and pays nothing.
+காலி = சுங்கக்_கணக்கு(100000, 0, 0, 0);
+ஓட்டம் = சமம்(ஓட்டம், காலி["மொத்தம்"], 0, "nothing charged is nothing due");
+ஓட்டம் = சமம்(ஓட்டம், காலி["இறங்கு_விலை"], 100000, "and the landed cost is the value");
+
+// With no basic duty there is no surcharge either, because the surcharge is on
+// the duty — but IGST is still charged.
+ஜிஎஸ்டி_மட்டும் = சுங்கக்_கணக்கு(100000, 0, 10, 18);
+ஓட்டம் = சமம்(ஓட்டம், ஜிஎஸ்டி_மட்டும்["மேலதிகம்"], 0,
+              "no duty, no surcharge on it");
+ஓட்டம் = சமம்(ஓட்டம், ஜிஎஸ்டி_மட்டும்["ஜிஎஸ்டி"], 18000, "but IGST is still due");
+
+// --- tariff headings ------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("84"), "a chapter is two digits");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("8471"), "a heading is four");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("847130"), "a subheading is six");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("84713010"), "a tariff item is eight");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("847") == பொய், "three digits is not a heading");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("84-71") == பொய்,
+                    "and a dash is how a spreadsheet mangles one");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("84 71") == பொய், "as is a space");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("") == பொய், "nothing is not a heading");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தலைப்பு_சரியா("ABCD") == பொய், "nor are letters");
+
+// A rate stated at chapter level has to be found for a specific item, so this
+// is a prefix test and not equality.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பொருந்துமா("84713010", "8471"), "an item falls under its heading");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பொருந்துமா("84713010", "84"), "and under its chapter");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பொருந்துமா("84713010", "84713010"), "and under itself");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பொருந்துமா("84713010", "8528") == பொய்,
+                    "but not under a different heading");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பொருந்துமா("8471", "84713010") == பொய்,
+                    "and a heading does not fall under an item beneath it");
+ஓட்டம் = சமம்(ஓட்டம், அத்தியாயம்("84713010"), "84", "the chapter is the first two digits");
+
+// --- the e-way bill -------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தேவையா(60000, 50000), "above the threshold, one is needed");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தேவையா(50000, 50000) == பொய், "at it, none is");
+
+// Validity rounds up. Rounding down expires a bill while the lorry is moving.
+ஓட்டம் = சமம்(ஓட்டம், செல்லுபடி_நாட்கள்(100, 200), 1, "a short journey is one day");
+ஓட்டம் = சமம்(ஓட்டம், செல்லுபடி_நாட்கள்(200, 200), 1, "exactly a band is still one");
+ஓட்டம் = சமம்(ஓட்டம், செல்லுபடி_நாட்கள்(201, 200), 2,
+              "and a single kilometre past it earns the extra day");
+ஓட்டம் = சமம்(ஓட்டம், செல்லுபடி_நாட்கள்(1000, 200), 5, "five bands, five days");
+ஓட்டம் = சமம்(ஓட்டம், செல்லுபடி_நாட்கள்(0, 200), 1, "and never less than a day");
+
+// Validation answers what is missing, because "no" on its own is not useful.
+நல்லது = வழிச்சீட்டு_சரிபார்({"அனுப்புநர்_ஜிஎஸ்டி": "33ABCDE1234F1Z5",
+                              "பெறுநர்_ஜிஎஸ்டி": "27ABCDE1234F1Z5",
+                              "தலைப்பு": "84713010", "மதிப்பு": 250000,
+                              "தூரம்": 350, "வாகனம்": "TN01AB1234"});
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நல்லது["சரியா"], "a complete consignment passes");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நல்லது["பகுதி_பி_உள்ளதா"], "and it has a vehicle");
+
+குறையுள்ளது = வழிச்சீட்டு_சரிபார்({"அனுப்புநர்_ஜிஎஸ்டி": "33ABCDE1234F1Z5",
+                                   "தலைப்பு": "847", "மதிப்பு": 0});
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறையுள்ளது["சரியா"] == பொய், "an incomplete one does not");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நீளம்(குறையுள்ளது["குறைகள்"]) >= 4,
+                    "and it names every fault rather than the first");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறையுள்ளது["பகுதி_பி_உள்ளதா"] == பொய்,
+                    "no vehicle is its own state, not an error");
+
+// --- GSTIN shape ----------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஜிஎஸ்டி_எண்_சரியா("33ABCDE1234F1Z5"), "fifteen characters");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஜிஎஸ்டி_எண்_சரியா("33ABCDE1234F1Z") == பொய், "fourteen is not");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஜிஎஸ்டி_எண்_சரியா("XXABCDE1234F1Z5") == பொய்,
+                    "and the state code has to be digits");
+ஓட்டம் = சமம்(ஓட்டம், ஜிஎஸ்டி_மாநிலம்("33ABCDE1234F1Z5"), "33",
+              "which is where the supply is from");
+
+சோதனை_முடிவு(ஓட்டம்);

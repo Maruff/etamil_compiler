@@ -1,0 +1,177 @@
+// nUlakam/kAppIttu/kAppIttu.qmz — காப்பீடு (insurance): policy, premium, claim
+//
+// Insurance arithmetic is mostly small and one rule is famously not: when a
+// property is insured for less than it is worth, the insurer pays only the
+// proportion that was insured — even for a partial loss well inside the sum
+// insured. That is the average clause, it surprises policyholders, and getting
+// it wrong overpays every under-insured claim.
+//
+// Rates are a number out of a hundred, as everywhere here. A premium rate
+// quoted per mille has its own function, because that is how property risks
+// are actually quoted and converting by hand is where a factor of ten goes.
+//
+// No rate, loading or limit is in this file. They are terms of a contract, and
+// a contract is data.
+//
+// காப்பீடு, இழப்பு, விலக்கு and பங்கு are all keywords, so the words this
+// module most wants are unavailable alone. Compounds it is.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// --- premium --------------------------------------------------------------
+//
+// முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) — a premium at a percentage rate
+செயல் முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) {
+    திரும்பு வட்டமிடு(சதவீதம்(காப்பீட்டுத்_தொகை, விகிதம்), 2);
+}
+
+// ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு)
+//
+// Property is quoted per thousand — "one rupee eighty per mille" — not per
+// cent. Writing 1.80 into a percentage function charges a hundred times too
+// much, and the number looks plausible either way.
+செயல் ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு) {
+    திரும்பு வட்டமிடு(காப்பீட்டுத்_தொகை * ஆயிரத்திற்கு / 1000, 2);
+}
+
+// ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்)
+//
+// A loading for risk, a discount for a claim-free record. Both as percentages
+// of the base premium, and the loading is applied before the discount because
+// that is the order a schedule states them in.
+செயல் ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்) {
+    ஏற்றியது = அடிப்படை_முனைமம் + சதவீதம்(அடிப்படை_முனைமம், ஏற்ற_விகிதம்);
+    திரும்பு வட்டமிடு(ஏற்றியது - சதவீதம்(ஏற்றியது, தள்ளுபடி_விகிதம்), 2);
+}
+
+// குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்)
+//
+// A policy for part of a year. Pro rata by days, not by months: a policy
+// starting on the fifteenth is not half a month's cover.
+செயல் குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்) {
+    (ஆண்டு_நாட்கள் <= 0) எனில் { திரும்பு 0; }
+    (நாட்கள் >= ஆண்டு_நாட்கள்) எனில் { திரும்பு வட்டமிடு(ஆண்டு_முனைமம், 2); }
+    (நாட்கள் <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(ஆண்டு_முனைமம் * நாட்கள் / ஆண்டு_நாட்கள், 2);
+}
+
+// --- the claim ------------------------------------------------------------
+//
+// கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) — the excess the insured bears
+//
+// Applied to the loss before anything else. A loss smaller than the excess is
+// not a small payment; it is no payment.
+செயல் கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) {
+    (இழப்புத்_தொகை <= கழிவு) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(இழப்புத்_தொகை - கழிவு, 2);
+}
+
+// சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு)
+//
+// The average clause, and the rule this module exists for.
+//
+// A building worth fifty lakh insured for twenty-five is insured for half its
+// value, so the insurer pays half of any loss — not the whole of a five-lakh
+// loss merely because five lakh is inside the sum insured. Policyholders find
+// this surprising, and an implementation that pays the full partial loss
+// overpays every under-insured claim.
+//
+// Insured for its full value or more, nothing is scaled back.
+செயல் சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு) {
+    (உண்மை_மதிப்பு <= 0) எனில் { திரும்பு வட்டமிடு(இழப்புத்_தொகை, 2); }
+    (காப்பீட்டுத்_தொகை >= உண்மை_மதிப்பு) எனில் { திரும்பு வட்டமிடு(இழப்புத்_தொகை, 2); }
+    திரும்பு வட்டமிடு(இழப்புத்_தொகை * காப்பீட்டுத்_தொகை / உண்மை_மதிப்பு, 2);
+}
+
+// கோரல்_தீர்வு(விவரங்கள்) — what is actually payable
+//
+// விவரங்கள் carries what the policy says:
+//   இழப்பு       what was lost
+//   காப்பீடு     the sum insured
+//   உண்மை_மதிப்பு the value at risk — leave it out and no averaging applies
+//   கழிவு        the excess
+//   பங்கேற்பு     co-payment, as a percentage the insured bears
+//   உட்_வரம்பு    a sub-limit for this head of cover
+//
+// The order is the order a settlement is computed in, and it is not
+// interchangeable: average first on the whole loss, then the excess, then
+// co-payment, then any sub-limit, and finally the sum insured as a ceiling.
+// Applying the excess before averaging pays more than the policy promises.
+//
+// Answers a record rather than a number, so a settlement letter can say how it
+// got there — which is what a policyholder disputing it will ask.
+செயல் கோரல்_தீர்வு(விவரங்கள்) {
+    இழப்பு_மதிப்பு = புலம்_அல்லது(விவரங்கள், "இழப்பு", 0);
+    காப்பீட்டுத்_தொகை = புலம்_அல்லது(விவரங்கள், "காப்பீடு", 0);
+    உண்மை_மதிப்பு = புலம்_அல்லது(விவரங்கள், "உண்மை_மதிப்பு", 0);
+    கழிவு = புலம்_அல்லது(விவரங்கள், "கழிவு", 0);
+    பங்கேற்பு = புலம்_அல்லது(விவரங்கள், "பங்கேற்பு", 0);
+    உட்_வரம்பு = புலம்_அல்லது(விவரங்கள், "உட்_வரம்பு", 0);
+
+    சராசரிக்குப்_பின் = சராசரி_விதி(இழப்பு_மதிப்பு, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு);
+    கழிவுக்குப்_பின்னது = கழிவுக்குப்_பின்(சராசரிக்குப்_பின், கழிவு);
+
+    பங்கேற்புத்_தொகை = வட்டமிடு(சதவீதம்(கழிவுக்குப்_பின்னது, பங்கேற்பு), 2);
+    பங்கிற்குப்_பின் = கழிவுக்குப்_பின்னது - பங்கேற்புத்_தொகை;
+
+    வரம்பிற்குப்_பின் = பங்கிற்குப்_பின்;
+    (உட்_வரம்பு > 0 மற்றும் வரம்பிற்குப்_பின் > உட்_வரம்பு) எனில் {
+        வரம்பிற்குப்_பின் = உட்_வரம்பு;
+    }
+
+    // Indemnity: the sum insured is a ceiling and not a target. Nothing above
+    // it is payable however the arithmetic came out.
+    செலுத்தத்தக்கது = வரம்பிற்குப்_பின்;
+    (காப்பீட்டுத்_தொகை > 0 மற்றும் செலுத்தத்தக்கது > காப்பீட்டுத்_தொகை) எனில் {
+        செலுத்தத்தக்கது = காப்பீட்டுத்_தொகை;
+    }
+    (செலுத்தத்தக்கது < 0) எனில் { செலுத்தத்தக்கது = 0; }
+
+    திரும்பு {"இழப்பு": வட்டமிடு(இழப்பு_மதிப்பு, 2),
+              "சராசரிக்குப்_பின்": சராசரிக்குப்_பின்,
+              "கழிவு": வட்டமிடு(கழிவு, 2),
+              "பங்கேற்பு": பங்கேற்புத்_தொகை,
+              "செலுத்தத்தக்கது": வட்டமிடு(செலுத்தத்தக்கது, 2),
+              "குறை_காப்பீடா": காப்பீட்டுத்_தொகை < உண்மை_மதிப்பு
+                                 மற்றும் உண்மை_மதிப்பு > 0};
+}
+
+// --- no-claim bonus -------------------------------------------------------
+//
+// கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்)
+//
+// The discount for a claim-free record steps up with each year and stops at a
+// maximum. Both the steps and the cap are policy terms, so படிகள் is an array
+// of {"ஆண்டு": n, "விகிதம்": r} ordered by year.
+செயல் கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்) {
+    பொருந்தும்_விகிதம் = 0;
+    ஒவ்வொரு ஒரு_படி இல் படிகள் {
+        (தொடர்_ஆண்டுகள் >= ஒரு_படி["ஆண்டு"]) எனில் {
+            பொருந்தும்_விகிதம் = ஒரு_படி["விகிதம்"];
+        }
+    }
+    திரும்பு {"விகிதம்": பொருந்தும்_விகிதம்,
+              "சலுகை": வட்டமிடு(சதவீதம்(ஆண்டு_முனைமம், பொருந்தும்_விகிதம்), 2),
+              "செலுத்த": வட்டமிடு(ஆண்டு_முனைமம்
+                                    - சதவீதம்(ஆண்டு_முனைமம், பொருந்தும்_விகிதம்), 2)};
+}
+
+// --- outstanding claims ---------------------------------------------------
+//
+// நிலுவைக்_கோரல்கள்(கோரல்கள்) — what is reported and not yet paid
+//
+// An insurer's largest liability is claims it knows about and has not settled.
+// Summing them is arithmetic; deciding what to reserve for claims not yet
+// reported is actuarial and is not here.
+செயல் நிலுவைக்_கோரல்கள்(கோரல்கள்) {
+    கூட்டல் = 0;
+    எண்ணிக்கை = 0;
+    ஒவ்வொரு ஒரு_கோரல் இல் கோரல்கள் {
+        (புலம்_அல்லது(ஒரு_கோரல், "தீர்ந்ததா", பொய்) == பொய்) எனில் {
+            கூட்டல் = கூட்டல் + புலம்_அல்லது(ஒரு_கோரல், "மதிப்பிடப்பட்டது", 0);
+            எண்ணிக்கை = எண்ணிக்கை + 1;
+        }
+    }
+    திரும்பு {"எண்ணிக்கை": எண்ணிக்கை, "மொத்தம்": வட்டமிடு(கூட்டல், 2)};
+}
