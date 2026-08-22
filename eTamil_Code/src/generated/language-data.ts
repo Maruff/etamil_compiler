@@ -3208,6 +3208,62 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "வளைவு_சாவிகள்",
+    "forms": [
+      "வளைவு_சாவிகள்",
+      "vaLYvu_cAvikaL",
+      "_keyPair"
+    ],
+    "params": null,
+    "arity": 0,
+    "doc": "வளைவு_சாவிகள்() — a new key pair, {தனி, பொது}",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வளைவு_பொதுச்சாவி",
+    "forms": [
+      "வளைவு_பொதுச்சாவி",
+      "vaLYvu_poquccAvi",
+      "_publicKey"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "வளைவு_பொதுச்சாவி(தனிச்சாவி) — the public half of a private key",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வளைவு_கையொப்பம்",
+    "forms": [
+      "வளைவு_கையொப்பம்",
+      "vaLYvu_kYyoppam",
+      "_ecSign"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "வளைவு_கையொப்பம்(செய்தி, தனிச்சாவி) — sign, as DER hex",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வளைவு_சரிபார்",
+    "forms": [
+      "வளைவு_சரிபார்",
+      "vaLYvu_caripAr",
+      "_ecVerify"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "வளைவு_சரிபார்(செய்தி, கையொப்பம், பொதுச்சாவி) — does it hold?",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

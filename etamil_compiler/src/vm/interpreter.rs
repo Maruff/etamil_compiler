@@ -734,6 +734,61 @@ impl VM {
                 std::process::exit(status);
             }
 
+            // --- Signing with a key only one side holds ---------------------
+            // கையொப்பம் is HMAC: it proves a message came from someone holding
+            // the same secret you do. Both sides can forge each other's
+            // messages, so neither can prove to a third party which of them
+            // sent one. That is enough for a webhook and not enough for a
+            // ledger entry or a payment instruction.
+            //
+            // These are ECDSA over P-256, signed with a private key and checked
+            // with a public one — what Hyperledger Fabric requires of an MSP
+            // identity, and what a bank requires of a request that moves money.
+            //
+            // Keys and signatures cross as lowercase hex, as HMAC's already do.
+
+            // வளைவு_சாவிகள்() — a new key pair, {தனி, பொது}
+            "வளைவு_சாவிகள்" | "vaLYvu_cAvikaL" | "_keyPair" => {
+                Self::expect_args(name, &args, 0)?;
+                let (private, public) = crate::signing::generate();
+                let mut pair = HashMap::new();
+                pair.insert("தனி".to_string(), Value::String(private));
+                pair.insert("பொது".to_string(), Value::String(public));
+                Ok(Value::Map(pair))
+            }
+            // வளைவு_பொதுச்சாவி(தனிச்சாவி) — the public half of a private key
+            "வளைவு_பொதுச்சாவி" | "vaLYvu_poquccAvi" | "_publicKey" => {
+                Self::expect_args(name, &args, 1)?;
+                match crate::signing::public_of(&args[0].to_string()) {
+                    Ok(public) => Ok(Value::Ok(Box::new(Value::String(public)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // வளைவு_கையொப்பம்(செய்தி, தனிச்சாவி) — sign, as DER hex
+            "வளைவு_கையொப்பம்" | "vaLYvu_kYyoppam" | "_ecSign" => {
+                Self::expect_args(name, &args, 2)?;
+                match crate::signing::sign(&args[0].to_string(), &args[1].to_string()) {
+                    Ok(signature) => Ok(Value::Ok(Box::new(Value::String(signature)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // வளைவு_சரிபார்(செய்தி, கையொப்பம், பொதுச்சாவி) — does it hold?
+            //
+            // A signature that simply does not verify answers false: that is an
+            // ordinary outcome a program has to handle, not a fault. A key that
+            // is not a key at all is a fault, and says so.
+            "வளைவு_சரிபார்" | "vaLYvu_caripAr" | "_ecVerify" => {
+                Self::expect_args(name, &args, 3)?;
+                match crate::signing::verify(
+                    &args[0].to_string(),
+                    &args[1].to_string(),
+                    &args[2].to_string(),
+                ) {
+                    Ok(held) => Ok(Value::Ok(Box::new(Value::Boolean(held)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
