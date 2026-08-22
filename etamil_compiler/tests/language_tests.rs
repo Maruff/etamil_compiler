@@ -1535,6 +1535,7 @@ fn stdlib_files_all_parse() {
         "jEcAZ.qmz",
         "kuRiyAkkam.qmz",
         "AvaNam.qmz",
+        "poruL.qmz",
     ] {
         let path = stdlib_dir().join(file);
         etamil_compiler::module::load_file(&path)
@@ -3021,6 +3022,84 @@ fn an_empty_group_leaves_no_rows_and_no_tags() {
     let out = text(&vm, "விளைவு");
     assert_eq!(out.matches("<table:table-row").count(), 1, "only the header");
     assert!(!out.contains("{%tr"), "{}", out);
+}
+
+// --- nUlakam/poruL.qmz — reading a record that may not have the field ------
+// Indexing a record by a field it lacks is an error, which is right for a
+// field a program requires and wrong for one it merely allows. A query string
+// without `status` in it is an ordinary request; a handler that dies on it is
+// unusable. These came out of porting real endpoints, where every optional
+// parameter hit the same wall.
+
+#[test]
+fn a_missing_field_is_still_an_error_when_indexed_directly() {
+    // The behaviour புலம்_அல்லது exists to work around. Stated here so that
+    // if it ever softens, this test says so rather than the helper quietly
+    // becoming pointless.
+    let failure = run(r#"ப = {a: 1}; விடை = ப["b"];"#).unwrap_err();
+
+    assert!(failure.contains("இல்லை"), "unexpected message: {}", failure);
+}
+
+#[test]
+fn a_field_that_is_there_is_returned() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "poruL.qmz";
+           ப = {a: "one", b: "two"};
+           விடை = புலம்_அல்லது(ப, "b", "fallback");
+           உள்ளதா = புலம்_உள்ளதா(ப, "a");"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "விடை"), "two");
+    assert_eq!(vm.variables.get("உள்ளதா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_field_that_is_not_there_gives_the_fallback() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "poruL.qmz";
+           ப = {a: "one"};
+           விடை = புலம்_அல்லது(ப, "status", "");
+           உள்ளதா = புலம்_உள்ளதா(ப, "status");"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "விடை"), "");
+    assert_eq!(vm.variables.get("உள்ளதா"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn names_and_values_come_back_in_the_same_order() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "poruL.qmz";
+           ப = {a: 1, b: 2, c: 3};
+           பெயர்கள் = புலங்கள்(ப);
+           மதிப்புகள்_பட்டி = மதிப்பீடுகள்(ப);
+           எத்தனை = நீளம்(பெயர்கள்);
+           முதல்_பெயர் = பெயர்கள்[0];
+           முதல்_மதிப்பு = மதிப்புகள்_பட்டி[0];"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(3));
+    // Fields are held in sorted order, which is what makes a response body
+    // stable enough to assert on — the same reason jEcAZ serializes sorted.
+    assert_eq!(text(&vm, "முதல்_பெயர்"), "a");
+    assert_eq!(num(&vm, "முதல்_மதிப்பு"), dec(1));
+}
+
+#[test]
+fn an_empty_record_is_recognised_as_empty() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "poruL.qmz";
+           காலியா = காலியா_பதிவேடு({});
+           காலியில்லை = காலியா_பதிவேடு({a: 1});"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("காலியா"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("காலியில்லை"), Some(&Value::Boolean(false)));
 }
 
 // --- Bilingual equivalence ------------------------------------------------
