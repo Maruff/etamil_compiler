@@ -221,11 +221,14 @@ impl FileIOHandler {
             );
 
             // Create or get variable storage
+            // i64, not double: codegen.rs holds every number as a whole number
+            // now, and these allocas go into the same variable map it loads
+            // from. A double here would be a type mismatch on the first read.
             if !self.variables.contains_key(variable) {
-                let f64_type = LLVMDoubleTypeInContext(self.context);
+                let i64_type = LLVMInt64TypeInContext(self.context);
                 let alloca = LLVMBuildAlloca(
                     self.builder,
-                    f64_type,
+                    i64_type,
                     CString::new(variable).unwrap().as_ptr(),
                 );
                 self.variables.insert(variable.to_string(), alloca);
@@ -233,7 +236,7 @@ impl FileIOHandler {
 
             // Read from stdin
             let var_ptr = *self.variables.get(variable).unwrap();
-            let fmt_scanf = CString::new("%lf").unwrap();
+            let fmt_scanf = CString::new("%lld").unwrap();
             let global_fmt = LLVMBuildGlobalStringPtr(
                 self.builder,
                 fmt_scanf.as_ptr(),
@@ -275,11 +278,14 @@ impl FileIOHandler {
             );
 
             // Ensure variable exists
+            // i64, not double: codegen.rs holds every number as a whole number
+            // now, and these allocas go into the same variable map it loads
+            // from. A double here would be a type mismatch on the first read.
             if !self.variables.contains_key(variable) {
-                let f64_type = LLVMDoubleTypeInContext(self.context);
+                let i64_type = LLVMInt64TypeInContext(self.context);
                 let alloca = LLVMBuildAlloca(
                     self.builder,
-                    f64_type,
+                    i64_type,
                     CString::new(variable).unwrap().as_ptr(),
                 );
                 self.variables.insert(variable.to_string(), alloca);

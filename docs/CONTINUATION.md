@@ -19,6 +19,7 @@ cd .. && bash scripts/run_examples.sh     # 66 as expected, 1 skipped
 
 | Area | Where |
 |---|---|
+| LLVM: whole numbers as `i64`, exact division, globals | `src/codegen.rs`, `src/codegen_limits.rs`, `examples/finance/paicA_kaNakku.qmz` |
 | Money as whole paise | `nUlakam/kAcu.qmz` |
 | LLVM refusal for f64 arithmetic | `etamil_compiler/src/codegen_limits.rs`, `docs/llvm-backend-gaps.md` |
 | Database attempt-and-report; `:memory:` never pooled | `interpreter.rs`, `db/pool.rs` |
@@ -37,25 +38,47 @@ cd .. && bash scripts/run_examples.sh     # 66 as expected, 1 skipped
 
 ## Next, in the order the user asked for
 
-1. **LLVM: whole numbers as `i64` with `LLVMBuildSDiv`.** This is the cheapest
-   correctness win and it unlocks `kAcu.qmz` on the backend. See
-   `docs/llvm-backend-gaps.md` — the gaps are counted from source, worst first,
-   with a suggested order.
-2. **eCommerce libraries** — the one item from the original seven never started.
+1. **Run the LLVM work on Ubuntu.** Whole numbers are `i64` now, division under
+   `தரை`/`மேல்` is exact, top-level names are globals a function can read, and
+   the statements that used to fake file and database work are refusals. All of
+   it is type-checked and none of it has been *run*. See the section below.
+2. **The boxed value** — the next LLVM gap, and the one everything else waits
+   on. `docs/llvm-backend-gaps.md` has the order.
+3. **eCommerce libraries** — the one item from the original seven never started.
    Builds on the accounting and GST modules, which exist.
-3. **gRPC and protobuf** — only if direct Fabric peer access is wanted. The REST
+4. **gRPC and protobuf** — only if direct Fabric peer access is wanted. The REST
    gateway already works, so this buys little.
 
-### One unverified line
+### The LLVM work has not been run
 
-`codegen.rs` consults `codegen_limits::refusals` in one line that **compiles
-nowhere it was written**: `llvm-sys 180` needs LLVM 18 installed and the feature
-is Linux/macOS only, so a Windows machine cannot even type-check that file.
-Build `--features llvm` on Ubuntu first and expect the possibility of a trivial
-error there before judging anything else.
+`llvm-sys 180` needs LLVM 18 and the feature is Linux/macOS only, so nothing in
+`codegen.rs` has executed on the machine it was written on. It *is* type-checked:
 
-`scripts/run_parity.sh` runs every example under both backends and reports what
-stopped each one, ranked. Run it before deciding what to fix.
+```bash
+python scripts/check_llvm_backend.py     # works on Windows; no LLVM needed
+```
+
+That builds a signature-only stand-in for `llvm-sys` out of llvm-sys's own
+source in the cargo registry cache and runs `cargo check --features llvm`. So
+the Rust compiles, and the file is editable here at all — it had broken three
+times without anyone noticing before this existed. What it cannot tell you is
+whether the IR verifies or whether it answers what the VM answers.
+
+```bash
+(cd etamil_compiler && cargo build --release --features llvm)
+./scripts/run_parity.sh
+```
+
+`run_parity.sh` runs every example under both backends, fails only where they
+*disagree* — a refusal is expected and counted — and ranks what stopped each
+one. `examples/finance/paicA_kaNakku.qmz` is the example written to compile on
+both, so it is the one to look at first: if it refuses, read why; if it
+mismatches, that is the bug.
+
+Expect the possibility of a trivial IR-verifier complaint before judging
+anything else. The likely candidates, in order: a block left without a
+terminator around `எனில்` with a `திரும்பு` in it, and `printf`/`write`
+argument types.
 
 ## Two sessions, one checkout
 
@@ -103,6 +126,12 @@ a column that should be NULL is *omitted from the INSERT* rather than bound to
 `சதவீதம்` divides by 100 itself — so it wants `18`, not `18%`. Writing the
 natural thing gives an answer a hundred times too small and nothing complains.
 Both `vari.qmz` and `vatti.qmz` pin this in their suites.
+
+**`&` and `+` bind equally and associate left.** So
+`அச்சு "மொத்தம்: " & அ + ஆ` is `("மொத்தம்: " & அ) + ஆ`, which is a number, and
+the label vanishes from the output with nothing complaining. Bracket the sum:
+`& (அ + ஆ)`. Cost a wrong line in `paicA_kaNakku.qmz` before the VM run caught
+it.
 
 **Windows shell.** Heredocs mangle backslashes and backticks in shell
 double-quotes are command substitution — a ROADMAP line lost all its code spans

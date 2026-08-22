@@ -1,156 +1,230 @@
 # The LLVM backend: what is missing, measured
 
 Everything here is counted from the source rather than estimated, so it can be
-re-counted when it changes. Figures are from `src/codegen.rs` at 1,642 lines.
+re-counted when it changes.
 
 ```bash
-grep -c LLVMDoubleType etamil_compiler/src/codegen.rs      # 23
-grep -c Decimal        etamil_compiler/src/codegen.rs      #  0
-grep -c 'unsupported.push' etamil_compiler/src/codegen.rs  #  7
+grep -c LLVMDoubleType etamil_compiler/src/codegen.rs   # 0, was 23
+grep -c Decimal        etamil_compiler/src/codegen.rs   # 0
+grep -c LLVMBuildSDiv  etamil_compiler/src/codegen.rs   # 1, was 0
+wc -l                  etamil_compiler/src/codegen.rs   # 1,565, was 1,642
 ```
 
-## The gaps, worst first
+**This has not been built on the machine it was written on.** `llvm-sys 180`
+needs LLVM 18 installed and the feature is Linux/macOS only, so a Windows
+machine cannot build it. It *has* been type-checked, against a generated
+signature-only stand-in for `llvm-sys` — so the Rust is known to compile, and
+what is not known is whether the emitted IR verifies and whether it answers
+what the VM answers. `scripts/run_parity.sh` is the thing that decides that,
+and CI runs it. Run it first.
 
-### 1. It computes in `f64` — a wrong answer, not a missing feature
+## What changed: whole numbers as `i64`
 
-Twenty-three references to `LLVMDoubleType` and none to `Decimal`. Every number
-in eTamil is a fixed-point decimal, and the reason is the language's opening
-claim: `0.1 + 0.2` is exactly `0.3`, and a ledger balances to the paisa.
-Compiled through `--llvm` it is not, and until now nothing said so — the IR was
-emitted, it ran, and it answered `0.30000000000000004`.
+The backend used to compute in `f64`. Every number in eTamil is a fixed-point
+decimal, and the reason is the language's opening claim: `0.1 + 0.2` is exactly
+`0.3`, and a ledger balances to the paisa. Compiled through `--llvm` it was
+not — the IR was emitted, it ran, and it answered `0.30000000000000004`.
 
-This is the one failure mode the project refuses everywhere else: a wrong answer
-with no warning. `codegen.rs` even carries the principle in a comment on its own
-`unsupported` field, and the README states it as "rejected rather than emitted
-as incorrect IR". Decimal arithmetic escaped it.
+`src/codegen_limits.rs` already refuses any program with a fractional literal
+in it, before any IR exists. So every number that reaches the backend is a
+whole number, and an integer register fits it better in every respect:
 
-**Mitigated, not fixed.** `src/codegen_limits.rs` now refuses any program whose
-arithmetic the backend would get wrong — a fractional literal, a percentage, a
-division — before any IR exists. Integer arithmetic is still accepted, because a
-double holds every integer below 2^53 exactly, so those programs do agree with
-the VM.
+|  | `f64` | `i64` |
+|---|---|---|
+| Exact to | 2^53, about ₹90,000 crore in paise | 2^63 |
+| `a / b` | out by one in the last place — a paisa | exact, under `தரை` or `மேல்` |
+| A whole number printed | `%.0f`, and `6.0` for the VM's `6` | `%lld` |
 
-That turns silent wrongness into an explicit refusal. It does not make the
-backend able to do money.
+### The division, which is the whole point
 
-**To fix properly** the backend needs decimal arithmetic, which means a runtime
-library: emit calls to `etamil_add`, `etamil_mul`, `etamil_div` in a small Rust
-library compiled alongside, rather than `LLVMBuildFAdd` and friends. That is the
-standard approach and it is not exotic — but it touches all twenty-three sites
-and it is the prerequisite for everything below.
+`sdiv` truncates towards zero. That is the floor when the quotient is positive
+and the ceiling when it is negative, so exactly one of the two directions needs
+a correction of one, and which one depends on the sign of the answer — which is
+the sign of the two operands xor'd together:
 
-### 2. No builtin is reachable
+```
+q = sdiv a, b          r = srem a, b
+correct when r ≠ 0 and (a ^ b) < 0   → floor   is q - 1
+correct when r ≠ 0 and (a ^ b) ≥ 0   → ceiling is q + 1
+```
 
-`codegen.rs:1426` — a call that does not resolve to a `செயல்` the author wrote
-is recorded unsupported and emits a `0.0` placeholder. So `நீளம்` is as
-unavailable as `பொதி_மாற்று`. There are 59 builtins.
+`build_integer_division` in `codegen.rs` is that, as five instructions and a
+`select`. Getting the correction wrong is one paisa, in the direction that
+makes a split fail to add up to the amount that was split.
 
-**To fix:** the same runtime library. Each builtin becomes a C-ABI symbol the
-emitted IR calls. The Rust implementations already exist in
-`src/vm/interpreter.rs` and would be re-exposed rather than rewritten — but they
-take and return `Value`, which needs gap 3 first.
+**A bare division is still refused.** The true quotient of two whole numbers
+usually is not one, and an `i64` has nowhere to keep the rest. It is exact only
+under `தரை` or `மேல்`, and only when the division is the call's whole
+argument: `தரை(1 + அ / ஆ)` and `தரை(அ / ஆ * இ)` are refused, because rounding a
+sum is not rounding the quotient inside it.
 
-### 3. Values are unboxed doubles, so most of the language has no representation
+**Dividing by zero is checked.** The VM stops with `பூஜ்ஜியத்தால் வகுத்தல்`.
+An `sdiv` by zero is undefined behaviour and on x86 it faults, so the emitted
+code compares the divisor against zero, writes the same message to file
+descriptor 2 and calls `exit(1)`. `write` and `exit` rather than
+`fprintf(stderr, …)`, because the `stderr` FILE* is a different symbol on glibc
+than on macOS.
 
-Strings, arrays, records, results and nil have no form in the emitted IR. This
-is why `array index`, `record field` and `ஒவ்வொரு` over a numeric array appear
-in the refusal list.
+**Still not exact:** `i64::MIN / -1` overflows `sdiv`, which is undefined. It
+is not guarded. It needs a figure at the far end of the `i64` range, negated,
+and a program holding money that large has other problems.
+
+### Three builtins are now reachable
+
+`codegen_limits::whole_number_builtin` is the table, and both files read it, so
+the guard and the backend cannot drift into a program that one accepts and the
+other refuses:
+
+| | on a whole number | on a division |
+|---|---|---|
+| `தரை(n)` | the number | exact floor division |
+| `மேல்(n)` | the number | exact ceiling division |
+| `வட்டமிடு(n, இடங்கள்)` | the number, at any places | refused — it rounds half away from zero, not down |
+
+A `செயல்` the program defines shadows a builtin of the same name, and then the
+exception does not apply: a `தரை` the program wrote is whatever the program
+wrote.
+
+The other fifty-six builtins take or return a string, an array, a record or a
+result, and wait on gap 2 below.
+
+### Globals, so a function can read one
+
+A `செயல்` can read a top-level name — nUlakam is full of functions that do,
+starting with `kAcu.qmz` reading `பைசா_ஒரு_ரூபாய்`. A function's stack frame
+cannot reach `main`'s, and the backend used to look the name up in an empty map
+and compile `0.0` in its place, so `ரூபாயாக(2)` answered 0 rather than 200 and
+nothing said so.
+
+Top-level names are module globals now, declared before any function body is
+compiled. Assigning to a name *inside* a function still makes a local, which is
+what the VM does and what nUlakam is written around.
+
+An unknown name is a refusal rather than a zero. That is the more important
+half of the change.
+
+### Two things that were quietly wrong, and are refusals now
+
+**Statements that pretended.** File, database and HTTP statements were
+"handled": each printed a log line the VM never prints, or stored a placeholder
+zero, and `கோப்பு_படி` read stdin instead of the file it named. None of it
+failed — it produced different output from the same source run on the VM, which
+is worse. 553 lines of it are gone and `stmt_label` names each one in the
+refusal list instead. `src/fileio/` is no longer reached from anywhere as a
+result.
+
+**A comparison used as a value.** `அச்சு (1 < 2)` prints `true` on the VM. An
+`i64` 1 is not a narrower answer, it is a different one, so a comparison is
+compiled only where it is a branch condition. Anything else in a condition is
+"not zero", which is what the VM does with a number — checked against it, not
+assumed: 5 takes the branch and 0 does not.
+
+### And two that now work
+
+**A guard clause.** `(கீழ் == 0) எனில் { திரும்பு 0; }` used to emit a branch
+after the `ret` — invalid IR. Unreachable in practice until a function with a
+guard clause could compile at all, which is the first thing a money function
+has.
+
+**A text literal.** `அச்சு "வணக்கம்"` needs no value representation, only
+bytes. The arm that handled it looked for a shape the parser stopped producing,
+so every banner line in every example was refused. It goes through `%s` rather
+than being used as the format itself, so a `%` in the text stays a `%`.
+
+## The gaps that remain, worst first
+
+### 1. No decimal arithmetic
+
+Two-place money is covered by holding it in paise — see below — and that is
+most of what accounting needs. Three places is not covered, and neither is
+anything that wants `0.1` to be `0.1`.
+
+**To fix:** a runtime library. Emit calls to `etamil_add`, `etamil_mul`,
+`etamil_div` in a small Rust library compiled alongside, rather than
+`LLVMBuildAdd` and friends. Standard, not exotic, and deliberately last: it is
+a second artefact to link, and step 2 already covers accounting.
+
+### 2. Fifty-six of the fifty-nine builtins are unreachable
+
+A call that does not resolve to a `செயல்` the author wrote, or to one of the
+three above, is recorded unsupported. So `நீளம்` is as unavailable as
+`பொதி_மாற்று`.
+
+**To fix:** each becomes a C-ABI symbol the emitted IR calls. The Rust
+implementations already exist in `src/vm/interpreter.rs` and would be
+re-exposed rather than rewritten — but they take and return `Value`, which
+needs gap 3 first.
+
+### 3. Values are unboxed integers, so most of the language has no form
+
+Strings, arrays, records, results, booleans and nil have no representation in
+the emitted IR. This is why `array index`, `record field` and `ஒவ்வொரு` over
+anything the backend has not tracked as an array appear in the refusal list,
+and why a text value is refused everywhere except as a literal being printed.
 
 **To fix:** a tagged value at runtime — the same shape `Value` has, as a struct
-the IR can pass by pointer. This is the largest single piece of work and gates
-gaps 2 and 4.
+the IR can pass by pointer. This is the largest single piece of work and it
+gates gaps 1 and 2.
 
-### 4. `திரும்பு` — not a gap, and this document was wrong about it
+### 4. The statements the VM has and this does not
 
-An earlier version of this file listed `திரும்பு` as unsupported. It is not.
-Reading `codegen.rs:216` properly: the refusal fires only when
-`self.in_function` is false — a `திரும்பு` at top level, where there is nothing
-to return from. Inside a function it compiles to `LLVMBuildRet` like any other
-return.
+Database, HTTP routing, files, scheduling. Each is refused explicitly and named
+— which it now actually is, see above — and none is reachable without gap 3.
 
-So the README's "numeric functions" claim stands, and this entry is kept only
-because a corrected list is more useful than a quietly shortened one.
+## The workaround for money, and how far it reaches
 
-### 5. Only float arithmetic exists, which is why the workaround below works
+**Keep money in paise, as whole numbers.** ₹2.05 is `205`. Addition,
+subtraction and multiplication by a quantity are exact; a percentage is exact
+if it is computed as integer arithmetic and rounded once:
 
-Counted from source:
+    தரை((பைசா × மேல் + தரை(கீழ் / 2)) / கீழ்)
 
+`nUlakam/kAcu.qmz` is that, written in eTamil and tested on the VM.
+`examples/finance/paicA_kaNakku.qmz` is the same idea written inside the
+backend's limits — no `இறக்கு`, no arrays, no text beyond the labels — so that
+both backends run it and `run_parity.sh` can compare the answers. That example
+is the proof this change works; everything above it is the reasoning.
+
+`kAcu.qmz` itself is still refused, and it is worth being exact about why. Its
+arithmetic compiles now — `ரூபாயும்_பைசாவும்`, `காசு_மடங்கு`,
+`விழுக்காடு_காசு`. What does not is `காசு_உரை`, which builds a string, and
+`சமமாகப்_பிரி` and `விகிதத்தில்_பிரி`, which return arrays. Those wait on gap
+3, not on arithmetic.
+
+## Suggested order from here
+
+1. **Run `scripts/run_parity.sh` on Ubuntu.** Everything below this line is
+   reasoning; that is measurement. It reports what stopped each example, ranked,
+   and fails only where the two backends *disagree* — a refusal is expected.
+2. **The boxed value** (gap 3): a tagged struct the IR passes by pointer, the
+   same shape `Value` has. Strings, arrays, records and results all wait on it,
+   and so does the rest of `kAcu.qmz`.
+3. **Builtins over the C ABI** (gap 2), mostly mechanical once 3 exists.
+4. **Full decimal arithmetic** (gap 1), for whoever needs more than two places.
+
+## Type-checking this file on a machine that cannot build it
+
+`src/codegen_limits.rs` walks the AST and links no LLVM, so its seventeen tests
+run anywhere — that is why the refusal rules live there rather than here.
+
+`codegen.rs` cannot be built without LLVM, but it can be *type-checked*
+anywhere, because `llvm-sys`'s own source sits in the cargo registry cache even
+where it cannot be compiled:
+
+```bash
+python scripts/check_llvm_backend.py
 ```
-LLVMBuildFAdd  1     LLVMBuildAdd   1   (pointer arithmetic, not the language's)
-LLVMBuildFSub  1     LLVMBuildSDiv  0
-LLVMBuildFMul  1     LLVMBuildSRem  0
-LLVMBuildFDiv  1
-```
 
-Every eTamil number goes through a double. LLVM has exact integer arithmetic
-and this backend does not reach for it — which matters, because it makes the
-cheap fix cheap. See "A workaround for money" below.
+It generates a signature-only crate from llvm-sys's source — the same
+declarations, nothing behind them — points cargo at it through a path override,
+runs `cargo check --features llvm --all-targets`, and puts the checkout back
+afterwards including `Cargo.lock`. `--clean` undoes an interrupted run.
 
-### 6. Strings, booleans and nil have no representation
+**Check that it is really looking at `codegen.rs` before trusting a clean run.**
+Put a deliberately undefined LLVM symbol in the file and confirm the error: a
+`cfg`'d out file passes everything, and this whole file is `cfg`'d out.
 
-`Expr::String` appears **zero** times in `codegen.rs`. Booleans, `இன்மை` and the
-`?` operator appear only in the *labelling* function that writes refusal
-messages. Arrays and records are narrower than absent: a local variable holding
-one compiles, and indexing something the backend has not tracked as an array
-does not.
-
-### 7. The statements the VM has and this does not
-
-Database, HTTP routing, files, scheduling. Each is refused explicitly, which is
-correct behaviour, and none is reachable without gaps 1–3.
-
-## A workaround for money, without a decimal runtime
-
-Two-place decimals are what accounting needs, and there is a way to have them
-exactly on this backend without building decimal arithmetic first.
-
-**Keep money in paise, as whole numbers.** ₹2.05 is `205`. A double represents
-every integer below 2^53 exactly — about ₹90,000 crore expressed in paise — so
-addition, subtraction and multiplication by a quantity are exact today, with no
-change to the backend at all. A percentage is exact too if it is computed as
-integer arithmetic and rounded once:
-
-    paise × rate_numerator + denominator/2, then divided and floored
-
-`nUlakam/kAcu.qmz` is that, written in eTamil and tested on the VM. It never
-writes a fractional literal, so it is not caught by the refusal, and it does the
-one thing a naive implementation gets wrong: splitting an amount that does not
-divide evenly distributes the odd paise instead of losing them.
-
-**What still needs a backend change, and it is small.** Division of the paise
-figure is the one step where a double can be off by one in the last place. The
-fix is not a decimal runtime — it is to compile whole numbers as `i64` and use
-`LLVMBuildSDiv`, which is exact. That is four or five instruction sites, against
-the twenty-three a decimal representation would touch.
-
-So the order below can be re-read: **integers as `i64` first** buys correct
-accounting for a fraction of the work, and full decimal arithmetic can wait for
-whoever needs three decimal places.
-
-## Suggested order
-
-1. **A parity number first.** `scripts/run_parity.sh` runs every example under
-   both backends and reports what stopped each one, ranked. Run it on Ubuntu
-   before deciding anything — the list below is reasoning, and that is
-   measurement.
-2. **Whole numbers as `i64`, with `LLVMBuildSDiv`.** Four or five sites, and it
-   buys exact two-place money through `nUlakam/kAcu.qmz` — see the workaround
-   above. This is the cheapest correctness win available and does not depend on
-   anything else.
-3. **The boxed value** (gap 3): a tagged struct the IR passes by pointer, the
-   same shape `Value` has. Strings, arrays, records and results all wait on it.
-4. **Builtins over the C ABI** (gap 2), mostly mechanical once 3 exists.
-5. **Full decimal arithmetic** (gap 1), for whoever needs more than two places.
-   Deliberately last: step 2 already covers accounting.
-
-## What cannot be checked on Windows
-
-`llvm-sys 180` needs LLVM 18 installed and the feature is Linux/macOS only, so
-`codegen.rs` cannot even be type-checked on a Windows machine. That is why the
-refusal logic lives in `src/codegen_limits.rs`, which walks the AST and links no
-LLVM: it has eleven tests that run anywhere, and `codegen.rs` consults it in one
-line.
-
-**That one line is unverified.** It compiles nowhere this was written. Build with
-`--features llvm` on Ubuntu first, and expect the possibility of a trivial
-error there before anything else is judged.
+This catches every type error and every borrow error. It cannot catch invalid
+IR, and it cannot catch a wrong answer. Those are what Ubuntu and
+`run_parity.sh` are for, and a clean run here is not evidence the backend
+works.
