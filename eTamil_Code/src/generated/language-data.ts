@@ -3040,6 +3040,104 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "மாற்று",
+    "forms": [
+      "மாற்று",
+      "mARRu",
+      "_replace"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "மாற்று(சரம், பழையது, புதியது) — every occurrence replaced",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "பிரி",
+    "forms": [
+      "பிரி",
+      "piri",
+      "_split"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "பிரி(சரம், பிரிப்பான்) — split into an array of pieces",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "ஒன்றிணை",
+    "forms": [
+      "ஒன்றிணை",
+      "oZRiNY",
+      "_join"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "ஒன்றிணை(பட்டியல், இணைப்பான்) — join an array into one string",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "கோப்பு_சேமி",
+    "forms": [
+      "கோப்பு_சேமி",
+      "kOppu_cEmi",
+      "_fileSave"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "கோப்பு_சேமி(கோப்பு, உள்ளடக்கம்) — write the whole file, exactly",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "பொதி_படி",
+    "forms": [
+      "பொதி_படி",
+      "poqi_pati",
+      "_packageRead"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "பொதி_படி(கோப்பு, உறுப்பு) — one entry of a package, as text",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "பொதி_மாற்று",
+    "forms": [
+      "பொதி_மாற்று",
+      "poqi_mARRu",
+      "_packageWrite"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "பொதி_மாற்று(மூலம், விளைவு, மாற்றங்கள்) — copy a package with the",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "கட்டளை_ஓட்டு",
+    "forms": [
+      "கட்டளை_ஓட்டு",
+      "kattaLY_Ottu",
+      "_run"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "கட்டளை_ஓட்டு(நிரல், அளபுருக்கள், வினாடிகள்) — run a program and",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",
@@ -3388,36 +3486,6 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 74
   },
   {
-    "name": "பிரி",
-    "forms": [
-      "பிரி"
-    ],
-    "params": [
-      "சரம்",
-      "பிரிப்பான்"
-    ],
-    "arity": 2,
-    "doc": "பிரி(சரம், பிரிப்பான்) — split into an array",
-    "kind": "stdlib",
-    "module": "nUlakam/col.qmz",
-    "line": 87
-  },
-  {
-    "name": "ஒன்றிணை",
-    "forms": [
-      "ஒன்றிணை"
-    ],
-    "params": [
-      "பட்டியல்",
-      "இணைப்பான்"
-    ],
-    "arity": 2,
-    "doc": "ஒன்றிணை(அணி, இணைப்பான்) — join an array into one string",
-    "kind": "stdlib",
-    "module": "nUlakam/col.qmz",
-    "line": 109
-  },
-  {
     "name": "திரும்பச்செய்",
     "forms": [
       "திரும்பச்செய்"
@@ -3430,7 +3498,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "திரும்பச்செய்(சரம், எண்ணிக்கை) — repeat",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 125
+    "line": 99
   },
   {
     "name": "இடமிருந்து_நிரப்பு",
@@ -3446,7 +3514,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "இடமிருந்து_நிரப்பு(சரம், அகலம், நிரப்பி) — left pad",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 136
+    "line": 110
   },
   {
     "name": "எழுத்து_மறை",

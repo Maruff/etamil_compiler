@@ -17,6 +17,33 @@ fn letters(text: &str) -> Vec<&str> {
     text.graphemes(true).collect()
 }
 
+/// Byte offsets where a written letter begins, plus the end of the text. A
+/// separator counts as found only when both its ends land on one of these:
+/// otherwise பிரி("கா", "ா") would cut a single letter in half, a position
+/// the language does not admit anywhere else.
+fn cluster_edges(text: &str) -> std::collections::BTreeSet<usize> {
+    text.grapheme_indices(true)
+        .map(|(at, _)| at)
+        .chain(std::iter::once(text.len()))
+        .collect()
+}
+
+/// Byte offsets of every non-overlapping `needle` that begins and ends on a
+/// letter boundary. One segmentation pass, then a byte search — the pair that
+/// lets மாற்று and பிரி run over a whole document instead of re-segmenting
+/// the string once per position, as reading it letter by letter did.
+fn cluster_matches(haystack: &str, needle: &str) -> Vec<usize> {
+    if needle.is_empty() || needle.len() > haystack.len() {
+        return Vec::new();
+    }
+    let edges = cluster_edges(haystack);
+    haystack
+        .match_indices(needle)
+        .map(|(at, _)| at)
+        .filter(|at| edges.contains(at) && edges.contains(&(at + needle.len())))
+        .collect()
+}
+
 /// One active function call: where to resume, and that call's local names.
 #[derive(Debug)]
 pub struct Frame {
@@ -375,6 +402,182 @@ impl VM {
                 Self::expect_args(name, &args, 1)?;
                 Ok(Value::String(args[0].to_string().to_lowercase()))
             }
+            // --- Text, over a whole string ---------------------------------
+            // மாற்று, பிரி and ஒன்றிணை were nUlakam/col.qmz functions until
+            // now. They read one letter at a time, and every read re-segmented
+            // the entire string, so a single search cost O(n²) segmentations:
+            // measured at 14 seconds over 8 KB, and a 400 KB document never
+            // finished. The letter-boundary rule in cluster_matches is the
+            // same rule those versions enforced by comparing letter by letter,
+            // so what a program computes does not change — only what it costs.
+
+            // மாற்று(சரம், பழையது, புதியது) — every occurrence replaced
+            "மாற்று" | "mARRu" | "_replace" => {
+                Self::expect_args(name, &args, 3)?;
+                let text = args[0].to_string();
+                let from = args[1].to_string();
+                let to = args[2].to_string();
+                // Nothing to look for means nothing to change, rather than a
+                // copy of `to` wedged between every letter.
+                if from.is_empty() {
+                    return Ok(Value::String(text));
+                }
+                let mut out = String::with_capacity(text.len());
+                let mut cursor = 0;
+                for at in cluster_matches(&text, &from) {
+                    out.push_str(&text[cursor..at]);
+                    out.push_str(&to);
+                    cursor = at + from.len();
+                }
+                out.push_str(&text[cursor..]);
+                Ok(Value::String(out))
+            }
+            // பிரி(சரம், பிரிப்பான்) — split into an array of pieces
+            "பிரி" | "piri" | "_split" => {
+                Self::expect_args(name, &args, 2)?;
+                let text = args[0].to_string();
+                let separator = args[1].to_string();
+                // An empty separator has no pieces to find, so the whole
+                // string is the single piece — what col.qmz answered too.
+                if separator.is_empty() {
+                    return Ok(Value::Array(vec![Value::String(text)]));
+                }
+                let mut pieces = Vec::new();
+                let mut cursor = 0;
+                for at in cluster_matches(&text, &separator) {
+                    pieces.push(Value::String(text[cursor..at].to_string()));
+                    cursor = at + separator.len();
+                }
+                // The tail always closes the list, so "அ," splits into two
+                // pieces and the second one is empty.
+                pieces.push(Value::String(text[cursor..].to_string()));
+                Ok(Value::Array(pieces))
+            }
+            // ஒன்றிணை(பட்டியல், இணைப்பான்) — join an array into one string
+            "ஒன்றிணை" | "oZRiNY" | "_join" => {
+                Self::expect_args(name, &args, 2)?;
+                let separator = args[1].to_string();
+                match &args[0] {
+                    Value::Array(items) => Ok(Value::String(
+                        items
+                            .iter()
+                            .map(|item| item.to_string())
+                            .collect::<Vec<_>>()
+                            .join(&separator),
+                    )),
+                    other => Err(format!(
+                        "ஒன்றிணை ஒரு அணி தேவை  (join needs an array, got {})",
+                        Self::type_name(other)
+                    )),
+                }
+            }
+
+            // --- Files ------------------------------------------------------
+            // கோப்பு_சேமி(கோப்பு, உள்ளடக்கம்) — write the whole file, exactly
+            //
+            // கோப்பு_எழுது appends a line, which is right for a CSV row and
+            // wrong for a document: it cannot produce a file whose bytes are
+            // exactly the string that was built, and it adds a newline that
+            // some formats count. This writes the string and nothing else,
+            // and answers with the number of bytes written.
+            "கோப்பு_சேமி" | "kOppu_cEmi" | "_fileSave" => {
+                Self::expect_args(name, &args, 2)?;
+                let filename = args[0].to_string();
+                let content = args[1].to_string();
+                match fs::write(&filename, &content) {
+                    Ok(()) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(
+                        content.len(),
+                    ))))),
+                    Err(e) => Ok(Value::Err(Box::new(Value::String(format!(
+                        "கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}",
+                        filename, filename, e
+                    ))))),
+                }
+            }
+
+            // --- ODF packages -----------------------------------------------
+            // An .odt or .ods is a zip: content.xml and styles.xml hold the
+            // text, and beside them sit pictures, thumbnails, and a mimetype
+            // entry that the format requires to come first and uncompressed.
+            //
+            // So a template is not read and rewritten wholesale. It is copied
+            // entry by entry with named entries swapped out, which leaves every
+            // picture byte-for-byte intact and keeps the container legal. Bytes
+            // that are not text never enter the language, where they could not
+            // survive being a சரம் anyway.
+
+            // பொதி_படி(கோப்பு, உறுப்பு) — one entry of a package, as text
+            "பொதி_படி" | "poqi_pati" | "_packageRead" => {
+                Self::expect_args(name, &args, 2)?;
+                let path = args[0].to_string();
+                let entry = args[1].to_string();
+                match Self::package_entry(&path, &entry) {
+                    Ok(text) => Ok(Value::Ok(Box::new(Value::String(text)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // பொதி_மாற்று(மூலம், விளைவு, மாற்றங்கள்) — copy a package with the
+            // named entries replaced. மாற்றங்கள் is a record keyed by entry
+            // name, so {"content.xml": ஆவணம்} rewrites just that one.
+            "பொதி_மாற்று" | "poqi_mARRu" | "_packageWrite" => {
+                Self::expect_args(name, &args, 3)?;
+                let source = args[0].to_string();
+                let target = args[1].to_string();
+                let changes = match &args[2] {
+                    Value::Map(fields) => fields
+                        .iter()
+                        .map(|(key, value)| (key.clone(), value.to_string()))
+                        .collect::<HashMap<String, String>>(),
+                    other => {
+                        return Err(format!(
+                            "பொதி_மாற்று ஒரு பொருள் தேவை  (package changes must be a record, got {})",
+                            Self::type_name(other)
+                        ));
+                    }
+                };
+                match Self::package_copy(&source, &target, &changes) {
+                    Ok(count) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(count))))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+
+            // --- Running another program ------------------------------------
+            // A PDF comes out of LibreOffice, not out of this language, so
+            // something has to be able to start it. That is a sharp tool, so
+            // it is blunted in three ways: nothing runs unless it is named in
+            // ETAMIL_EXEC_ALLOW, arguments are passed as a list and never
+            // through a shell, and a program that will not finish is killed.
+
+            // கட்டளை_ஓட்டு(நிரல், அளபுருக்கள், வினாடிகள்) — run a program and
+            // wait. Answers with {நிலை, வெளியீடு, பிழை}: a non-zero exit is a
+            // value to test, not a failure, because a converter that refuses
+            // one document is ordinary. Only being unable to run it is a தவறு.
+            "கட்டளை_ஓட்டு" | "kattaLY_Ottu" | "_run" => {
+                Self::expect_args(name, &args, 3)?;
+                let program = args[0].to_string();
+                let parameters = match &args[1] {
+                    Value::Array(items) => items.iter().map(|i| i.to_string()).collect::<Vec<_>>(),
+                    other => {
+                        return Err(format!(
+                            "கட்டளை_ஓட்டு அளபுருக்கள் ஒரு அணி தேவை  (arguments must be an array, got {})",
+                            Self::type_name(other)
+                        ));
+                    }
+                };
+                let seconds = rust_decimal::prelude::ToPrimitive::to_u64(&args[2].to_number())
+                    .unwrap_or(0);
+                match Self::run_program(&program, &parameters, seconds) {
+                    Ok((code, out, err)) => {
+                        let mut answer = HashMap::new();
+                        answer.insert("நிலை".to_string(), Value::Number(Decimal::from(code)));
+                        answer.insert("வெளியீடு".to_string(), Value::String(out));
+                        answer.insert("பிழை".to_string(), Value::String(err));
+                        Ok(Value::Ok(Box::new(Value::Map(answer))))
+                    }
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
@@ -666,6 +869,218 @@ impl VM {
     }
 
     /// Append one line to a file, creating it if needed.
+    /// Run a program to completion, capturing what it printed.
+    ///
+    /// Deny by default: ETAMIL_EXEC_ALLOW lists what may run, separated the
+    /// way PATH is on this platform, and an empty or absent list permits
+    /// nothing. A listed entry matches either the whole program string or its
+    /// file name, so both "soffice" and a full path can be allowed.
+    ///
+    /// The arguments are handed over as a list. No shell sees them, so a
+    /// document title full of semicolons is a title and not a second command.
+    fn run_program(
+        program: &str,
+        parameters: &[String],
+        seconds: u64,
+    ) -> Result<(i64, String, String), String> {
+        let allowed = std::env::var("ETAMIL_EXEC_ALLOW").unwrap_or_default();
+        let wanted_name = std::path::Path::new(program).file_name();
+        let permitted = std::env::split_paths(&allowed).any(|entry| {
+            entry.as_os_str() == std::ffi::OsStr::new(program)
+                || (wanted_name.is_some() && entry.file_name() == wanted_name)
+        });
+        if !permitted {
+            return Err(format!(
+                "'{}' ETAMIL_EXEC_ALLOW இல் இல்லை  ('{}' is not listed in ETAMIL_EXEC_ALLOW)",
+                program, program
+            ));
+        }
+
+        let mut child = std::process::Command::new(program)
+            .args(parameters)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .map_err(|e| {
+                format!(
+                    "'{}' இயக்க முடியவில்லை  (cannot run '{}'): {}",
+                    program, program, e
+                )
+            })?;
+
+        // Drained on their own threads: a program that prints more than the
+        // pipe holds would otherwise block forever waiting to be read, and
+        // the timeout below would never be what stopped it.
+        let mut out_pipe = child.stdout.take();
+        let mut err_pipe = child.stderr.take();
+        let out_reader = std::thread::spawn(move || {
+            let mut buffer = Vec::new();
+            if let Some(pipe) = out_pipe.as_mut() {
+                let _ = std::io::Read::read_to_end(pipe, &mut buffer);
+            }
+            buffer
+        });
+        let err_reader = std::thread::spawn(move || {
+            let mut buffer = Vec::new();
+            if let Some(pipe) = err_pipe.as_mut() {
+                let _ = std::io::Read::read_to_end(pipe, &mut buffer);
+            }
+            buffer
+        });
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(seconds);
+        let status = loop {
+            match child.try_wait() {
+                Ok(Some(status)) => break status,
+                Ok(None) => {
+                    if std::time::Instant::now() >= deadline {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        return Err(format!(
+                            "'{}' {} வினாடிகளுக்குள் முடியவில்லை  ('{}' did not finish within {}s)",
+                            program, seconds, program, seconds
+                        ));
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                Err(e) => {
+                    return Err(format!(
+                        "'{}' முடிவுக்காகக் காத்திருக்க முடியவில்லை  (cannot wait for '{}'): {}",
+                        program, program, e
+                    ));
+                }
+            }
+        };
+
+        let printed = out_reader.join().unwrap_or_default();
+        let complained = err_reader.join().unwrap_or_default();
+        Ok((
+            status.code().unwrap_or(-1) as i64,
+            String::from_utf8_lossy(&printed).to_string(),
+            String::from_utf8_lossy(&complained).to_string(),
+        ))
+    }
+
+    /// One entry of a zip package, decoded as UTF-8.
+    fn package_entry(path: &str, entry: &str) -> Result<String, String> {
+        let file = fs::File::open(path).map_err(|e| {
+            format!(
+                "பொதி '{}' திறக்க முடியவில்லை  (cannot open package '{}'): {}",
+                path, path, e
+            )
+        })?;
+        let mut archive = zip::ZipArchive::new(file).map_err(|e| {
+            format!("'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}", path, path, e)
+        })?;
+        let mut found = archive.by_name(entry).map_err(|_| {
+            format!("பொதியில் '{}' இல்லை  (no entry '{}' in the package)", entry, entry)
+        })?;
+        let mut text = String::new();
+        std::io::Read::read_to_string(&mut found, &mut text).map_err(|e| {
+            format!(
+                "'{}' உரையாகப் படிக்க முடியவில்லை  (cannot read '{}' as text): {}",
+                entry, entry, e
+            )
+        })?;
+        Ok(text)
+    }
+
+    /// Copy a zip package entry by entry, swapping the named ones. Answers with
+    /// how many entries the new package holds.
+    ///
+    /// Two rules the ODF format imposes, and this keeps: `mimetype` comes first
+    /// and stays uncompressed, and every entry not being replaced is copied
+    /// without being decompressed, so a picture arrives unchanged.
+    fn package_copy(
+        source: &str,
+        target: &str,
+        changes: &HashMap<String, String>,
+    ) -> Result<usize, String> {
+        let reader = fs::File::open(source).map_err(|e| {
+            format!(
+                "பொதி '{}' திறக்க முடியவில்லை  (cannot open package '{}'): {}",
+                source, source, e
+            )
+        })?;
+        let mut archive = zip::ZipArchive::new(reader).map_err(|e| {
+            format!("'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}", source, source, e)
+        })?;
+
+        let names: Vec<String> = (0..archive.len())
+            .map(|index| archive.by_index(index).map(|entry| entry.name().to_string()))
+            .collect::<Result<_, _>>()
+            .map_err(|e| format!("பொதியைப் படிக்க முடியவில்லை  (cannot read the package): {}", e))?;
+
+        // A name that matches nothing is a typo, and quietly writing an
+        // unchanged document would be the worst way to report it.
+        for wanted in changes.keys() {
+            if !names.contains(wanted) {
+                return Err(format!(
+                    "பொதியில் '{}' இல்லை  (no entry '{}' to replace)",
+                    wanted, wanted
+                ));
+            }
+        }
+
+        let writer = fs::File::create(target).map_err(|e| {
+            format!(
+                "பொதி '{}' எழுத முடியவில்லை  (cannot write package '{}'): {}",
+                target, target, e
+            )
+        })?;
+        let mut out = zip::ZipWriter::new(writer);
+
+        for index in 0..archive.len() {
+            let entry = archive.by_index(index).map_err(|e| {
+                format!("பொதியைப் படிக்க முடியவில்லை  (cannot read the package): {}", e)
+            })?;
+            let entry_name = entry.name().to_string();
+
+            match changes.get(&entry_name) {
+                Some(replacement) => {
+                    // mimetype stays uncompressed even when it is rewritten.
+                    let method = if entry_name == "mimetype" {
+                        zip::CompressionMethod::Stored
+                    } else {
+                        zip::CompressionMethod::Deflated
+                    };
+                    let options: zip::write::SimpleFileOptions =
+                        zip::write::SimpleFileOptions::default().compression_method(method);
+                    out.start_file(&entry_name, options).map_err(|e| {
+                        format!(
+                            "'{}' எழுத முடியவில்லை  (cannot write '{}'): {}",
+                            entry_name, entry_name, e
+                        )
+                    })?;
+                    IoWrite::write_all(&mut out, replacement.as_bytes()).map_err(|e| {
+                        format!(
+                            "'{}' எழுத முடியவில்லை  (cannot write '{}'): {}",
+                            entry_name, entry_name, e
+                        )
+                    })?;
+                }
+                None => {
+                    // Copied still compressed: never decoded, so never damaged.
+                    out.raw_copy_file(entry).map_err(|e| {
+                        format!(
+                            "'{}' நகலெடுக்க முடியவில்லை  (cannot copy '{}'): {}",
+                            entry_name, entry_name, e
+                        )
+                    })?;
+                }
+            }
+        }
+
+        out.finish().map_err(|e| {
+            format!(
+                "பொதி '{}' முடிக்க முடியவில்லை  (cannot finish package '{}'): {}",
+                target, target, e
+            )
+        })?;
+        Ok(names.len())
+    }
+
     fn append_line(filename: &str, data: &str) -> Result<(), String> {
         let mut file = OpenOptions::new()
             .create(true)

@@ -2497,6 +2497,287 @@ fn a_response_sent_from_a_function_is_still_visible() {
     assert_eq!(text(&vm, "response_body"), "from a function");
 }
 
+// --- Text over a whole string ---------------------------------------------
+// மாற்று, பிரி and ஒன்றிணை moved from nUlakam/col.qmz into the host because
+// the eTamil versions re-segmented the string on every letter read. These
+// assert the semantics the old versions had, so the move is not a change in
+// what a program computes.
+
+#[test]
+fn replace_changes_every_occurrence() {
+    let vm = run(r#"விளைவு = மாற்று("அ,ஆ,இ", ",", "-");"#).unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "அ-ஆ-இ");
+}
+
+#[test]
+fn replace_with_nothing_to_find_returns_the_text_unchanged() {
+    // An empty needle used to be a special case worth stating: the answer is
+    // the original string, not a copy of the replacement between every letter.
+    let vm = run(r#"விளைவு = மாற்று("வணக்கம்", "", "x");"#).unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "வணக்கம்");
+}
+
+#[test]
+fn replace_will_not_cut_a_letter_in_half() {
+    // கா is one written letter: க plus the vowel sign ா. Searching for the
+    // sign alone finds nothing, because it never begins a letter.
+    let vm = run(r#"விளைவு = மாற்று("கா", "ா", "x");"#).unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "கா");
+}
+
+#[test]
+fn split_gives_one_piece_per_gap() {
+    let vm = run(r#"பட்டி = பிரி("அ,ஆ,இ", ",");
+                    முதல் = பட்டி[0];
+                    கடை = பட்டி[2];
+                    எண்ணிக்கை = நீளம்(பட்டி);"#)
+    .unwrap();
+
+    assert_eq!(num(&vm, "எண்ணிக்கை"), dec(3));
+    assert_eq!(text(&vm, "முதல்"), "அ");
+    assert_eq!(text(&vm, "கடை"), "இ");
+}
+
+#[test]
+fn a_trailing_separator_leaves_an_empty_last_piece() {
+    let vm = run(r#"பட்டி = பிரி("அ,", ",");
+                    எண்ணிக்கை = நீளம்(பட்டி);
+                    கடை = பட்டி[1];"#)
+    .unwrap();
+
+    assert_eq!(num(&vm, "எண்ணிக்கை"), dec(2));
+    assert_eq!(text(&vm, "கடை"), "");
+}
+
+#[test]
+fn splitting_on_nothing_returns_the_whole_string() {
+    let vm = run(r#"பட்டி = பிரி("வணக்கம்", "");
+                    எண்ணிக்கை = நீளம்(பட்டி);
+                    முதல் = பட்டி[0];"#)
+    .unwrap();
+
+    assert_eq!(num(&vm, "எண்ணிக்கை"), dec(1));
+    assert_eq!(text(&vm, "முதல்"), "வணக்கம்");
+}
+
+#[test]
+fn split_and_join_are_inverses() {
+    let vm = run(r#"விளைவு = ஒன்றிணை(பிரி("அ|ஆ|இ", "|"), "|");"#).unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "அ|ஆ|இ");
+}
+
+#[test]
+fn join_needs_an_array_and_says_so() {
+    // The documented signature is ஒன்றிணை(அணி, இணைப்பான்). A record has no
+    // order to join in, so it is refused rather than answered arbitrarily.
+    let failure = run(r#"விளைவு = ஒன்றிணை("சரம்", ",");"#).unwrap_err();
+
+    assert!(failure.contains("அணி"), "unexpected message: {}", failure);
+}
+
+#[test]
+fn a_document_sized_string_is_not_quadratic() {
+    // The whole point of the move: a marker at the end of a document-sized
+    // string, found and replaced. Reading letter by letter cost 14 seconds
+    // over 8 KB, so at 256 KB this test would never have returned. No timing
+    // assertion — the complexity class is what is being pinned, and a test
+    // that finishes at all is the evidence.
+    let vm = run(
+        r#"பெரிது = "a";
+           எண்ணி = 0;
+           (எண்ணி < 18) சுற்று {
+               பெரிது = பெரிது & பெரிது;
+               எண்ணி = எண்ணி + 1;
+           }
+           குறியிட்ட = பெரிது & "MARK";
+           விளைவு = மாற்று(குறியிட்ட, "MARK", "xy");
+           அளவு = நீளம்(விளைவு);"#,
+    )
+    .unwrap();
+
+    // 2^18 letters of padding, and the four-letter marker became two.
+    assert_eq!(num(&vm, "அளவு"), dec(262_146));
+}
+
+// --- Whole-file write -----------------------------------------------------
+
+#[test]
+fn saving_a_file_writes_exactly_the_string() {
+    // கோப்பு_எழுது appends a line and adds a newline, which a CSV row wants
+    // and a document does not. The file this writes holds the string and
+    // nothing after it.
+    let path = std::env::temp_dir().join("etamil_kOppu_cEmi_test.txt");
+    let program = format!(
+        r#"விளைவு = கோப்பு_சேமி("{}", "அஆ");
+           அளவு = மதிப்பு(விளைவு);"#,
+        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+    );
+    let vm = run(&program).unwrap();
+
+    let written = std::fs::read_to_string(&path).unwrap();
+    let _ = std::fs::remove_file(&path);
+
+    assert_eq!(written, "அஆ", "exact bytes, and no newline appended");
+    // The answer is a result carrying the byte count — six, two Tamil letters
+    // of three bytes each — so a failed write is a value a program can test
+    // rather than a crash.
+    assert_eq!(num(&vm, "அளவு"), dec(6));
+}
+
+// --- ODF and OOXML packages -----------------------------------------------
+// .odt, .ods, .docx and .xlsx are all zip archives holding XML. A template is
+// copied entry by entry with the text entry swapped, so that the pictures
+// beside it — which are not text and could not survive being a சரம் — arrive
+// unchanged, and the mimetype entry keeps the position and the compression
+// the ODF format requires of it.
+
+/// A package with the shape an .odt has: mimetype first and stored, an XML
+/// entry, and a byte entry that is not valid UTF-8.
+fn write_test_package(path: &std::path::Path, content: &str) {
+    let file = std::fs::File::create(path).unwrap();
+    let mut zip = zip::ZipWriter::new(file);
+
+    let stored: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Stored);
+    zip.start_file("mimetype", stored).unwrap();
+    std::io::Write::write_all(&mut zip, b"application/vnd.oasis.opendocument.text").unwrap();
+
+    let deflated: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    zip.start_file("content.xml", deflated).unwrap();
+    std::io::Write::write_all(&mut zip, content.as_bytes()).unwrap();
+
+    zip.start_file("Pictures/one.png", deflated).unwrap();
+    // Deliberately not UTF-8: this is what must survive untouched.
+    std::io::Write::write_all(&mut zip, &[0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x00, 0x01]).unwrap();
+
+    zip.finish().unwrap();
+}
+
+#[test]
+fn a_package_entry_reads_as_text() {
+    let path = std::env::temp_dir().join("etamil_poqi_read.odt");
+    write_test_package(&path, "<office:text>வணக்கம்</office:text>");
+
+    let program = format!(
+        r#"படித்தது = பொதி_படி("{}", "content.xml");
+           உரைப்_பாடம் = மதிப்பு(படித்தது);"#,
+        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+    );
+    let vm = run(&program).unwrap();
+    let _ = std::fs::remove_file(&path);
+
+    assert_eq!(text(&vm, "உரைப்_பாடம்"), "<office:text>வணக்கம்</office:text>");
+}
+
+#[test]
+fn a_missing_entry_is_a_result_not_a_crash() {
+    let path = std::env::temp_dir().join("etamil_poqi_missing.odt");
+    write_test_package(&path, "<x/>");
+
+    let program = format!(
+        r#"படித்தது = பொதி_படி("{}", "styles.xml");
+           தவறுதானா = தவறா(படித்தது);"#,
+        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+    );
+    let vm = run(&program).unwrap();
+    let _ = std::fs::remove_file(&path);
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn rewriting_a_package_leaves_the_other_entries_alone() {
+    let source = std::env::temp_dir().join("etamil_poqi_source.odt");
+    let target = std::env::temp_dir().join("etamil_poqi_target.odt");
+    write_test_package(&source, "<office:text>{{ பெயர் }}</office:text>");
+
+    let program = format!(
+        r#"எழுதியது = பொதி_மாற்று("{}", "{}", {{"content.xml": "<office:text>ராஜா</office:text>"}});
+           எத்தனை = மதிப்பு(எழுதியது);"#,
+        source.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        target.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+    );
+    let vm = run(&program).unwrap();
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(3));
+
+    let written = std::fs::File::open(&target).unwrap();
+    let mut archive = zip::ZipArchive::new(written).unwrap();
+
+    // Order, and the two rules ODF imposes on the first entry.
+    let names: Vec<String> = (0..archive.len())
+        .map(|i| archive.by_index(i).unwrap().name().to_string())
+        .collect();
+    assert_eq!(names, vec!["mimetype", "content.xml", "Pictures/one.png"]);
+    assert_eq!(
+        archive.by_name("mimetype").unwrap().compression(),
+        zip::CompressionMethod::Stored,
+        "mimetype must stay uncompressed"
+    );
+
+    // The replacement landed.
+    let mut got = String::new();
+    std::io::Read::read_to_string(&mut archive.by_name("content.xml").unwrap(), &mut got).unwrap();
+    assert_eq!(got, "<office:text>ராஜா</office:text>");
+
+    // And the bytes that are not text came through untouched.
+    let mut picture = Vec::new();
+    std::io::Read::read_to_end(&mut archive.by_name("Pictures/one.png").unwrap(), &mut picture)
+        .unwrap();
+    assert_eq!(picture, vec![0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x00, 0x01]);
+
+    let _ = std::fs::remove_file(&source);
+    let _ = std::fs::remove_file(&target);
+}
+
+#[test]
+fn replacing_an_entry_that_is_not_there_is_refused() {
+    // Writing an unchanged document would be the worst way to report a typo.
+    let source = std::env::temp_dir().join("etamil_poqi_typo_source.odt");
+    let target = std::env::temp_dir().join("etamil_poqi_typo_target.odt");
+    write_test_package(&source, "<x/>");
+
+    let program = format!(
+        r#"எழுதியது = பொதி_மாற்று("{}", "{}", {{"contnet.xml": "<x/>"}});
+           தவறுதானா = தவறா(எழுதியது);"#,
+        source.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        target.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+    );
+    let vm = run(&program).unwrap();
+    let _ = std::fs::remove_file(&source);
+    let _ = std::fs::remove_file(&target);
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+// --- Running another program ----------------------------------------------
+
+#[test]
+fn nothing_runs_unless_it_is_allowed() {
+    // Deny by default. This asserts the refusal without setting the variable,
+    // because setting an environment variable is process-wide and the tests
+    // share a process.
+    let vm = run(r#"விடை = கட்டளை_ஓட்டு("definitely-not-a-real-program", [], 5);
+                    தவறுதானா = தவறா(விடை);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn command_arguments_must_be_a_list() {
+    // A string of arguments would have to be split by something, and the only
+    // thing that splits arguments correctly is not doing it at all.
+    let failure = run(r#"விடை = கட்டளை_ஓட்டு("ls", "-l", 5);"#).unwrap_err();
+
+    assert!(failure.contains("அணி"), "unexpected message: {}", failure);
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

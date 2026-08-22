@@ -83,43 +83,17 @@
     திரும்பு துண்டு(சரம், தொடக்கம், முடிவு - தொடக்கம்);
 }
 
-// பிரி(சரம், பிரிப்பான்) — split into an array
-செயல் பிரி(சரம், பிரிப்பான்) {
-    விடை = [];
-    (நீளம்(பிரிப்பான்) == 0) எனில் { திரும்பு [சரம்]; }
-    தற்போது = "";
-    எண்ணி = 0;
-    மொத்தம் = நீளம்(சரம்);
-    அளவு = நீளம்(பிரிப்பான்);
-    (எண்ணி < மொத்தம்) சுற்று {
-        (எண்ணி + அளவு <= மொத்தம் மற்றும் துண்டு(சரம், எண்ணி, அளவு) == பிரிப்பான்) எனில் {
-            விடை = இணை(விடை, தற்போது);
-            தற்போது = "";
-            எண்ணி = எண்ணி + அளவு;
-        }
-        இன்றேல் {
-            தற்போது = தற்போது & சரம்[எண்ணி];
-            எண்ணி = எண்ணி + 1;
-        }
-    }
-    திரும்பு இணை(விடை, தற்போது);
-}
-
-// ஒன்றிணை(அணி, இணைப்பான்) — join an array into one string
-செயல் ஒன்றிணை(பட்டியல், இணைப்பான்) {
-    விடை = "";
-    முதல் = மெய்;
-    ஒவ்வொரு உறுப்பு இல் பட்டியல் {
-        (முதல்) எனில் {
-            விடை = சொல்லாக்கு(உறுப்பு);
-            முதல் = பொய்;
-        }
-        இன்றேல் {
-            விடை = விடை & இணைப்பான் & சொல்லாக்கு(உறுப்பு);
-        }
-    }
-    திரும்பு விடை;
-}
+// பிரி(சரம், பிரிப்பான்) and ஒன்றிணை(அணி, இணைப்பான்) are host builtins now.
+//
+// They were written here, in eTamil, like everything else in this file. Both
+// walked the string a letter at a time, and each read re-segmented the whole
+// string into letters, so splitting a document cost O(n²) segmentations —
+// 14 seconds over 8 KB, and 400 KB never finished. The host does one
+// segmentation pass and then a byte search. The letter-boundary rule is
+// unchanged, so the pieces are the same pieces; only the cost differs.
+//
+// A function defined here would shadow the builtin, so they are gone rather
+// than delegating. See மாற்று too, which is new and has no version here.
 
 // திரும்பச்செய்(சரம், எண்ணிக்கை) — repeat
 செயல் திரும்பச்செய்(சரம், எண்ணிக்கை) {
