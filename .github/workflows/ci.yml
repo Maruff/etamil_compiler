@@ -174,3 +174,15 @@ jobs:
       - name: Build with --features llvm
         working-directory: etamil_compiler
         run: cargo build --features llvm
+
+      # The two backends must not disagree. A program the LLVM backend refuses
+      # is expected and only counted; a program it accepts and then answers
+      # differently from the VM is a failure, because that is the case nobody
+      # would notice from the outside. The summary also lists what the backend
+      # could not build, which is the difference between the two stated as
+      # work rather than as an impression.
+      #
+      # Reuses the binary built above rather than a release one: this job is
+      # about whether the backend still works, not how fast it is.
+      - name: Backend parity (--vm against --llvm)
+        run: ETAMIL_BIN=etamil_compiler/target/debug/etamil ./scripts/run_parity.sh
