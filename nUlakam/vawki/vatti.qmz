@@ -1,0 +1,98 @@
+// nUlakam/vawki/vatti.qmz — வட்டி (interest)
+//
+// Rates are written the way சதவீதம் in kaNiqam.qmz already expects them: as a
+// number out of a hundred. 8.5% per annum is 8.5 — not 8.5%, and not 0.085.
+//
+// Worth saying plainly, because the language has a % literal and 8.5% is
+// 0.085. Passing that here gives an answer a hundred times too small and
+// nothing complains, since the type checker cannot tell one number from
+// another. The suite beside this file pins it.
+//
+// Nothing here holds a rate. A rate is an argument, so the figures a bank
+// actually charges live in a table and change without this file changing.
+//
+// A note on names: அசல் (principal), தொகை (amount) and முறை (times) are all
+// keywords, so the natural word for each is unavailable on its own. Compounds
+// lex as ordinary identifiers, which is why the parameters read as they do.
+
+இறக்கு "../kaNiqam.qmz";
+
+// --- day-count conventions ------------------------------------------------
+//
+// A year is not a fixed number of days, and which fiction is used changes the
+// interest. Actual/365 is the Indian norm for rupee lending; Actual/360 turns
+// up in foreign-currency facilities. The caller says which, because getting it
+// wrong is a difference in money and not something to guess at.
+
+உண்மை_365 = 365;
+உண்மை_360 = 360;
+
+// நாட்கள்(தொடக்க_நாள், முடிவு_நாள்) — actual days between two ISO dates
+செயல் நாட்கள்(தொடக்க_நாள், முடிவு_நாள்) {
+    திரும்பு நாள்_வேறுபாடு(தொடக்க_நாள், முடிவு_நாள்);
+}
+
+// ஆண்டுப்_பங்கு(எத்தனை_நாட்கள், ஆண்டு_நாட்கள்) — the year fraction
+செயல் ஆண்டுப்_பங்கு(எத்தனை_நாட்கள், ஆண்டு_நாட்கள்) {
+    திரும்பு எத்தனை_நாட்கள் / ஆண்டு_நாட்கள்;
+}
+
+// --- powers ---------------------------------------------------------------
+//
+// அடுக்கு(அடிப்படை, எத்தனை_முறை) — a base raised a whole number of times.
+//
+// By repeated multiplication, not a floating-point pow. Every number here is a
+// fixed-point decimal, and the reason for that is that money must not drift;
+// borrowing a float to raise 1.00708333 to the power of 240 would put the
+// drift back at exactly the step that compounds it.
+செயல் அடுக்கு(அடிப்படை, எத்தனை_முறை) {
+    (எத்தனை_முறை <= 0) எனில் { திரும்பு 1; }
+    விடை = 1;
+    எண்ணி = 0;
+    (எண்ணி < எத்தனை_முறை) சுற்று {
+        விடை = விடை * அடிப்படை;
+        எண்ணி = எண்ணி + 1;
+    }
+    திரும்பு விடை;
+}
+
+// --- simple interest ------------------------------------------------------
+//
+// எளிய_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், எத்தனை_நாட்கள், ஆண்டு_நாட்கள்)
+//
+// Rounded to the paisa, because that is the unit a bank posts.
+செயல் எளிய_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், எத்தனை_நாட்கள், ஆண்டு_நாட்கள்) {
+    ஆண்டுக்_கணக்கு = சதவீதம்(அசல்_தொகை, ஆண்டு_விகிதம்);
+    திரும்பு வட்டமிடு(ஆண்டுக்_கணக்கு * எத்தனை_நாட்கள் / ஆண்டு_நாட்கள், 2);
+}
+
+// நாளாந்த_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டு_நாட்கள்) — one day's interest
+//
+// Deliberately not rounded. A day's interest on a small balance is often a
+// fraction of a paisa, and rounding each day before adding them up loses more
+// than it tidies. Round the total, once, when it is posted.
+செயல் நாளாந்த_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டு_நாட்கள்) {
+    திரும்பு சதவீதம்(அசல்_தொகை, ஆண்டு_விகிதம்) / ஆண்டு_நாட்கள்;
+}
+
+// --- compound interest ----------------------------------------------------
+//
+// கூட்டு_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை)
+//
+// ஆண்டுக்கு_எத்தனை is how often it compounds in a year: 4 for a quarterly
+// deposit, which is what most Indian term deposits do, 12 for monthly.
+//
+// Answers the interest alone rather than the maturity value, so it reads the
+// same way எளிய_வட்டி does.
+செயல் கூட்டு_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை) {
+    ஒரு_முறை_விகிதம் = ஆண்டு_விகிதம் / (ஆண்டுக்கு_எத்தனை * 100);
+    எத்தனை_முறைகள் = ஆண்டுக்கு_எத்தனை * ஆண்டுகள்;
+    வளர்ச்சி = அடுக்கு(1 + ஒரு_முறை_விகிதம், எத்தனை_முறைகள்);
+    திரும்பு வட்டமிடு(அசல்_தொகை * வளர்ச்சி - அசல்_தொகை, 2);
+}
+
+// முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை)
+செயல் முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை) {
+    திரும்பு அசல்_தொகை
+           + கூட்டு_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை);
+}

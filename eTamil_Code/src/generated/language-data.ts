@@ -5685,6 +5685,296 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/poruL.qmz",
     "line": 56
+  },
+  {
+    "name": "விதிமுறைகளை_ஏற்று",
+    "forms": [
+      "விதிமுறைகளை_ஏற்று"
+    ],
+    "params": [
+      "நாள்"
+    ],
+    "arity": 1,
+    "doc": "விதிமுறைகளை_ஏற்று(நாள்) — the rules in force on that date",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu.qmz",
+    "line": 27
+  },
+  {
+    "name": "வகைப்படுத்து",
+    "forms": [
+      "வகைப்படுத்து"
+    ],
+    "params": [
+      "விதிமுறைகள்",
+      "தாமத_நாட்கள்"
+    ],
+    "arity": 2,
+    "doc": "வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) — the class this account is in",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu.qmz",
+    "line": 44
+  },
+  {
+    "name": "ஒதுக்கீடு",
+    "forms": [
+      "ஒதுக்கீடு"
+    ],
+    "params": [
+      "விதிமுறைகள்",
+      "தாமத_நாட்கள்",
+      "நிலுவைத்_தொகை"
+    ],
+    "arity": 3,
+    "doc": "ஒதுக்கீடு(விதிமுறைகள், தாமத_நாட்கள், நிலுவைத்_தொகை)",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu.qmz",
+    "line": 77
+  },
+  {
+    "name": "சரிபார்க்கப்படாதவை",
+    "forms": [
+      "சரிபார்க்கப்படாதவை"
+    ],
+    "params": [
+      "விதிமுறைகள்"
+    ],
+    "arity": 1,
+    "doc": "சரிபார்க்கப்படாதவை(விதிமுறைகள்) — the rows nobody has vouched for yet",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu.qmz",
+    "line": 94
+  },
+  {
+    "name": "தொடங்குகிறதா_எளிது",
+    "forms": [
+      "தொடங்குகிறதா_எளிது"
+    ],
+    "params": [
+      "பாடம்",
+      "முன்னொட்டு"
+    ],
+    "arity": 2,
+    "doc": "A local prefix test, so this module needs nothing from col.qmz.",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu.qmz",
+    "line": 105
+  },
+  {
+    "name": "வகை_பெயர்",
+    "forms": [
+      "வகை_பெயர்"
+    ],
+    "params": [
+      "விதிகள்",
+      "நாட்கள்"
+    ],
+    "arity": 2,
+    "doc": "The day a class starts and the day it ends are where a classification is",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/coqqu_cOqaZY.qmz",
+    "line": 62
+  },
+  {
+    "name": "மாத_விகிதம்",
+    "forms": [
+      "மாத_விகிதம்"
+    ],
+    "params": [
+      "ஆண்டு_விகிதம்"
+    ],
+    "arity": 1,
+    "doc": "மாத_விகிதம்(ஆண்டு_விகிதம்) — the monthly rate as a fraction",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 17
+  },
+  {
+    "name": "மாதத்_தவணை",
+    "forms": [
+      "மாதத்_தவணை"
+    ],
+    "params": [
+      "கடன்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "எத்தனை_மாதங்கள்"
+    ],
+    "arity": 3,
+    "doc": "மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) — the EMI",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 30
+  },
+  {
+    "name": "தவணை_அட்டவணை",
+    "forms": [
+      "தவணை_அட்டவணை"
+    ],
+    "params": [
+      "கடன்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "எத்தனை_மாதங்கள்"
+    ],
+    "arity": 3,
+    "doc": "தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 50
+  },
+  {
+    "name": "மொத்த_வட்டி",
+    "forms": [
+      "மொத்த_வட்டி"
+    ],
+    "params": [
+      "அட்டவணை"
+    ],
+    "arity": 1,
+    "doc": "மொத்த_வட்டி(அட்டவணை) — what the borrowing cost, over the whole term",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 85
+  },
+  {
+    "name": "மொத்தத்_திருப்பி",
+    "forms": [
+      "மொத்தத்_திருப்பி"
+    ],
+    "params": [
+      "அட்டவணை"
+    ],
+    "arity": 1,
+    "doc": "மொத்தத்_திருப்பி(அட்டவணை) — every instalment added up",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 94
+  },
+  {
+    "name": "முன்கூட்டியே_அடைத்தால்",
+    "forms": [
+      "முன்கூட்டியே_அடைத்தால்"
+    ],
+    "params": [
+      "அட்டவணை",
+      "எத்தனாவது_மாதம்"
+    ],
+    "arity": 2,
+    "doc": "முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) — what is owed to settle",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/kadaZ.qmz",
+    "line": 108
+  },
+  {
+    "name": "நாட்கள்",
+    "forms": [
+      "நாட்கள்"
+    ],
+    "params": [
+      "தொடக்க_நாள்",
+      "முடிவு_நாள்"
+    ],
+    "arity": 2,
+    "doc": "நாட்கள்(தொடக்க_நாள், முடிவு_நாள்) — actual days between two ISO dates",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 31
+  },
+  {
+    "name": "ஆண்டுப்_பங்கு",
+    "forms": [
+      "ஆண்டுப்_பங்கு"
+    ],
+    "params": [
+      "எத்தனை_நாட்கள்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 2,
+    "doc": "ஆண்டுப்_பங்கு(எத்தனை_நாட்கள், ஆண்டு_நாட்கள்) — the year fraction",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 36
+  },
+  {
+    "name": "அடுக்கு",
+    "forms": [
+      "அடுக்கு"
+    ],
+    "params": [
+      "அடிப்படை",
+      "எத்தனை_முறை"
+    ],
+    "arity": 2,
+    "doc": "அடுக்கு(அடிப்படை, எத்தனை_முறை) — a base raised a whole number of times.",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 48
+  },
+  {
+    "name": "எளிய_வட்டி",
+    "forms": [
+      "எளிய_வட்டி"
+    ],
+    "params": [
+      "அசல்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "எத்தனை_நாட்கள்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 4,
+    "doc": "எளிய_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், எத்தனை_நாட்கள், ஆண்டு_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 64
+  },
+  {
+    "name": "நாளாந்த_வட்டி",
+    "forms": [
+      "நாளாந்த_வட்டி"
+    ],
+    "params": [
+      "அசல்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "நாளாந்த_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டு_நாட்கள்) — one day's interest",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 74
+  },
+  {
+    "name": "கூட்டு_வட்டி",
+    "forms": [
+      "கூட்டு_வட்டி"
+    ],
+    "params": [
+      "அசல்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "ஆண்டுகள்",
+      "ஆண்டுக்கு_எத்தனை"
+    ],
+    "arity": 4,
+    "doc": "கூட்டு_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை)",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 87
+  },
+  {
+    "name": "முதிர்வுத்_தொகை",
+    "forms": [
+      "முதிர்வுத்_தொகை"
+    ],
+    "params": [
+      "அசல்_தொகை",
+      "ஆண்டு_விகிதம்",
+      "ஆண்டுகள்",
+      "ஆண்டுக்கு_எத்தனை"
+    ],
+    "arity": 4,
+    "doc": "முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை)",
+    "kind": "stdlib",
+    "module": "nUlakam/vawki/vatti.qmz",
+    "line": 95
   }
 ];
 

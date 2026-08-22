@@ -19,6 +19,9 @@ frameworks built on top of it.
 | `aNi.qmz` | arrays — `உள்ளதா` `இடம்_காண்` `தலைகீழ்` `வெட்டு` `புலம்_எடு` `காலியா` |
 | `poruL.qmz` | records — `புலம்_உள்ளதா` `புலம்_அல்லது` `புலங்கள்` `மதிப்பீடுகள்` `காலியா_பதிவேடு` |
 | `cOqaZY.qmz` | tests — `சோதனை_தொடக்கம்` `உறுதிசெய்` `சமம்` `வேறுபடு` `சேர்_ஓட்டம்` `சோதனை_முடிவு` |
+| `vawki/vatti.qmz` | interest — `எளிய_வட்டி` `நாளாந்த_வட்டி` `கூட்டு_வட்டி` `முதிர்வுத்_தொகை` `அடுக்கு` `நாட்கள்` |
+| `vawki/kadaZ.qmz` | loans — `மாதத்_தவணை` `தவணை_அட்டவணை` `மொத்த_வட்டி` `மொத்தத்_திருப்பி` `முன்கூட்டியே_அடைத்தால்` |
+| `vawki/coqqu.qmz` | asset classification — `விதிமுறைகளை_ஏற்று` `வகைப்படுத்து` `ஒதுக்கீடு` `சரிபார்க்கப்படாதவை` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -149,3 +152,31 @@ fails whatever ran it. The run is threaded through each assertion rather than
 kept in a module variable, because a function cannot change a global: assigning
 to a name inside a `செயல்` makes a local, and a counter incremented there is
 lost on return.
+
+## Banking: the engine here, the figures in a table
+
+`vawki/` holds interest, loans and asset classification. Not one regulatory
+number is in any of them.
+
+Interest and instalments are arithmetic, so those modules take a rate as an
+argument and hold none. `அடுக்கு` raises a base by repeated multiplication
+rather than borrowing a floating-point `pow`: every number here is a
+fixed-point decimal precisely so that money does not drift, and a float at the
+step that compounds would put the drift back.
+
+The amortisation schedule closes exactly. An instalment is rounded to the
+paisa and paid two hundred and forty times, so the rounded parts do not sum to
+the loan; the last row absorbs the difference. A schedule ending four paise
+overdrawn is not a rounding detail, it is an account that will not close.
+
+Classification is different, because the day counts and provisioning
+percentages are set by circular and amended. They live in
+`vawki/coqqu_viqimuRY.sql`, effective-dated, so that a review run against last
+year's rules still produces last year's answer — and so that an amendment is a
+new row rather than an edit. **The figures shipped there are placeholders and
+are marked as such.** `சரிபார்க்கப்படாதவை` lists any still marked that way, so
+a program can refuse to report a number nobody has vouched for.
+
+An account no rule covers is refused rather than called standard. Standard
+provisions least, and that is the one direction a provisioning error must
+never go.

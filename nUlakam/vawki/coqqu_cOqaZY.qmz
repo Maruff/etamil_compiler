@@ -1,0 +1,108 @@
+// சொத்து வகைப்பாடு சோதனை — tests for asset classification
+//
+//   etamil --vm nUlakam/vawki/coqqu_cOqaZY.qmz
+//
+// The rules are built here, in memory, rather than read from a file. Two
+// reasons: the suite then needs no fixture and leaves nothing behind, and the
+// figures it asserts on are visibly its own. Nothing in this file is a claim
+// about what any real rule says — the day counts below are invented to make
+// the boundaries easy to see.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "coqqu.qmz";
+
+தளம்_இணை சீகுலைட், ":memory:";
+
+தளம்_செய் "CREATE TABLE coqqu_viqimuRY (
+             vakY TEXT NOT NULL,
+             nAtkaL_muqal INTEGER NOT NULL,
+             nAtkaL_varY INTEGER,
+             oqukkItu_viziqam REAL NOT NULL,
+             amal_qotakkam TEXT NOT NULL,
+             amal_muDivu TEXT,
+             mUlam TEXT NOT NULL)", [];
+
+// Three classes, the last with no upper bound.
+//
+// The columns that should be NULL are left out of the INSERT rather than bound
+// to "". eTamil has no nil to pass, and an empty string is not a NULL: the
+// loader asks for `amal_muDivu IS NULL`, and a row holding "" is a row still
+// in force according to nobody. Omitting the column is how a NULL is written
+// from here.
+நிரல்கள் = "(vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam, amal_qotakkam, mUlam)";
+
+தளம்_செய் "INSERT INTO coqqu_viqimuRY " & நிரல்கள் & " VALUES (?,?,?,?,?,?)",
+          ["நல்லது", 0, 90, 1, "2020-01-01", "சோதனை"];
+தளம்_செய் "INSERT INTO coqqu_viqimuRY " & நிரல்கள் & " VALUES (?,?,?,?,?,?)",
+          ["சந்தேகம்", 91, 365, 20, "2020-01-01", "சோதனை"];
+
+// No upper bound at all: that column is left out too.
+தளம்_செய் "INSERT INTO coqqu_viqimuRY
+             (vakY, nAtkaL_muqal, oqukkItu_viziqam, amal_qotakkam, mUlam)
+             VALUES (?,?,?,?,?)",
+          ["இழப்பு", 366, 100, "2020-01-01", "PLACEHOLDER — invented"];
+
+// A rule that was replaced: in force until 2020, and must not be seen after.
+தளம்_செய் "INSERT INTO coqqu_viqimuRY
+             (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam,
+              amal_qotakkam, amal_muDivu, mUlam)
+             VALUES (?,?,?,?,?,?,?)",
+          ["பழையது", 0, 90, 5, "2010-01-01", "2020-01-01", "சோதனை"];
+
+ஓட்டம் = சோதனை_தொடக்கம்("சொத்து வகைப்பாடு");
+
+விதிகள் = விதிமுறைகளை_ஏற்று("2026-08-22");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(விதிகள்), 3,
+              "a rule that has been replaced is not in force");
+
+// --- the boundaries -------------------------------------------------------
+//
+// The day a class starts and the day it ends are where a classification is
+// got wrong, so each is asserted on both sides.
+செயல் வகை_பெயர்(விதிகள், நாட்கள்) {
+    விடை = வகைப்படுத்து(விதிகள், நாட்கள்);
+    (தவறா(விடை)) எனில் { திரும்பு "—"; }
+    திரும்பு மதிப்பு(விடை)["vakY"];
+}
+
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 0), "நல்லது", "nothing overdue");
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 90), "நல்லது", "the last day of the first class");
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 91), "சந்தேகம்", "and the first day of the next");
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 365), "சந்தேகம்", "its last day");
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 366), "இழப்பு", "and over into the last class");
+
+// The open-ended class is the one that broke first: an upper bound written
+// NULL arrives as nil, and nil is equal to nothing, so comparing it against a
+// number put every very old account outside every rule.
+ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 5000), "இழப்பு",
+              "a class with no upper bound catches everything above it");
+
+// --- what is set aside ----------------------------------------------------
+கணக்கு = ஒதுக்கீடு(விதிகள், 100, 1000000);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(கணக்கு), "a hundred days overdue classifies");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கணக்கு)["ஒதுக்கீடு"], 200000,
+              "20 per cent of ten lakh is two lakh");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கணக்கு)["வகைப்பாடு"], "சந்தேகம்",
+              "and it says which class it used");
+
+நல்லது = ஒதுக்கீடு(விதிகள், 10, 1000000);
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நல்லது)["ஒதுக்கீடு"], 10000,
+              "a performing account still provisions something");
+
+// --- what it refuses to guess ---------------------------------------------
+//
+// An account no rule covers is not quietly called standard. Standard is the
+// class that provisions least, so that default would understate the exposure
+// — the one direction a provisioning error must never go.
+காலி = [];
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(வகைப்படுத்து(காலி, 30)),
+                    "with no rules at all it refuses rather than assuming");
+
+// --- and what it will not vouch for ---------------------------------------
+சரிபார்க்காதவை = சரிபார்க்கப்படாதவை(விதிகள்);
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(சரிபார்க்காதவை), 1,
+              "the placeholder row is named");
+ஓட்டம் = சமம்(ஓட்டம், சரிபார்க்காதவை[0], "இழப்பு",
+              "and it is the one whose source says PLACEHOLDER");
+
+சோதனை_முடிவு(ஓட்டம்);
