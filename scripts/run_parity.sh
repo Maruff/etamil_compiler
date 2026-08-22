@@ -100,12 +100,14 @@ fi
 matched=0; mismatched=0; refused=0; compiled=0; skipped=0
 declare -a MISMATCHES=()
 unsupported_log="$(mktemp)"
+nearest_log="$(mktemp)"
 
 for file in "${FILES[@]}"; do
     rel="${file#"$ROOT"/}"
     rel="${rel//\\//}"
 
     if [[ -n "${SKIP[$rel]:-}" ]]; then
+        echo "  skipped          $rel (the VM cannot run it either)"
         ((skipped++)); continue
     fi
 
@@ -136,7 +138,16 @@ for file in "${FILES[@]}"; do
 
     if [[ $llvm_status -ne 0 ]]; then
         # Refused, and it says what stopped it. Those lines are the roadmap.
-        grep -E '^    - ' <<<"$llvm_out" | sed 's/^    - //' >> "$unsupported_log"
+        # They arrive already de-duplicated per program, so counting them counts
+        # distinct reasons — which is what makes the "closest" ranking below
+        # mean anything.
+        reasons="$(grep -E '^    - ' <<<"$llvm_out" | sed 's/^    - //')"
+        if [[ -n "$reasons" ]]; then
+            printf '%s\n' "$reasons" >> "$unsupported_log"
+            printf '%s\t%s\t%s\n' \
+                "$(grep -c . <<<"$reasons")" "$rel" "$(paste -sd '~' <<<"$reasons")" \
+                >> "$nearest_log"
+        fi
         echo "  refused          $rel"
         ((refused++))
         rm -rf "$work"
@@ -198,8 +209,18 @@ if [[ -s "$unsupported_log" ]]; then
     echo
     echo "  What the LLVM backend still cannot build, most frequent first:"
     sort "$unsupported_log" | uniq -c | sort -rn | head -20 | sed 's/^/    /'
+    echo
+    echo "  Counts of reasons, not of programs. A program with eight reasons"
+    echo "  needs all eight, so that list says what is common rather than what"
+    echo "  is on the critical path. This one says what is nearly there:"
+    echo
+    echo "  Closest to compiling — fewest distinct reasons first:"
+    sort -n "$nearest_log" | head -8 | while IFS=$'\t' read -r count rel reasons; do
+        printf '    %s (%s)\n' "$rel" "$count"
+        tr '~' '\n' <<<"$reasons" | sed 's/^/        /'
+    done
 fi
-rm -f "$unsupported_log"
+rm -f "$unsupported_log" "$nearest_log"
 
 if [[ $mismatched -gt 0 ]]; then
     echo
