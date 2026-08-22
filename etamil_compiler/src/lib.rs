@@ -32,7 +32,7 @@ pub mod module;
 // Reads stdin, writes stdout.
 #[cfg(not(target_family = "wasm"))]
 pub mod repl;
-#[cfg(not(target_family = "wasm"))]
+// Portable: HMAC-SHA256 over hmac/sha2/subtle, all pure Rust.
 pub mod signing;
 #[cfg(not(target_family = "wasm"))]
 pub mod redis;
@@ -46,7 +46,8 @@ pub mod mongo;
 // Client certificates are only meaningful when there is a client.
 #[cfg(all(feature = "http-client", not(target_family = "wasm")))]
 pub mod mtls;
-#[cfg(not(target_family = "wasm"))]
+// Portable with `http-client` off, which a wasm build implies: `request` then
+// takes the existing no-HTTP-client fallback, and sign/verify are pure Rust.
 pub mod net;
 #[cfg(not(target_family = "wasm"))]
 pub mod db;
@@ -56,12 +57,23 @@ pub mod db;
 pub mod codegen;
 #[cfg(not(target_family = "wasm"))]
 pub mod fileio;
-// The interpreter reads and writes files for the File I/O statements.
-#[cfg(not(target_family = "wasm"))]
+// Portable: the bytecode compiler and value layer touch no OS at all, and the
+// interpreter's input and output go through vm::host, which has a browser
+// implementation. The archive and subprocess helpers inside it are gated
+// individually.
 pub mod vm;
 #[cfg(not(target_family = "wasm"))]
 pub mod http;
 
 // --- Browser bindings ---
+
+// Stand-ins for db, redis and http, re-exported under those names so the
+// interpreter's `crate::db::...` paths resolve unchanged. See wasm_stubs.rs for
+// why this is done as substitution rather than as gating.
+#[cfg(target_family = "wasm")]
+mod wasm_stubs;
+#[cfg(target_family = "wasm")]
+pub use wasm_stubs::{db, http, redis};
+
 #[cfg(target_family = "wasm")]
 pub mod wasm;

@@ -1,6 +1,9 @@
 // eTamil Virtual Machine (VM)
 // Executes bytecode independently without LLVM or Rust compilation
 
+// Where input and output go: std::fs and stdout natively, an in-memory
+// buffer and file map in the browser. See host.rs.
+pub mod host;
 pub mod bytecode;
 pub mod interpreter;
 pub mod value;
