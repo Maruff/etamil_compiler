@@ -1,0 +1,142 @@
+// தேய்மானம் மற்றும் ஊதியம் சோதனை — depreciation and payroll
+//
+//   etamil --vm nUlakam/kaNakkiyal/coqqu_Uqiyam_cOqaZY.qmz
+//
+// No rate, ceiling or slab here is a claim about what any statute says. They
+// are arguments, chosen so the arithmetic can be checked by hand.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "qEymAZam.qmz";
+இறக்கு "Uqiyam.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("தேய்மானம், ஊதியம்");
+
+// --- straight line --------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், நேர்கோட்டு_ஆண்டு(100000, 10000, 5), 18000,
+              "cost less residual, spread over the life");
+ஓட்டம் = சமம்(ஓட்டம், நேர்கோட்டு_விகிதம்(100000, 10000, 5), 18,
+              "and the same thing as a percentage of cost");
+ஓட்டம் = சமம்(ஓட்டம், நேர்கோட்டு_ஆண்டு(100000, 10000, 0), 0,
+              "no life, no charge — rather than a division by zero");
+
+// The schedule must land exactly on the residual. A charge rounded to the
+// paisa and taken five times need not add up to what is written off, and an
+// asset left with eight paise on the books never closes.
+அட்ட = நேர்கோட்டு_அட்டவணை(100000, 10000, 5);
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(அட்ட), 5, "one row per year");
+ஓட்டம் = சமம்(ஓட்டம், அட்ட[4]["முடிவு"], 10000, "and it closes exactly on the residual");
+ஓட்டம் = சமம்(ஓட்டம், மொத்தத்_தேய்வு(அட்ட), 90000,
+              "everything written off is cost less residual, to the paisa");
+ஓட்டம் = சமம்(ஓட்டம், அட்ட[0]["திறப்பு"], 100000, "the first year opens at cost");
+
+// An awkward life, where the rounding actually bites.
+சிக்கல் = நேர்கோட்டு_அட்டவணை(100000, 0, 3);
+ஓட்டம் = சமம்(ஓட்டம், சிக்கல்[2]["முடிவு"], 0,
+              "a life that does not divide evenly still closes at nothing");
+ஓட்டம் = சமம்(ஓட்டம், மொத்தத்_தேய்வு(சிக்கல்), 100000,
+              "and still writes off the whole cost");
+
+// --- written-down value ---------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், குறையும்_ஆண்டு(100000, 15, 0), 15000, "a share of what is left");
+ஓட்டம் = சமம்(ஓட்டம், குறையும்_ஆண்டு(85000, 15, 0), 12750, "and less of it next year");
+
+குறை = குறையும்_அட்டவணை(100000, 15, 0, 4);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறை[0]["தேய்வு"] > குறை[3]["தேய்வு"],
+                    "the charge falls every year, which is the point of the method");
+
+// Without a floor an asset depreciates for ever in ever smaller amounts.
+ஓட்டம் = சமம்(ஓட்டம், குறையும்_ஆண்டு(10000, 15, 10000), 0,
+              "nothing is charged once the residual is reached");
+ஓட்டம் = சமம்(ஓட்டம், குறையும்_ஆண்டு(10500, 40, 10000), 500,
+              "and the last charge is trimmed to land on it exactly");
+
+// --- part of a year -------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், பகுதி_ஆண்டு(18000, 90, 365), 4438.36,
+              "an asset bought in the year is charged for the days it was held");
+ஓட்டம் = சமம்(ஓட்டம், பகுதி_ஆண்டு(18000, 365, 365), 18000, "a full year is a full charge");
+ஓட்டம் = சமம்(ஓட்டம், பகுதி_ஆண்டு(18000, 400, 365), 18000, "and no more than one");
+ஓட்டம் = சமம்(ஓட்டம், பகுதி_ஆண்டு(18000, 0, 365), 0, "an asset not yet held is not charged");
+
+// --- a block of assets ----------------------------------------------------
+தொகுதி = தொகுதி_தேய்வு(500000, 100000, 50000, 15, 40000);
+ஓட்டம் = சமம்(ஓட்டம், தொகுதி["முழு_விகிதம்"], 82500,
+              "the block is opening plus additions less sales, at the full rate");
+ஓட்டம் = சமம்(ஓட்டம், தொகுதி["பாதி_விகிதம்"], 3000,
+              "what was bought late in the year gets half");
+ஓட்டம் = சமம்(ஓட்டம், தொகுதி["இறுதி_மதிப்பு"], 504500, "and the block closes at the rest");
+
+// Sales can empty a block. What is left is not depreciated below nothing.
+காலி = தொகுதி_தேய்வு(100000, 0, 200000, 15, 0);
+ஓட்டம் = சமம்(ஓட்டம், காலி["மொத்தம்"], 0,
+              "a block sold out of existence is not depreciated further");
+
+// --- payroll: what was earned ---------------------------------------------
+கூறு = {"அடிப்படை": 40000, "வீட்டுப்படி": 16000, "பிறபடி": 4000};
+ஓட்டம் = சமம்(ஓட்டம், மொத்தச்_சம்பளம்(கூறு), 60000, "the components added up");
+
+// February is not thirty days, and paying a month over thirty overpays it.
+ஓட்டம் = சமம்(ஓட்டம், நாட்களுக்கு_ஏற்ப(60000, 22, 28), 47142.86,
+              "twenty-two days of a twenty-eight day month");
+ஓட்டம் = வேறுபடு(ஓட்டம், நாட்களுக்கு_ஏற்ப(60000, 22, 28),
+                  நாட்களுக்கு_ஏற்ப(60000, 22, 30),
+                  "which is not the same as twenty-two of thirty");
+ஓட்டம் = சமம்(ஓட்டம், நாட்களுக்கு_ஏற்ப(60000, 31, 31), 60000, "a full month is full pay");
+
+// --- a ceiling, and an eligibility limit, are not the same thing ----------
+ஓட்டம் = சமம்(ஓட்டம், வரம்புடன்_பங்களிப்பு(40000, 12, 15000), 1800,
+              "a ceiling contributes on the ceiling");
+ஓட்டம் = சமம்(ஓட்டம், வரம்புடன்_பங்களிப்பு(40000, 12, 0), 4800,
+              "and no ceiling contributes on everything");
+ஓட்டம் = சமம்(ஓட்டம், தகுதிக்குள்_பங்களிப்பு(20000, 0.75, 21000), 150,
+              "an eligibility limit contributes below it");
+ஓட்டம் = சமம்(ஓட்டம், தகுதிக்குள்_பங்களிப்பு(25000, 0.75, 21000), 0,
+              "and above it contributes NOTHING — not a share of the limit");
+
+// --- slabs are marginal ---------------------------------------------------
+//
+// The band's rate applies to the part of the amount inside it. Applying the
+// top rate to the whole amount is what "I moved up a bracket and took home
+// less" describes, and it is simply wrong.
+படிகள்_பட்டி = [{"முதல்": 0, "விகிதம்": 0},
+                {"முதல்": 300000, "விகிதம்": 5},
+                {"முதல்": 700000, "விகிதம்": 10}];
+
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(250000, படிகள்_பட்டி), 0, "below the first band, nothing");
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(300000, படிகள்_பட்டி), 0, "and at its edge, still nothing");
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(500000, படிகள்_பட்டி), 10000,
+              "five per cent of the part above three lakh");
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(800000, படிகள்_பட்டி), 30000,
+              "and the top rate only on the part in the top band");
+
+// The property that makes it marginal: one rupee more never costs more than
+// one rupee of tax.
+ஒன்று_குறைவு = படிநிலை_வரி(699999, படிகள்_பட்டி);
+ஒன்று_மேல் = படிநிலை_வரி(700001, படிகள்_பட்டி);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஒன்று_மேல் - ஒன்று_குறைவு < 2,
+                    "crossing a band costs pennies, not a cliff");
+
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(0, படிகள்_பட்டி), 0, "nothing earned, nothing due");
+
+// A band may state a flat amount instead, which is how professional tax reads.
+நிலைப்_படிகள் = [{"முதல்": 0, "நிலைத்_தொகை": 0},
+                 {"முதல்": 15000, "நிலைத்_தொகை": 150},
+                 {"முதல்": 25000, "நிலைத்_தொகை": 200}];
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(30000, நிலைப்_படிகள்), 200,
+              "a flat band charges its amount, not a percentage");
+ஓட்டம் = சமம்(ஓட்டம், படிநிலை_வரி(20000, நிலைப்_படிகள்), 150,
+              "and the band it lands in, not the top one");
+
+// --- gratuity -------------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கொடை(60000, 5, 15, 26, 0), 173076.92,
+              "fifteen days' wages a year on a twenty-six day month");
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கொடை(60000, 5, 15, 26, 100000), 100000,
+              "and no more than the statutory maximum when one is given");
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கொடை(60000, 0, 15, 26, 0), 0, "no service, no gratuity");
+
+// --- the payslip ----------------------------------------------------------
+சீட்டு = சம்பளச்_சீட்டு(கூறு, {"பிஎஃப்": 1800, "தொழில்வரி": 200});
+ஓட்டம் = சமம்(ஓட்டம், சீட்டு["மொத்தம்"], 60000, "gross");
+ஓட்டம் = சமம்(ஓட்டம், சீட்டு["பிடித்தம்"], 2000, "deductions");
+ஓட்டம் = சமம்(ஓட்டம், சீட்டு["கையில்"], 58000, "and what reaches the bank");
+
+சோதனை_முடிவு(ஓட்டம்);

@@ -1,0 +1,162 @@
+// nUlakam/kaNakkiyal/Uqiyam.qmz — ஊதியம் (payroll)
+//
+// Every rate, ceiling, threshold and slab in Indian payroll is statutory. The
+// provident fund contribution rate, the wage ceiling it applies to, the pay
+// above which employees' state insurance stops, professional tax by state,
+// income tax slabs — all set by government, all amended, none of them here.
+//
+// What is here is the arithmetic that applies them, and the two things about
+// payroll arithmetic that are easy to get wrong: proportioning a month for
+// days not worked, and computing a slab tax so that a rupee more of pay never
+// leaves someone with less in hand.
+//
+// Rates are a number out of a hundred: 12% is 12.
+//
+// ஊதியம், நிகர, செலவு and விலை are keywords, so the parameters below read as
+// compounds. That is the language's doing, not a style choice.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// --- what was earned ------------------------------------------------------
+//
+// மொத்தச்_சம்பளம்(கூறுகள்) — the components added up
+//
+// கூறுகள் is a record: {"அடிப்படை": 40000, "வீட்டுப்படி": 16000, ...}. Naming
+// them is the employer's business; adding them is not.
+செயல் மொத்தச்_சம்பளம்(கூறுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு கூற்றுப்_பெயர் இல் கூறுகள் {
+        கூட்டல் = கூட்டல் + கூறுகள்[கூற்றுப்_பெயர்];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// நாட்களுக்கு_ஏற்ப(தொகை_மதிப்பு, ஊதிய_நாட்கள், மாத_நாட்கள்)
+//
+// Loss of pay. A month is not thirty days for this: February is twenty-eight,
+// and paying a month's salary divided by thirty in February overpays every
+// year. The number of days in the month is passed in for that reason.
+செயல் நாட்களுக்கு_ஏற்ப(தொகை_மதிப்பு, ஊதிய_நாட்கள், மாத_நாட்கள்) {
+    (மாத_நாட்கள் <= 0) எனில் { திரும்பு 0; }
+    (ஊதிய_நாட்கள் >= மாத_நாட்கள்) எனில் { திரும்பு வட்டமிடு(தொகை_மதிப்பு, 2); }
+    (ஊதிய_நாட்கள் <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(தொகை_மதிப்பு * ஊதிய_நாட்கள் / மாத_நாட்கள், 2);
+}
+
+// --- contributions with a ceiling -----------------------------------------
+//
+// வரம்புடன்_பங்களிப்பு(பங்களிப்பு_ஊதியம், விகிதம், உச்ச_வரம்பு)
+//
+// The provident fund shape: a percentage of wages, but only of wages up to a
+// ceiling. Pass 0 as the ceiling for no ceiling — an employer may contribute
+// on full wages, and many do.
+செயல் வரம்புடன்_பங்களிப்பு(பங்களிப்பு_ஊதியம், விகிதம், உச்ச_வரம்பு) {
+    கணக்கிடத்தக்கது = பங்களிப்பு_ஊதியம்;
+    (உச்ச_வரம்பு > 0 மற்றும் பங்களிப்பு_ஊதியம் > உச்ச_வரம்பு) எனில் {
+        கணக்கிடத்தக்கது = உச்ச_வரம்பு;
+    }
+    திரும்பு வட்டமிடு(சதவீதம்(கணக்கிடத்தக்கது, விகிதம்), 2);
+}
+
+// தகுதிக்குள்_பங்களிப்பு(மொத்தம், விகிதம், தகுதி_எல்லை)
+//
+// The employees' state insurance shape, and it is not the same as a ceiling.
+// Above the eligibility limit nothing is contributed at all, rather than
+// something being contributed on the limit. Treating one like the other is a
+// deduction taken from someone who owes none.
+செயல் தகுதிக்குள்_பங்களிப்பு(மொத்தத்_தொகை, விகிதம், தகுதி_எல்லை) {
+    (தகுதி_எல்லை > 0 மற்றும் மொத்தத்_தொகை > தகுதி_எல்லை) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(சதவீதம்(மொத்தத்_தொகை, விகிதம்), 2);
+}
+
+// --- slabs ----------------------------------------------------------------
+//
+// படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்)
+//
+// One engine for professional tax, for income tax, and for anything else
+// stated as bands. படிகள் is an array ordered by where each band starts:
+//
+//   [{"முதல்": 0,      "விகிதம்": 0},
+//    {"முதல்": 300000, "விகிதம்": 5},
+//    {"முதல்": 700000, "விகிதம்": 10}]
+//
+// Each band's rate applies only to the part of the amount inside it, which is
+// the whole point: a rupee more of income is taxed at the new rate only on
+// that rupee. Applying the top rate to the whole amount — which is what
+// "I moved into the next bracket and took home less" describes — is the
+// classic way to compute this wrongly, and it is wrong.
+//
+// A band may instead carry a fixed amount, which is how professional tax is
+// usually stated: so many rupees a month for pay in this range.
+செயல் படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்) {
+    (வரிக்குரிய_தொகை <= 0) எனில் { திரும்பு 0; }
+
+    வரி_மொத்தம் = 0;
+    படி_எண் = 0;
+    எத்தனை = நீளம்(படிகள்);
+
+    (படி_எண் < எத்தனை) சுற்று {
+        இந்தப்_படி = படிகள்[படி_எண்];
+        தொடக்கம் = இந்தப்_படி["முதல்"];
+
+        // Where this band ends is where the next one starts.
+        (படி_எண் + 1 < எத்தனை) எனில் {
+            முடிவு = படிகள்[படி_எண் + 1]["முதல்"];
+        }
+        இன்றேல் {
+            முடிவு = வரிக்குரிய_தொகை;
+        }
+
+        (வரிக்குரிய_தொகை > தொடக்கம்) எனில் {
+            மேல்_எல்லை = முடிவு;
+            (வரிக்குரிய_தொகை < முடிவு) எனில் { மேல்_எல்லை = வரிக்குரிய_தொகை; }
+            இந்தப்_பகுதி = மேல்_எல்லை - தொடக்கம்;
+
+            // A band states either a rate on its own part, or a flat amount.
+            நிலையானது = புலம்_அல்லது(இந்தப்_படி, "நிலைத்_தொகை", 0);
+            (நிலையானது > 0) எனில் {
+                வரி_மொத்தம் = நிலையானது;
+            }
+            இன்றேல் {
+                விகிதம் = புலம்_அல்லது(இந்தப்_படி, "விகிதம்", 0);
+                வரி_மொத்தம் = வரி_மொத்தம் + சதவீதம்(இந்தப்_பகுதி, விகிதம்);
+            }
+        }
+        படி_எண் = படி_எண் + 1;
+    }
+    திரும்பு வட்டமிடு(வரி_மொத்தம், 2);
+}
+
+// --- gratuity -------------------------------------------------------------
+//
+// பணிக்கொடை(கடைசிச்_சம்பளம், பணி_ஆண்டுகள், மேல்_எண், கீழ்_எண், உச்ச_வரம்பு)
+//
+// The Payment of Gratuity Act states it as fifteen days' wages for each
+// completed year, on a month reckoned as twenty-six working days — so
+// last drawn × 15/26 × years. The fifteen and the twenty-six are passed rather
+// than written in, as is the statutory maximum: all three have been amended.
+//
+// Pass 0 as the maximum for none.
+செயல் பணிக்கொடை(கடைசிச்_சம்பளம், பணி_ஆண்டுகள், மேல்_எண், கீழ்_எண், உச்ச_வரம்பு) {
+    (கீழ்_எண் <= 0 அல்லது பணி_ஆண்டுகள் <= 0) எனில் { திரும்பு 0; }
+    கணக்கு = கடைசிச்_சம்பளம் * மேல்_எண் / கீழ்_எண் * பணி_ஆண்டுகள்;
+    விடை = வட்டமிடு(கணக்கு, 2);
+    (உச்ச_வரம்பு > 0 மற்றும் விடை > உச்ச_வரம்பு) எனில் { திரும்பு உச்ச_வரம்பு; }
+    திரும்பு விடை;
+}
+
+// --- the payslip ----------------------------------------------------------
+//
+// சம்பளச்_சீட்டு(கூறுகள், பிடித்தங்கள்)
+//
+// Answers {மொத்தம், பிடித்தம், கையில்}. Deliberately dull: it adds up what it
+// is given and subtracts what it is given. Deciding which deductions apply is
+// the caller's, because that decision is where the statute lives.
+செயல் சம்பளச்_சீட்டு(கூறுகள், பிடித்தங்கள்) {
+    மொத்தம் = மொத்தச்_சம்பளம்(கூறுகள்);
+    பிடித்தக்_கூட்டல் = மொத்தச்_சம்பளம்(பிடித்தங்கள்);
+    திரும்பு {"மொத்தம்": மொத்தம்,
+              "பிடித்தம்": பிடித்தக்_கூட்டல்,
+              "கையில்": வட்டமிடு(மொத்தம் - பிடித்தக்_கூட்டல், 2)};
+}

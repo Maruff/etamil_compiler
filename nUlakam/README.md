@@ -25,6 +25,9 @@ frameworks built on top of it.
 | `cawkili/fabric.qmz` | Hyperledger Fabric — `நுழைவு` `மதிப்பிடு` `சமர்ப்பி` `மீண்டும்_சமர்ப்பி` `மோதலா` |
 | `upi/vilAcam.qmz` | UPI addresses and pay links — `முகவரி_சரியா` `தொகை_சரியா` `தொகை_உரை` `பணம்_இணைப்பு` `இணைப்பைப்_படி` |
 | `upi/nilYmY.qmz` | UPI payment states — `பணம்_வந்ததா` `சரிபார்க்கவா` `நகர்வு_சரியா` `நகர்த்து` |
+| `kaNakkiyal/qEymAZam.qmz` | depreciation — `நேர்கோட்டு_ஆண்டு` `குறையும்_ஆண்டு` `பகுதி_ஆண்டு` `நேர்கோட்டு_அட்டவணை` `குறையும்_அட்டவணை` `தொகுதி_தேய்வு` |
+| `kaNakkiyal/Uqiyam.qmz` | payroll — `மொத்தச்_சம்பளம்` `நாட்களுக்கு_ஏற்ப` `வரம்புடன்_பங்களிப்பு` `தகுதிக்குள்_பங்களிப்பு` `படிநிலை_வரி` `பணிக்கொடை` `சம்பளச்_சீட்டு` |
+| `kaNakkiyal/vari_viziqam.qmz` | tax rates — `விகிதம்_தேடு` `படிகளை_ஏற்று` `படி_வரி_கணக்கிடு` `உள்_மாநிலமா` `மாநிலப்_பெயர்` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -245,3 +248,42 @@ from guesswork would produce something that looks finished and works against
 nothing. When you have the specification through an authorised channel, the
 pieces it needs — mutual TLS, ECDSA signing, JSON, a state machine — are all
 in place.
+
+## Depreciation, payroll, and where the rates live
+
+Three things worth knowing before using these.
+
+**A schedule closes exactly.** A depreciation charge rounded to the paisa and
+taken five times need not equal what is to be written off; the last year takes
+the remainder. An asset left with eight paise on the books never closes, the
+same way a loan does not.
+
+**A ceiling and an eligibility limit are not the same thing.** Provident fund
+contributes on wages *up to* a ceiling. Employees' state insurance contributes
+nothing at all above its limit — not a share of the limit. Treating one like
+the other takes a deduction from someone who owes none, and the test says so.
+
+**Slabs are marginal.** `படிநிலை_வரி` applies each band's rate only to the part
+of the amount inside it. Applying the top rate to the whole amount is what "I
+moved up a bracket and took home less" describes, and it is simply wrong. One
+engine serves income tax, professional tax and anything else stated in bands —
+including bands that carry a flat amount rather than a rate, which is how
+professional tax usually reads.
+
+### The rate tables
+
+`vari.qmz` computes a tax once you know the rate. `vari_viziqam.qmz` is where
+the rate comes from, and holds none: GST by HSN, TDS by section, income tax and
+professional tax as slabs, VAT where it survives — one effective-dated table,
+described in `vari_viziqam.sql`.
+
+**Every function takes the date it is being asked about, and none defaults it
+to today.** A return for last quarter is computed on the rates in force last
+quarter; a rate looked up "as of now" quietly rewrites what was filed. A state
+rule beats an all-India one, because that is what a state rule is for.
+
+**No rate is seeded. Not one.** What ships is the shape, and the 36 states and
+union territories with their GST codes — marked for checking, because a wrong
+state code files a return in the wrong state. A missing rate answers a `தவறு`
+rather than zero: a rate of nothing and no rate at all are different, and
+returning zero for the second understates a liability without saying so.

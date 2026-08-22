@@ -5196,6 +5196,245 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 182
   },
   {
+    "name": "நேர்கோட்டு_ஆண்டு",
+    "forms": [
+      "நேர்கோட்டு_ஆண்டு"
+    ],
+    "params": [
+      "கொள்முதல்_மதிப்பு",
+      "எஞ்சிய_மதிப்பு",
+      "பயன்_ஆண்டுகள்"
+    ],
+    "arity": 3,
+    "doc": "நேர்கோட்டு_ஆண்டு(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 30
+  },
+  {
+    "name": "நேர்கோட்டு_விகிதம்",
+    "forms": [
+      "நேர்கோட்டு_விகிதம்"
+    ],
+    "params": [
+      "கொள்முதல்_மதிப்பு",
+      "எஞ்சிய_மதிப்பு",
+      "பயன்_ஆண்டுகள்"
+    ],
+    "arity": 3,
+    "doc": "நேர்கோட்டு_விகிதம்(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 38
+  },
+  {
+    "name": "குறையும்_ஆண்டு",
+    "forms": [
+      "குறையும்_ஆண்டு"
+    ],
+    "params": [
+      "திறப்பு_மதிப்பு",
+      "ஆண்டு_விகிதம்",
+      "எஞ்சிய_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "குறையும்_ஆண்டு(திறப்பு_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 51
+  },
+  {
+    "name": "பகுதி_ஆண்டு",
+    "forms": [
+      "பகுதி_ஆண்டு"
+    ],
+    "params": [
+      "ஆண்டுத்_தொகை",
+      "வைத்திருந்த_நாட்கள்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "பகுதி_ஆண்டு(ஆண்டுத்_தொகை, வைத்திருந்த_நாட்கள், ஆண்டு_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 67
+  },
+  {
+    "name": "நேர்கோட்டு_அட்டவணை",
+    "forms": [
+      "நேர்கோட்டு_அட்டவணை"
+    ],
+    "params": [
+      "கொள்முதல்_மதிப்பு",
+      "எஞ்சிய_மதிப்பு",
+      "பயன்_ஆண்டுகள்"
+    ],
+    "arity": 3,
+    "doc": "நேர்கோட்டு_அட்டவணை(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 83
+  },
+  {
+    "name": "குறையும்_அட்டவணை",
+    "forms": [
+      "குறையும்_அட்டவணை"
+    ],
+    "params": [
+      "கொள்முதல்_மதிப்பு",
+      "ஆண்டு_விகிதம்",
+      "எஞ்சிய_மதிப்பு",
+      "எத்தனை_ஆண்டுகள்"
+    ],
+    "arity": 4,
+    "doc": "குறையும்_அட்டவணை(கொள்முதல்_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு, எத்தனை_ஆண்டுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 109
+  },
+  {
+    "name": "மொத்தத்_தேய்வு",
+    "forms": [
+      "மொத்தத்_தேய்வு"
+    ],
+    "params": [
+      "அட்டவணை"
+    ],
+    "arity": 1,
+    "doc": "மொத்தத்_தேய்வு(அட்டவணை) — everything written off across the schedule",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 128
+  },
+  {
+    "name": "தொகுதி_தேய்வு",
+    "forms": [
+      "தொகுதி_தேய்வு"
+    ],
+    "params": [
+      "திறப்பு_மதிப்பு",
+      "சேர்த்தவை",
+      "விற்றவை",
+      "ஆண்டு_விகிதம்",
+      "குறைந்த_நாட்கள்_சேர்ப்பு"
+    ],
+    "arity": 5,
+    "doc": "தொகுதி_தேய்வு(திறப்பு_மதிப்பு, சேர்த்தவை, விற்றவை, ஆண்டு_விகிதம்,",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/qEymAZam.qmz",
+    "line": 152
+  },
+  {
+    "name": "மொத்தச்_சம்பளம்",
+    "forms": [
+      "மொத்தச்_சம்பளம்"
+    ],
+    "params": [
+      "கூறுகள்"
+    ],
+    "arity": 1,
+    "doc": "மொத்தச்_சம்பளம்(கூறுகள்) — the components added up",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 27
+  },
+  {
+    "name": "நாட்களுக்கு_ஏற்ப",
+    "forms": [
+      "நாட்களுக்கு_ஏற்ப"
+    ],
+    "params": [
+      "தொகை_மதிப்பு",
+      "ஊதிய_நாட்கள்",
+      "மாத_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "நாட்களுக்கு_ஏற்ப(தொகை_மதிப்பு, ஊதிய_நாட்கள், மாத_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 40
+  },
+  {
+    "name": "வரம்புடன்_பங்களிப்பு",
+    "forms": [
+      "வரம்புடன்_பங்களிப்பு"
+    ],
+    "params": [
+      "பங்களிப்பு_ஊதியம்",
+      "விகிதம்",
+      "உச்ச_வரம்பு"
+    ],
+    "arity": 3,
+    "doc": "வரம்புடன்_பங்களிப்பு(பங்களிப்பு_ஊதியம், விகிதம், உச்ச_வரம்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 54
+  },
+  {
+    "name": "தகுதிக்குள்_பங்களிப்பு",
+    "forms": [
+      "தகுதிக்குள்_பங்களிப்பு"
+    ],
+    "params": [
+      "மொத்தத்_தொகை",
+      "விகிதம்",
+      "தகுதி_எல்லை"
+    ],
+    "arity": 3,
+    "doc": "தகுதிக்குள்_பங்களிப்பு(மொத்தம், விகிதம், தகுதி_எல்லை)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 68
+  },
+  {
+    "name": "படிநிலை_வரி",
+    "forms": [
+      "படிநிலை_வரி"
+    ],
+    "params": [
+      "வரிக்குரிய_தொகை",
+      "படிகள்"
+    ],
+    "arity": 2,
+    "doc": "படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 92
+  },
+  {
+    "name": "பணிக்கொடை",
+    "forms": [
+      "பணிக்கொடை"
+    ],
+    "params": [
+      "கடைசிச்_சம்பளம்",
+      "பணி_ஆண்டுகள்",
+      "மேல்_எண்",
+      "கீழ்_எண்",
+      "உச்ச_வரம்பு"
+    ],
+    "arity": 5,
+    "doc": "பணிக்கொடை(கடைசிச்_சம்பளம், பணி_ஆண்டுகள், மேல்_எண், கீழ்_எண், உச்ச_வரம்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 141
+  },
+  {
+    "name": "சம்பளச்_சீட்டு",
+    "forms": [
+      "சம்பளச்_சீட்டு"
+    ],
+    "params": [
+      "கூறுகள்",
+      "பிடித்தங்கள்"
+    ],
+    "arity": 2,
+    "doc": "சம்பளச்_சீட்டு(கூறுகள், பிடித்தங்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 156
+  },
+  {
     "name": "வரி_விகிதம்_ஆக்கு",
     "forms": [
       "வரி_விகிதம்_ஆக்கு"
@@ -5472,6 +5711,111 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kaNakkiyal/vari.qmz",
     "line": 166
+  },
+  {
+    "name": "விகிதம்_தேடு",
+    "forms": [
+      "விகிதம்_தேடு"
+    ],
+    "params": [
+      "வரி_வகை",
+      "குறியீட்டெண்",
+      "மாநிலக்_குறி",
+      "நாள்"
+    ],
+    "arity": 4,
+    "doc": "விகிதம்_தேடு(வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 28
+  },
+  {
+    "name": "படிகளை_ஏற்று",
+    "forms": [
+      "படிகளை_ஏற்று"
+    ],
+    "params": [
+      "வரி_வகை",
+      "மாநிலக்_குறி",
+      "நாள்"
+    ],
+    "arity": 3,
+    "doc": "படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 53
+  },
+  {
+    "name": "படி_வரி_கணக்கிடு",
+    "forms": [
+      "படி_வரி_கணக்கிடு"
+    ],
+    "params": [
+      "வரி_வகை",
+      "மாநிலக்_குறி",
+      "நாள்",
+      "வரிக்குரிய_தொகை"
+    ],
+    "arity": 4,
+    "doc": "படி_வரி_கணக்கிடு(வரி_வகை, மாநிலக்_குறி, நாள், வரிக்குரிய_தொகை)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 82
+  },
+  {
+    "name": "உள்_மாநிலமா",
+    "forms": [
+      "உள்_மாநிலமா"
+    ],
+    "params": [
+      "விற்பனையாளர்_மாநிலம்",
+      "வாங்குபவர்_மாநிலம்"
+    ],
+    "arity": 2,
+    "doc": "உள்_மாநிலமா(விற்பனையாளர்_மாநிலம், வாங்குபவர்_மாநிலம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 97
+  },
+  {
+    "name": "மாநிலப்_பெயர்",
+    "forms": [
+      "மாநிலப்_பெயர்"
+    ],
+    "params": [
+      "மாநிலக்_குறி"
+    ],
+    "arity": 1,
+    "doc": "மாநிலப்_பெயர்(மாநிலக்_குறி) — the state a GST code names",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 102
+  },
+  {
+    "name": "மாநிலங்கள்",
+    "forms": [
+      "மாநிலங்கள்"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "மாநிலங்கள்() — every state and union territory on record",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 109
+  },
+  {
+    "name": "சரிபார்க்கப்படாத_விகிதங்கள்",
+    "forms": [
+      "சரிபார்க்கப்படாத_விகிதங்கள்"
+    ],
+    "params": [
+      "நாள்"
+    ],
+    "arity": 1,
+    "doc": "சரிபார்க்கப்படாத_விகிதங்கள்(நாள்) — rates whose source still says otherwise",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "line": 120
   },
   {
     "name": "முழுமதிப்பு",
