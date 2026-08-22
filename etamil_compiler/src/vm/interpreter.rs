@@ -2,12 +2,19 @@
 // Executes bytecode independently without compilation
 
 use std::collections::HashMap;
+// Direct filesystem access survives only in the package and archive helpers,
+// which hand a File to the zip crate and are gated out of a wasm build.
+// Everything else goes through vm::host, so the VM can run in a browser and be
+// tested without touching a disk.
+#[cfg(not(target_family = "wasm"))]
 use std::fs;
-use std::fs::OpenOptions;
+// Only reached from package_copy, which a wasm build gates out.
+#[cfg(not(target_family = "wasm"))]
 use std::io::Write as IoWrite;
 use rust_decimal::Decimal;
 use std::str::FromStr;
 use unicode_segmentation::UnicodeSegmentation;
+use crate::vm::host;
 use crate::vm::{Value, Instruction, Bytecode};
 
 /// Split text the way a reader would: by written letter. A Tamil letter is
@@ -562,7 +569,7 @@ impl VM {
                 Self::expect_args(name, &args, 2)?;
                 let filename = args[0].to_string();
                 let content = args[1].to_string();
-                match fs::write(&filename, &content) {
+                match host::write(&filename, content.as_bytes()) {
                     Ok(()) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(
                         content.len(),
                     ))))),
@@ -699,7 +706,7 @@ impl VM {
                 let path = args[1].to_string();
                 let found = wanted.and_then(|index| self.uploads.get(index));
                 match found {
-                    Some(upload) => match fs::write(&path, &upload.data) {
+                    Some(upload) => match host::write(&path, &upload.data) {
                         Ok(()) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(
                             upload.data.len(),
                         ))))),
@@ -772,10 +779,10 @@ impl VM {
                     .unwrap_or(1);
                 // Exiting does not unwind, so anything still buffered would be
                 // lost — including the summary line that explains the status.
-                use std::io::Write as _;
-                let _ = std::io::stdout().flush();
-                let _ = std::io::stderr().flush();
-                std::process::exit(status);
+                host::exit(status)?;
+                // Native `exit` never returns; the browser host has no process
+                // to end, so a zero status falls through and carries on.
+                return Ok(Value::Ok(Box::new(Value::Number(Decimal::from(status)))));
             }
 
             // --- Signing with a key only one side holds ---------------------
@@ -1423,6 +1430,7 @@ impl VM {
     ///
     /// The arguments are handed over as a list. No shell sees them, so a
     /// document title full of semicolons is a title and not a second command.
+    #[cfg(not(target_family = "wasm"))]
     fn run_program(
         program: &str,
         parameters: &[String],
@@ -1519,7 +1527,50 @@ impl VM {
         })
     }
 
+    // --- Browser twins ------------------------------------------------------
+    //
+    // These three want a subprocess or a `File` handed to the zip crate, and a
+    // browser has neither. Their callers are match arms scattered through
+    // `execute`; giving each a same-signature twin that fails at runtime keeps
+    // every one of those call sites untouched, which is the whole reason the
+    // VM compiles for wasm without `#[cfg]` sprinkled through its body.
+
+    #[cfg(target_family = "wasm")]
+    fn run_program(
+        program: &str,
+        _parameters: &[String],
+        _seconds: u64,
+    ) -> Result<(i64, String, String), String> {
+        Err(format!(
+            "'{}' உலாவியில் இயக்க முடியாது  (cannot run '{}' in the browser)",
+            program, program
+        ))
+    }
+
+    #[cfg(target_family = "wasm")]
+    fn package_entry(path: &str, _entry: &str) -> Result<String, String> {
+        Err(format!(
+            "பொதி '{}' உலாவியில் திறக்க முடியாது  \
+             (packages cannot be opened in the browser: '{}')",
+            path, path
+        ))
+    }
+
+    #[cfg(target_family = "wasm")]
+    fn package_copy(
+        source: &str,
+        _target: &str,
+        _changes: &HashMap<String, String>,
+    ) -> Result<usize, String> {
+        Err(format!(
+            "பொதி '{}' உலாவியில் எழுத முடியாது  \
+             (packages cannot be written in the browser: '{}')",
+            source, source
+        ))
+    }
+
     /// One entry of a zip package, decoded as UTF-8.
+    #[cfg(not(target_family = "wasm"))]
     fn package_entry(path: &str, entry: &str) -> Result<String, String> {
         let file = fs::File::open(path).map_err(|e| {
             format!(
@@ -1549,6 +1600,7 @@ impl VM {
     /// Two rules the ODF format imposes, and this keeps: `mimetype` comes first
     /// and stays uncompressed, and every entry not being replaced is copied
     /// without being decompressed, so a picture arrives unchanged.
+    #[cfg(not(target_family = "wasm"))]
     fn package_copy(
         source: &str,
         target: &str,
@@ -1639,17 +1691,39 @@ impl VM {
     }
 
     fn append_line(filename: &str, data: &str) -> Result<(), String> {
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(filename)
-            .map_err(|e| format!("கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}", filename, filename, e))?;
-        writeln!(file, "{}", data)
-            .map_err(|e| format!("கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}", filename, filename, e))
+        host::append_line(filename, data).map_err(|e| {
+            format!("கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}", filename, filename, e)
+        })
     }
 
     pub fn execute(&mut self, bytecode: Bytecode) -> Result<(), String> {
+        self.run(bytecode, None)
+    }
+
+    /// Execute, but give up after `max_steps` instructions.
+    ///
+    /// A browser tab cannot interrupt a `சுற்று` whose condition never goes
+    /// false: the page simply stops responding, with no stack to look at and
+    /// nothing to click. A ceiling turns that into an error message. Native
+    /// callers use `execute`, which has no ceiling -- a long-running report is
+    /// a legitimate thing for a server to do.
+    pub fn execute_limited(&mut self, bytecode: Bytecode, max_steps: u64) -> Result<(), String> {
+        self.run(bytecode, Some(max_steps))
+    }
+
+    fn run(&mut self, bytecode: Bytecode, max_steps: Option<u64>) -> Result<(), String> {
+        let mut steps: u64 = 0;
         while self.instruction_pointer < bytecode.instructions.len() {
+            if let Some(limit) = max_steps {
+                steps += 1;
+                if steps > limit {
+                    return Err(format!(
+                        "நிரல் {} செயல்முறைகளுக்குப் பிறகும் முடியவில்லை — முடிவில்லாத சுற்று?  \
+                         (the program was still running after {} instructions — an endless loop?)",
+                        limit, limit
+                    ));
+                }
+            }
             let instruction = bytecode.instructions[self.instruction_pointer].clone();
             
             match instruction {
@@ -1760,13 +1834,11 @@ impl VM {
                 }
                 Instruction::Print => {
                     if let Some(value) = self.stack.pop() {
-                        println!("{}", value.to_string());
+                        host::print_line(&value.to_string());
                     }
                 }
                 Instruction::Input => {
-                    let mut input = String::new();
-                    std::io::stdin().read_line(&mut input)
-                        .map_err(|e| e.to_string())?;
+                    let input = host::read_line()?;
                     self.stack.push(Value::String(input.trim().to_string()));
                 }
                 Instruction::JumpIfFalse(target) => {
@@ -1800,7 +1872,7 @@ impl VM {
                     // Opening for writing truncates once; later writes append,
                     // so a sequence of writes reads back in order.
                     if mode == "write" {
-                        fs::write(&filename, "")
+                        host::write(&filename, b"")
                             .map_err(|e| format!("கோப்பு '{}' திறக்க முடியவில்லை  (cannot open '{}' for writing): {}", filename, filename, e))?;
                     }
                     self.file_modes.insert(filename, mode);
@@ -1816,13 +1888,13 @@ impl VM {
                 }
                 Instruction::FileRead => {
                     let filename = self.pop()?.to_string();
-                    let contents = fs::read_to_string(&filename)
+                    let contents = host::read_to_string(&filename)
                         .map_err(|e| format!("கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}", filename, filename, e))?;
                     self.stack.push(Value::String(contents.trim_end_matches('\n').to_string()));
                 }
                 Instruction::ReadCSV => {
                     let filename = self.pop()?.to_string();
-                    let contents = fs::read_to_string(&filename)
+                    let contents = host::read_to_string(&filename)
                         .map_err(|e| format!("கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}", filename, filename, e))?;
                     // Count data rows, excluding the header line.
                     let rows = contents.lines().filter(|l| !l.trim().is_empty()).count();

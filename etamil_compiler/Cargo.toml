@@ -154,6 +154,18 @@ getrandom = "0.3"
 # front end: logos, rust_decimal, serde and this.
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen = "0.2"
+# `signing` is real ECDSA over P-256, and that works perfectly well in a
+# browser -- stubbing it would mean returning key pairs that are not keys. So
+# it is carried rather than gated.
+p256 = { version = "0.14.0", features = ["ecdsa"] }
+# Two entries for one crate, and both are needed. getrandom refuses to build
+# for wasm32-unknown-unknown unless told which backend to use, and the tree
+# holds two incompatible majors: 0.3, which signing.rs calls by name, and 0.4,
+# which p256 pulls in through rand_core. A feature can only be enabled on a
+# direct dependency, so the second is declared under a different name purely to
+# switch `wasm_js` on for the copy that would otherwise fail the build.
+getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom_v04 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
 
 [features]
 # Optional LLVM code generation (not available on Windows)
