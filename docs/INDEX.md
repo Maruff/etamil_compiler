@@ -1,5 +1,7 @@
 # eTamil Documentation
 
+**Resuming work?** Read [CONTINUATION.md](CONTINUATION.md) first — state, what is deliberately unfinished, and the traps that cost time.
+
 Start with the [README](../README.md) for what eTamil is and which parts of it run today, then pick a page below.
 
 ## Getting started
