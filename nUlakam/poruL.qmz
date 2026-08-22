@@ -1,0 +1,58 @@
+// nUlakam/poruL.qmz — பொருள் (record) helpers
+//
+// Indexing a record by a field it does not have is an error, which is right
+// for a field a program expects and wrong for one it merely allows. A query
+// string with no `status` in it is an ordinary request, not a fault, and an
+// HTTP handler that crashes on the absence of an optional parameter is
+// unusable — so reading one needs a way to say "or this instead".
+//
+// ஒவ்வொரு over a record yields its field names, so all of this is ordinary
+// eTamil. Nothing here needs the host.
+//
+// The parameter is named பதிவேடு rather than the plainer பொருள் because that
+// word is the record type keyword and is hard reserved — it cannot be a name.
+
+// புலம்_உள்ளதா(பதிவேடு, பெயர்) — does the record carry this field?
+செயல் புலம்_உள்ளதா(பதிவேடு, பெயர்) {
+    ஒவ்வொரு புலப்_பெயர் இல் பதிவேடு {
+        (புலப்_பெயர் == பெயர்) எனில் { திரும்பு மெய்; }
+    }
+    திரும்பு பொய்;
+}
+
+// புலம்_அல்லது(பதிவேடு, பெயர், மாற்று_மதிப்பு) — the field, or a fallback
+//
+// The workhorse: query_params, path_params, headers and a decoded JSON body
+// are all records whose contents depend on what someone sent.
+செயல் புலம்_அல்லது(பதிவேடு, பெயர், மாற்று_மதிப்பு) {
+    (புலம்_உள்ளதா(பதிவேடு, பெயர்)) எனில் {
+        திரும்பு பதிவேடு[பெயர்];
+    }
+    திரும்பு மாற்று_மதிப்பு;
+}
+
+// புலங்கள்(பதிவேடு) — the field names, as an array
+செயல் புலங்கள்(பதிவேடு) {
+    விடை = [];
+    ஒவ்வொரு புலப்_பெயர் இல் பதிவேடு {
+        விடை = இணை(விடை, புலப்_பெயர்);
+    }
+    திரும்பு விடை;
+}
+
+// மதிப்பீடுகள்(பதிவேடு) — the values, in the same order as புலங்கள்
+//
+// Not மதிப்புகள்: மதிப்பு is the builtin that opens a result, and a name
+// that close to it reads as though this were the plural of that.
+செயல் மதிப்பீடுகள்(பதிவேடு) {
+    விடை = [];
+    ஒவ்வொரு புலப்_பெயர் இல் பதிவேடு {
+        விடை = இணை(விடை, பதிவேடு[புலப்_பெயர்]);
+    }
+    திரும்பு விடை;
+}
+
+// காலியா_பதிவேடு(பதிவேடு) — no fields at all?
+செயல் காலியா_பதிவேடு(பதிவேடு) {
+    திரும்பு நீளம்(பதிவேடு) == 0;
+}

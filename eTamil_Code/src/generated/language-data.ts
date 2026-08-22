@@ -5449,6 +5449,79 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/paNam.qmz",
     "line": 66
+  },
+  {
+    "name": "புலம்_உள்ளதா",
+    "forms": [
+      "புலம்_உள்ளதா"
+    ],
+    "params": [
+      "பதிவேடு",
+      "பெயர்"
+    ],
+    "arity": 2,
+    "doc": "புலம்_உள்ளதா(பதிவேடு, பெயர்) — does the record carry this field?",
+    "kind": "stdlib",
+    "module": "nUlakam/poruL.qmz",
+    "line": 16
+  },
+  {
+    "name": "புலம்_அல்லது",
+    "forms": [
+      "புலம்_அல்லது"
+    ],
+    "params": [
+      "பதிவேடு",
+      "பெயர்",
+      "மாற்று_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "புலம்_அல்லது(பதிவேடு, பெயர், மாற்று_மதிப்பு) — the field, or a fallback",
+    "kind": "stdlib",
+    "module": "nUlakam/poruL.qmz",
+    "line": 27
+  },
+  {
+    "name": "புலங்கள்",
+    "forms": [
+      "புலங்கள்"
+    ],
+    "params": [
+      "பதிவேடு"
+    ],
+    "arity": 1,
+    "doc": "புலங்கள்(பதிவேடு) — the field names, as an array",
+    "kind": "stdlib",
+    "module": "nUlakam/poruL.qmz",
+    "line": 35
+  },
+  {
+    "name": "மதிப்பீடுகள்",
+    "forms": [
+      "மதிப்பீடுகள்"
+    ],
+    "params": [
+      "பதிவேடு"
+    ],
+    "arity": 1,
+    "doc": "மதிப்பீடுகள்(பதிவேடு) — the values, in the same order as புலங்கள்",
+    "kind": "stdlib",
+    "module": "nUlakam/poruL.qmz",
+    "line": 47
+  },
+  {
+    "name": "காலியா_பதிவேடு",
+    "forms": [
+      "காலியா_பதிவேடு"
+    ],
+    "params": [
+      "பதிவேடு"
+    ],
+    "arity": 1,
+    "doc": "காலியா_பதிவேடு(பதிவேடு) — no fields at all?",
+    "kind": "stdlib",
+    "module": "nUlakam/poruL.qmz",
+    "line": 56
   }
 ];
 
