@@ -28,6 +28,7 @@ frameworks built on top of it.
 | `kaNakkiyal/qEymAZam.qmz` | depreciation — `நேர்கோட்டு_ஆண்டு` `குறையும்_ஆண்டு` `பகுதி_ஆண்டு` `நேர்கோட்டு_அட்டவணை` `குறையும்_அட்டவணை` `தொகுதி_தேய்வு` |
 | `kaNakkiyal/Uqiyam.qmz` | payroll — `மொத்தச்_சம்பளம்` `நாட்களுக்கு_ஏற்ப` `வரம்புடன்_பங்களிப்பு` `தகுதிக்குள்_பங்களிப்பு` `படிநிலை_வரி` `பணிக்கொடை` `சம்பளச்_சீட்டு` |
 | `kaNakkiyal/vari_viziqam.qmz` | tax rates — `விகிதம்_தேடு` `படிகளை_ஏற்று` `படி_வரி_கணக்கிடு` `உள்_மாநிலமா` `மாநிலப்_பெயர்` |
+| `qaLam/retis.qmz` | Redis — `சேமி` `காலத்துடன்_சேமி` `எடு` `இருக்கிறதா` `நீக்கு` `ஒன்று_கூட்டு` `முன்_சேர்` `வரிசைப்_பகுதி` `இல்லையெனில்_இயல்பு` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -287,3 +288,39 @@ union territories with their GST codes — marked for checking, because a wrong
 state code files a return in the wrong state. A missing rate answers a `தவறு`
 rather than zero: a rate of nothing and no rate at all are different, and
 returning zero for the second understates a liability without saying so.
+
+## Redis is a command, not a query
+
+The roadmap said Redis needed a design before an implementation, because it
+does not fit a trait shaped as `execute(sql)` / `query(sql)`. It does not, and
+forcing it there would have been the wrong answer: Redis is a command and a
+reply, not a query language.
+
+So the host gives exactly one thing — `ரெடிஸ்_கட்டளை(command, arguments)` —
+and every Redis command works through it, including ones invented after it was
+written. `qaLam/retis.qmz` wraps the handful anybody types.
+
+RESP is implemented in the compiler rather than taken from a crate, for the
+same reason the HTTP router was: the protocol is small and a dependency
+carrying an async runtime to send `*2
+$3
+GET
+$1
+k
+`
+down a socket is a poor trade.
+
+Two things it gets right that are easy to get wrong. **Arguments are
+length-prefixed**, so a value containing CRLF is bytes rather than a second
+command — joining arguments with spaces is how command injection works, and it
+is not reachable through this. And **a missing key is nil, not `""`**: for a
+cache, "absent" and "present and empty" are different questions, and
+`வகை(x) == "nil"` tells them apart.
+
+A connection is not shared between requests. Redis keeps state on one — MULTI,
+WATCH, SUBSCRIBE — so two requests sharing a connection would interleave a
+transaction the way two sharing a SQL connection do. The fix is an exclusive
+lease, which the SQL side has and this does not yet.
+
+`retis_pOli.py` is a small mock Redis, so the suite runs on a machine with none
+installed.

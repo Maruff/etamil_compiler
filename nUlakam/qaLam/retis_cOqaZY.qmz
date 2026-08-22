@@ -1,0 +1,121 @@
+// ரெடிஸ் சோதனை — the client, against a server
+//
+//   python nUlakam/qaLam/retis_pOli.py 6399 &
+//   ETAMIL_REDIS=127.0.0.1:6399 etamil --vm nUlakam/qaLam/retis_cOqaZY.qmz
+//
+// Without ETAMIL_REDIS it says so and exits 0: a machine with no Redis is not
+// a failing machine. The protocol itself is tested in Rust, where every reply
+// shape and every truncation can be fed in directly; this checks that the
+// whole path works against something that answers.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "retis.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("ரெடிஸ்");
+
+// --- what needs no server -------------------------------------------------
+//
+// A command before connecting is a தவறு, not a crash, and it says what to do.
+சொல்லாமல் = ரெடிஸ்_கட்டளை("PING", []);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(சொல்லாமல்),
+                    "a command with no connection is refused, not attempted");
+
+தொலைவு = ரெடிஸ்_இணை("127.0.0.1:1");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொலைவு),
+                    "and a server that is not there is a தவறு, not a hang");
+
+முகவரி_சூழல் = சூழல்("ETAMIL_REDIS", "");
+
+(முகவரி_சூழல் == "") எனில் {
+    அச்சு "";
+    அச்சு "  (ETAMIL_REDIS is not set, so the server tests are skipped)";
+}
+இன்றேல் {
+
+இணைப்பு = ரெடிஸ்_இணை(முகவரி_சூழல்);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(இணைப்பு), "it connects");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(உயிர்ப்பா()), "PONG", "and answers a ping");
+
+// --- writing and reading --------------------------------------------------
+நீக்கு("etamil:சோதனை");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(சேமி("etamil:சோதனை", "வணக்கம்")), "OK",
+              "a value is written");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(எடு("etamil:சோதனை")), "வணக்கம்",
+              "and reads back — Tamil included, because the length is in bytes");
+
+// The distinction a cache lives or dies by.
+காணாத = எடு("etamil:இல்லாதது");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(காணாத),
+                    "a miss is a successful read, not a failure");
+ஓட்டம் = சமம்(ஓட்டம், வகை(மதிப்பு(காணாத)), "nil",
+              "and answers nil — the key is absent");
+
+சேமி("etamil:காலி", "");
+ஓட்டம் = சமம்(ஓட்டம், வகை(மதிப்பு(எடு("etamil:காலி"))), "a string",
+              "whereas a key holding nothing is a string, not nil");
+
+// --- a value the protocol could have broken -------------------------------
+//
+// Length-prefixed, so the delimiter inside a value is just bytes. Joining
+// arguments with spaces is how command injection works, and it is not
+// possible through ரெடிஸ்_கட்டளை.
+ஆபத்து = "a\r\nDEL etamil:சோதனை\r\n";
+சேமி("etamil:ஆபத்து", ஆபத்து);
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(எடு("etamil:ஆபத்து")), ஆபத்து,
+              "a value containing the protocol's own delimiters survives");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(எடு("etamil:சோதனை")), "வணக்கம்",
+              "and did not smuggle a DEL past the server");
+
+// --- counting -------------------------------------------------------------
+நீக்கு("etamil:எண்ணிக்கை");
+ஒன்று_கூட்டு("etamil:எண்ணிக்கை");
+இரண்டாவது = ஒன்று_கூட்டு("etamil:எண்ணிக்கை");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இரண்டாவது), 2,
+              "INCR answers a number, so it can be added to without parsing");
+
+// --- existence and removal ------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மதிப்பு(இருக்கிறதா("etamil:சோதனை")),
+                    "a key that was written exists");
+நீக்கு("etamil:சோதனை");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மதிப்பு(இருக்கிறதா("etamil:சோதனை")) == பொய்,
+                    "and does not once it is deleted");
+
+// --- lists ----------------------------------------------------------------
+நீக்கு("etamil:வரிசை");
+முன்_சேர்("etamil:வரிசை", "ஒன்று");
+முன்_சேர்("etamil:வரிசை", "இரண்டு");
+பட்டியல் = மதிப்பு(வரிசைப்_பகுதி("etamil:வரிசை", 0, 0 - 1));
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(பட்டியல்), 2, "an array reply becomes an array");
+ஓட்டம் = சமம்(ஓட்டம், பட்டியல்[0], "இரண்டு", "and LPUSH put the last one first");
+
+// --- what the server refuses ----------------------------------------------
+தெரியாதது = ரெடிஸ்_கட்டளை("NOSUCHCOMMAND", []);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தெரியாதது),
+                    "a command the server rejects is a தவறு");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கொண்டுள்ளதா_எளிது(தவறு_மதிப்பு(தெரியாதது), "unknown command"),
+                    "carrying what the server actually said");
+
+// --- the fallback pattern -------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், இல்லையெனில்_இயல்பு("etamil:இல்லாதது", "கணக்கிடு"), "கணக்கிடு",
+              "a miss falls back rather than failing");
+சேமி("etamil:உள்ளது", "தேக்கப்பட்டது");
+ஓட்டம் = சமம்(ஓட்டம், இல்லையெனில்_இயல்பு("etamil:உள்ளது", "கணக்கிடு"), "தேக்கப்பட்டது",
+              "and a hit is used");
+
+// Tidy up after ourselves.
+நீக்கு("etamil:காலி");
+நீக்கு("etamil:ஆபத்து");
+நீக்கு("etamil:எண்ணிக்கை");
+நீக்கு("etamil:வரிசை");
+நீக்கு("etamil:உள்ளது");
+ரெடிஸ்_பிரி();
+
+}
+
+செயல் கொண்டுள்ளதா_எளிது(பாடம், தேடல்) {
+    திரும்பு நீளம்(பிரி(சொல்லாக்கு(பாடம்), தேடல்)) > 1;
+}
+
+சோதனை_முடிவு(ஓட்டம்);
