@@ -38,6 +38,7 @@ fn print_help() {
     println!("OPTIONS:");
     println!("    --vm               Run on the bytecode VM (default)");
     println!("    --check            Lex, parse and type check only — never runs the program");
+    println!("    --repl             Interactive shell: type an expression, see what it comes to");
     println!("    --server           Start the synchronous HTTP server");
     println!("    --async            Concurrent server: async accept, blocking handlers");
     println!("                       இடைவெளி blocks run on a timer under either server");
@@ -52,6 +53,7 @@ fn print_help() {
     println!("    echo \"950000\" | etamil --vm examples/basic_samples/example.qmz");
     println!("    etamil --server --port 8080 examples/backend/hello_server.qmz");
     println!("    cat program.qmz | etamil --check     # errors only, nothing runs");
+    println!("    etamil --repl                        # try something without a file");
 }
 
 /// `--check`: report every error the front end can find, and run nothing.
@@ -95,6 +97,7 @@ fn main() {
     let mut use_http_server = false;
     let mut use_async_server = false;  // Backend milestone 2: New async server flag
     let mut check_only_mode = false;
+    let mut repl_mode = false;
     let mut server_host = "127.0.0.1".to_string();
     let mut server_port = 8080u16;
     let mut filename = None;
@@ -105,6 +108,7 @@ fn main() {
             "--llvm" => use_vm = false,
             "--vm" => use_vm = true,
             "--check" => check_only_mode = true,
+            "--repl" => repl_mode = true,
             "--server" => use_http_server = true,
             "--async" => use_async_server = true,  // Backend milestone 2: Async server mode
             "--host" => {
@@ -154,6 +158,11 @@ fn main() {
         i += 1;
     }
     
+    // Before anything asks for a file: in the shell, the typing is the program.
+    if repl_mode {
+        etamil_compiler::repl::run();
+    }
+
     // 1-3. Load, lex, parse, and resolve any இறக்கு imports.
     let loaded = match &filename {
         Some(fname) => module::load_file(Path::new(fname)),
