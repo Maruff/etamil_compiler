@@ -122,14 +122,6 @@ pub extern "C" fn etamil_number(text: *const c_char) -> i64 {
     }
 }
 
-/// A number from a machine integer, for counters the IR generates itself
-/// rather than reads from the program — a `ஒவ்வொரு` loop's position, mainly.
-/// No text to parse, because there is no literal to be faithful to.
-#[unsafe(no_mangle)]
-pub extern "C" fn etamil_from_int(value: i64) -> i64 {
-    put(Value::Number(rust_decimal::Decimal::from(value)))
-}
-
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_text(text: *const c_char) -> i64 {
     let text = unsafe { borrow_str(text) };
@@ -390,16 +382,32 @@ pub extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) {
     })
 }
 
-/// How many items a `ஒவ்வொரு` has to walk. Separate from the `நீளம்` builtin
-/// only because the loop needs a plain integer to compare against, not a
-/// handle.
+/// How many times a `ஒவ்வொரு` goes round. Separate from the `நீளம்` builtin
+/// only because the loop needs a plain integer to compare against rather than
+/// a handle — the rule for *what* it counts is the VM's.
+///
+/// That rule is not the obvious one. A string counts its Tamil letters, and a
+/// letter is a cluster, so it is not the same number as its chars.
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_count(value: i64) -> i64 {
-    match get(value) {
-        Value::Array(items) => items.len() as i64,
-        Value::Map(fields) => fields.len() as i64,
-        Value::String(text) => text.chars().count() as i64,
-        _ => fail("ஒவ்வொரு க்கு ஒரு அணி தேவை  (for-each needs an array)"),
+    match VM::length_of(&get(value)) {
+        Ok(count) => count as i64,
+        Err(why) => fail(&why),
+    }
+}
+
+/// What a `ஒவ்வொரு` binds on each turn, through the VM's own `nth_or_key`.
+///
+/// Not indexing. A record yields its **keys**, sorted, and a string yields one
+/// letter — indexing a record with a number would fail instead, which is what
+/// this backend did before the rule was read out of the interpreter rather than
+/// guessed at.
+#[unsafe(no_mangle)]
+pub extern "C" fn etamil_nth_or_key(base: i64, position: i64) -> i64 {
+    let index = Value::Number(rust_decimal::Decimal::from(position));
+    match VM::nth_or_key(&get(base), &index) {
+        Ok(value) => put(value),
+        Err(why) => fail(&why),
     }
 }
 
@@ -570,17 +578,6 @@ mod tests {
     }
 
     #[test]
-    fn a_loop_counter_becomes_a_number_without_going_through_text() {
-        assert_eq!(shown(etamil_from_int(0)), "0");
-        assert_eq!(shown(etamil_from_int(-7)), "-7");
-        // And it indexes, which is the only reason it exists.
-        let array = etamil_array();
-        etamil_array_push(array, text("அ"));
-        etamil_array_push(array, text("ஆ"));
-        assert_eq!(shown(etamil_index(array, etamil_from_int(1))), "ஆ");
-    }
-
-    #[test]
     fn indexing_goes_through_the_vms_own_index_of() {
         let array = etamil_array();
         etamil_array_push(array, number("10"));
@@ -600,6 +597,34 @@ mod tests {
     }
 
     // --- builtins, through the interpreter's dispatch ---------------------
+
+    #[test]
+    fn for_each_walks_what_the_vm_walks() {
+        // An array yields its items.
+        let array = etamil_array();
+        etamil_array_push(array, number("10"));
+        etamil_array_push(array, number("20"));
+        assert_eq!(etamil_count(array), 2);
+        assert_eq!(shown(etamil_nth_or_key(array, 1)), "20");
+
+        // A record yields its KEYS, sorted — not its values. Indexing it with a
+        // number, which is what this backend did first, fails instead.
+        let record = etamil_record();
+        let b = std::ffi::CString::new("ஆ").unwrap();
+        let a = std::ffi::CString::new("அ").unwrap();
+        etamil_record_put(record, b.as_ptr(), number("2"));
+        etamil_record_put(record, a.as_ptr(), number("1"));
+        assert_eq!(etamil_count(record), 2);
+        assert_eq!(shown(etamil_nth_or_key(record, 0)), "அ");
+        assert_eq!(shown(etamil_nth_or_key(record, 1)), "ஆ");
+
+        // A string yields Tamil letters, and a letter is a cluster: "வணக்கம்"
+        // is five letters and rather more chars than that.
+        let greeting = text("வணக்கம்");
+        assert_eq!(etamil_count(greeting), 5);
+        assert_eq!(shown(etamil_nth_or_key(greeting, 0)), "வ");
+        assert_eq!(shown(etamil_nth_or_key(greeting, 1)), "ண");
+    }
 
     #[test]
     fn a_builtin_is_the_interpreters_builtin() {

@@ -643,8 +643,10 @@ impl Compiler {
                 position,
                 CString::new("at").unwrap().as_ptr(),
             );
-            let index = self.call_values("etamil_from_int", &mut [at]);
-            let item = self.call_values("etamil_index", &mut [items, index]);
+            // `nth_or_key`, not indexing: a record yields its sorted keys and a
+            // string yields one Tamil letter, which is what the VM's `ஒவ்வொரு`
+            // binds. Indexing a record with a number would just fail.
+            let item = self.call_values("etamil_nth_or_key", &mut [items, at]);
             let slot = self.storage_for(variable);
             LLVMBuildStore(self.builder, item, slot);
 

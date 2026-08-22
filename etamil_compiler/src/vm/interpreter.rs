@@ -260,6 +260,54 @@ impl VM {
     }
 
     /// `base[index]` for arrays (by position) and records (by key).
+    /// How many times `ஒவ்வொரு` goes round. An array's items, a record's
+    /// fields, or a string's *letters* — Tamil letters, which is not the same
+    /// count as chars, because a letter is a cluster.
+    ///
+    /// Public for the same reason `index_of` is: the LLVM backend's emitted IR
+    /// calls this rather than counting for itself.
+    pub fn length_of(value: &Value) -> Result<usize, String> {
+        match value {
+            Value::Array(items) => Ok(items.len()),
+            Value::Map(fields) => Ok(fields.len()),
+            Value::String(s) => Ok(letters(s).len()),
+            other => Err(format!(
+                "இதை சுற்ற முடியாது  (cannot iterate over {})",
+                Self::type_name(other)
+            )),
+        }
+    }
+
+    /// What `ஒவ்வொரு` binds on each turn.
+    ///
+    /// An array gives its item. A record gives its **key**, not its value, and
+    /// the keys are sorted so that iteration order is the same run to run. A
+    /// string gives one letter.
+    pub fn nth_or_key(base: &Value, index: &Value) -> Result<Value, String> {
+        match base {
+            Value::Array(items) => {
+                let i = Self::array_index(items.len(), index)?;
+                Ok(items[i].clone())
+            }
+            Value::Map(fields) => {
+                // Sorted so iteration order is stable run to run.
+                let mut keys: Vec<&String> = fields.keys().collect();
+                keys.sort();
+                let i = Self::array_index(keys.len(), index)?;
+                Ok(Value::String(keys[i].clone()))
+            }
+            Value::String(s) => {
+                let parts = letters(s);
+                let i = Self::array_index(parts.len(), index)?;
+                Ok(Value::String(parts[i].to_string()))
+            }
+            other => Err(format!(
+                "இதை சுற்ற முடியாது  (cannot iterate over {})",
+                Self::type_name(other)
+            )),
+        }
+    }
+
     /// Public because `crate::runtime` reaches for it: the LLVM backend's
     /// emitted IR indexes through the same function the VM uses, rather than
     /// through a second implementation that would drift from it.
@@ -2018,46 +2066,13 @@ impl VM {
                 }
                 Instruction::Length => {
                     let value = self.pop()?;
-                    let n = match &value {
-                        Value::Array(items) => items.len(),
-                        Value::Map(fields) => fields.len(),
-                        Value::String(s) => letters(s).len(),
-                        other => {
-                            return Err(format!(
-                                "இதை சுற்ற முடியாது  (cannot iterate over {})",
-                                Self::type_name(other)
-                            ));
-                        }
-                    };
+                    let n = Self::length_of(&value)?;
                     self.stack.push(Value::Number(Decimal::from(n)));
                 }
                 Instruction::NthOrKey => {
                     let index = self.pop()?;
                     let base = self.pop()?;
-                    let value = match &base {
-                        Value::Array(items) => {
-                            let i = Self::array_index(items.len(), &index)?;
-                            items[i].clone()
-                        }
-                        Value::Map(fields) => {
-                            // Sorted so iteration order is stable run to run.
-                            let mut keys: Vec<&String> = fields.keys().collect();
-                            keys.sort();
-                            let i = Self::array_index(keys.len(), &index)?;
-                            Value::String(keys[i].clone())
-                        }
-                        Value::String(s) => {
-                            let parts = letters(s);
-                            let i = Self::array_index(parts.len(), &index)?;
-                            Value::String(parts[i].to_string())
-                        }
-                        other => {
-                            return Err(format!(
-                                "இதை சுற்ற முடியாது  (cannot iterate over {})",
-                                Self::type_name(other)
-                            ));
-                        }
-                    };
+                    let value = Self::nth_or_key(&base, &index)?;
                     self.stack.push(value);
                 }
                 Instruction::Call(name, argc) => {
