@@ -331,14 +331,53 @@ impl BytecodeCompiler {
                 }
             }
             Expr::Logical { op, left, right } => {
+                // Short-circuiting: the right side is not evaluated — and so
+                // cannot fail — once the left has decided the answer.
+                //
+                // Both sides used to run always. That was survivable while
+                // expressions could only compute, and stopped being so once
+                // they could fail: a guard could not guard, because
+                //
+                //     (நீளம்(அ) > 0 மற்றும் அ[0] == 1)
+                //
+                // indexed an empty array on the very step that had just proved
+                // it was empty. col.qmz's எழுத்து and AvaNam.qmz's
+                // பகுதியை_எடு exist only to work around that.
+                //
+                // The answer is still a Boolean, as it was when both sides ran.
+                // `Not` twice turns a value into its own truthiness, which is
+                // how that is kept without a new instruction.
                 self.compile_expr(*left);
-                self.compile_expr(*right);
 
-                match op.as_str() {
-                    "&&" => self.bytecode.push(Instruction::And),
-                    "||" => self.bytecode.push(Instruction::Or),
+                let (short_value, invert_left) = match op.as_str() {
+                    // false and we are done; otherwise the right side decides.
+                    "&&" => (crate::vm::Value::Boolean(false), false),
+                    // true and we are done. JumpIfFalse is the only conditional
+                    // jump there is, so the left side is inverted to use it.
+                    "||" => (crate::vm::Value::Boolean(true), true),
                     other => panic!("Unknown logical operator: {}", other),
+                };
+
+                if invert_left {
+                    self.bytecode.push(Instruction::Not);
                 }
+
+                let decided = self.bytecode.len();
+                self.bytecode.push(Instruction::JumpIfFalse(0)); // patched below
+
+                self.compile_expr(*right);
+                self.bytecode.push(Instruction::Not);
+                self.bytecode.push(Instruction::Not);
+
+                let over = self.bytecode.len();
+                self.bytecode.push(Instruction::Jump(0)); // patched below
+
+                let short = self.bytecode.len();
+                self.bytecode.push(Instruction::Push(short_value));
+
+                let end = self.bytecode.len();
+                self.bytecode.instructions[decided] = Instruction::JumpIfFalse(short);
+                self.bytecode.instructions[over] = Instruction::Jump(end);
             }
             Expr::Not(inner) => {
                 self.compile_expr(*inner);

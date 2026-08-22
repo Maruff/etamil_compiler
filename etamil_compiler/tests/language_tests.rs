@@ -3221,6 +3221,96 @@ fn disconnecting_first_allows_another_database() {
     assert_eq!(num(&vm, "எத்தனை"), dec(1));
 }
 
+// --- மற்றும் and அல்லது short-circuit --------------------------------------
+// Both sides used to be evaluated always. That was survivable while an
+// expression could only compute and stopped being so once one could fail: the
+// guard proving an array was empty then indexed it anyway.
+
+#[test]
+fn a_guard_can_guard() {
+    // The whole reason for the change. Before this, the right-hand side ran
+    // and took the program with it.
+    let vm = run(r#"அ = [];
+                    விளைவு = "not entered";
+                    (நீளம்(அ) > 0 மற்றும் அ[0] == 1) எனில் { விளைவு = "entered"; }"#)
+    .unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "not entered");
+}
+
+#[test]
+fn or_stops_once_the_answer_is_known() {
+    let vm = run(r#"அ = [];
+                    விளைவு = "no";
+                    (நீளம்(அ) == 0 அல்லது அ[0] == 1) எனில் { விளைவு = "yes"; }"#)
+    .unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "yes");
+}
+
+#[test]
+fn the_right_side_still_runs_when_it_has_to() {
+    // Short-circuiting must not mean "never evaluated".
+    let vm = run(r#"ஆ = [7];
+                    விளைவு = "no";
+                    (நீளம்(ஆ) > 0 மற்றும் ஆ[0] == 7) எனில் { விளைவு = "yes"; }"#)
+    .unwrap();
+
+    assert_eq!(text(&vm, "விளைவு"), "yes");
+}
+
+#[test]
+fn the_truth_table_is_unchanged() {
+    // The answer is still a Boolean and still the same Boolean; only what runs
+    // to produce it changed.
+    let vm = run(r#"அ = (1 == 1 மற்றும் 2 == 2);
+                    ஆ = (1 == 1 மற்றும் 2 == 3);
+                    இ = (1 == 2 மற்றும் 2 == 2);
+                    ஈ = (1 == 2 மற்றும் 2 == 3);
+                    உ = (1 == 1 அல்லது 2 == 3);
+                    ஊ = (1 == 2 அல்லது 2 == 2);
+                    எ = (1 == 2 அல்லது 2 == 3);
+                    ஏ = (1 == 1 அல்லது 2 == 2);"#)
+    .unwrap();
+
+    for (name, want) in [
+        ("அ", true), ("ஆ", false), ("இ", false), ("ஈ", false),
+        ("உ", true), ("ஊ", true), ("எ", false), ("ஏ", true),
+    ] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(want)),
+            "{} should be {}",
+            name,
+            want
+        );
+    }
+}
+
+#[test]
+fn a_non_boolean_operand_still_yields_a_boolean() {
+    // Truthiness in, Boolean out — as it was when And and Or were one
+    // instruction each.
+    let vm = run(r#"அ = (1 மற்றும் 2);
+                    ஆ = (0 அல்லது 5);
+                    இ = ("" அல்லது "");"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("அ"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("ஆ"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("இ"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn short_circuiting_nests() {
+    let vm = run(r#"அ = [];
+                    விளைவு = ((நீளம்(அ) > 0 மற்றும் அ[0] == 1)
+                              அல்லது (நீளம்(அ) == 0 மற்றும் 1 == 1));"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("விளைவு"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

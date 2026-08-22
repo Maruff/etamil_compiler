@@ -50,8 +50,9 @@ XLSX_வடிவம் = {
     திரும்பு வெளியே;
 }
 
-// A piece by position, or "" past the end. மற்றும் evaluates both sides, so
-// a loop guard cannot both test the bound and index in the same expression.
+// A piece by position, or "" past the end. This predates மற்றும்
+// short-circuiting, when a loop guard could not both test the bound and index
+// in one expression; it stays because the loop below reads better for it.
 செயல் பகுதியை_எடு(பட்டியல், எங்கே) {
     (எங்கே >= நீளம்(பட்டியல்)) எனில் { திரும்பு ""; }
     திரும்பு பட்டியல்[எங்கே];
