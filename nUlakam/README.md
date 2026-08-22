@@ -23,6 +23,8 @@ frameworks built on top of it.
 | `vawki/kadaZ.qmz` | loans — `மாதத்_தவணை` `தவணை_அட்டவணை` `மொத்த_வட்டி` `மொத்தத்_திருப்பி` `முன்கூட்டியே_அடைத்தால்` |
 | `vawki/coqqu.qmz` | asset classification — `விதிமுறைகளை_ஏற்று` `வகைப்படுத்து` `ஒதுக்கீடு` `சரிபார்க்கப்படாதவை` |
 | `cawkili/fabric.qmz` | Hyperledger Fabric — `நுழைவு` `மதிப்பிடு` `சமர்ப்பி` `மீண்டும்_சமர்ப்பி` `மோதலா` |
+| `upi/vilAcam.qmz` | UPI addresses and pay links — `முகவரி_சரியா` `தொகை_சரியா` `தொகை_உரை` `பணம்_இணைப்பு` `இணைப்பைப்_படி` |
+| `upi/nilYmY.qmz` | UPI payment states — `பணம்_வந்ததா` `சரிபார்க்கவா` `நகர்வு_சரியா` `நகர்த்து` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -204,3 +206,42 @@ else — retrying a chaincode refusal turns one rejection into several.
 `gateway.py` beside the module is a mock that answers the way a gateway does,
 including failing the first write to a contended key. The suite runs against it
 when `ETAMIL_FABRIC` names one and skips cleanly when it does not.
+
+## UPI: the public part, and the part that is not
+
+A VPA and the `upi://` link are specified and checkable without anyone's
+permission — a QR sticker in a shop is that link and nothing else.
+`upi/vilAcam.qmz` builds and checks them, including the two things that catch
+people: an amount with more than two decimal places is not money UPI takes,
+and a decimal normalises `249.50` to `249.5` when some PSPs hold you to both
+places.
+
+**Moving money is not public.** That needs a payment service provider or bank
+to sponsor you and NPCI to certify you, and no library substitutes for either.
+What is here is everything up to the moment a request leaves for your PSP —
+and the mutual TLS and ECDSA signing it will ask for already exist.
+
+`upi/nilYmY.qmz` exists for one rule:
+
+> **PENDING IS NOT FAILURE.**
+
+A request that has not answered may still succeed — the payer's bank may be
+slow, the switch may be retrying, the answer may arrive in an hour. Treating
+that as failure is how a merchant refunds a payment that then lands, or charges
+a customer twice. It is the most common way a UPI integration loses money,
+because the wrong behaviour is the one that feels safe.
+
+So two questions are asked separately. `பணம்_வந்ததா` — may I ship? Only a
+settled success says yes. `சரிபார்க்கவா` — must I ask again? Anything unsettled
+says yes, *including a state nobody recognises*. And `நகர்வு_சரியா` refuses to
+let a late or duplicated callback rewrite a settled payment: a success does not
+become a failure because a later poll was confused.
+
+## ULI is not here
+
+The Unified Lending Interface is access-controlled, and its interface is not
+published in a form anyone outside can build against. Writing a client for it
+from guesswork would produce something that looks finished and works against
+nothing. When you have the specification through an authorised channel, the
+pieces it needs — mutual TLS, ECDSA signing, JSON, a state machine — are all
+in place.

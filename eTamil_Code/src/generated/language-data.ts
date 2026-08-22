@@ -5855,6 +5855,218 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 56
   },
   {
+    "name": "நிலைமைகள்",
+    "forms": [
+      "நிலைமைகள்"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "நிலைமைகள்() — every state, for a program that wants to check its own table",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 32
+  },
+  {
+    "name": "அறியப்பட்டதா",
+    "forms": [
+      "அறியப்பட்டதா"
+    ],
+    "params": [
+      "நிலைமை"
+    ],
+    "arity": 1,
+    "doc": "அறியப்பட்டதா(நிலைமை) — is this one of ours?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 40
+  },
+  {
+    "name": "பணம்_வந்ததா",
+    "forms": [
+      "பணம்_வந்ததா"
+    ],
+    "params": [
+      "நிலைமை"
+    ],
+    "arity": 1,
+    "doc": "பணம்_வந்ததா(நிலைமை) — has the money actually arrived?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 55
+  },
+  {
+    "name": "சரிபார்க்கவா",
+    "forms": [
+      "சரிபார்க்கவா"
+    ],
+    "params": [
+      "நிலைமை"
+    ],
+    "arity": 1,
+    "doc": "சரிபார்க்கவா(நிலைமை) — must this be asked about again?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 64
+  },
+  {
+    "name": "முடிந்ததா",
+    "forms": [
+      "முடிந்ததா"
+    ],
+    "params": [
+      "நிலைமை"
+    ],
+    "arity": 1,
+    "doc": "முடிந்ததா(நிலைமை) — is this settled, either way?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 70
+  },
+  {
+    "name": "நகர்வு_சரியா",
+    "forms": [
+      "நகர்வு_சரியா"
+    ],
+    "params": [
+      "இருந்து",
+      "வரை"
+    ],
+    "arity": 2,
+    "doc": "நகர்வு_சரியா(இருந்து, வரை) — may a payment move between these?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 84
+  },
+  {
+    "name": "நகர்த்து",
+    "forms": [
+      "நகர்த்து"
+    ],
+    "params": [
+      "இருந்து",
+      "வரை"
+    ],
+    "arity": 2,
+    "doc": "நகர்த்து(இருந்து, வரை) — the new state, or a தவறு saying why not",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/nilYmY.qmz",
+    "line": 108
+  },
+  {
+    "name": "முகவரி_சரியா",
+    "forms": [
+      "முகவரி_சரியா"
+    ],
+    "params": [
+      "வி_பி_ஏ"
+    ],
+    "arity": 1,
+    "doc": "A VPA is name@handle: ravi@okaxis, 9876543210@ybl, a merchant's own. The",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 29
+  },
+  {
+    "name": "கை_பகுதி",
+    "forms": [
+      "கை_பகுதி"
+    ],
+    "params": [
+      "வி_பி_ஏ"
+    ],
+    "arity": 1,
+    "doc": "கை_பகுதி(வி_பி_ஏ) — the handle, which says which PSP holds the account",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 50
+  },
+  {
+    "name": "தொகை_சரியா",
+    "forms": [
+      "தொகை_சரியா"
+    ],
+    "params": [
+      "தொகை_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "தொகை_சரியா(தொகை_மதிப்பு) — is this an amount UPI will take?",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 63
+  },
+  {
+    "name": "தொகை_உரை",
+    "forms": [
+      "தொகை_உரை"
+    ],
+    "params": [
+      "தொகை_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "தொகை_உரை(தொகை_மதிப்பு) — the amount as UPI wants it written",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 74
+  },
+  {
+    "name": "உரை_மறை",
+    "forms": [
+      "உரை_மறை"
+    ],
+    "params": [
+      "மூலப்_பாடம்"
+    ],
+    "arity": 1,
+    "doc": "A payee's name and a note go into a query string, and a shop called \"Raja &",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 89
+  },
+  {
+    "name": "பணம்_இணைப்பு",
+    "forms": [
+      "பணம்_இணைப்பு"
+    ],
+    "params": [
+      "விவரங்கள்"
+    ],
+    "arity": 1,
+    "doc": "பணம்_இணைப்பு(விவரங்கள்) — the upi:// link behind every payment QR",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 115
+  },
+  {
+    "name": "விருப்பத்தைச்_சேர்",
+    "forms": [
+      "விருப்பத்தைச்_சேர்"
+    ],
+    "params": [
+      "இணைப்பு",
+      "பெயர்",
+      "மதிப்பீடு"
+    ],
+    "arity": 3,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 148
+  },
+  {
+    "name": "இணைப்பைப்_படி",
+    "forms": [
+      "இணைப்பைப்_படி"
+    ],
+    "params": [
+      "இணைப்பு"
+    ],
+    "arity": 1,
+    "doc": "இணைப்பைப்_படி(இணைப்பு) — the parameters of a upi:// link, as a record",
+    "kind": "stdlib",
+    "module": "nUlakam/upi/vilAcam.qmz",
+    "line": 161
+  },
+  {
     "name": "விதிமுறைகளை_ஏற்று",
     "forms": [
       "விதிமுறைகளை_ஏற்று"

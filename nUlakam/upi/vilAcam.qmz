@@ -1,0 +1,175 @@
+// nUlakam/upi/vilAcam.qmz — UPI virtual payment addresses, and the pay link
+//
+// What this is, and what it is not.
+//
+// A VPA and the upi:// link are public, specified, and checkable without
+// anyone's permission — a QR sticker in a shop is that link and nothing more.
+// This builds and checks them.
+//
+// Moving money is not public. That needs a payment service provider or a bank
+// to sponsor you and NPCI to certify you, and no library substitutes for
+// either. What this gives you is everything up to the moment a request leaves
+// for your PSP: an address you have checked, a link you have built, an amount
+// in the only form UPI accepts.
+//
+// Amounts are the reason a fixed-point language matters here. UPI takes rupees
+// and paise, two decimal places and no more, and 0.1 + 0.2 being exactly 0.3
+// is the difference between a request accepted and one rejected.
+
+இறக்கு "../col.qmz";
+இறக்கு "../poruL.qmz";
+
+// --- the address ----------------------------------------------------------
+//
+// A VPA is name@handle: ravi@okaxis, 9876543210@ybl, a merchant's own. The
+// handle is the PSP. Neither half may be empty and there is exactly one @,
+// which is the check that catches a typed address; the rest is the PSP's
+// business, and refusing an address it would have accepted is worse than
+// passing one it will reject with a clear message.
+செயல் முகவரி_சரியா(வி_பி_ஏ) {
+    (நீளம்(வி_பி_ஏ) == 0) எனில் { திரும்பு பொய்; }
+
+    பகுதிகள் = பிரி(வி_பி_ஏ, "@");
+    (நீளம்(பகுதிகள்) != 2) எனில் { திரும்பு பொய்; }
+
+    பெயர்ப்_பகுதி = பகுதிகள்[0];
+    கைப்_பகுதி = பகுதிகள்[1];
+
+    (நீளம்(பெயர்ப்_பகுதி) == 0 அல்லது நீளம்(கைப்_பகுதி) == 0) எனில் {
+        திரும்பு பொய்;
+    }
+
+    // A space is the one character that certainly does not belong, and the one
+    // a person typing an address most often leaves in.
+    (கொண்டுள்ளதா(வி_பி_ஏ, " ")) எனில் { திரும்பு பொய்; }
+
+    திரும்பு மெய்;
+}
+
+// கை_பகுதி(வி_பி_ஏ) — the handle, which says which PSP holds the account
+செயல் கை_பகுதி(வி_பி_ஏ) {
+    (முகவரி_சரியா(வி_பி_ஏ) == பொய்) எனில் { திரும்பு ""; }
+    திரும்பு பிரி(வி_பி_ஏ, "@")[1];
+}
+
+// --- the amount -----------------------------------------------------------
+//
+// தொகை_சரியா(தொகை_மதிப்பு) — is this an amount UPI will take?
+//
+// Positive, and not more than two decimal places. The second is the one that
+// bites: an amount computed as a third of something arrives with a tail of
+// digits, the PSP rejects it, and the rejection reads like the payment failed
+// rather than like the request was malformed.
+செயல் தொகை_சரியா(தொகை_மதிப்பு) {
+    (தொகை_மதிப்பு <= 0) எனில் { திரும்பு பொய்; }
+    திரும்பு வட்டமிடு(தொகை_மதிப்பு, 2) == தொகை_மதிப்பு;
+}
+
+// தொகை_உரை(தொகை_மதிப்பு) — the amount as UPI wants it written
+//
+// Always two decimal places. A decimal normalises 249.50 to 249.5, and while
+// most apps accept that, the spec writes rupees and paise and some payment
+// service providers hold you to it. Padding costs nothing; being rejected at a
+// counter for a missing zero costs a sale.
+செயல் தொகை_உரை(தொகை_மதிப்பு) {
+    வட்டமிட்டது = சொல்லாக்கு(வட்டமிடு(தொகை_மதிப்பு, 2));
+    பகுதிகள் = பிரி(வட்டமிட்டது, ".");
+
+    (நீளம்(பகுதிகள்) == 1) எனில் { திரும்பு வட்டமிட்டது & ".00"; }
+    (நீளம்(பகுதிகள்[1]) == 1) எனில் { திரும்பு வட்டமிட்டது & "0"; }
+    திரும்பு வட்டமிட்டது;
+}
+
+// --- percent-encoding -----------------------------------------------------
+//
+// A payee's name and a note go into a query string, and a shop called "Raja &
+// Sons" would otherwise end the parameter at the ampersand. Only what has to
+// be escaped is escaped: over-escaping produces a link that works and displays
+// wrongly in the payer's app.
+செயல் உரை_மறை(மூலப்_பாடம்) {
+    வெளியே = மாற்று(மூலப்_பாடம், "%", "%25");
+    வெளியே = மாற்று(வெளியே, "&", "%26");
+    வெளியே = மாற்று(வெளியே, "=", "%3D");
+    வெளியே = மாற்று(வெளியே, "?", "%3F");
+    வெளியே = மாற்று(வெளியே, "#", "%23");
+    வெளியே = மாற்று(வெளியே, " ", "%20");
+    திரும்பு வெளியே;
+}
+
+// --- the link -------------------------------------------------------------
+//
+// பணம்_இணைப்பு(விவரங்கள்) — the upi:// link behind every payment QR
+//
+// விவரங்கள் carries what the spec names:
+//   pa  the payee address, required
+//   pn  the payee name, required
+//   am  the amount — leave it out and the payer types one, which is what a
+//       donation box wants and a bill does not
+//   tn  a note shown to the payer
+//   tr  your reference, which is what you reconcile against later
+//   mc  the merchant category code, for a registered merchant
+//
+// Answers a தவறு rather than a link when the address or amount is wrong. A
+// malformed link becomes a QR that a shop prints, sticks to a counter, and
+// discovers is unscannable one customer at a time.
+செயல் பணம்_இணைப்பு(விவரங்கள்) {
+    முகவரி = புலம்_அல்லது(விவரங்கள், "pa", "");
+    (முகவரி_சரியா(முகவரி) == பொய்) எனில் {
+        திரும்பு தவறு("செல்லாத முகவரி  (not a valid VPA): " & முகவரி);
+    }
+
+    பெயர் = புலம்_அல்லது(விவரங்கள், "pn", "");
+    (நீளம்(பெயர்) == 0) எனில் {
+        திரும்பு தவறு("பெறுநர் பெயர் தேவை  (a payee name is required)");
+    }
+
+    இணைப்பு = "upi://pay?pa=" & உரை_மறை(முகவரி) & "&pn=" & உரை_மறை(பெயர்);
+
+    தொகை_மதிப்பு = புலம்_அல்லது(விவரங்கள், "am", 0);
+    (தொகை_மதிப்பு != 0) எனில் {
+        (தொகை_சரியா(தொகை_மதிப்பு) == பொய்) எனில் {
+            திரும்பு தவறு("செல்லாத தொகை  (an amount must be positive and "
+                           & "no more than two decimal places): " & தொகை_மதிப்பு);
+        }
+        இணைப்பு = இணைப்பு & "&am=" & தொகை_உரை(தொகை_மதிப்பு);
+    }
+
+    // The currency is always INR. It is written anyway, because the spec says
+    // so and a payer's app is entitled to insist.
+    இணைப்பு = இணைப்பு & "&cu=INR";
+
+    இணைப்பு = விருப்பத்தைச்_சேர்(இணைப்பு, "tn", புலம்_அல்லது(விவரங்கள், "tn", ""));
+    இணைப்பு = விருப்பத்தைச்_சேர்(இணைப்பு, "tr", புலம்_அல்லது(விவரங்கள், "tr", ""));
+    இணைப்பு = விருப்பத்தைச்_சேர்(இணைப்பு, "mc", புலம்_அல்லது(விவரங்கள், "mc", ""));
+
+    திரும்பு சரி(இணைப்பு);
+}
+
+செயல் விருப்பத்தைச்_சேர்(இணைப்பு, பெயர், மதிப்பீடு) {
+    (நீளம்(சொல்லாக்கு(மதிப்பீடு)) == 0) எனில் { திரும்பு இணைப்பு; }
+    திரும்பு இணைப்பு & "&" & பெயர் & "=" & உரை_மறை(சொல்லாக்கு(மதிப்பீடு));
+}
+
+// --- reading one back -----------------------------------------------------
+//
+// இணைப்பைப்_படி(இணைப்பு) — the parameters of a upi:// link, as a record
+//
+// For checking what was printed on a sticker, and for a payer app reading what
+// it was handed. Values are left percent-encoded: decoding needs the reverse
+// of உரை_மறை and every escape a payer's app might have used, which is more
+// than this claims to do.
+செயல் இணைப்பைப்_படி(இணைப்பு) {
+    (தொடங்குகிறதா(இணைப்பு, "upi://pay?") == பொய்) எனில் {
+        திரும்பு தவறு("upi://pay? இல் தொடங்கவில்லை  (not a UPI pay link)");
+    }
+
+    வினவல் = துண்டு(இணைப்பு, 10, நீளம்(இணைப்பு) - 10);
+    விடை = {};
+    ஒவ்வொரு இணை_பகுதி இல் பிரி(வினவல், "&") {
+        இரண்டு = பிரி(இணை_பகுதி, "=");
+        (நீளம்(இரண்டு) == 2) எனில் {
+            விடை[இரண்டு[0]] = இரண்டு[1];
+        }
+    }
+    திரும்பு சரி(விடை);
+}

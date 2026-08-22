@@ -1,0 +1,117 @@
+// nUlakam/upi/nilYmY.qmz — where a UPI payment has got to
+//
+// The whole of this file exists for one rule:
+//
+//   PENDING IS NOT FAILURE.
+//
+// A UPI request that has not answered yet may still succeed. The payer's bank
+// may be slow, the switch may be retrying, the answer may arrive in an hour.
+// Treating that as a failure is how a merchant ships goods and refunds a
+// payment that then lands, or charges a customer twice for one order — and it
+// is the most common way a UPI integration loses money, because the wrong
+// behaviour is the one that feels safe.
+//
+// So the states are named, the moves between them are checked, and the two
+// questions worth asking are asked separately:
+//
+//   பணம்_வந்ததா   may I ship? Only a settled success says yes.
+//   சரிபார்க்கவா   must I ask again? Anything unsettled says yes.
+//
+// A state that is neither is unsettled, and unsettled is not a refusal.
+
+இறக்கு "../aNi.qmz";
+
+// The states, as the switch reports them.
+தொடங்கியது = "INITIATED";   // sent, nothing heard
+நிலுவையில் = "PENDING";     // accepted, not settled — the dangerous one
+வெற்றியானது = "SUCCESS";     // settled, money moved
+தோல்வியானது = "FAILURE";     // settled, money did not move
+திருப்பியது = "REVERSED";    // it moved and then came back
+
+// நிலைமைகள்() — every state, for a program that wants to check its own table
+செயல் நிலைமைகள்() {
+    திரும்பு [தொடங்கியது, நிலுவையில், வெற்றியானது, தோல்வியானது, திருப்பியது];
+}
+
+// அறியப்பட்டதா(நிலைமை) — is this one of ours?
+//
+// A switch that answers something unrecognised must not be guessed at. An
+// unknown state is not a failure and is certainly not a success.
+செயல் அறியப்பட்டதா(நிலைமை) {
+    ஒவ்வொரு ஒன்று இல் நிலைமைகள்() {
+        (ஒன்று == நிலைமை) எனில் { திரும்பு மெய்; }
+    }
+    திரும்பு பொய்;
+}
+
+// --- the two questions ----------------------------------------------------
+
+// பணம்_வந்ததா(நிலைமை) — has the money actually arrived?
+//
+// The only state that says yes is SUCCESS. Not PENDING, however long it has
+// been pending; not INITIATED; and not REVERSED, which arrived and left again.
+// Everything a merchant does on the strength of a payment hangs on this
+// answer, so it is deliberately the narrowest question in the file.
+செயல் பணம்_வந்ததா(நிலைமை) {
+    திரும்பு நிலைமை == வெற்றியானது;
+}
+
+// சரிபார்க்கவா(நிலைமை) — must this be asked about again?
+//
+// Anything not settled. A pending payment is reconciled until the switch says
+// one way or the other; abandoning it is how a real payment ends up recorded
+// as a failure.
+செயல் சரிபார்க்கவா(நிலைமை) {
+    (அறியப்பட்டதா(நிலைமை) == பொய்) எனில் { திரும்பு மெய்; }
+    திரும்பு நிலைமை == தொடங்கியது அல்லது நிலைமை == நிலுவையில்;
+}
+
+// முடிந்ததா(நிலைமை) — is this settled, either way?
+செயல் முடிந்ததா(நிலைமை) {
+    திரும்பு சரிபார்க்கவா(நிலைமை) == பொய்;
+}
+
+// --- the moves ------------------------------------------------------------
+//
+// நகர்வு_சரியா(இருந்து, வரை) — may a payment move between these?
+//
+// Settled means settled: a success does not become a failure because a later
+// poll was confused, and a failure does not quietly become a success. The one
+// move out of SUCCESS is REVERSED, which is a new event and not a correction.
+//
+// Enforcing this is what stops a late or duplicated callback from rewriting
+// history — and callbacks do arrive late, and out of order.
+செயல் நகர்வு_சரியா(இருந்து, வரை) {
+    (அறியப்பட்டதா(இருந்து) == பொய் அல்லது அறியப்பட்டதா(வரை) == பொய்) எனில் {
+        திரும்பு பொய்;
+    }
+    (இருந்து == வரை) எனில் { திரும்பு மெய்; }
+
+    (இருந்து == தொடங்கியது) எனில் {
+        திரும்பு வரை == நிலுவையில் அல்லது வரை == வெற்றியானது
+                அல்லது வரை == தோல்வியானது;
+    }
+    (இருந்து == நிலுவையில்) எனில் {
+        திரும்பு வரை == வெற்றியானது அல்லது வரை == தோல்வியானது;
+    }
+    (இருந்து == வெற்றியானது) எனில் {
+        திரும்பு வரை == திருப்பியது;
+    }
+    // FAILURE and REVERSED are the end of the story.
+    திரும்பு பொய்;
+}
+
+// நகர்த்து(இருந்து, வரை) — the new state, or a தவறு saying why not
+//
+// A result rather than a boolean, so that refusing an impossible move is
+// something a caller has to handle rather than something it can overlook.
+செயல் நகர்த்து(இருந்து, வரை) {
+    (அறியப்பட்டதா(வரை) == பொய்) எனில் {
+        திரும்பு தவறு("தெரியாத நிலைமை  (unknown state): " & வரை);
+    }
+    (நகர்வு_சரியா(இருந்து, வரை) == பொய்) எனில் {
+        திரும்பு தவறு("இந்த நகர்வு அனுமதிக்கப்படவில்லை  (that move is not allowed): "
+                       & இருந்து & " → " & வரை);
+    }
+    திரும்பு சரி(வரை);
+}

@@ -1,0 +1,115 @@
+// UPI சோதனை — tests for addresses, pay links and payment states
+//
+//   etamil --vm nUlakam/upi/upi_cOqaZY.qmz
+//
+// Needs no network. Everything here is the public part of UPI — what an
+// address looks like, what a upi:// link is, and what a payment state means.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "vilAcam.qmz";
+இறக்கு "nilYmY.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("UPI");
+
+// --- addresses ------------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("ravi@okaxis"), "an ordinary VPA");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("9876543210@ybl"),
+                    "a phone number is a perfectly good name");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("ravi@") == பொய், "no handle, no address");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("@okaxis") == பொய், "and no name either");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("a@b@c") == பொய், "two handles is one too many");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("") == பொய், "nothing is not an address");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முகவரி_சரியா("ravi @okaxis") == பொய்,
+                    "a space is what a typed address most often carries");
+ஓட்டம் = சமம்(ஓட்டம், கை_பகுதி("shop@okhdfcbank"), "okhdfcbank",
+              "the handle says which PSP holds the account");
+
+// --- amounts --------------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொகை_சரியா(249.50), "rupees and paise");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொகை_சரியா(0) == பொய், "nothing is not an amount");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொகை_சரியா(0 - 5) == பொய், "and neither is less than nothing");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொகை_சரியா(1.005) == பொய்,
+                    "three decimal places is not money UPI takes");
+
+// The formatting that catches people: a decimal normalises the trailing zero
+// away, and some PSPs hold you to two places.
+ஓட்டம் = சமம்(ஓட்டம், தொகை_உரை(249.5), "249.50", "a trailing zero is written back on");
+ஓட்டம் = சமம்(ஓட்டம், தொகை_உரை(100), "100.00", "and a whole number gets both");
+ஓட்டம் = சமம்(ஓட்டம், தொகை_உரை(99.99), "99.99", "an amount already in paise is left alone");
+
+// This is the arithmetic the language exists for: a third of a rupee is not
+// payable, and finding that out at the counter is too late.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொகை_சரியா(வட்டமிடு(100 / 3, 2)),
+                    "a computed amount is payable once it is rounded to paise");
+
+// --- the link -------------------------------------------------------------
+இணைப்பு = மதிப்பு(பணம்_இணைப்பு({"pa": "shop@okhdfcbank", "pn": "Raja & Sons",
+                                  "am": 249.50, "tn": "Order 12", "tr": "INV-9"}));
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொடங்குகிறதா(இணைப்பு, "upi://pay?"), "it is a pay link");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கொண்டுள்ளதா(இணைப்பு, "am=249.50"), "the amount is in paise");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கொண்டுள்ளதா(இணைப்பு, "cu=INR"), "the currency is written out");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கொண்டுள்ளதா(இணைப்பு, "Raja%20%26%20Sons"),
+                    "and the ampersand in the shop's name does not end the parameter");
+
+// A link with no amount is a donation box: the payer decides.
+திறந்த = மதிப்பு(பணம்_இணைப்பு({"pa": "temple@ybl", "pn": "Trust"}));
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கொண்டுள்ளதா(திறந்த, "am=") == பொய்,
+                    "with no amount the payer types one");
+
+// What it refuses to build.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பணம்_இணைப்பு({"pa": "bad", "pn": "X"})),
+                    "a bad address is refused, not printed onto a sticker");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பணம்_இணைப்பு({"pa": "s@ok", "pn": ""})),
+                    "and so is a missing payee name");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பணம்_இணைப்பு({"pa": "s@ok", "pn": "S", "am": 1.005})),
+                    "and an amount UPI would reject");
+
+// Reading one back.
+படித்தது = மதிப்பு(இணைப்பைப்_படி(இணைப்பு));
+ஓட்டம் = சமம்(ஓட்டம், படித்தது["pa"], "shop@okhdfcbank", "the address comes back");
+ஓட்டம் = சமம்(ஓட்டம், படித்தது["tr"], "INV-9", "and so does the reference to reconcile on");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இணைப்பைப்_படி("https://example.com")),
+                    "something that is not a UPI link is refused");
+
+// --- states: the rule the whole module exists for -------------------------
+//
+// PENDING is not FAILURE. A merchant that ships on pending, or refunds on
+// pending, loses money either way.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா(வெற்றியானது), "success means the money arrived");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா(நிலுவையில்) == பொய்,
+                    "PENDING DOES NOT — do not ship on it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா(தொடங்கியது) == பொய், "nor does initiated");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா(திருப்பியது) == பொய்,
+                    "and a reversal arrived and left again");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா(தோல்வியானது) == பொய், "a failure is a failure");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரிபார்க்கவா(நிலுவையில்),
+                    "a pending payment must be asked about again");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரிபார்க்கவா(வெற்றியானது) == பொய், "a settled one need not be");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரிபார்க்கவா("SOMETHING_ELSE"),
+                    "and a state nobody recognises is reconciled, not assumed");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பணம்_வந்ததா("SOMETHING_ELSE") == பொய்,
+                    "least of all assumed to be success");
+
+// --- moves ----------------------------------------------------------------
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(தொடங்கியது, நிலுவையில்), "initiated may go pending");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(நிலுவையில், வெற்றியானது), "pending may settle");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(வெற்றியானது, திருப்பியது), "and a success may be reversed");
+
+// Settled means settled. A late or duplicated callback must not rewrite it.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(வெற்றியானது, தோல்வியானது) == பொய்,
+                    "a success does not become a failure on a later poll");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(தோல்வியானது, வெற்றியானது) == பொய்,
+                    "and a failure does not quietly become a success");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(நிலுவையில், தொடங்கியது) == பொய்,
+                    "nothing goes backwards");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நகர்வு_சரியா(வெற்றியானது, வெற்றியானது),
+                    "but the same callback arriving twice is not an error");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(நகர்த்து(வெற்றியானது, தோல்வியானது)),
+                    "நகர்த்து refuses an impossible move rather than allowing it");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நகர்த்து(நிலுவையில், வெற்றியானது)), வெற்றியானது,
+              "and answers the new state when the move is allowed");
+
+சோதனை_முடிவு(ஓட்டம்);
