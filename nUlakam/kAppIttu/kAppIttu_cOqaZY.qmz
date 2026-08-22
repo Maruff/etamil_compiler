@@ -1,0 +1,110 @@
+// காப்பீடு சோதனை — policy, premium and claim
+//
+//   etamil --vm nUlakam/kAppIttu/kAppIttu_cOqaZY.qmz
+//
+// No rate or limit here is a claim about any real policy. They are arguments,
+// chosen so the arithmetic can be checked by hand.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "kAppIttu.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("காப்பீடு");
+
+// --- premium --------------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், முனைமம்(5000000, 0.5), 25000, "half a per cent of fifty lakh");
+
+// Per mille and per cent differ by a factor of ten, and the number looks
+// plausible either way — which is why property rates get their own function.
+ஓட்டம் = சமம்(ஓட்டம், ஆயிரத்திற்கு_முனைமம்(5000000, 1.80), 9000,
+              "one rupee eighty per mille on fifty lakh");
+ஓட்டம் = வேறுபடு(ஓட்டம், ஆயிரத்திற்கு_முனைமம்(5000000, 1.80), முனைமம்(5000000, 1.80),
+                  "which is not the same as one point eight per cent");
+
+// A loading then a discount, in the order a schedule states them.
+ஓட்டம் = சமம்(ஓட்டம், ஏற்ற_இறக்கத்துடன்(10000, 25, 10), 11250,
+              "loaded a quarter, then discounted a tenth of that");
+ஓட்டம் = சமம்(ஓட்டம், ஏற்ற_இறக்கத்துடன்(10000, 0, 0), 10000,
+              "neither loaded nor discounted is the base premium");
+
+// Pro rata by days, because a policy starting mid-month is not half a month.
+ஓட்டம் = சமம்(ஓட்டம், குறுகிய_காலம்(12000, 90, 365), 2958.9, "ninety days of a year");
+ஓட்டம் = சமம்(ஓட்டம், குறுகிய_காலம்(12000, 365, 365), 12000, "a full year is the full premium");
+ஓட்டம் = சமம்(ஓட்டம், குறுகிய_காலம்(12000, 400, 365), 12000, "and no more than one");
+ஓட்டம் = சமம்(ஓட்டம், குறுகிய_காலம்(12000, 0, 365), 0, "no cover, no premium");
+
+// --- the excess -----------------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், கழிவுக்குப்_பின்(50000, 10000), 40000, "the insured bears the excess");
+ஓட்டம் = சமம்(ஓட்டம், கழிவுக்குப்_பின்(8000, 10000), 0,
+              "a loss smaller than the excess is not a small payment — it is none");
+ஓட்டம் = சமம்(ஓட்டம், கழிவுக்குப்_பின்(10000, 10000), 0, "nor is a loss exactly equal to it");
+
+// --- the average clause ---------------------------------------------------
+//
+// The rule this module exists for. A building worth fifty lakh insured for
+// twenty-five is insured for half its value, so the insurer pays half of any
+// loss — not the whole of a five-lakh loss merely because five lakh sits inside
+// the sum insured.
+ஓட்டம் = சமம்(ஓட்டம், சராசரி_விதி(500000, 2500000, 5000000), 250000,
+              "insured for half its value, half the loss is paid");
+ஓட்டம் = சமம்(ஓட்டம், சராசரி_விதி(500000, 5000000, 5000000), 500000,
+              "insured for its full value, the whole loss is paid");
+ஓட்டம் = சமம்(ஓட்டம், சராசரி_விதி(500000, 6000000, 5000000), 500000,
+              "over-insured, still the whole loss and no more");
+ஓட்டம் = சமம்(ஓட்டம், சராசரி_விதி(500000, 2500000, 0), 500000,
+              "with no value at risk stated, nothing is averaged");
+
+// --- a settlement end to end ----------------------------------------------
+குறை = கோரல்_தீர்வு({"இழப்பு": 500000, "காப்பீடு": 2500000,
+                      "உண்மை_மதிப்பு": 5000000, "கழிவு": 10000});
+ஓட்டம் = சமம்(ஓட்டம், குறை["சராசரிக்குப்_பின்"], 250000, "averaged first");
+ஓட்டம் = சமம்(ஓட்டம், குறை["செலுத்தத்தக்கது"], 240000, "then the excess");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறை["குறை_காப்பீடா"], "and it says the policy was short");
+
+// The order is not interchangeable. Taking the excess off first and averaging
+// afterwards pays 245,000 — more than the policy promises.
+ஓட்டம் = வேறுபடு(ஓட்டம், குறை["செலுத்தத்தக்கது"],
+                  சராசரி_விதி(கழிவுக்குப்_பின்(500000, 10000), 2500000, 5000000),
+                  "averaging before the excess is not the same as after it");
+
+முழு = கோரல்_தீர்வு({"இழப்பு": 500000, "காப்பீடு": 5000000,
+                      "உண்மை_மதிப்பு": 5000000, "கழிவு": 10000});
+ஓட்டம் = சமம்(ஓட்டம், முழு["செலுத்தத்தக்கது"], 490000,
+              "fully insured, the same loss pays twice as much");
+
+// Indemnity: the sum insured is a ceiling, not a target.
+மேலே = கோரல்_தீர்வு({"இழப்பு": 900000, "காப்பீடு": 500000, "உண்மை_மதிப்பு": 500000});
+ஓட்டம் = சமம்(ஓட்டம், மேலே["செலுத்தத்தக்கது"], 500000,
+              "a loss above the sum insured pays the sum insured");
+
+// Co-payment and a sub-limit.
+பங்குடன் = கோரல்_தீர்வு({"இழப்பு": 100000, "காப்பீடு": 1000000, "பங்கேற்பு": 20});
+ஓட்டம் = சமம்(ஓட்டம், பங்குடன்["செலுத்தத்தக்கது"], 80000, "a fifth borne by the insured");
+
+வரம்புடன் = கோரல்_தீர்வு({"இழப்பு": 100000, "காப்பீடு": 1000000, "உட்_வரம்பு": 60000});
+ஓட்டம் = சமம்(ஓட்டம், வரம்புடன்["செலுத்தத்தக்கது"], 60000, "a sub-limit caps its own head");
+
+ஒன்றுமில்லை = கோரல்_தீர்வு({"இழப்பு": 5000, "காப்பீடு": 1000000, "கழிவு": 10000});
+ஓட்டம் = சமம்(ஓட்டம், ஒன்றுமில்லை["செலுத்தத்தக்கது"], 0,
+              "and a loss inside the excess pays nothing, not a negative");
+
+// --- no-claim bonus -------------------------------------------------------
+படிகள்_பட்டி = [{"ஆண்டு": 1, "விகிதம்": 20},
+                {"ஆண்டு": 2, "விகிதம்": 25},
+                {"ஆண்டு": 5, "விகிதம்": 50}];
+
+ஓட்டம் = சமம்(ஓட்டம், கோரல்_இல்லா_சலுகை(10000, 0, படிகள்_பட்டி)["விகிதம்"], 0,
+              "a first-year policy has earned nothing");
+ஓட்டம் = சமம்(ஓட்டம், கோரல்_இல்லா_சலுகை(10000, 3, படிகள்_பட்டி)["விகிதம்"], 25,
+              "three claim-free years takes the two-year step, not the five");
+ஓட்டம் = சமம்(ஓட்டம், கோரல்_இல்லா_சலுகை(10000, 9, படிகள்_பட்டி)["செலுத்த"], 5000,
+              "and it stops at the top step rather than growing for ever");
+
+// --- outstanding claims ---------------------------------------------------
+கோரல்கள் = [{"மதிப்பிடப்பட்டது": 50000, "தீர்ந்ததா": பொய்},
+             {"மதிப்பிடப்பட்டது": 120000, "தீர்ந்ததா": பொய்},
+             {"மதிப்பிடப்பட்டது": 30000, "தீர்ந்ததா": மெய்}];
+நிலுவை = நிலுவைக்_கோரல்கள்(கோரல்கள்);
+ஓட்டம் = சமம்(ஓட்டம், நிலுவை["எண்ணிக்கை"], 2, "settled claims are not outstanding");
+ஓட்டம் = சமம்(ஓட்டம், நிலுவை["மொத்தம்"], 170000, "and the reserve is what is left");
+
+சோதனை_முடிவு(ஓட்டம்);

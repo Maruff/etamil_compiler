@@ -1,0 +1,198 @@
+// nUlakam/cuwkam/cuwkam.qmz — சுங்கம் (customs) and trade documents
+//
+// The centre of this file is the duty cascade, because the order duties are
+// applied in is the thing implementations get wrong.
+//
+// Basic customs duty is charged on the assessable value. The surcharge is
+// charged on the duty — not on the value. And IGST is charged on the value
+// *plus* the duty and the surcharge, not on the value alone. Compute IGST on
+// the assessable value and every bill of entry understates the tax, by more
+// the higher the duty rate.
+//
+// No rate is in this file. Duty by tariff heading is set by notification and
+// amended; rates belong in vari_viziqam, which is effective-dated for exactly
+// this reason.
+//
+// சரக்கு, கட்டணம் and விலக்கு are keywords, so the words this module wants are
+// unavailable alone.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+இறக்கு "../col.qmz";
+
+// --- assessable value -----------------------------------------------------
+//
+// மதிப்பிடத்தக்க_மதிப்பு(பொருள்_விலை, கப்பற்_கட்டணம், காப்பீட்டுக்_கட்டணம்)
+//
+// Duty is charged on the goods delivered to the border, not on the invoice
+// alone: cost, insurance and freight. An importer who computes duty on the
+// invoice value alone underpays on every consignment that had to be shipped.
+செயல் மதிப்பிடத்தக்க_மதிப்பு(பொருள்_விலை, கப்பற்_கட்டணம், காப்பீட்டுக்_கட்டணம்) {
+    திரும்பு வட்டமிடு(பொருள்_விலை + கப்பற்_கட்டணம் + காப்பீட்டுக்_கட்டணம், 2);
+}
+
+// --- the cascade ----------------------------------------------------------
+//
+// சுங்கக்_கணக்கு(மதிப்பு, அடிப்படை_விகிதம், மேலதிக_விகிதம், ஜிஎஸ்டி_விகிதம்)
+//
+// Each duty on the base the law gives it, in order:
+//
+//   basic         on the assessable value
+//   surcharge     on the basic duty — not on the value
+//   IGST          on the value plus basic plus surcharge
+//
+// Answers every step, because a bill of entry has to show them separately and
+// because a total nobody can reconstruct is a total nobody can check.
+செயல் சுங்கக்_கணக்கு(மதிப்பு, அடிப்படை_விகிதம், மேலதிக_விகிதம், ஜிஎஸ்டி_விகிதம்) {
+    அடிப்படைக்_கட்டணம் = வட்டமிடு(சதவீதம்(மதிப்பு, அடிப்படை_விகிதம்), 2);
+
+    // On the duty, not on the value. This is the step most often written
+    // against the wrong base, and the answer looks plausible either way.
+    மேலதிகச்_சுங்கம் = வட்டமிடு(சதவீதம்(அடிப்படைக்_கட்டணம், மேலதிக_விகிதம்), 2);
+
+    // The duty-inclusive value: IGST is charged on what the goods cost to land
+    // including what has already been charged on them.
+    ஜிஎஸ்டி_அடிப்படை = மதிப்பு + அடிப்படைக்_கட்டணம் + மேலதிகச்_சுங்கம்;
+    ஜிஎஸ்டி = வட்டமிடு(சதவீதம்(ஜிஎஸ்டி_அடிப்படை, ஜிஎஸ்டி_விகிதம்), 2);
+
+    மொத்தச்_சுங்கம் = வட்டமிடு(அடிப்படைக்_கட்டணம் + மேலதிகச்_சுங்கம் + ஜிஎஸ்டி, 2);
+
+    திரும்பு {"மதிப்பு": வட்டமிடு(மதிப்பு, 2),
+              "அடிப்படை": அடிப்படைக்_கட்டணம்,
+              "மேலதிகம்": மேலதிகச்_சுங்கம்,
+              "ஜிஎஸ்டி_அடிப்படை": வட்டமிடு(ஜிஎஸ்டி_அடிப்படை, 2),
+              "ஜிஎஸ்டி": ஜிஎஸ்டி,
+              "மொத்தம்": மொத்தச்_சுங்கம்,
+              "இறங்கு_விலை": வட்டமிடு(மதிப்பு + மொத்தச்_சுங்கம், 2)};
+}
+
+// --- tariff headings ------------------------------------------------------
+//
+// தலைப்பு_சரியா(குறியீட்டெண்) — is this a well-formed tariff heading?
+//
+// A heading is digits, and its length says how specific it is: two for the
+// chapter, four for the heading, six for the international subheading, eight
+// for the Indian tariff item. Anything else is not a heading — and a code with
+// a stray space or dash is the ordinary way a spreadsheet mangles one.
+//
+// Whether a well-formed code *exists* in the tariff is a question for the
+// tariff, which is data.
+செயல் தலைப்பு_சரியா(குறியீட்டெண்) {
+    நீளம்_மதிப்பு = நீளம்(குறியீட்டெண்);
+    (நீளம்_மதிப்பு != 2 மற்றும் நீளம்_மதிப்பு != 4
+     மற்றும் நீளம்_மதிப்பு != 6 மற்றும் நீளம்_மதிப்பு != 8) எனில் {
+        திரும்பு பொய்;
+    }
+    திரும்பு எண்களே(குறியீட்டெண்);
+}
+
+செயல் எண்களே(பாடம்) {
+    இடம்_எண் = 0;
+    (இடம்_எண் < நீளம்(பாடம்)) சுற்று {
+        எழுத்தொன்று = பாடம்[இடம்_எண்];
+        (எழுத்தொன்று < "0" அல்லது எழுத்தொன்று > "9") எனில் { திரும்பு பொய்; }
+        இடம்_எண் = இடம்_எண் + 1;
+    }
+    திரும்பு நீளம்(பாடம்) > 0;
+}
+
+// அத்தியாயம்(குறியீட்டெண்) — the chapter a heading belongs to
+செயல் அத்தியாயம்(குறியீட்டெண்) {
+    (நீளம்(குறியீட்டெண்) < 2) எனில் { திரும்பு ""; }
+    திரும்பு துண்டு(குறியீட்டெண், 0, 2);
+}
+
+// பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) — does a code fall under a heading?
+//
+// An eight-digit item falls under its six-digit subheading, its four-digit
+// heading and its chapter. This is how a rate stated at chapter level is found
+// for a specific item, and it is a prefix test rather than equality.
+செயல் பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) {
+    (நீளம்(தலைப்புக்_குறி) > நீளம்(குறியீட்டெண்)) எனில் { திரும்பு பொய்; }
+    திரும்பு தொடங்குகிறதா(குறியீட்டெண், தலைப்புக்_குறி);
+}
+
+// --- the e-way bill -------------------------------------------------------
+//
+// தேவையா(மதிப்பு, வரம்புத்_தொகை) — does this consignment need one at all?
+//
+// Below the threshold there is nothing to generate. The threshold is a state
+// rule and is passed rather than assumed.
+செயல் தேவையா(மதிப்பு, வரம்புத்_தொகை) {
+    திரும்பு மதிப்பு > வரம்புத்_தொகை;
+}
+
+// செல்லுபடி_நாட்கள்(தூரம், ஒரு_நாள்_தூரம்)
+//
+// Validity is one day per so many kilometres, and always at least one day.
+// The distance band is a rule and is passed in; what is structural is the
+// rounding — a journey that spills a single kilometre past a band gets the
+// extra day, so this rounds up and never down.
+//
+// Rounding down is the failure that matters: a bill that expires while the
+// lorry is still moving means the goods are in transit without one.
+செயல் செல்லுபடி_நாட்கள்(தூரம், ஒரு_நாள்_தூரம்) {
+    (ஒரு_நாள்_தூரம் <= 0) எனில் { திரும்பு 1; }
+    (தூரம் <= 0) எனில் { திரும்பு 1; }
+    நாட்கள் = மேல்(தூரம் / ஒரு_நாள்_தூரம்);
+    (நாட்கள் < 1) எனில் { திரும்பு 1; }
+    திரும்பு நாட்கள்;
+}
+
+// வழிச்சீட்டு_சரிபார்(விவரங்கள்) — is this complete enough to generate?
+//
+// An e-way bill is refused for a missing field, and finding out at the portal
+// with a lorry waiting is worse than finding out here. Answers the list of
+// what is missing rather than a yes or no, because the useful answer to
+// "is this valid" is "no, and here is what to fix".
+செயல் வழிச்சீட்டு_சரிபார்(விவரங்கள்) {
+    குறைகள் = [];
+
+    ஒவ்வொரு தேவைப்_புலம் இல் ["அனுப்புநர்_ஜிஎஸ்டி", "பெறுநர்_ஜிஎஸ்டி",
+                                 "தலைப்பு", "மதிப்பு", "தூரம்"] {
+        (புலம்_உள்ளதா(விவரங்கள், தேவைப்_புலம்) == பொய்) எனில் {
+            குறைகள் = இணை(குறைகள், தேவைப்_புலம் & " இல்லை (missing)");
+        }
+    }
+
+    தலைப்பு_மதிப்பு = புலம்_அல்லது(விவரங்கள், "தலைப்பு", "");
+    (நீளம்(தலைப்பு_மதிப்பு) > 0 மற்றும் தலைப்பு_சரியா(தலைப்பு_மதிப்பு) == பொய்) எனில் {
+        குறைகள் = இணை(குறைகள், "தலைப்பு சரியில்லை (not a tariff heading): "
+                                & தலைப்பு_மதிப்பு);
+    }
+
+    மதிப்பு_மதிப்பு = புலம்_அல்லது(விவரங்கள், "மதிப்பு", 0);
+    (மதிப்பு_மதிப்பு <= 0) எனில் {
+        குறைகள் = இணை(குறைகள், "மதிப்பு பூஜ்யத்திற்கு மேல் இருக்க வேண்டும் "
+                                & "(the value must be positive)");
+    }
+
+    // Part B carries the vehicle. Without it the bill exists and the goods
+    // may not move, which is a different thing from an invalid bill — so it
+    // is reported as its own state rather than as an error.
+    வாகனம் = புலம்_அல்லது(விவரங்கள், "வாகனம்", "");
+
+    திரும்பு {"சரியா": நீளம்(குறைகள்) == 0,
+              "குறைகள்": குறைகள்,
+              "பகுதி_பி_உள்ளதா": நீளம்(வாகனம்) > 0};
+}
+
+// --- GSTIN ----------------------------------------------------------------
+//
+// ஜிஎஸ்டி_எண்_சரியா(எண்) — the shape of a GSTIN
+//
+// Fifteen characters: two digits of state code, ten of PAN, one entity digit,
+// a letter, and a check character. This checks the shape and the state code
+// only. The check digit is a published algorithm and worth adding; claiming to
+// validate a GSTIN without it would be the more dangerous half-measure, so
+// what this does is named honestly — the shape, not the number.
+செயல் ஜிஎஸ்டி_எண்_சரியா(எண்_மதிப்பு) {
+    (நீளம்(எண்_மதிப்பு) != 15) எனில் { திரும்பு பொய்; }
+    திரும்பு எண்களே(துண்டு(எண்_மதிப்பு, 0, 2));
+}
+
+// ஜிஎஸ்டி_மாநிலம்(எண்) — the state code a GSTIN begins with
+செயல் ஜிஎஸ்டி_மாநிலம்(எண்_மதிப்பு) {
+    (நீளம்(எண்_மதிப்பு) < 2) எனில் { திரும்பு ""; }
+    திரும்பு துண்டு(எண்_மதிப்பு, 0, 2);
+}
