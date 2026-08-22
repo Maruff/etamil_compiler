@@ -1,0 +1,57 @@
+// ஆவணம் — filling a document template
+//
+// The real templates are .odt and .docx files, and பொதியை_நிரப்பு opens one,
+// fills it and writes the new package out. That needs a file to point at, so
+// this example does the half that stands alone: the XML inside the package.
+//
+//   பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+//
+// is the whole of the difference for a real one.
+
+இறக்கு "../../nUlakam/AvaNam.qmz";
+
+// What LibreOffice writes for a two-column table with a repeating row. The
+// {%tr%} rows are the convention the templates already use: everything
+// between them repeats, once per item.
+படிவம் = "<office:body><table:table>"
+       & "<table:table-row><text:p>#</text:p><text:p>நோக்கம்</text:p></table:table-row>"
+       & "<table:table-row><text:p>{%tr for o in objectives %}</text:p></table:table-row>"
+       & "<table:table-row><text:p>{{ o.no }}</text:p><text:p>{{ o.what }}</text:p></table:table-row>"
+       & "<table:table-row><text:p>{%tr endfor %}</text:p></table:table-row>"
+       & "</table:table>"
+       & "<text:p>திட்டம்: {{ project.name }}</text:p>"
+       & "</office:body>";
+
+// A scalar is named by the dotted path the template writes.
+மதிப்புகள் = [
+    {"குறி": "project.name", "மதிப்பு": "பீக் PMO"}
+];
+
+// A group names its loop variable, the fields each row reads, and the rows.
+தொகுதிகள் = [
+    {"பெயர்": "o",
+     "புலங்கள்": ["no", "what"],
+     "வரிசைகள்": [
+        {"no": "1", "what": "ஒரே உண்மை"},
+        {"no": "2", "what": "தானியங்கு ஆவணங்கள்"}
+     ]}
+];
+
+ஆவணம் = ஆவணம்_நிரப்பு(படிவம், ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+
+அச்சு "=== நிரப்பப்பட்ட ஆவணம் ===";
+அச்சு ஆவணம்;
+அச்சு "";
+
+// Two items, so two rows, plus the header. The for and endfor rows are gone
+// and so is everything they carried — but not the tags that followed them:
+// </table:table> is still there, which is the bug this convention invites.
+அச்சு "வரிசைகள்: " & (நீளம்(பிரி(ஆவணம், "<table:table-row")) - 1);
+அச்சு "அட்டவணை முடிகிறதா: " & உள்ளதா(ஆவணம், "</table:table>");
+
+
+// A value that looks like markup is escaped, or the document stops being
+// well-formed XML and LibreOffice calls the file corrupt.
+அபாயம் = ஆவணம்_நிரப்பு("<text:p>{{ x }}</text:p>", ODT_வடிவம்,
+                        [{"குறி": "x", "மதிப்பு": "5 < 10 & rising"}], []);
+அச்சு "தப்பிக்கப்பட்டது: " & அபாயம்;

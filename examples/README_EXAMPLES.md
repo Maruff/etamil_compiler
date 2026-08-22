@@ -60,6 +60,40 @@ This directory contains comprehensive examples demonstrating the eTamil compiler
 
 ---
 
+### 2b. **AvaNam_uqAraNam.qmz** - Filling a document template
+**Description:** Fills an ODF/OOXML document template — the renderer is
+`nUlakam/AvaNam.qmz`, written in eTamil
+
+**Features:**
+- Scalar placeholders named by dotted path (`{{ project.name }}`)
+- Row groups repeated per item (`{%tr for x in list %}` … `{%tr endfor %}`)
+- XML escaping, so a value like `5 < 10` cannot break the document
+- One `வடிவம்` per format: `.odt`, `.ods`, `.docx`, `.xlsx`
+
+**Sample Code:**
+```tamil
+இறக்கு "../../nUlakam/AvaNam.qmz";
+
+மதிப்புகள் = [{"குறி": "project.name", "மதிப்பு": "பீக் PMO"}];
+ஆவணம் = ஆவணம்_நிரப்பு(படிவம், ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+```
+
+**Working on real files** — this example renders XML inline so that it needs
+no fixture. For an actual `.odt` or `.docx`, `பொதியை_நிரப்பு` opens the
+package, fills `content.xml` (or `word/document.xml`) and writes a new one,
+carrying the pictures and styles across untouched:
+
+```tamil
+பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+pdf_ஆக்கு("soffice", "out.odt", ".");   // needs ETAMIL_EXEC_ALLOW
+```
+
+**Data Files:**
+- Input: none — the template is a string in the example
+- Output: printed, not written
+
+---
+
 ## Encryption Examples
 
 ### 3. **crypto_demo.rs** - File Encryption/Decryption
