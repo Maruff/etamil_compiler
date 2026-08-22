@@ -3166,6 +3166,34 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "சீட்டு_தலைப்பு",
+    "forms": [
+      "சீட்டு_தலைப்பு",
+      "cIttu_qalYppu",
+      "_tokenHeader"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "சீட்டு_தலைப்பு(சீட்டு) — {kid, alg}, read but not trusted",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "சீட்டு_பொதுச்_சரிபார்",
+    "forms": [
+      "சீட்டு_பொதுச்_சரிபார்",
+      "cIttu_poquc_caripAr",
+      "_verifyTokenRSA"
+    ],
+    "params": null,
+    "arity": 5,
+    "doc": "சீட்டு_பொதுச்_சரிபார்(சீட்டு, n, e, வழங்குநர், பார்வையாளர்)",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

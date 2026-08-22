@@ -265,6 +265,79 @@ pub fn read_token(token: &str) -> Result<String, String> {
     })
 }
 
+/// Which key signed a token, read from its header without verifying anything.
+///
+/// A provider like Entra ID publishes many keys and rotates them, so the only
+/// way to know which one to check against is to look at the token's own `kid`
+/// first. Nothing here is trusted: the header is read, the signature is not,
+/// and the answer is only useful for choosing a key to then verify with.
+pub fn token_header(token: &str) -> Result<(String, String), String> {
+    let header = jsonwebtoken::decode_header(token)
+        .map_err(|_| "குறியீட்டின் தலைப்பைப் படிக்க முடியவில்லை  (cannot read the token header)".to_string())?;
+
+    Ok((
+        header.kid.unwrap_or_default(),
+        format!("{:?}", header.alg),
+    ))
+}
+
+/// Verify an RS256 token against a public key given as its JWK components.
+///
+/// `n` and `e` are the base64url modulus and exponent straight out of a JWKS
+/// document. Fetching that document, choosing the key and caching it are the
+/// language's business — this only answers whether a token is signed by the
+/// key it was handed, and is for whom it claims to be.
+///
+/// The issuer and the audience are required, not optional. A token signed by
+/// a real provider for a different application is a valid token; accepting it
+/// because the audience went unchecked is how one tenant's login becomes
+/// another application's session.
+pub fn verify_rsa_token(
+    token: &str,
+    modulus: &str,
+    exponent: &str,
+    issuer: &str,
+    audience: &str,
+) -> Result<String, String> {
+    if issuer.is_empty() || audience.is_empty() {
+        return Err(
+            "வழங்குநரும் பார்வையாளரும் தேவை  (the issuer and the audience are both required)"
+                .to_string(),
+        );
+    }
+
+    let key = DecodingKey::from_rsa_components(modulus, exponent)
+        .map_err(|_| "பொது சாவி செல்லாதது  (the public key is not valid)".to_string())?;
+
+    let mut validation = Validation::new(jsonwebtoken::Algorithm::RS256);
+    validation.set_required_spec_claims(&["exp"]);
+    validation.set_issuer(&[issuer]);
+    validation.set_audience(&[audience]);
+    // The same five seconds read_token allows, and for the same reason: a
+    // stated tolerance rather than jsonwebtoken's inherited sixty.
+    validation.leeway = 5;
+
+    let data = decode::<serde_json::Value>(token, &key, &validation).map_err(|e| {
+        match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                "குறியீடு காலாவதியானது  (the token has expired)".to_string()
+            }
+            jsonwebtoken::errors::ErrorKind::InvalidIssuer => {
+                "வழங்குநர் பொருந்தவில்லை  (the issuer does not match)".to_string()
+            }
+            jsonwebtoken::errors::ErrorKind::InvalidAudience => {
+                "பார்வையாளர் பொருந்தவில்லை  (the audience does not match)".to_string()
+            }
+            _ => "குறியீடு செல்லாதது  (the token is not valid)".to_string(),
+        }
+    })?;
+
+    serde_json::to_string(&data.claims).map_err(|_| {
+        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)"
+            .to_string()
+    })
+}
+
 /// RBAC middleware guard
 pub struct RoleGuard {
     required_roles: Vec<String>,

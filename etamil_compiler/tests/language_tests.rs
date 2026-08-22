@@ -2778,6 +2778,93 @@ fn command_arguments_must_be_a_list() {
     assert!(failure.contains("அணி"), "unexpected message: {}", failure);
 }
 
+// --- Single sign-on -------------------------------------------------------
+// An identity provider signs with RS256 and publishes its public keys. The
+// key below is a test one, and the tokens expire in 2100 so that a passing
+// test stays passing. Fetching a JWKS, choosing a key and caching it are the
+// language's job; these cover the two things only the host can do.
+
+/// The modulus of the test key, base64url, as it appears in a JWKS.
+const TEST_N: &str = "niHJFLOy4WjoYbpva1DhK1ZVRWcTG7rqSE0RsrM_nOT0F9XhVGipnWZGQ0D8cGVrIWXivc_3fzyP1qCx8LP2CMitxmK856hngh6kQr8CvB_CkEp6attzO2Y65a1_KIwE2HulSdOzA7HO6Ujeg52ZeMSLJ8PnJF3rBJ0LOAUBApDl1M0EDA-rkdC9BnCJ5oYR1CgKvGUFzX8Q7K5tdeBb4beQXMdNTAKNjzzX0bAvegVrN5Z2rqXSuWKpQEzZFZfBqnelHoaflRKrnCQEjekizs3ygPpNqGKK75WSeC5sudV23LSAIdNp5wxshheWe4YMZBCOPun5X8-W4d-XG-kWlQ";
+const TEST_E: &str = "AQAB";
+const TEST_ISSUER: &str = "https://login.microsoftonline.com/beak-tenant/v2.0";
+const TEST_AUDIENCE: &str = "api://beak-pmo";
+/// Signed by the test key, for TEST_AUDIENCE.
+const GOOD_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJ1LTEiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vYmVhay10ZW5hbnQvdjIuMCIsImF1ZCI6ImFwaTovL2JlYWstcG1vIiwiaWF0IjoxLCJleHAiOjQxMDI0NDQ4MDB9.Hi2GmgJt1CIlV6nntaiJpCxHG1F-No1C0QP8OGRxsuufdUTI_FeJ7EP22XrKDzbz8BqJkBmszUGdcoloJr5DpK41wJ_G8U_o7OJ2owVf792HYLgheSUhnLBGq7uqCgaqDjz2VKBsRuHoLjk7u03tKEJCMZjtJBYG_33Yna3nk4Dyefi3AaY5UFMVkVwQrFLftPsd2qBxY6wNom9uiEwXYx6KE5dDdEMAVaoivbS6P2dIT3F8lES0rU_j9CMcGT2r0kvgG_SCrve-Gp1RCT-pwHRPR5HC7OWr3Qf-pKnrpyRqMBhBofRum_iY_CVGsVYNKPjeysPA1qbR0rDZUf-0aQ";
+/// Signed by the same key, but for somebody else's application.
+const OTHER_AUDIENCE_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsImtpZCI6InRlc3Qta2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJ1LTEiLCJpc3MiOiJodHRwczovL2xvZ2luLm1pY3Jvc29mdG9ubGluZS5jb20vYmVhay10ZW5hbnQvdjIuMCIsImF1ZCI6ImFwaTovL3NvbWVvbmUtZWxzZSIsImlhdCI6MSwiZXhwIjo0MTAyNDQ0ODAwfQ.Kw5GUyySqHQGVujIqe88-QcOvfARQW0P0QCF-yrjiRC2GsR-Bv_nUThFTkvhQ6X8sSWywefsQzlnuPXDcB4DTfQUSYzEwRljKPynIrZe0s8yrWpUFEs5z7BdSFfjRxq97PgMiqum21K4NyldqaDddfmj7LwlPTcE0LcKxBJPvKRLuMCzkJkDn1tpDDm_Gg5qRRPdL2OfzMHDRaxQ2cCCzwWfQfdP1z9Vz9fTHmDF7PaZq2LHSsTye02bMc6l6aLxKn6o7MbwDsr7s-YlPf8omYsBgH3CHCX6R0hJ1TuRRofBuN80fTsrfn8AXdlsJ0dh24X3GLxjzmRPqVUdkRaaZQ";
+
+#[test]
+fn a_token_names_the_key_that_signed_it() {
+    // Read, not trusted: this is only how a key gets chosen to verify with.
+    let vm = run(&format!(
+        r#"விவரம் = சீட்டு_தலைப்பு("{}");
+           எது = மதிப்பு(விவரம்)["kid"];
+           எந்த_வகை = மதிப்பு(விவரம்)["alg"];"#,
+        GOOD_TOKEN
+    ))
+    .unwrap();
+
+    assert_eq!(text(&vm, "எது"), "test-key-1");
+    assert_eq!(text(&vm, "எந்த_வகை"), "RS256");
+}
+
+#[test]
+fn a_token_signed_by_the_named_key_is_accepted() {
+    let vm = run(&format!(
+        r#"விடை = சீட்டு_பொதுச்_சரிபார்("{}", "{}", "{}", "{}", "{}");
+           சரியா_விடை = சரியா(விடை);"#,
+        GOOD_TOKEN, TEST_N, TEST_E, TEST_ISSUER, TEST_AUDIENCE
+    ))
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியா_விடை"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_real_token_for_another_application_is_refused() {
+    // The failure this guards against: the provider really did sign it, the
+    // signature really does check out, and it is still not for us. Skipping
+    // the audience is how one tenant's login becomes another app's session.
+    let vm = run(&format!(
+        r#"விடை = சீட்டு_பொதுச்_சரிபார்("{}", "{}", "{}", "{}", "{}");
+           தவறுதானா = தவறா(விடை);"#,
+        OTHER_AUDIENCE_TOKEN, TEST_N, TEST_E, TEST_ISSUER, TEST_AUDIENCE
+    ))
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn verifying_without_an_audience_is_refused_outright() {
+    // Not "verify and skip the check" — there is no way to ask for that.
+    let vm = run(&format!(
+        r#"விடை = சீட்டு_பொதுச்_சரிபார்("{}", "{}", "{}", "{}", "");
+           தவறுதானா = தவறா(விடை);"#,
+        GOOD_TOKEN, TEST_N, TEST_E, TEST_ISSUER
+    ))
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_token_signed_by_a_different_key_is_refused() {
+    // Same token, a modulus that is not the one that signed it.
+    let mut wrong = TEST_N.to_string();
+    wrong.replace_range(0..1, if TEST_N.starts_with('a') { "b" } else { "a" });
+
+    let vm = run(&format!(
+        r#"விடை = சீட்டு_பொதுச்_சரிபார்("{}", "{}", "{}", "{}", "{}");
+           தவறுதானா = தவறா(விடை);"#,
+        GOOD_TOKEN, wrong, TEST_E, TEST_ISSUER, TEST_AUDIENCE
+    ))
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]
