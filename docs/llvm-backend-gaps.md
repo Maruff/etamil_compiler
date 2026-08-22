@@ -60,17 +60,72 @@ in the refusal list.
 the IR can pass by pointer. This is the largest single piece of work and gates
 gaps 2 and 4.
 
-### 4. `திரும்பு` is refused
+### 4. `திரும்பு` — not a gap, and this document was wrong about it
 
-`codegen.rs:216`. A function cannot return, which is a surprising thing to find
-listed as unsupported when the README claims numeric functions work. Worth
-looking at first on Ubuntu: it may be narrower than it reads, and if it is
-genuinely broken then "numeric functions" is an overstatement in the README.
+An earlier version of this file listed `திரும்பு` as unsupported. It is not.
+Reading `codegen.rs:216` properly: the refusal fires only when
+`self.in_function` is false — a `திரும்பு` at top level, where there is nothing
+to return from. Inside a function it compiles to `LLVMBuildRet` like any other
+return.
 
-### 5. The statements the VM has and this does not
+So the README's "numeric functions" claim stands, and this entry is kept only
+because a corrected list is more useful than a quietly shortened one.
+
+### 5. Only float arithmetic exists, which is why the workaround below works
+
+Counted from source:
+
+```
+LLVMBuildFAdd  1     LLVMBuildAdd   1   (pointer arithmetic, not the language's)
+LLVMBuildFSub  1     LLVMBuildSDiv  0
+LLVMBuildFMul  1     LLVMBuildSRem  0
+LLVMBuildFDiv  1
+```
+
+Every eTamil number goes through a double. LLVM has exact integer arithmetic
+and this backend does not reach for it — which matters, because it makes the
+cheap fix cheap. See "A workaround for money" below.
+
+### 6. Strings, booleans and nil have no representation
+
+`Expr::String` appears **zero** times in `codegen.rs`. Booleans, `இன்மை` and the
+`?` operator appear only in the *labelling* function that writes refusal
+messages. Arrays and records are narrower than absent: a local variable holding
+one compiles, and indexing something the backend has not tracked as an array
+does not.
+
+### 7. The statements the VM has and this does not
 
 Database, HTTP routing, files, scheduling. Each is refused explicitly, which is
 correct behaviour, and none is reachable without gaps 1–3.
+
+## A workaround for money, without a decimal runtime
+
+Two-place decimals are what accounting needs, and there is a way to have them
+exactly on this backend without building decimal arithmetic first.
+
+**Keep money in paise, as whole numbers.** ₹2.05 is `205`. A double represents
+every integer below 2^53 exactly — about ₹90,000 crore expressed in paise — so
+addition, subtraction and multiplication by a quantity are exact today, with no
+change to the backend at all. A percentage is exact too if it is computed as
+integer arithmetic and rounded once:
+
+    paise × rate_numerator + denominator/2, then divided and floored
+
+`nUlakam/kAcu.qmz` is that, written in eTamil and tested on the VM. It never
+writes a fractional literal, so it is not caught by the refusal, and it does the
+one thing a naive implementation gets wrong: splitting an amount that does not
+divide evenly distributes the odd paise instead of losing them.
+
+**What still needs a backend change, and it is small.** Division of the paise
+figure is the one step where a double can be off by one in the last place. The
+fix is not a decimal runtime — it is to compile whole numbers as `i64` and use
+`LLVMBuildSDiv`, which is exact. That is four or five instruction sites, against
+the twenty-three a decimal representation would touch.
+
+So the order below can be re-read: **integers as `i64` first** buys correct
+accounting for a fraction of the work, and full decimal arithmetic can wait for
+whoever needs three decimal places.
 
 ## Suggested order
 
@@ -78,10 +133,15 @@ correct behaviour, and none is reachable without gaps 1–3.
    both backends and reports what stopped each one, ranked. Run it on Ubuntu
    before deciding anything — the list below is reasoning, and that is
    measurement.
-2. **The runtime library and the boxed value** (gaps 3 then 1). Nothing else
-   moves until these do.
-3. **Builtins over the C ABI** (gap 2), which is mostly mechanical afterwards.
-4. **`திரும்பு`** (gap 4), which may be small enough to do at any point.
+2. **Whole numbers as `i64`, with `LLVMBuildSDiv`.** Four or five sites, and it
+   buys exact two-place money through `nUlakam/kAcu.qmz` — see the workaround
+   above. This is the cheapest correctness win available and does not depend on
+   anything else.
+3. **The boxed value** (gap 3): a tagged struct the IR passes by pointer, the
+   same shape `Value` has. Strings, arrays, records and results all wait on it.
+4. **Builtins over the C ABI** (gap 2), mostly mechanical once 3 exists.
+5. **Full decimal arithmetic** (gap 1), for whoever needs more than two places.
+   Deliberately last: step 2 already covers accounting.
 
 ## What cannot be checked on Windows
 

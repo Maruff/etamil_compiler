@@ -261,6 +261,42 @@ mod tests {
         assert!(!refuses("அ = மெய்;"));
     }
 
+    // --- the paise workaround, and exactly where it stops ------------------
+    //
+    // nUlakam/kAcu.qmz holds money as whole paise so that two decimal places
+    // are exact without decimal arithmetic underneath. These pin how far that
+    // gets on this backend, because the answer is "most of the way".
+
+    #[test]
+    fn money_held_in_paise_is_accepted() {
+        // Adding, subtracting and multiplying money written as whole paise.
+        // No fractional literal, so nothing to refuse: ₹2.05 is 205.
+        assert!(!refuses("மொத்தம் = 205 + 195;"));
+        assert!(!refuses("மீதம் = 400 - 205;"));
+        assert!(!refuses("வரிசைத்_தொகை = 205 * 7;"));
+        assert!(!refuses("ரூ = 2 * 100 + 5;"));
+    }
+
+    #[test]
+    fn the_division_the_money_module_needs_is_still_refused_today() {
+        // And this is the honest limit of the workaround. Turning paise back
+        // into rupees for display, taking a percentage, and splitting an amount
+        // all divide — and a double's division can be out by one in the last
+        // place, which for money is a paisa.
+        //
+        // So kAcu.qmz is refused on this backend as things stand, and refusing
+        // it is right. What makes it work is not decimal arithmetic: it is
+        // compiling whole numbers as i64 and dividing with LLVMBuildSDiv, which
+        // is exact. Four or five instruction sites against twenty-three.
+        //
+        // This test is the marker for that change. When integers become i64,
+        // division of whole numbers stops being a reason to refuse, and this
+        // test is what should be revisited first.
+        assert!(refuses("ரூபாய் = தரை(205 / 100);"));
+        assert!(refuses("வரி = தரை((205 * 18 + 50) / 100);"));
+        assert!(refuses("பங்கு = தரை(1000 / 3);"));
+    }
+
     #[test]
     fn each_reason_is_reported_once_however_often_it_occurs() {
         // A hundred decimal literals is one problem, not a hundred, and a list
