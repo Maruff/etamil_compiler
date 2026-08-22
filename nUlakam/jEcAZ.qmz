@@ -17,13 +17,18 @@
 
 // --- Serializing ----------------------------------------------------------
 
-// எழுத்து_மறை(எழுத்து) — one character, escaped for a JSON string
+// எழுத்து_மறை(எழுத்து) — one letter, escaped for a JSON string.
+//
+// "\r\n" is one letter, not two, so it needs an arm of its own: without it
+// a Windows line ending inside a string falls through unescaped and the
+// output carries a raw control character, which no JSON reader accepts.
 செயல் எழுத்து_மறை(ஒரு_எழுத்து) {
     (ஒரு_எழுத்து == "\"") எனில் { திரும்பு "\\\""; }
     (ஒரு_எழுத்து == "\\") எனில் { திரும்பு "\\\\"; }
     (ஒரு_எழுத்து == "\n") எனில் { திரும்பு "\\n"; }
     (ஒரு_எழுத்து == "\t") எனில் { திரும்பு "\\t"; }
     (ஒரு_எழுத்து == "\r") எனில் { திரும்பு "\\r"; }
+    (ஒரு_எழுத்து == "\r\n") எனில் { திரும்பு "\\r\\n"; }
     திரும்பு ஒரு_எழுத்து;
 }
 
@@ -87,13 +92,21 @@
 }
 
 // ஜே_வெண்மை(உரை, இடம்) — skip whitespace, returning the next position
+//
+// The text is read letter by letter, and "\r\n" is one letter — the rule
+// that makes நீளம்("வணக்கம்") 5 also joins a carriage return to the line
+// feed after it. A Windows line ending therefore matches neither the "\r"
+// arm nor the "\n" one and needs its own. Without it whitespace ends at
+// the first line break of a pretty-printed document, and ஜே_சோடி below
+// blames a field name it never reached.
 செயல் ஜே_வெண்மை(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = தொடக்க_இடம்;
     தொடரவா = மெய்;
     (தொடரவா) சுற்று {
         ஒரு_எழுத்து = ஜே_எழுத்து(மூல_உரை, நடப்பு_இடம்);
         (ஒரு_எழுத்து == " " அல்லது ஒரு_எழுத்து == "\n"
-         அல்லது ஒரு_எழுத்து == "\t" அல்லது ஒரு_எழுத்து == "\r") எனில் {
+         அல்லது ஒரு_எழுத்து == "\t" அல்லது ஒரு_எழுத்து == "\r"
+         அல்லது ஒரு_எழுத்து == "\r\n") எனில் {
             நடப்பு_இடம் = நடப்பு_இடம் + 1;
         }
         இன்றேல் { தொடரவா = பொய்; }
