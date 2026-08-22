@@ -1754,6 +1754,10 @@ fn run_with_db(source: &str, rows: Vec<Value>) -> (Result<VM, String>, Arc<Mutex
     // release — the log below would otherwise show a ROLLBACK no program wrote.
     vm.connections.insert(
         "SQLite".to_string(),
+        // The fake stands in for whatever a program would have named; a second
+        // தளம்_இணை to something else is what gets refused, and this harness
+        // issues none.
+        ":fake:".to_string(),
         etamil_compiler::db::pool::Lease::detached(Box::new(FakeDb {
             log: Arc::clone(&log),
             rows,
@@ -3100,6 +3104,121 @@ fn an_empty_record_is_recognised_as_empty() {
 
     assert_eq!(vm.variables.get("காலியா"), Some(&Value::Boolean(true)));
     assert_eq!(vm.variables.get("காலியில்லை"), Some(&Value::Boolean(false)));
+}
+
+// --- One database at a time, and it says so --------------------------------
+// Connections are keyed by driver. A second தளம்_இணை through the same driver
+// used to overwrite the first: the count stayed at one, so connection_mut —
+// which does refuse when several drivers are open — saw nothing wrong, and
+// every query afterwards went to the second database while the program still
+// believed it was talking to the first.
+
+/// A SQLite file with one table in it, and its path as eTamil sees it.
+fn a_database(name: &str, table: &str) -> (std::path::PathBuf, String) {
+    let path = std::env::temp_dir().join(name);
+    let _ = std::fs::remove_file(&path);
+    let shown = path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
+    let vm = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_செய் "CREATE TABLE {} (x INTEGER)", [];
+           தளம்_செய் "INSERT INTO {} VALUES (?)", [1];"#,
+        shown, table, table
+    ));
+    assert!(vm.is_ok(), "could not build the fixture: {:?}", vm.err());
+    (path, shown)
+}
+
+#[test]
+fn a_second_different_database_is_refused() {
+    let (one, one_shown) = a_database("etamil_conn_one.db", "a");
+    let (two, two_shown) = a_database("etamil_conn_two.db", "b");
+
+    let failure = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_இணை சீகுலைட், "{}";"#,
+        one_shown, two_shown
+    ))
+    .unwrap_err();
+
+    let _ = std::fs::remove_file(&one);
+    let _ = std::fs::remove_file(&two);
+
+    // The message has to name the database already open, because the mistake
+    // is easiest to see when you are told what you are still connected to.
+    assert!(
+        failure.contains("already connected"),
+        "unexpected message: {}",
+        failure
+    );
+    assert!(failure.contains("etamil_conn_one.db"), "names the open one: {}", failure);
+}
+
+#[test]
+fn the_first_database_is_the_one_still_open_after_a_refusal() {
+    // The point of refusing rather than swapping: what the program had is
+    // still what it has.
+    let (one, one_shown) = a_database("etamil_conn_keep.db", "kept");
+
+    let failure = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_இணை சீகுலைட், "/tmp/etamil_conn_elsewhere.db";
+           தளம்_வினா "SELECT x FROM kept", [], வ;"#,
+        one_shown
+    ))
+    .unwrap_err();
+    assert!(failure.contains("already connected"), "{}", failure);
+
+    // Reached on its own, the same query works — so the table was there all
+    // along and it was the second connect that would have hidden it.
+    let vm = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_வினா "SELECT x FROM kept", [], வ;
+           எத்தனை = நீளம்(வ);"#,
+        one_shown
+    ))
+    .unwrap();
+    let _ = std::fs::remove_file(&one);
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(1));
+}
+
+#[test]
+fn connecting_to_the_same_database_again_is_not_an_error() {
+    // Saying it twice asks for nothing new, so it is not a mistake to report.
+    let (one, one_shown) = a_database("etamil_conn_same.db", "same_table");
+
+    let vm = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_இணை சீகுலைட், "{}";
+           தளம்_வினா "SELECT x FROM same_table", [], வ;
+           எத்தனை = நீளம்(வ);"#,
+        one_shown, one_shown
+    ))
+    .unwrap();
+    let _ = std::fs::remove_file(&one);
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(1));
+}
+
+#[test]
+fn disconnecting_first_allows_another_database() {
+    let (one, one_shown) = a_database("etamil_conn_a.db", "ta");
+    let (two, two_shown) = a_database("etamil_conn_b.db", "tb");
+
+    let vm = run(&format!(
+        r#"தளம்_இணை சீகுலைட், "{}";
+           தளம்_பிரி சீகுலைட்;
+           தளம்_இணை சீகுலைட், "{}";
+           தளம்_வினா "SELECT x FROM tb", [], வ;
+           எத்தனை = நீளம்(வ);"#,
+        one_shown, two_shown
+    ))
+    .unwrap();
+
+    let _ = std::fs::remove_file(&one);
+    let _ = std::fs::remove_file(&two);
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(1));
 }
 
 // --- Bilingual equivalence ------------------------------------------------

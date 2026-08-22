@@ -80,8 +80,18 @@ const MAX_CALL_DEPTH: usize = 256;
 /// not pay for a connect, a TLS handshake and an authentication round trip.
 /// A lease is exclusive for as long as it is held, which is what keeps one
 /// request's transaction out of another's — see db::pool.
+/// One open database: the handle, and which database it is.
+///
+/// The connection string is kept so that connecting again can tell "the same
+/// database" from "a different one through the same driver". Without it the
+/// second case was invisible — see `Connections::insert`.
+pub struct Open {
+    connection: String,
+    lease: crate::db::pool::Lease,
+}
+
 #[derive(Default)]
-pub struct Connections(HashMap<String, crate::db::pool::Lease>);
+pub struct Connections(HashMap<String, Open>);
 
 impl std::fmt::Debug for Connections {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -90,12 +100,17 @@ impl std::fmt::Debug for Connections {
 }
 
 impl Connections {
-    pub fn insert(&mut self, name: String, lease: crate::db::pool::Lease) {
-        self.0.insert(name, lease);
+    pub fn insert(&mut self, name: String, connection: String, lease: crate::db::pool::Lease) {
+        self.0.insert(name, Open { connection, lease });
+    }
+
+    /// Which database is open through this driver, if one is.
+    pub fn connection_of(&self, name: &str) -> Option<&str> {
+        self.0.get(name).map(|open| open.connection.as_str())
     }
 
     pub fn remove(&mut self, name: &str) -> Option<crate::db::pool::Lease> {
-        self.0.remove(name)
+        self.0.remove(name).map(|open| open.lease)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -142,6 +157,7 @@ impl VM {
                 .values_mut()
                 .next()
                 .expect("checked")
+                .lease
                 .as_mut());
         }
         if self.connections.is_empty() {
@@ -1622,11 +1638,39 @@ impl VM {
                 }
                 Instruction::DBConnect(db_type) => {
                     let connection = self.pop()?.to_string();
+
+                    // Connecting again through the same driver used to replace
+                    // the open connection without saying so. The map is keyed
+                    // by driver, so the second insert overwrote the first, the
+                    // count stayed at one, and connection_mut — which does
+                    // refuse when several are open — never saw a reason to.
+                    // Every query after that went to the second database while
+                    // the program still believed it was talking to the first.
+                    //
+                    // Two different databases through one driver is the case
+                    // the language cannot express: தளம்_வினா names no handle,
+                    // so there would be no way to say which one a query meant.
+                    // Refusing is the honest answer until it can.
+                    if let Some(already) = self.connections.connection_of(&db_type) {
+                        if already != connection {
+                            return Err(format!(
+                                "'{}' ஏற்கனவே '{}' உடன் இணைக்கப்பட்டுள்ளது  \
+                                 ('{}' is already connected to '{}'): \
+                                 தளம்_பிரி first — a query cannot say which of two it means",
+                                db_type, already, db_type, already
+                            ));
+                        }
+                        // The same database again: already connected, so there
+                        // is nothing to do and no lease to take.
+                        self.instruction_pointer += 1;
+                        continue;
+                    }
+
                     // Borrowed rather than opened: under --server every request
                     // runs on a fresh VM, so this statement is reached once per
                     // request and used to mean a new connection each time.
                     let lease = crate::db::pool::checkout(&db_type, &connection)?;
-                    self.connections.insert(db_type, lease);
+                    self.connections.insert(db_type, connection, lease);
                 }
                 Instruction::DBDisconnect(db_type) => {
                     // Returns the connection to the cache rather than closing
