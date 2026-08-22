@@ -10,6 +10,7 @@ pub mod check;
 pub mod module;
 pub mod repl;
 pub mod signing;
+pub mod redis;
 // Client certificates are only meaningful when there is a client.
 #[cfg(feature = "http-client")]
 pub mod mtls;

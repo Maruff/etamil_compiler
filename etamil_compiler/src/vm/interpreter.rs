@@ -132,6 +132,13 @@ pub struct VM {
     /// Files that came with this request, in the order they were sent.
     /// Empty except while a multipart request is being handled.
     pub uploads: Vec<Upload>,
+    /// An open Redis connection, if the program asked for one.
+    ///
+    /// Not pooled, and deliberately. Redis keeps state on a connection —
+    /// MULTI, WATCH, SUBSCRIBE — so two requests sharing one would interleave
+    /// a transaction the way two requests sharing a SQL connection do. The fix
+    /// is an exclusive lease, which the SQL side has and this does not yet.
+    pub cache: Option<crate::redis::Connection>,
 }
 
 impl VM {
@@ -142,6 +149,7 @@ impl VM {
             instruction_pointer: 0,
             file_modes: HashMap::new(),
             uploads: Vec::new(),
+            cache: None,
             frames: Vec::new(),
             connections: Connections::default(),
         }
@@ -840,6 +848,76 @@ impl VM {
                     Ok(found) => Ok(Value::String(found)),
                     Err(_) => Ok(args[1].clone()),
                 }
+            }
+
+            // --- Redis ------------------------------------------------------
+            // One command, generically, because that is the shape of Redis:
+            // a command name and its arguments. Every command works, including
+            // ones added after this was written, and convenience for the common
+            // ones belongs in nUlakam rather than in a builtin each.
+            //
+            // The roadmap said Redis needed a design first, because it does not
+            // fit a trait shaped as execute(sql)/query(sql). It does not, and
+            // this is the design: it is not a query language.
+
+            // ரெடிஸ்_இணை(முகவரி) — connect, as host:port
+            "ரெடிஸ்_இணை" | "retis_iNY" | "_redisConnect" => {
+                Self::expect_args(name, &args, 1)?;
+                let address = args[0].to_string();
+                match crate::redis::Connection::open(&address) {
+                    Ok(connection) => {
+                        self.cache = Some(connection);
+                        Ok(Value::Ok(Box::new(Value::String(address))))
+                    }
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // ரெடிஸ்_கட்டளை(கட்டளை, அளபுருக்கள்) — send one, read the reply
+            //
+            // A server that answers -ERR is answering, so that comes back as a
+            // தவறு carrying what it said. Being unable to reach it at all is
+            // also a தவறு, and the message says which happened.
+            "ரெடிஸ்_கட்டளை" | "retis_kattaLY" | "_redisCommand" => {
+                Self::expect_args(name, &args, 2)?;
+                let command = args[0].to_string();
+                let arguments = match &args[1] {
+                    Value::Array(items) => {
+                        items.iter().map(|item| item.to_string()).collect::<Vec<_>>()
+                    }
+                    other => {
+                        return Err(format!(
+                            "ரெடிஸ்_கட்டளை அளபுருக்கள் ஒரு அணி தேவை  \
+                             (the arguments must be an array, got {})",
+                            Self::type_name(other)
+                        ));
+                    }
+                };
+
+                let connection = match self.cache.as_mut() {
+                    Some(connection) => connection,
+                    None => {
+                        return Ok(Value::Err(Box::new(Value::String(
+                            "ரெடிஸ் இணைக்கப்படவில்லை  (not connected to Redis): \
+                             use ரெடிஸ்_இணை first"
+                                .to_string(),
+                        ))));
+                    }
+                };
+
+                match connection.command(&command, &arguments) {
+                    Ok(crate::redis::Reply::Error(said)) => {
+                        Ok(Value::Err(Box::new(Value::String(said))))
+                    }
+                    Ok(reply) => Ok(Value::Ok(Box::new(reply.to_value()))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // ரெடிஸ்_பிரி() — done with it
+            "ரெடிஸ்_பிரி" | "retis_piri" | "_redisClose" => {
+                Self::expect_args(name, &args, 0)?;
+                let was = self.cache.is_some();
+                self.cache = None;
+                Ok(Value::Boolean(was))
             }
 
             // --- Authentication ---

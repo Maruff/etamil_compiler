@@ -3292,6 +3292,48 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "ரெடிஸ்_இணை",
+    "forms": [
+      "ரெடிஸ்_இணை",
+      "retis_iNY",
+      "_redisConnect"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "ரெடிஸ்_இணை(முகவரி) — connect, as host:port",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "ரெடிஸ்_கட்டளை",
+    "forms": [
+      "ரெடிஸ்_கட்டளை",
+      "retis_kattaLY",
+      "_redisCommand"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "ரெடிஸ்_கட்டளை(கட்டளை, அளபுருக்கள்) — send one, read the reply",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "ரெடிஸ்_பிரி",
+    "forms": [
+      "ரெடிஸ்_பிரி",
+      "retis_piri",
+      "_redisClose"
+    ],
+    "params": null,
+    "arity": 0,
+    "doc": "ரெடிஸ்_பிரி() — done with it",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",
@@ -6197,6 +6239,166 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/poruL.qmz",
     "line": 56
+  },
+  {
+    "name": "சேமி",
+    "forms": [
+      "சேமி"
+    ],
+    "params": [
+      "சாவி",
+      "மதிப்புரு"
+    ],
+    "arity": 2,
+    "doc": "சேமி(சாவி, மதிப்புரு) — SET",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 21
+  },
+  {
+    "name": "காலத்துடன்_சேமி",
+    "forms": [
+      "காலத்துடன்_சேமி"
+    ],
+    "params": [
+      "சாவி",
+      "மதிப்புரு",
+      "வினாடிகள்"
+    ],
+    "arity": 3,
+    "doc": "காலத்துடன்_சேமி(சாவி, மதிப்புரு, வினாடிகள்) — SET with an expiry",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 30
+  },
+  {
+    "name": "எடு",
+    "forms": [
+      "எடு"
+    ],
+    "params": [
+      "சாவி"
+    ],
+    "arity": 1,
+    "doc": "எடு(சாவி) — GET. A key that is not there answers சரி(nil), not a தவறு:",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 37
+  },
+  {
+    "name": "இருக்கிறதா",
+    "forms": [
+      "இருக்கிறதா"
+    ],
+    "params": [
+      "சாவி"
+    ],
+    "arity": 1,
+    "doc": "இருக்கிறதா(சாவி) — is the key there at all?",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 42
+  },
+  {
+    "name": "நீக்கு",
+    "forms": [
+      "நீக்கு"
+    ],
+    "params": [
+      "சாவி"
+    ],
+    "arity": 1,
+    "doc": "நீக்கு(சாவி) — DEL. Answers how many keys went.",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 49
+  },
+  {
+    "name": "ஒன்று_கூட்டு",
+    "forms": [
+      "ஒன்று_கூட்டு"
+    ],
+    "params": [
+      "சாவி"
+    ],
+    "arity": 1,
+    "doc": "ஒன்று_கூட்டு(சாவி) — INCR, and the new value comes back a number",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 57
+  },
+  {
+    "name": "முன்_சேர்",
+    "forms": [
+      "முன்_சேர்"
+    ],
+    "params": [
+      "சாவி",
+      "மதிப்புரு"
+    ],
+    "arity": 2,
+    "doc": "முன்_சேர்(சாவி, மதிப்புரு) — LPUSH, for a queue",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 64
+  },
+  {
+    "name": "வரிசைப்_பகுதி",
+    "forms": [
+      "வரிசைப்_பகுதி"
+    ],
+    "params": [
+      "சாவி",
+      "தொடக்கம்",
+      "முடிவு"
+    ],
+    "arity": 3,
+    "doc": "வரிசைப்_பகுதி(சாவி, தொடக்கம், முடிவு) — LRANGE. -1 as the end means to the end.",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 69
+  },
+  {
+    "name": "உயிர்ப்பா",
+    "forms": [
+      "உயிர்ப்பா"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "உயிர்ப்பா() — PING, to see whether it is there at all",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 77
+  },
+  {
+    "name": "இல்லையெனில்_இயல்பு",
+    "forms": [
+      "இல்லையெனில்_இயல்பு"
+    ],
+    "params": [
+      "சாவி",
+      "மாற்று_மதிப்பு"
+    ],
+    "arity": 2,
+    "doc": "இல்லையெனில்_இயல்பு(சாவி, மாற்று_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis.qmz",
+    "line": 87
+  },
+  {
+    "name": "கொண்டுள்ளதா_எளிது",
+    "forms": [
+      "கொண்டுள்ளதா_எளிது"
+    ],
+    "params": [
+      "பாடம்",
+      "தேடல்"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qaLam/retis_cOqaZY.qmz",
+    "line": 117
   },
   {
     "name": "நிலைமைகள்",

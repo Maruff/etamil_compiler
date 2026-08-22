@@ -96,13 +96,14 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
 | String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
-| MongoDB, Redis | ❌ Not implemented | they say so explicitly; neither fits the SQL-shaped `Database` trait, so both need a design first |
+| Redis | ✅ Working | `ரெடிஸ்_இணை` `ரெடிஸ்_கட்டளை` `ரெடிஸ்_பிரி`, with RESP implemented here rather than taken from a crate. One generic command, because that is the shape of Redis — every command works. Arguments are length-prefixed, so a value holding CRLF cannot become a second command; a missing key is nil and not `""`. Not pooled: Redis keeps per-connection state |
+| MongoDB | ❌ Not implemented | needs BSON and the wire protocol, or the `mongodb` crate and its async runtime. A design decision, not an afternoon |
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 | Tests in eTamil (`nUlakam/cOqaZY.qmz`) | ✅ Working | assertions, a summary, and a non-zero exit when anything fails, so a suite gates CI. `kaNakkiyal/vari_cOqaZY.qmz` is fifteen of them about GST arithmetic. `வெளியேறு(நிலை)` is what ends the process with a status |
 | Interactive shell (`--repl`) | ✅ Working | variables persist between lines, a செயல் can be typed across several, `இறக்கு` works, and a bare expression is answered rather than refused — `0.1 + 0.2` prints `0.3`. `:vars` shows what the session holds |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 48 builtins and 213 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 51 builtins and 224 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
