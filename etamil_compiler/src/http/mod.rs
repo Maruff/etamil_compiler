@@ -295,7 +295,7 @@ impl HttpServer {
                     response.status_code < 400,
                 );
 
-                let _ = tcp_stream.write_all(response.to_http_string().as_bytes());
+                let _ = tcp_stream.write_all(&response.to_http_bytes());
             }
             Err(e) => {
                 let log_entry = LogEntry::new(LogLevel::Error, "Failed to parse HTTP request")
@@ -303,7 +303,7 @@ impl HttpServer {
                 self.logger.log(log_entry);
 
                 let error_response = HttpResponse::bad_request(&e.to_string());
-                let _ = tcp_stream.write_all(error_response.to_http_string().as_bytes());
+                let _ = tcp_stream.write_all(&error_response.to_http_bytes());
                 self.metrics.record_request("/", "UNKNOWN", 0, false);
             }
         }

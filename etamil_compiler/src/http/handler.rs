@@ -94,10 +94,41 @@ pub fn response_from(vm: &VM) -> HttpResponse {
         }
     }
 
+    // பதில்_கோப்பு names a file to send instead of a body. The bytes are read
+    // here rather than in the language, because a PDF is not a சரம் and
+    // pretending otherwise is how a download arrives corrupted.
+    if let Some(path) = vm.variables.get("response_file").map(|v| v.to_string()) {
+        match std::fs::read(&path) {
+            Ok(raw) => {
+                response.bytes = Some(raw);
+                // Only a default: a handler that set Content-Type keeps it.
+                response
+                    .headers
+                    .entry("Content-Type".to_string())
+                    .and_modify(|existing| {
+                        if existing == "application/json" {
+                            *existing = "application/octet-stream".to_string();
+                        }
+                    })
+                    .or_insert_with(|| "application/octet-stream".to_string());
+            }
+            Err(e) => {
+                // Saying so beats sending an empty 200 that looks like success.
+                response = HttpResponse::internal_error(&format!(
+                    "cannot read '{}': {}",
+                    path, e
+                ));
+            }
+        }
+    }
+
     // Content-Length always describes the body actually being sent, never a
     // value the handler supplied.
-    let length = response.body.len().to_string();
-    response.set_header("Content-Length", &length);
+    let length = match &response.bytes {
+        Some(raw) => raw.len(),
+        None => response.body.len(),
+    };
+    response.set_header("Content-Length", &length.to_string());
 
     response
 }

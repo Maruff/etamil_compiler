@@ -8,6 +8,11 @@ pub struct HttpResponse {
     pub status_text: String,
     pub headers: HashMap<String, String>,
     pub body: String,
+    /// A body that is not text — a PDF, an .odt, a picture. When this is set
+    /// it is what gets sent and `body` is ignored. It is `Vec<u8>` and not a
+    /// `String` for the obvious reason: a PDF is not valid UTF-8, and going
+    /// through a String would replace every byte it did not like.
+    pub bytes: Option<Vec<u8>>,
 }
 
 impl HttpResponse {
@@ -22,6 +27,7 @@ impl HttpResponse {
             status_text: status_text.to_string(),
             headers,
             body,
+            bytes: None,
         }
     }
 
@@ -67,28 +73,30 @@ impl HttpResponse {
         self.headers.insert(name.to_string(), value.to_string());
     }
 
-    /// Convert response to HTTP string format
-    pub fn to_http_string(&self) -> String {
-        let mut response = format!(
-            "HTTP/1.1 {} {}\r\n",
-            self.status_code,
-            self.status_text
-        );
+    /// The whole response as it goes onto the socket.
+    ///
+    /// Bytes, not a String: the head is text but the body need not be, and a
+    /// response carrying a PDF has to arrive as the bytes that were read.
+    pub fn to_http_bytes(&self) -> Vec<u8> {
+        let mut head = format!("HTTP/1.1 {} {}\r\n", self.status_code, self.status_text);
 
-        // Add headers
         for (name, value) in &self.headers {
-            response.push_str(&format!("{}: {}\r\n", name, value));
+            head.push_str(&format!("{}: {}\r\n", name, value));
         }
 
         // Add CORS headers for MVP
-        response.push_str("Access-Control-Allow-Origin: *\r\n");
-        response.push_str("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n");
-        response.push_str("Access-Control-Allow-Headers: Content-Type\r\n");
+        head.push_str("Access-Control-Allow-Origin: *\r\n");
+        head.push_str("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n");
+        head.push_str("Access-Control-Allow-Headers: Content-Type\r\n");
 
-        response.push_str("\r\n");
-        response.push_str(&self.body);
+        head.push_str("\r\n");
 
-        response
+        let mut out = head.into_bytes();
+        match &self.bytes {
+            Some(raw) => out.extend_from_slice(raw),
+            None => out.extend_from_slice(self.body.as_bytes()),
+        }
+        out
     }
 
     /// Get status text for a status code
@@ -140,11 +148,28 @@ mod tests {
     #[test]
     fn test_http_string_format() {
         let resp = HttpResponse::success(200, "Test".to_string());
-        let http_str = resp.to_http_string();
+        let http_str = String::from_utf8(resp.to_http_bytes()).unwrap();
         
         assert!(http_str.contains("HTTP/1.1 200 OK"));
         assert!(http_str.contains("Content-Type: application/json"));
         assert!(http_str.contains("Test"));
+    }
+
+    // A PDF is not valid UTF-8. Before this, the body went out through a
+    // String and every byte the decoder disliked became U+FFFD, so the file
+    // that arrived was not the file that was read.
+    #[test]
+    fn a_byte_body_is_sent_unchanged() {
+        let mut resp = HttpResponse::success(200, String::new());
+        resp.bytes = Some(vec![0x25, 0x50, 0x44, 0x46, 0xFF, 0xFE, 0x00]);
+
+        let raw = resp.to_http_bytes();
+        let split = raw
+            .windows(4)
+            .position(|w| w == b"\r\n\r\n")
+            .expect("head and body are separated");
+
+        assert_eq!(&raw[split + 4..], &[0x25, 0x50, 0x44, 0x46, 0xFF, 0xFE, 0x00]);
     }
 
     #[test]
