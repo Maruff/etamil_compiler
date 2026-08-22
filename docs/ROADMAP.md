@@ -167,14 +167,14 @@ The checker is deliberately narrow: it enforces what the author declared and sta
 
 ## Smaller known issues
 
-- **No short-circuiting, and it now costs something.** `மற்றும்` and `அல்லது` evaluate both sides. This was listed as harmless "until function calls arrive"; they have arrived, and the problem is not side effects but errors — a guard cannot guard:
+- ~~**No short-circuiting.**~~ — RESOLVED. `மற்றும்` and `அல்லது` now stop as soon as the answer is known, so a guard can guard:
 
   ```etamil
   அ = [];
-  (நீளம்(அ) > 0 மற்றும் அ[0] == 1) எனில் { ... }   // ✗ index 0 out of bounds
+  (நீளம்(அ) > 0 மற்றும் அ[0] == 1) எனில் { ... }   // no longer an error
   ```
 
-  Two places in the library exist only to work around it: `எழுத்து` in `col.qmz`, and `பகுதியை_எடு` in `AvaNam.qmz`. This is the most expensive item left in Phase 1.
+  The answer is still a Boolean and still the same Boolean — only what runs to produce it changed. `எழுத்து` in `col.qmz` and `பகுதியை_எடு` in `AvaNam.qmz` were written to work around this and stay because they read well, not because they are needed.
 - **Chained comparisons parse oddly.** `a > b > c` becomes `(a > b) > c`, so `3 > 2 > 1` is `false`.
 - **Encryption is XOR, not AES.** `src/fileio/crypto.rs` uses a repeating-key XOR cipher with a default key. It should not be described as encryption in user-facing docs until it uses a real AEAD.
 - **`rustfmt` and `clippy` are not clean.** CI runs both with `continue-on-error: true`; remove that once the backlog is cleared.

@@ -5,10 +5,11 @@
 
 // எழுத்து(சரம், எழுத்திடம்) — the letter at a position, or "" past either end.
 //
-// மற்றும் evaluates both sides, so a guard like
-// `(இ < நீளம்(சரம்) மற்றும் சரம்[இ] == " ")` still indexes out of bounds on
-// the step that fails the first test. Any read that can reach an edge goes
-// through here instead.
+// This was once necessary: மற்றும் evaluated both sides, so a guard like
+// `(இ < நீளம்(சரம்) மற்றும் சரம்[இ] == " ")` indexed out of bounds on the very
+// step that failed the first test. மற்றும் short-circuits now, so that guard
+// is safe to write directly. This stays because "the letter there, or nothing"
+// is worth saying in one word, not because indexing needs guarding.
 //
 // The parameter is எழுத்திடம் rather than the plainer இடம் because that word
 // is the SQL LEFT keyword and is hard reserved — it cannot be a name at all.
