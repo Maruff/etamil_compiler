@@ -260,7 +260,10 @@ impl VM {
     }
 
     /// `base[index]` for arrays (by position) and records (by key).
-    fn index_of(base: &Value, index: &Value) -> Result<Value, String> {
+    /// Public because `crate::runtime` reaches for it: the LLVM backend's
+    /// emitted IR indexes through the same function the VM uses, rather than
+    /// through a second implementation that would drift from it.
+    pub fn index_of(base: &Value, index: &Value) -> Result<Value, String> {
         match base {
             Value::Array(items) => {
                 let i = Self::array_index(items.len(), index)?;
@@ -282,6 +285,21 @@ impl VM {
                 Self::type_name(other)
             )),
         }
+    }
+
+    /// One builtin, by name, with its arguments already in hand.
+    ///
+    /// `call_builtin` below takes them off the stack because that is what the
+    /// bytecode gives it. The LLVM backend has them as values, and calls this:
+    /// the point is that both backends reach the *same* fifty-nine builtins, so
+    /// a compiled program cannot answer differently from an interpreted one
+    /// because someone reimplemented நீளம் slightly differently.
+    pub fn invoke_builtin(&mut self, name: &str, args: Vec<Value>) -> Result<Value, String> {
+        let argc = args.len();
+        for argument in args {
+            self.stack.push(argument);
+        }
+        self.call_builtin(name, argc)
     }
 
     /// Builtins, callable under Tamil, romanized or English names. This is

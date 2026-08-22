@@ -40,6 +40,12 @@ pub mod redis;
 // AST and nothing else, so it builds on machines that cannot build the backend
 // it guards — which is most of them.
 pub mod codegen_limits;
+// What the LLVM backend's emitted IR calls into: every eTamil value as a handle
+// into an arena, and every operation on one as a C-ABI call. Not behind the
+// `llvm` feature and not behind `cfg(not(wasm))` — it links no LLVM and touches
+// no OS beyond stdout, and the `cdylib` has to export it on any machine that
+// might link an `output.ll`.
+pub mod runtime;
 // Documents, behind a feature like the other non-bundled drivers.
 #[cfg(all(feature = "mongodb", not(target_family = "wasm")))]
 pub mod mongo;
