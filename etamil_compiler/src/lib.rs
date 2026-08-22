@@ -10,6 +10,9 @@ pub mod check;
 pub mod module;
 pub mod repl;
 pub mod signing;
+// Client certificates are only meaningful when there is a client.
+#[cfg(feature = "http-client")]
+pub mod mtls;
 pub mod net;
 pub mod db;
 pub mod codegen;
