@@ -66,11 +66,42 @@ declare -A SKIP=(
     ["examples/kadai/kadai_cEvY.qmz"]=1
 )
 
+# Examples needing an external server, and the variable that opts them in —
+# the same list run_examples.sh keeps, for the same reason.
+declare -A NEEDS_SERVER=(
+    ["examples/db_samples/mYcIkul_qaLam.qmz"]="ETAMIL_TEST_MYSQL"
+)
+
+# Every program below gets this on stdin, and gets it identically on both
+# backends. Two separate reasons, and both of them have bitten:
+#
+# A program reading input must be fed the same thing by the VM and by the
+# compiled binary, or it "disagrees" over what it was handed rather than over
+# what it computes.
+#
+# And a program left attached to this loop's stdin would read whatever the loop
+# is reading. run_examples.sh has piped `echo 0` since it was written; this did
+# not, and `உள்ளிடு` in the ninth example swallowed the remaining fifty-nine
+# filenames off the pipe. The loop hit EOF and printed a tidy summary of nine
+# files as though that were the whole corpus.
+feed() { echo "0"; }
+
+# The whole list up front, so the loop is not reading from a pipe a child could
+# drain. Belt as well as braces: the `feed` above is the other half, and it is
+# there for the parity reason rather than this one.
+mapfile -t FILES < <(find "$ROOT/examples" "$ROOT/nUlakam" \
+                         -type f \( -name '*.qmz' -o -name '*.etamil' \) | sort)
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+    echo "error: no examples found under $ROOT/examples or $ROOT/nUlakam."
+    exit 1
+fi
+
 matched=0; mismatched=0; refused=0; compiled=0; skipped=0
 declare -a MISMATCHES=()
 unsupported_log="$(mktemp)"
 
-while IFS= read -r file; do
+for file in "${FILES[@]}"; do
     rel="${file#"$ROOT"/}"
     rel="${rel//\\//}"
 
@@ -78,9 +109,17 @@ while IFS= read -r file; do
         ((skipped++)); continue
     fi
 
+    # Said out loud rather than counted as a silent skip, because a skip
+    # nobody mentions reads as coverage that is not there.
+    guard="${NEEDS_SERVER[$rel]:-}"
+    if [[ -n "$guard" && -z "${!guard:-}" ]]; then
+        echo "  skipped          $rel (set $guard=1 to run it)"
+        ((skipped++)); continue
+    fi
+
     # The reference answer. An example the VM cannot run is not a parity
     # question, so it is skipped rather than counted against the backend.
-    vm_out="$(cd "$(dirname "$file")" && "$BIN" --vm "$file" 2>&1)"
+    vm_out="$(cd "$(dirname "$file")" && feed | "$BIN" --vm "$file" 2>&1)"
     if [[ $? -ne 0 ]]; then
         ((skipped++)); continue
     fi
@@ -92,7 +131,7 @@ while IFS= read -r file; do
     # ever compiles, it will show up here as a mismatch to look at rather than
     # as a wrong answer nobody sees.
     work="$(mktemp -d)"
-    llvm_out="$(cd "$work" && "$BIN" --llvm "$file" 2>&1)"
+    llvm_out="$(cd "$work" && feed | "$BIN" --llvm "$file" 2>&1)"
     llvm_status=$?
 
     if [[ $llvm_status -ne 0 ]]; then
@@ -119,7 +158,7 @@ while IFS= read -r file; do
         continue
     fi
 
-    native_out="$(cd "$work" && ./prog 2>&1)"
+    native_out="$(cd "$work" && feed | ./prog 2>&1)"
 
     # The VM prints a banner around a program's output; compare only what the
     # program itself wrote.
@@ -136,12 +175,24 @@ while IFS= read -r file; do
         ((mismatched++))
     fi
     rm -rf "$work"
-done < <(find "$ROOT/examples" "$ROOT/nUlakam" \
-             -type f \( -name '*.qmz' -o -name '*.etamil' \) | sort)
+done
 
 echo
 echo "-------------------------------------------"
 echo "  $matched match, $mismatched mismatch, $refused refused, $compiled compiled-only, $skipped skipped"
+
+# The five counts must account for every file, or the summary is describing a
+# run that stopped early — which is exactly how nine files once passed for
+# sixty-eight. A summary that cannot be trusted to be complete is worse than no
+# summary, because it gets quoted.
+accounted=$(( matched + mismatched + refused + compiled + skipped ))
+if [[ $accounted -ne ${#FILES[@]} ]]; then
+    echo
+    echo "  BROKEN HARNESS: $accounted of ${#FILES[@]} files accounted for."
+    echo "  The run stopped early, so nothing above is a measurement."
+    exit 1
+fi
+echo "  all ${#FILES[@]} accounted for"
 
 if [[ -s "$unsupported_log" ]]; then
     echo
