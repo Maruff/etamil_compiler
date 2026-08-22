@@ -1,0 +1,147 @@
+// nUlakam/cawkili/fabric.qmz — Hyperledger Fabric, through a REST gateway
+//
+// Fabric's own peer Gateway speaks gRPC, which eTamil does not. Fronting a
+// network with a REST gateway is an ordinary deployment — Firefly does it, and
+// Hyperledger's own fabric-rest-sample is a reference for writing one — and
+// that is what this talks to. The alternative is months of HTTP/2 and protobuf
+// to reach the same ledger.
+//
+// Gateways do not agree on their paths, so the paths are configuration rather
+// than something baked in here. Give நுழைவு the shape yours uses.
+//
+// Two operations, and the difference between them is the whole of Fabric:
+//
+//   மதிப்பிடு   ask a peer, change nothing. A query. No consensus, no
+//               ordering, no commit — and no guarantee another peer would
+//               answer the same.
+//   சமர்ப்பி    propose, collect endorsements, order, commit. A write. It can
+//               fail after apparently succeeding, which is why the conflict
+//               handling below exists.
+//
+// Identity is an X.509 certificate and an ECDSA key — வளைவு_கையொப்பம் signs
+// with exactly the curve Fabric's default MSP uses. Whether the gateway wants
+// that signature, a bearer token, or a client certificate over mutual TLS is
+// again its business, so headers are configuration too.
+
+இறக்கு "../jEcAZ.qmz";
+இறக்கு "../poruL.qmz";
+
+// நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) — a gateway to talk to
+//
+// நிரல்பொருள் is the chaincode name. The two path templates carry {channel}
+// and {chaincode}, which are filled in per call.
+செயல் நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) {
+    திரும்பு {"முகவரிப்_பாதை": முகவரிப்_பாதை,
+              "சேனல்": சேனல்,
+              "நிரல்பொருள்": நிரல்பொருள்,
+              "தலைப்புகள்": தலைப்புகள்,
+              "வினவல்_பாதை": "/channels/{channel}/chaincodes/{chaincode}/query",
+              "எழுதும்_பாதை": "/channels/{channel}/chaincodes/{chaincode}/invoke"};
+}
+
+// பாதையை_அமை(நுழைவு, வினவல், எழுதும்) — different gateway, different paths
+செயல் பாதையை_அமை(நுழைவுப்_பொருள், வினவல், எழுதும்) {
+    திரும்பு {"முகவரிப்_பாதை": நுழைவுப்_பொருள்["முகவரிப்_பாதை"],
+              "சேனல்": நுழைவுப்_பொருள்["சேனல்"],
+              "நிரல்பொருள்": நுழைவுப்_பொருள்["நிரல்பொருள்"],
+              "தலைப்புகள்": நுழைவுப்_பொருள்["தலைப்புகள்"],
+              "வினவல்_பாதை": வினவல்,
+              "எழுதும்_பாதை": எழுதும்};
+}
+
+செயல் முழு_முகவரி(நுழைவுப்_பொருள், பாதைப்_படிவம்) {
+    பாதை = மாற்று(பாதைப்_படிவம், "{channel}", நுழைவுப்_பொருள்["சேனல்"]);
+    பாதை = மாற்று(பாதை, "{chaincode}", நுழைவுப்_பொருள்["நிரல்பொருள்"]);
+    திரும்பு நுழைவுப்_பொருள்["முகவரிப்_பாதை"] & பாதை;
+}
+
+செயல் உடலைக்_கட்டு(செயற்பெயர், அளபுருக்கள்) {
+    திரும்பு ஜேசான்_ஆக்கு({"function": செயற்பெயர், "args": அளபுருக்கள்});
+}
+
+// --- what came back -------------------------------------------------------
+//
+// A gateway answers a chaincode failure with a non-2xx and a body explaining
+// it. That is an answer, not a transport failure, so it is unwrapped here into
+// something a program can look at rather than reported as though the network
+// broke.
+செயல் விடையைப்_படி(வலைப்_பதில்) {
+    (தவறா(வலைப்_பதில்)) எனில் {
+        திரும்பு தவறு({"வகைப்பாடு": "வலை", "விவரம்": மதிப்பு(வலைப்_பதில்)});
+    }
+
+    ப = மதிப்பு(வலைப்_பதில்);
+    நிலைக்_குறி = ப["நிலைக்_குறி"];
+    உடற்_பாடம் = ப["உடலுரை"];
+
+    (நிலைக்_குறி >= 200 மற்றும் நிலைக்_குறி < 300) எனில் {
+        திரும்பு சரி(உடற்_பாடம்);
+    }
+    திரும்பு தவறு({"வகைப்பாடு": "நிரல்பொருள்", "நிலைக்_குறி": நிலைக்_குறி,
+                   "விவரம்": உடற்_பாடம்});
+}
+
+// --- reading --------------------------------------------------------------
+//
+// மதிப்பிடு(நுழைவு, செயற்பெயர், அளபுருக்கள்) — a query. Nothing is written,
+// nothing is ordered, and no conflict can arise.
+செயல் மதிப்பிடு(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள்) {
+    திரும்பு விடையைப்_படி(
+        வலை_பதி(முழு_முகவரி(நுழைவுப்_பொருள், நுழைவுப்_பொருள்["வினவல்_பாதை"]),
+                 உடலைக்_கட்டு(செயற்பெயர், அளபுருக்கள்),
+                 நுழைவுப்_பொருள்["தலைப்புகள்"]));
+}
+
+// --- writing --------------------------------------------------------------
+//
+// சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள்) — one attempt at a write.
+//
+// Use மீண்டும்_சமர்ப்பி unless you have a reason not to: a single attempt is
+// correct only for a transaction you would rather fail than retry.
+செயல் சமர்ப்பி(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள்) {
+    திரும்பு விடையைப்_படி(
+        வலை_பதி(முழு_முகவரி(நுழைவுப்_பொருள், நுழைவுப்_பொருள்["எழுதும்_பாதை"]),
+                 உடலைக்_கட்டு(செயற்பெயர், அளபுருக்கள்),
+                 நுழைவுப்_பொருள்["தலைப்புகள்"]));
+}
+
+// மோதலா(பிழை) — is this the read-write conflict, or a real failure?
+//
+// The one Fabric error worth knowing by name. Two transactions that read the
+// same key and both write it cannot both commit: the second is rejected at
+// validation with MVCC_READ_CONFLICT, after endorsement and ordering have
+// already succeeded. It means "someone got there first", not "this was wrong",
+// and the answer is to read again and redo the work.
+//
+// Retrying anything else would be retrying something that failed for a reason.
+செயல் மோதலா(பிழை) {
+    (வகை(பிழை) != "a record") எனில் { திரும்பு பொய்; }
+    விவரம் = புலம்_அல்லது(பிழை, "விவரம்", "");
+    (வகை(விவரம்) != "a string") எனில் { திரும்பு பொய்; }
+    திரும்பு நீளம்(பிரி(விவரம், "MVCC_READ_CONFLICT")) > 1
+            அல்லது நீளம்(பிரி(விவரம், "PHANTOM_READ_CONFLICT")) > 1;
+}
+
+// மீண்டும்_சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள், எத்தனை_முறை)
+//
+// Submit, and on a read-write conflict try again — up to the given number of
+// attempts. Bounded, because a key under constant contention would otherwise
+// retry until something else broke.
+//
+// Only a conflict is retried. A chaincode that rejected the transaction will
+// reject it again, and retrying a business failure turns one refusal into
+// several.
+செயல் மீண்டும்_சமர்ப்பி(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள், எத்தனை_முறை) {
+    முயற்சி = 0;
+    கடைசி = தவறு({"வகைப்பாடு": "முயற்சி", "விவரம்": "no attempt was made"});
+
+    (முயற்சி < எத்தனை_முறை) சுற்று {
+        விளைவு = சமர்ப்பி(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள்);
+        (சரியா(விளைவு)) எனில் { திரும்பு விளைவு; }
+
+        கடைசி = விளைவு;
+        (மோதலா(தவறு_மதிப்பு(விளைவு)) == பொய்) எனில் { திரும்பு விளைவு; }
+        முயற்சி = முயற்சி + 1;
+    }
+    திரும்பு கடைசி;
+}

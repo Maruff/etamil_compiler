@@ -2928,6 +2928,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "தவறு_மதிப்பு",
+    "forms": [
+      "தவறு_மதிப்பு",
+      "qavaRu_maqippu",
+      "_unwrapErr"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "தவறு_மதிப்பு(r) — what the failure carried",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "இயல்பு",
     "forms": [
       "இயல்பு",
@@ -3259,6 +3273,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "params": null,
     "arity": 3,
     "doc": "வளைவு_சரிபார்(செய்தி, கையொப்பம், பொதுச்சாவி) — does it hold?",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "சூழல்",
+    "forms": [
+      "சூழல்",
+      "cUzal",
+      "_env"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "சூழல்(பெயர், இயல்பு_மதிப்பு) — an environment variable, or a",
     "kind": "builtin",
     "module": null,
     "line": null
@@ -3661,6 +3689,146 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
     "line": 184
+  },
+  {
+    "name": "நுழைவு",
+    "forms": [
+      "நுழைவு"
+    ],
+    "params": [
+      "முகவரிப்_பாதை",
+      "சேனல்",
+      "நிரல்பொருள்",
+      "தலைப்புகள்"
+    ],
+    "arity": 4,
+    "doc": "நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) — a gateway to talk to",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 33
+  },
+  {
+    "name": "பாதையை_அமை",
+    "forms": [
+      "பாதையை_அமை"
+    ],
+    "params": [
+      "நுழைவுப்_பொருள்",
+      "வினவல்",
+      "எழுதும்"
+    ],
+    "arity": 3,
+    "doc": "பாதையை_அமை(நுழைவு, வினவல், எழுதும்) — different gateway, different paths",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 43
+  },
+  {
+    "name": "முழு_முகவரி",
+    "forms": [
+      "முழு_முகவரி"
+    ],
+    "params": [
+      "நுழைவுப்_பொருள்",
+      "பாதைப்_படிவம்"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 52
+  },
+  {
+    "name": "உடலைக்_கட்டு",
+    "forms": [
+      "உடலைக்_கட்டு"
+    ],
+    "params": [
+      "செயற்பெயர்",
+      "அளபுருக்கள்"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 58
+  },
+  {
+    "name": "விடையைப்_படி",
+    "forms": [
+      "விடையைப்_படி"
+    ],
+    "params": [
+      "வலைப்_பதில்"
+    ],
+    "arity": 1,
+    "doc": "A gateway answers a chaincode failure with a non-2xx and a body explaining",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 68
+  },
+  {
+    "name": "மதிப்பிடு",
+    "forms": [
+      "மதிப்பிடு"
+    ],
+    "params": [
+      "நுழைவுப்_பொருள்",
+      "செயற்பெயர்",
+      "அளபுருக்கள்"
+    ],
+    "arity": 3,
+    "doc": "மதிப்பிடு(நுழைவு, செயற்பெயர், அளபுருக்கள்) — a query. Nothing is written,",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 88
+  },
+  {
+    "name": "சமர்ப்பி",
+    "forms": [
+      "சமர்ப்பி"
+    ],
+    "params": [
+      "நுழைவுப்_பொருள்",
+      "செயற்பெயர்",
+      "அளபுருக்கள்"
+    ],
+    "arity": 3,
+    "doc": "சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள்) — one attempt at a write.",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 101
+  },
+  {
+    "name": "மோதலா",
+    "forms": [
+      "மோதலா"
+    ],
+    "params": [
+      "பிழை"
+    ],
+    "arity": 1,
+    "doc": "மோதலா(பிழை) — is this the read-write conflict, or a real failure?",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 117
+  },
+  {
+    "name": "மீண்டும்_சமர்ப்பி",
+    "forms": [
+      "மீண்டும்_சமர்ப்பி"
+    ],
+    "params": [
+      "நுழைவுப்_பொருள்",
+      "செயற்பெயர்",
+      "அளபுருக்கள்",
+      "எத்தனை_முறை"
+    ],
+    "arity": 4,
+    "doc": "மீண்டும்_சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள், எத்தனை_முறை)",
+    "kind": "stdlib",
+    "module": "nUlakam/cawkili/fabric.qmz",
+    "line": 134
   },
   {
     "name": "எழுத்து",
