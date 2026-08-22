@@ -1,0 +1,62 @@
+// வரி_சோதனை — tests for the GST module, written in eTamil
+//
+// Run it like any other program:  etamil --vm nUlakam/kaNakkiyal/vari_cOqaZY.qmz
+// It exits non-zero if anything fails, so it works as a CI step.
+//
+// No rate here is a claim about what any tax actually is. They are arguments,
+// chosen to make the arithmetic checkable by eye. The module holds no rates
+// either — வரி_விகிதம்_ஆக்கு takes one — which is what lets the real figures
+// live in a table that is updated when the rules change, rather than in code.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "vari.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("வரி (GST)");
+
+// --- the rate is a whole number, not a fraction --------------------------
+//
+// Worth stating first because it is the easiest mistake to make: the language
+// has a % literal, and 18% is 0.18. சதவீதம் divides by 100 itself, so these
+// functions want 18. Writing 18% gives an answer a hundred times too small,
+// and nothing complains — the type checker cannot tell one number from
+// another. Until there is a money type that can, this test is the warning.
+ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(1000, 18), 180,
+              "18 on 1000 is 180 — the rate is written 18, not 18%");
+ஓட்டம் = வேறுபடு(ஓட்டம், வரி_தொகை(1000, 18%), 180,
+                  "18% would be 1.8, which is the trap this pins");
+
+// --- tax on a net amount --------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(1000, 5), 50, "5 on 1000");
+ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(0, 18), 0, "no amount, no tax");
+ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(1000, 0), 0, "no rate, no tax");
+
+// Rounding is to the paisa, and it rounds rather than truncates.
+ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(99.99, 18), 18.00, "18 on 99.99 rounds to 18.00");
+
+// --- gross, and back again ------------------------------------------------
+ஓட்டம் = சமம்(ஓட்டம், வரியுடன்_மொத்தம்(1000, 18), 1180, "1000 plus 18 is 1180");
+ஓட்டம் = சமம்(ஓட்டம், அடிப்படையை_பிரி(1180, 18), 1000,
+              "and 1180 strips back to 1000");
+
+// The round trip is the property that matters: a gross figure taken apart and
+// put together again should be the figure you started with.
+ஓட்டம் = சமம்(ஓட்டம், வரியுடன்_மொத்தம்(அடிப்படையை_பிரி(5900, 18), 18), 5900,
+              "5900 survives being split and recombined");
+
+// --- CGST/SGST within a state, IGST across --------------------------------
+உள்ளே = மாநில_பிரிப்பு(180, மெய்);
+ஓட்டம் = சமம்(ஓட்டம், உள்ளே.cgst, 90, "within a state, CGST is half");
+ஓட்டம் = சமம்(ஓட்டம், உள்ளே.sgst, 90, "and SGST the other half");
+ஓட்டம் = சமம்(ஓட்டம், உள்ளே.igst, 0, "with no IGST");
+
+வெளியே = மாநில_பிரிப்பு(180, பொய்);
+ஓட்டம் = சமம்(ஓட்டம், வெளியே.igst, 180, "across states it is all IGST");
+ஓட்டம் = சமம்(ஓட்டம், வெளியே.cgst + வெளியே.sgst, 0, "and no CGST or SGST");
+
+// An odd number of paise cannot be halved evenly. The two halves must still
+// add up to the whole, or a return would be out by a paisa.
+ஒற்றை = மாநில_பிரிப்பு(0.05, மெய்);
+ஓட்டம் = சமம்(ஓட்டம், ஒற்றை.cgst + ஒற்றை.sgst, 0.05,
+              "an odd paisa still splits into the whole");
+
+சோதனை_முடிவு(ஓட்டம்);

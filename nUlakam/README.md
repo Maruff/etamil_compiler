@@ -18,6 +18,7 @@ frameworks built on top of it.
 | `kaNiqam.qmz` | math — `முழுமதிப்பு` `சிறியது` `பெரியது` `கூட்டு` `சராசரி` `சதவீதம்` |
 | `aNi.qmz` | arrays — `உள்ளதா` `இடம்_காண்` `தலைகீழ்` `வெட்டு` `புலம்_எடு` `காலியா` |
 | `poruL.qmz` | records — `புலம்_உள்ளதா` `புலம்_அல்லது` `புலங்கள்` `மதிப்பீடுகள்` `காலியா_பதிவேடு` |
+| `cOqaZY.qmz` | tests — `சோதனை_தொடக்கம்` `உறுதிசெய்` `சமம்` `வேறுபடு` `சேர்_ஓட்டம்` `சோதனை_முடிவு` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
@@ -131,3 +132,20 @@ which is the convention the templates already used.
 An `.xlsx` keeps its text in a shared table and its rows in the sheet, so a
 repeating row there would have to renumber shared-string indexes. Scalars
 work; row groups do not, and `XLSX_வடிவம்` says so rather than half-doing it.
+
+## Tests are written here too
+
+A library written in eTamil used to be testable only from Rust, or by running
+an example and seeing whether it exited 0. Neither says which assertion failed.
+`cOqaZY.qmz` is the alternative, and `kaNakkiyal/vari_cOqaZY.qmz` is a suite
+using it — fifteen assertions about GST arithmetic, runnable like any program:
+
+```bash
+etamil --vm nUlakam/kaNakkiyal/vari_cOqaZY.qmz
+```
+
+It exits non-zero when anything fails, so a suite that reports a failure also
+fails whatever ran it. The run is threaded through each assertion rather than
+kept in a module variable, because a function cannot change a global: assigning
+to a name inside a `செயல்` makes a local, and a counter incremented there is
+lost on return.

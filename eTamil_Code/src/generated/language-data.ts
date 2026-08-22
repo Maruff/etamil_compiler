@@ -3194,6 +3194,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "வெளியேறு",
+    "forms": [
+      "வெளியேறு",
+      "veLiyERu",
+      "_exit"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "வெளியேறு(நிலை) — stop the program with an exit status",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",
@@ -3475,10 +3489,10 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
       "எங்கே"
     ],
     "arity": 2,
-    "doc": "A piece by position, or \"\" past the end. மற்றும் evaluates both sides, so",
+    "doc": "A piece by position, or \"\" past the end. This predates மற்றும்",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 55
+    "line": 56
   },
   {
     "name": "வரிசைக்குப்_பின்",
@@ -3493,7 +3507,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "Splitting on the row marker gives a piece that is one row PLUS whatever",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 64
+    "line": 65
   },
   {
     "name": "மாறிப்_பெயர்",
@@ -3507,7 +3521,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "The loop variable named in `{%tr for o in charter.objectives %}`.",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 77
+    "line": 78
   },
   {
     "name": "உறுப்பை_நிரப்பு",
@@ -3524,7 +3538,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "One item's worth of a repeating row group.",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 85
+    "line": 86
   },
   {
     "name": "தொகுதியைத்_தேடு",
@@ -3539,7 +3553,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "Which declared group owns this loop variable.",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 95
+    "line": 96
   },
   {
     "name": "ஆவணம்_நிரப்பு",
@@ -3556,7 +3570,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "The whole of it: XML in, XML out.",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 103
+    "line": 104
   },
   {
     "name": "பொதியை_நிரப்பு",
@@ -3574,7 +3588,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "A template package rendered into a new package of the same kind. Only the",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 169
+    "line": 170
   },
   {
     "name": "pdf_ஆக்கு",
@@ -3590,7 +3604,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "The PDF of a rendered package. LibreOffice does the conversion, so",
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
-    "line": 183
+    "line": 184
   },
   {
     "name": "எழுத்து",
@@ -3605,7 +3619,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "எழுத்து(சரம், எழுத்திடம்) — the letter at a position, or \"\" past either end.",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 15
+    "line": 16
   },
   {
     "name": "துண்டு",
@@ -3621,7 +3635,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "துண்டு(சரம், தொடக்கம், அளவு) — substring",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 22
+    "line": 23
   },
   {
     "name": "தேடு",
@@ -3636,7 +3650,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "தேடு(சரம், தேடல்) — position of the first match, or -1",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 35
+    "line": 36
   },
   {
     "name": "கொண்டுள்ளதா",
@@ -3651,7 +3665,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "கொண்டுள்ளதா(சரம், தேடல்) — does it contain?",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 50
+    "line": 51
   },
   {
     "name": "தொடங்குகிறதா",
@@ -3666,7 +3680,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "தொடங்குகிறதா(சரம், முன்னொட்டு)",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 55
+    "line": 56
   },
   {
     "name": "முடிகிறதா",
@@ -3681,7 +3695,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "முடிகிறதா(சரம், பின்னொட்டு)",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 62
+    "line": 63
   },
   {
     "name": "ஒழுங்கு",
@@ -3695,7 +3709,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஒழுங்கு(சரம்) — trim spaces from both ends",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 74
+    "line": 75
   },
   {
     "name": "திரும்பச்செய்",
@@ -3710,7 +3724,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "திரும்பச்செய்(சரம், எண்ணிக்கை) — repeat",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 99
+    "line": 100
   },
   {
     "name": "இடமிருந்து_நிரப்பு",
@@ -3726,7 +3740,100 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "இடமிருந்து_நிரப்பு(சரம், அகலம், நிரப்பி) — left pad",
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
-    "line": 110
+    "line": 111
+  },
+  {
+    "name": "சோதனை_தொடக்கம்",
+    "forms": [
+      "சோதனை_தொடக்கம்"
+    ],
+    "params": [
+      "பெயர்"
+    ],
+    "arity": 1,
+    "doc": "சோதனை_தொடக்கம்(பெயர்) — an empty run",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 22
+  },
+  {
+    "name": "உறுதிசெய்",
+    "forms": [
+      "உறுதிசெய்"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "நிபந்தனை",
+      "விவரம்"
+    ],
+    "arity": 3,
+    "doc": "உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) — the condition must hold",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 28
+  },
+  {
+    "name": "சமம்",
+    "forms": [
+      "சமம்"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "கிடைத்தது",
+      "எதிர்பார்த்தது",
+      "விவரம்"
+    ],
+    "arity": 4,
+    "doc": "சமம்(ஓட்டம், கிடைத்தது, எதிர்பார்த்தது, விவரம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 45
+  },
+  {
+    "name": "வேறுபடு",
+    "forms": [
+      "வேறுபடு"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "கிடைத்தது",
+      "தவிர்க்கப்பட்டது",
+      "விவரம்"
+    ],
+    "arity": 4,
+    "doc": "வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) — these must differ",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 61
+  },
+  {
+    "name": "சேர்_ஓட்டம்",
+    "forms": [
+      "சேர்_ஓட்டம்"
+    ],
+    "params": [
+      "முதல்",
+      "இரண்டாவது"
+    ],
+    "arity": 2,
+    "doc": "சேர்_ஓட்டம்(முதல், இரண்டாவது) — two runs as one, for a suite of suites",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 76
+  },
+  {
+    "name": "சோதனை_முடிவு",
+    "forms": [
+      "சோதனை_முடிவு"
+    ],
+    "params": [
+      "ஓட்டம்"
+    ],
+    "arity": 1,
+    "doc": "சோதனை_முடிவு(ஓட்டம்) — the summary, and the exit status",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 86
   },
   {
     "name": "எழுத்து_மறை",
