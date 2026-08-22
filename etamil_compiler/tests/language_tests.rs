@@ -3494,6 +3494,146 @@ fn a_query_result_can_be_compared_with_what_was_expected() {
     assert_eq!(vm.variables.get("சரியா_இது"), Some(&Value::Boolean(true)));
 }
 
+// --- A database write that can fail without ending the program -------------
+// தளம்_செய் is a statement, so it had nowhere to put an answer, and two things
+// followed. The row count went nowhere, so an UPDATE that matched nothing
+// looked exactly like one that matched a row. And a constraint violation ended
+// the program — under the server it took the request handler with it and became
+// a 500, when a duplicate key is the database enforcing a rule and the ordinary
+// answer is 409.
+
+fn in_memory(program: &str) -> Result<VM, String> {
+    run(&format!(
+        r#"தளம்_இணை சீகுலைட், ":memory:";
+           தளம்_செய் "CREATE TABLE t (x INTEGER PRIMARY KEY, y TEXT)", [];
+           {}"#,
+        program
+    ))
+}
+
+#[test]
+fn a_duplicate_key_is_a_value_and_not_the_end_of_the_program() {
+    // The whole point. Before this, the second insert ended the run.
+    let vm = in_memory(
+        r#"முதல் = தளம்_செய்_முயற்சி("INSERT INTO t VALUES (?, ?)", [1, "a"]);
+           இரண்டு = தளம்_செய்_முயற்சி("INSERT INTO t VALUES (?, ?)", [1, "b"]);
+           முதல்_சரியா = சரியா(முதல்);
+           இரண்டு_தவறா = தவறா(இரண்டு);
+           தொடர்ந்தது = "yes";"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("முதல்_சரியா"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("இரண்டு_தவறா"), Some(&Value::Boolean(true)));
+    // Reaching this at all is the assertion that matters.
+    assert_eq!(text(&vm, "தொடர்ந்தது"), "yes");
+}
+
+#[test]
+fn the_failure_says_what_the_database_said() {
+    // "It failed" is not enough to choose a status code from. A unique
+    // violation is a 409 and a lost connection is a 503, and only the message
+    // tells them apart.
+    let vm = in_memory(
+        r#"தளம்_செய் "INSERT INTO t VALUES (?, ?)", [1, "a"];
+           விளைவு = தளம்_செய்_முயற்சி("INSERT INTO t VALUES (?, ?)", [1, "b"]);
+           காரணம் = தவறு_மதிப்பு(விளைவு);"#,
+    )
+    .unwrap();
+
+    let reason = text(&vm, "காரணம்");
+    assert!(
+        reason.contains("UNIQUE"),
+        "the reason should name the constraint: {}",
+        reason
+    );
+}
+
+#[test]
+fn an_update_that_matched_nothing_can_be_told_from_one_that_did() {
+    // An UPDATE matching no rows is a silent no-op, and silent no-ops are what
+    // this language refuses everywhere else.
+    let vm = in_memory(
+        r#"தளம்_செய் "INSERT INTO t VALUES (?, ?)", [1, "a"];
+           தாக்கியது = மதிப்பு(தளம்_செய்_முயற்சி("UPDATE t SET y = ? WHERE x = ?", ["b", 1]));
+           தவறியது = மதிப்பு(தளம்_செய்_முயற்சி("UPDATE t SET y = ? WHERE x = ?", ["b", 999]));"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "தாக்கியது"), dec(1));
+    assert_eq!(num(&vm, "தவறியது"), dec(0));
+}
+
+#[test]
+fn no_rows_is_a_successful_query_and_not_a_failure() {
+    // A SELECT matching nothing ran perfectly well. Only a query that could
+    // not run is a தவறு.
+    let vm = in_memory(
+        r#"விளைவு = தளம்_வினா_முயற்சி("SELECT x FROM t WHERE x = ?", [999]);
+           சரியா_இது = சரியா(விளைவு);
+           எத்தனை = நீளம்(மதிப்பு(விளைவு));"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியா_இது"), Some(&Value::Boolean(true)));
+    assert_eq!(num(&vm, "எத்தனை"), dec(0));
+}
+
+#[test]
+fn a_query_that_cannot_run_is_a_failure() {
+    let vm = in_memory(
+        r#"விளைவு = தளம்_வினா_முயற்சி("SELECT nosuchcolumn FROM t", []);
+           தவறா_இது = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறா_இது"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn rows_come_back_as_records_from_the_attempt_too() {
+    let vm = in_memory(
+        r#"தளம்_செய் "INSERT INTO t VALUES (?, ?)", [1, "ஒன்று"];
+           வரிசைகள் = மதிப்பு(தளம்_வினா_முயற்சி("SELECT x, y FROM t", []));
+           எத்தனை = நீளம்(வரிசைகள்);
+           முதல்_y = வரிசைகள்[0]["y"];"#,
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(1));
+    assert_eq!(text(&vm, "முதல்_y"), "ஒன்று");
+}
+
+#[test]
+fn attempting_without_a_connection_is_a_failure_rather_than_a_crash() {
+    let vm = run(
+        r#"விளைவு = தளம்_செய்_முயற்சி("SELECT 1", []);
+           தவறா_இது = தவறா(விளைவு);"#,
+    )
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறா_இது"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_rolled_back_transaction_can_be_driven_from_a_failure() {
+    // What the two together make possible: attempt the write, and when it is
+    // refused, undo the rest — without the refusal ending the program first.
+    let vm = in_memory(
+        r#"தளம்_செய் "INSERT INTO t VALUES (?, ?)", [1, "a"];
+           தளம்_செய் "BEGIN", [];
+           தளம்_செய் "INSERT INTO t VALUES (?, ?)", [2, "b"];
+           மோதல் = தளம்_செய்_முயற்சி("INSERT INTO t VALUES (?, ?)", [1, "c"]);
+           (தவறா(மோதல்)) எனில் { தளம்_செய் "ROLLBACK", []; }
+           மீதம் = நீளம்(மதிப்பு(தளம்_வினா_முயற்சி("SELECT x FROM t", [])));"#,
+    )
+    .unwrap();
+
+    // The row inserted inside the transaction went with the rollback, so only
+    // the original one is left.
+    assert_eq!(num(&vm, "மீதம்"), dec(1));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

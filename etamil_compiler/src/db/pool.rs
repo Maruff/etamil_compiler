@@ -115,8 +115,36 @@ impl Drop for Lease {
 }
 
 /// Borrow a connection, opening one if none is idle.
+/// Is this connection string a private, per-connection database?
+///
+/// SQLite gives every connection to `:memory:` its own database — the name is
+/// not an address, it is a request for somewhere private. Caching one by that
+/// name therefore conflates databases that were meant to be separate: two
+/// unrelated pieces of code asking for `:memory:` were handed the *same*
+/// database, so one could see the other's tables and rows.
+///
+/// It showed up as tests interfering with each other, which is the mild version
+/// of the problem. The sharp version is a program that opens a scratch database
+/// per request and finds another request's data in it.
+fn is_private(connection: &str) -> bool {
+    let trimmed = connection.trim();
+    trimmed == ":memory:"
+        || trimmed == "file::memory:"
+        // A URI asking for memory without asking for a shared cache is also
+        // private; one that asks for `cache=shared` is deliberately not.
+        || (trimmed.contains("mode=memory") && !trimmed.contains("cache=shared"))
+}
+
 pub fn checkout(db_type: &str, connection: &str) -> Result<Lease, String> {
     let key = (db_type.to_string(), connection.to_string());
+
+    // Never pooled, and never returned to the cache on release: see is_private.
+    if is_private(connection) {
+        return Ok(Lease {
+            handle: Some(super::open(db_type, connection)?),
+            key: None,
+        });
+    }
 
     if let Ok(mut cache) = cache().lock() {
         if let Some(idle) = cache.get_mut(&key) {
@@ -254,5 +282,47 @@ mod tests {
         lease.close().unwrap();
 
         assert_eq!(idle_count("SQLite", &path), 0);
+    }
+}
+
+#[cfg(test)]
+mod privacy_tests {
+    use super::*;
+
+    #[test]
+    fn an_in_memory_database_is_recognised_as_private() {
+        assert!(is_private(":memory:"));
+        assert!(is_private("  :memory:  "));
+        assert!(is_private("file::memory:"));
+        assert!(is_private("file:scratch?mode=memory"));
+    }
+
+    #[test]
+    fn a_memory_database_asking_for_a_shared_cache_is_not_private() {
+        // Asking for cache=shared is asking to be shared, which is the one
+        // case where reusing the connection is what was wanted.
+        assert!(!is_private("file:scratch?mode=memory&cache=shared"));
+    }
+
+    #[test]
+    fn a_file_is_not_private() {
+        assert!(!is_private("ledger.db"));
+        assert!(!is_private("/var/lib/etamil/ledger.db"));
+        assert!(!is_private("postgres://localhost/etamil"));
+    }
+
+    #[test]
+    fn a_private_connection_is_never_left_in_the_cache() {
+        // Two checkouts of :memory: must be two databases, so neither may come
+        // from the other's leavings.
+        let first = checkout("SQLite", ":memory:");
+        assert!(first.is_ok(), "{:?}", first.err());
+        drop(first);
+
+        assert_eq!(
+            idle_count("SQLite", ":memory:"),
+            0,
+            "an in-memory database must not be pooled for the next caller"
+        );
     }
 }
