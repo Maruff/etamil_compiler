@@ -713,6 +713,27 @@ impl VM {
                 }
             }
 
+            // --- Stopping ---------------------------------------------------
+            // வெளியேறு(நிலை) — stop the program with an exit status
+            //
+            // A test run that reports failures and then exits 0 has told the
+            // truth to a reader and a lie to everything else — CI, make, a
+            // shell script. This is how nUlakam/cOqaZY.qmz makes a failing
+            // suite fail the process it is running in.
+            //
+            // Nothing is returned, because nothing continues.
+            "வெளியேறு" | "veLiyERu" | "_exit" => {
+                Self::expect_args(name, &args, 1)?;
+                let status = rust_decimal::prelude::ToPrimitive::to_i32(&args[0].to_number())
+                    .unwrap_or(1);
+                // Exiting does not unwind, so anything still buffered would be
+                // lost — including the summary line that explains the status.
+                use std::io::Write as _;
+                let _ = std::io::stdout().flush();
+                let _ = std::io::stderr().flush();
+                std::process::exit(status);
+            }
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
