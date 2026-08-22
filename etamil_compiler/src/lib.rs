@@ -36,6 +36,10 @@ pub mod repl;
 pub mod signing;
 #[cfg(not(target_family = "wasm"))]
 pub mod redis;
+// What the LLVM backend must refuse, decided by reading the program. Walks the
+// AST and nothing else, so it builds on machines that cannot build the backend
+// it guards — which is most of them.
+pub mod codegen_limits;
 // Documents, behind a feature like the other non-bundled drivers.
 #[cfg(all(feature = "mongodb", not(target_family = "wasm")))]
 pub mod mongo;

@@ -136,6 +136,20 @@ impl Compiler {
 
     /// Compile the entire AST
     pub fn compile(&mut self, statements: Vec<Stmt>) {
+        // Decided by reading the program, before any IR exists. The largest
+        // thing this backend gets wrong is not a missing construct but a
+        // present one: it computes in f64, so decimal arithmetic compiles to
+        // IR that runs and answers something slightly other than the VM does.
+        //
+        // That is the one failure this project refuses everywhere else — a
+        // wrong answer with no warning — and the field below already says the
+        // caller must refuse to emit when it is non-empty. See
+        // src/codegen_limits.rs, which is where the reasoning and its tests
+        // live; it walks the AST and needs no LLVM, so it is checkable on
+        // machines that cannot build this file.
+        self.unsupported
+            .extend(crate::codegen_limits::refusals(&statements));
+
         unsafe {
             for statement in &statements {
                 if let Stmt::FunctionDef { name, params, .. } = statement {
