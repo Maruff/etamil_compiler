@@ -3311,6 +3311,71 @@ fn short_circuiting_nests() {
     assert_eq!(vm.variables.get("விளைவு"), Some(&Value::Boolean(true)));
 }
 
+// --- Signing with a key only one side holds --------------------------------
+// கையொப்பம் (HMAC) proves a message came from someone holding the same secret
+// you do, which means either side could have written it. வளைவு_* is ECDSA over
+// P-256: signed with a private key, checked with a public one, so only the
+// holder could have produced it. That is the difference between a webhook and
+// a payment instruction.
+
+#[test]
+fn a_key_pair_has_both_halves() {
+    let vm = run(r#"சாவிகள் = வளைவு_சாவிகள்();
+                    தனி = நீளம்(சாவிகள்["தனி"]);
+                    பொது = நீளம்(சாவிகள்["பொது"]);"#)
+    .unwrap();
+
+    // 32 bytes and a 65-byte uncompressed SEC1 point, as hex.
+    assert_eq!(num(&vm, "தனி"), dec(64));
+    assert_eq!(num(&vm, "பொது"), dec(130));
+}
+
+#[test]
+fn a_signature_verifies_and_a_tampered_message_does_not() {
+    let vm = run(r#"சாவிகள் = வளைவு_சாவிகள்();
+                    கை = மதிப்பு(வளைவு_கையொப்பம்("ஒப்பந்தம் 1000", சாவிகள்["தனி"]));
+                    சரியா = மதிப்பு(வளைவு_சரிபார்("ஒப்பந்தம் 1000", கை, சாவிகள்["பொது"]));
+                    மாற்றியது = மதிப்பு(வளைவு_சரிபார்("ஒப்பந்தம் 9000", கை, சாவிகள்["பொது"]));"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியா"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("மாற்றியது"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn a_signature_does_not_verify_under_someone_elses_key() {
+    let vm = run(r#"என்னுடையது = வளைவு_சாவிகள்();
+                    வேறொருவர் = வளைவு_சாவிகள்();
+                    கை = மதிப்பு(வளைவு_கையொப்பம்("பரிவர்த்தனை", என்னுடையது["தனி"]));
+                    விடை = மதிப்பு(வளைவு_சரிபார்("பரிவர்த்தனை", கை, வேறொருவர்["பொது"]));"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("விடை"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn the_public_half_can_be_recovered_from_the_private_one() {
+    // A pair is generated once and the private half kept; the public half is
+    // wanted again every time it is shared.
+    let vm = run(r#"சாவிகள் = வளைவு_சாவிகள்();
+                    மீண்டும் = மதிப்பு(வளைவு_பொதுச்சாவி(சாவிகள்["தனி"]));
+                    ஒன்றா = மீண்டும் == சாவிகள்["பொது"];"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_key_that_is_not_a_key_is_a_fault_not_an_answer() {
+    // A signature that does not verify is an outcome. A key that could never
+    // have signed anything is a mistake, and the two must not look alike.
+    let vm = run(r#"விடை = வளைவு_கையொப்பம்("m", "இது சாவி அல்ல");
+                    தவறா_இது = தவறா(விடை);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("தவறா_இது"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

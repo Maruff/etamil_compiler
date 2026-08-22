@@ -9,6 +9,7 @@ pub mod parser;
 pub mod check;
 pub mod module;
 pub mod repl;
+pub mod signing;
 pub mod net;
 pub mod db;
 pub mod codegen;

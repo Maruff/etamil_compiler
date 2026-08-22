@@ -86,6 +86,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Scheduled blocks (`இடைவெளி`) | ✅ Working | `இடைவெளி 3600 { … }` under either server; the number is the gap *between* runs, so a slow job runs late rather than twice at once |
 | Bytes | ✅ Working | `பைட்டுகள்` / `பைட்டுச்_சரம்` — a byte array is an ordinary array of numbers, not a new value type |
 | base64 and hex (`nUlakam/kuRiyAkkam.qmz`) | ✅ Working | `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` — **written in eTamil** |
+| Signing with a key only one side holds (ECDSA P-256) | ✅ Working | `வளைவு_சாவிகள்` `வளைவு_கையொப்பம்` `வளைவு_சரிபார்` `வளைவு_பொதுச்சாவி`. HMAC proves a message came from someone holding the same secret you do, so either side could have written it; this is signed with a private key and checked with a public one. SHA-256 digest, ASN.1 DER signature, keys as hex — the shapes Hyperledger Fabric MSP and X.509 expect. A signature that does not verify answers false; a key that is not a key is a தவறு |
 | Signing (HMAC-SHA256) | ✅ Working | `கையொப்பம்` / `கையொப்பம்_சரியா` — verify a signed webhook; the comparison is constant-time |
 | Outbound HTTP | ✅ Working | `--features http-client` (on by default); `வலை_பெறு` `வலை_பதி` `வலை_அனுப்பு`. A non-2xx is a result, not a failure |
 | Authentication | ✅ Working | bcrypt and JWT in the host; `கடவுச்சொல்_மறை` `கடவுச்சொல்_சரியா` `சீட்டு_ஆக்கு` `சீட்டு_சரிபார்`. Set `ETAMIL_JWT_SECRET` |
@@ -97,7 +98,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 | Tests in eTamil (`nUlakam/cOqaZY.qmz`) | ✅ Working | assertions, a summary, and a non-zero exit when anything fails, so a suite gates CI. `kaNakkiyal/vari_cOqaZY.qmz` is fifteen of them about GST arithmetic. `வெளியேறு(நிலை)` is what ends the process with a status |
 | Interactive shell (`--repl`) | ✅ Working | variables persist between lines, a செயல் can be typed across several, `இறக்கு` works, and a bare expression is answered rather than refused — `0.1 + 0.2` prints `0.3`. `:vars` shows what the session holds |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 42 builtins and 148 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 46 builtins and 148 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 

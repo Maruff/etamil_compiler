@@ -100,6 +100,11 @@ bytes = { version = "1", optional = true }
 # package uses no other method — so the bzip2/zstd/lzma/AES backends are left
 # out rather than carried.
 zip = { version = "8", default-features = false, features = ["deflate"] }
+p256 = { version = "0.14.0", features = ["ecdsa"] }
+# Randomness for key generation, taken straight from the OS. Pinned to 0.3
+# because that version is already in the tree through other crates; naming 0.4
+# would add a second copy of the same thing.
+getrandom = "0.3"
 
 [features]
 # Optional LLVM code generation (not available on Windows)
