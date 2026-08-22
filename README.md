@@ -83,7 +83,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
 | MySQL / MariaDB | ✅ Live verified | `--features mysql`; the live sample passes with `ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh`; setup details are in `TESTING.md` |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
-| LLVM backend (`--llvm`) | 🟡 Subset; refuses what it would get wrong | Linux/macOS, `--features llvm`. It computes in whole numbers as `i64`, so **decimal arithmetic is refused** rather than compiled to IR that answers `0.30000000000000004` — and division under `தரை`/`மேல்` is exact, which is what makes money held in whole paise work here. Three builtins are reachable (`தரை`, `மேல்`, `வட்டமிடு`); the other fifty-six are not, and strings, arrays, records and booleans have no representation in the emitted IR. `docs/llvm-backend-gaps.md` counts what is missing and `scripts/run_parity.sh` measures it |
+| LLVM backend (`--llvm`) | 🟡 Expressions complete; I/O statements refused | Linux/macOS, `--features llvm`. Every value in the emitted IR is a handle into an arena in `src/runtime.rs`, and every operation on one is a call into the cdylib Cargo already builds — so decimals are **exact** (`1 / 3` prints all twenty-eight digits, as on the VM), formatting cannot drift from the VM's, and all fifty-nine builtins are reachable at once. Strings, arrays, records, results, booleans and `இன்மை` all have a representation. What is still refused is *statements*: files, databases, HTTP, routes. The IR is therefore not self-contained — it links `-letamil_compiler`. `docs/llvm-backend-gaps.md` explains the design and `scripts/run_parity.sh` measures it against the VM |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
 | JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
 | Scheduled blocks (`இடைவெளி`) | ✅ Working | `இடைவெளி 3600 { … }` under either server; the number is the gap *between* runs, so a slow job runs late rather than twice at once |
@@ -289,6 +289,20 @@ cargo build --release --features llvm
 and only counted; a program the backend accepts and then answers differently
 from the VM is a failure, because that is the case nobody would notice from the
 outside.
+
+To compile one program by hand, note that the emitted IR is **not**
+self-contained — it calls into the runtime that gives it exact decimals and the
+builtins, which is the same cdylib Cargo just built:
+
+```bash
+etamil --llvm myprogram.qmz
+clang output.ll -o myprogram \
+      -L etamil_compiler/target/release -letamil_compiler \
+      -Wl,-rpath,etamil_compiler/target/release -lm
+```
+
+The `-rpath` is so the finished program can still find the library when it runs.
+A compiled program therefore ships with `libetamil_compiler.so` beside it.
 
 On a machine without LLVM the backend cannot be built, but it can still be
 type-checked — which is what makes it editable there at all:

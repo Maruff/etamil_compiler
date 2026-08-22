@@ -24,6 +24,12 @@
 # compiled, the binary is run, and its output is compared against the VM's.
 # Without clang the IR is accepted as far as it goes and reported separately,
 # because "it compiled" and "it computes the same thing" are different claims.
+#
+# The emitted IR is not self-contained. Every eTamil value in it is a handle
+# into an arena in `crate::runtime`, and every operation on one is a call into
+# the cdylib that Cargo already builds beside the binary — which is what makes
+# decimals exact and all fifty-nine builtins reachable. So the link needs it,
+# and needs an rpath so the built program can find it again when it runs.
 
 set -uo pipefail
 
@@ -57,6 +63,16 @@ fi
 
 have_clang=0
 command -v clang >/dev/null 2>&1 && have_clang=1
+
+# Cargo puts the cdylib beside the binary, so the binary locates it.
+RUNTIME_DIR="$(cd "$(dirname "$BIN")" && pwd)"
+if [[ ! -e "$RUNTIME_DIR/libetamil_compiler.so" \
+   && ! -e "$RUNTIME_DIR/libetamil_compiler.dylib" ]]; then
+    echo "error: no runtime library in $RUNTIME_DIR."
+    echo "       The emitted IR calls into it, so there is nothing to link against."
+    echo "       build it: (cd etamil_compiler && cargo build --release --features llvm)"
+    exit 1
+fi
 
 # Examples the VM is expected to refuse: they use route statements it cannot
 # execute. Nothing to compare when there is no reference answer.
@@ -161,8 +177,14 @@ for file in "${FILES[@]}"; do
         continue
     fi
 
-    if ! (cd "$work" && clang output.ll -o prog -lm >/dev/null 2>&1); then
+    link_out="$(cd "$work" && clang output.ll -o prog \
+                    -L "$RUNTIME_DIR" -letamil_compiler \
+                    -Wl,-rpath,"$RUNTIME_DIR" -lm 2>&1)"
+    if [[ $? -ne 0 ]]; then
         echo "  IR REJECTED      $rel  (clang would not build the emitted IR)"
+        # The first lines of it, because "clang rejected the IR" on its own is
+        # not something anyone can act on.
+        sed -n '1,3p' <<<"$link_out" | sed 's/^/                   /'
         MISMATCHES+=("$rel — clang rejected the IR")
         ((mismatched++))
         rm -rf "$work"

@@ -290,13 +290,40 @@ pub extern "C" fn etamil_is_error(value: i64) -> i32 {
 }
 
 /// `?` on a success unwraps it; the IR only calls this once `etamil_is_error`
-/// has said no.
+/// has said no, and handles the `தவறு` case itself by returning it.
+///
+/// A value that is not a result at all is a runtime error, in the VM's own
+/// words. Answering the value unchanged would be friendlier and wrong: `?` on
+/// a plain number means the author thinks it is a result.
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_unwrap(value: i64) -> i64 {
     match get(value) {
         Value::Ok(inner) => put(*inner),
-        other => put(other),
+        Value::Err(error) => put(Value::Err(error)),
+        other => fail(&format!(
+            "'?' க்கு ஒரு முடிவு தேவை  ('?' needs a result, got {})",
+            match other {
+                Value::Number(_) => "number",
+                Value::String(_) => "string",
+                Value::Boolean(_) => "boolean",
+                Value::Array(_) => "array",
+                Value::Map(_) => "record",
+                Value::Null => "nil",
+                _ => "value",
+            }
+        )),
     }
+}
+
+/// `?` at the top level, where there is no caller to hand the failure to. The
+/// VM stops with this; so does a compiled program.
+#[unsafe(no_mangle)]
+pub extern "C" fn etamil_unhandled(value: i64) -> ! {
+    let shown = get(value).to_string();
+    fail(&format!(
+        "கையாளப்படாத தவறு: {}  (unhandled error at top level: {})",
+        shown, shown
+    ))
 }
 
 // --- Access ---------------------------------------------------------------
@@ -413,6 +440,15 @@ pub extern "C" fn etamil_call(name: *const c_char, argv: *const i64, argc: i64) 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_print(value: i64) {
     println!("{}", get(value).to_string());
+}
+
+/// A prompt: the same rendering as `etamil_print` with no newline after it, and
+/// flushed, because a prompt nobody sees before typing is not a prompt.
+#[unsafe(no_mangle)]
+pub extern "C" fn etamil_prompt(value: i64) {
+    use std::io::Write;
+    print!("{}", get(value).to_string());
+    let _ = std::io::stdout().flush();
 }
 
 /// `உள்ளிடு`. A line of input, as text, exactly as the VM's `Input` leaves it.
