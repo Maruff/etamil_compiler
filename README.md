@@ -198,7 +198,7 @@ To build the packages yourself, see [`packaging/`](packaging/).
 Needed for the optional database drivers, the LLVM backend, or work on the
 compiler itself.
 
-Requires **Rust 1.85+** (edition 2024) and a C toolchain, since the bundled
+Requires **Rust 1.88+** (edition 2024) and a C toolchain, since the bundled
 SQLite and the crypto crates compile C:
 
 - **Windows** — Visual Studio Build Tools with the "Desktop development with
