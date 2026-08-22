@@ -3376,6 +3376,124 @@ fn a_key_that_is_not_a_key_is_a_fault_not_an_answer() {
     assert_eq!(vm.variables.get("தவறா_இது"), Some(&Value::Boolean(true)));
 }
 
+// --- Comparing arrays and records -----------------------------------------
+// These had no arm in Value's equality at all, so they fell to its catch-all
+// and every comparison of two arrays — or two records — answered false. Even
+// `[] == []`. Nothing warned, which is the worst way for an equality to be
+// wrong: a program checking whether a result matched what it expected was told
+// no, and read that as a difference in the data.
+//
+// Found by a round-trip test through BSON that could not be made to pass.
+
+#[test]
+fn two_equal_arrays_are_equal() {
+    let vm = run(r#"அ = ([1, 2] == [1, 2]);
+                    காலி = ([] == []);
+                    கலவை = (["x", 1, மெய்] == ["x", 1, மெய்]);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("அ"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("காலி"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("கலவை"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn arrays_that_differ_are_not_equal() {
+    let vm = run(r#"மதிப்பு_வேறு = ([1, 2] == [1, 3]);
+                    நீளம்_வேறு = ([1, 2] == [1, 2, 3]);
+                    வரிசை_வேறு = ([1, 2] == [2, 1]);"#)
+    .unwrap();
+
+    // An array is ordered, so [1,2] and [2,1] are different arrays.
+    for name in ["மதிப்பு_வேறு", "நீளம்_வேறு", "வரிசை_வேறு"] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(false)),
+            "{} should differ",
+            name
+        );
+    }
+}
+
+#[test]
+fn nested_arrays_compare_all_the_way_down() {
+    let vm = run(r#"ஒன்று = ([[1, 2], [3]] == [[1, 2], [3]]);
+                    வேறு = ([[1, 2], [3]] == [[1, 2], [4]]);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்று"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("வேறு"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn two_equal_records_are_equal_whatever_order_they_were_written_in() {
+    // A record is not ordered: {அ: 1, ஆ: 2} and {ஆ: 2, அ: 1} are the same
+    // record, and comparing them by sequence would say otherwise.
+    let vm = run(r#"ஒன்று = ({"அ": 1, "ஆ": 2} == {"அ": 1, "ஆ": 2});
+                    மறுவரிசை = ({"அ": 1, "ஆ": 2} == {"ஆ": 2, "அ": 1});
+                    காலி = ({} == {});"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்று"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("மறுவரிசை"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("காலி"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn records_that_differ_are_not_equal() {
+    let vm = run(r#"மதிப்பு_வேறு = ({"அ": 1} == {"அ": 2});
+                    புலம்_வேறு = ({"அ": 1} == {"ஆ": 1});
+                    மேலும்_ஒன்று = ({"அ": 1} == {"அ": 1, "ஆ": 2});"#)
+    .unwrap();
+
+    for name in ["மதிப்பு_வேறு", "புலம்_வேறு", "மேலும்_ஒன்று"] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(false)),
+            "{} should differ",
+            name
+        );
+    }
+}
+
+#[test]
+fn a_record_inside_an_array_is_compared_too() {
+    let vm = run(r#"ஒன்று = ([{"அ": 1}] == [{"அ": 1}]);
+                    வேறு = ([{"அ": 1}] == [{"அ": 2}]);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("ஒன்று"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("வேறு"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn an_array_is_not_equal_to_something_that_is_not_one() {
+    let vm = run(r#"சொல்லுடன் = ([1] == "1");
+                    எண்ணுடன் = ([1] == 1);
+                    பொருளுடன் = ([] == {});"#)
+    .unwrap();
+
+    for name in ["சொல்லுடன்", "எண்ணுடன்", "பொருளுடன்"] {
+        assert_eq!(
+            vm.variables.get(name),
+            Some(&Value::Boolean(false)),
+            "{} should differ",
+            name
+        );
+    }
+}
+
+#[test]
+fn a_query_result_can_be_compared_with_what_was_expected() {
+    // The practical consequence: this is what a test of anything returning
+    // rows or fields wants to write, and it could not be written before.
+    let vm = run(r#"விளைவு = பிரி("அ,ஆ,இ", ",");
+                    சரியா_இது = (விளைவு == ["அ", "ஆ", "இ"]);"#)
+    .unwrap();
+
+    assert_eq!(vm.variables.get("சரியா_இது"), Some(&Value::Boolean(true)));
+}
+
 // --- Bilingual equivalence ------------------------------------------------
 
 #[test]

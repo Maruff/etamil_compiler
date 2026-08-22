@@ -101,6 +101,22 @@ impl PartialEq for Value {
             (Value::Ok(a), Value::Ok(b)) => a == b,
             (Value::Err(a), Value::Err(b)) => a == b,
             (Value::Null, Value::Null) => true,
+
+            // Arrays and records had no arm here at all, so they fell to the
+            // catch-all and `[1, 2] == [1, 2]` was false. So was `[] == []`.
+            // Nothing warned: comparing two of them simply always answered no,
+            // which is the worst way for an equality to be wrong — a program
+            // checking whether a result matched what it expected got "no" and
+            // read it as a difference in the data.
+            //
+            // An array is ordered, so position matters.
+            (Value::Array(a), Value::Array(b)) => a == b,
+
+            // A record is not ordered — `{அ: 1, ஆ: 2}` and `{ஆ: 2, அ: 1}` are
+            // the same record — so this compares by field rather than by
+            // sequence, which is what HashMap's own equality does.
+            (Value::Map(a), Value::Map(b)) => a == b,
+
             _ => false,
         }
     }
