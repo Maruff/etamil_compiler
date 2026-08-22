@@ -11,8 +11,11 @@
 [package]
 name = "etamil_compiler"
 version = "0.3.0"
-edition = "2024"          # requires Rust 1.85+
-rust-version = "1.85"
+edition = "2024"          # edition 2024 itself needs 1.85; the floor below is higher
+# 1.88 is what the current `time` and `zip` releases require. Held at 1.85 until
+# RUSTSEC-2026-0009 (a stack-exhaustion DoS in time, reached through jsonwebtoken)
+# made the choice one between a known advisory and a higher floor.
+rust-version = "1.88"
 authors = ["Esan Maruff <esan@etamil.in>"]
 description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulatory Compliance"
 # `license` alone. Cargo warns that only one of the two is necessary, and
@@ -95,9 +98,8 @@ bytes = { version = "1", optional = true }
 # --- ODF packages ---
 # .odt and .ods are zip archives. Only Stored and Deflate are needed — an ODF
 # package uses no other method — so the bzip2/zstd/lzma/AES backends are left
-# out rather than carried. Pinned below 8.x deliberately: that release requires
-# rustc 1.88 and this crate promises 1.85.
-zip = { version = "7.2.0", default-features = false, features = ["deflate"] }
+# out rather than carried.
+zip = { version = "8", default-features = false, features = ["deflate"] }
 
 [features]
 # Optional LLVM code generation (not available on Windows)
@@ -121,4 +123,4 @@ strip = true
 
 [dev-dependencies]
 # Building a package fixture for the பொதி_* tests.
-zip = { version = "7.2.0", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
