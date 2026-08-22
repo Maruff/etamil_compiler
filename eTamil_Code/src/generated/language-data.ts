@@ -3737,10 +3737,10 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
       "ஒரு_எழுத்து"
     ],
     "arity": 1,
-    "doc": "எழுத்து_மறை(எழுத்து) — one character, escaped for a JSON string",
+    "doc": "எழுத்து_மறை(எழுத்து) — one letter, escaped for a JSON string.",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 21
+    "line": 25
   },
   {
     "name": "ஜேசான்_சரம்",
@@ -3754,7 +3754,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜேசான்_சரம்(சரம்) — a quoted, escaped JSON string",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 31
+    "line": 36
   },
   {
     "name": "ஜேசான்_ஆக்கு",
@@ -3768,7 +3768,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜேசான்_ஆக்கு(மதிப்பு) — any value as JSON text",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 40
+    "line": 45
   },
   {
     "name": "ஜே_எழுத்து",
@@ -3783,7 +3783,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜே_எழுத்து(உரை, இடம்) — the character at a position, or \"\" past the end.",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 83
+    "line": 88
   },
   {
     "name": "ஜே_வெண்மை",
@@ -3798,7 +3798,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜே_வெண்மை(உரை, இடம்) — skip whitespace, returning the next position",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 90
+    "line": 102
   },
   {
     "name": "ஜே_விடுவி",
@@ -3812,7 +3812,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜே_விடுவி(எழுத்து) — the character an escape names",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 105
+    "line": 118
   },
   {
     "name": "ஜே_சரம்",
@@ -3827,7 +3827,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 118
+    "line": 131
   },
   {
     "name": "ஜே_எண்",
@@ -3842,7 +3842,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 150
+    "line": 163
   },
   {
     "name": "ஜே_அணி",
@@ -3857,7 +3857,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 175
+    "line": 188
   },
   {
     "name": "ஜே_சோடி",
@@ -3872,7 +3872,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜே_சோடி — one \"சாவி\": மதிப்பு pair, kept separate so the object loop below",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 212
+    "line": 225
   },
   {
     "name": "ஜே_பொருள்",
@@ -3887,7 +3887,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 237
+    "line": 250
   },
   {
     "name": "ஜே_மதிப்பு",
@@ -3902,7 +3902,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 273
+    "line": 286
   },
   {
     "name": "ஜேசான்_படி",
@@ -3916,7 +3916,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "ஜேசான்_படி(உரை) — the whole text as one value, or an explanation",
     "kind": "stdlib",
     "module": "nUlakam/jEcAZ.qmz",
-    "line": 298
+    "line": 311
   },
   {
     "name": "இருப்பாய்வு",

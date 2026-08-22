@@ -1077,6 +1077,51 @@ fn json_reads_an_empty_object_and_array() {
     assert_eq!(text(&vm, "வெண்மையுடன்"), r#"{"a":1}"#);
 }
 
+// Regression: a string is read letter by letter, and "\r\n" is one letter —
+// the rule that makes நீளம்("வணக்கம்") 5 joins a carriage return to the line
+// feed after it. So a Windows line ending matched neither the "\r" arm of
+// ஜே_வெண்மை nor the "\n" one, whitespace skipping stopped dead at the first
+// line break, and a pretty-printed document — a cached JWKS, say — came back
+// refused for a field name the reader had never reached. The trailing
+// "\r\n" below covers the same arm in ஜேசான்_படி's check for extra text.
+#[test]
+fn json_reads_a_document_with_windows_line_endings() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           மூலம் = "{\r\n  \"keys\": [\r\n    {\r\n      \"kty\": \"RSA\",\r\n      \"e\": \"AQAB\"\r\n    }\r\n  ]\r\n}\r\n";
+           விளைவு = ஜேசான்_படி(மூலம்);
+           சரியா_இருந்ததா = சரியா(விளைவு);
+           மறுபடி = ஜேசான்_ஆக்கு(மதிப்பு(விளைவு));"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        vm.variables.get("சரியா_இருந்ததா"),
+        Some(&Value::Boolean(true))
+    );
+    assert_eq!(
+        text(&vm, "மறுபடி"),
+        r#"{"keys":[{"e":"AQAB","kty":"RSA"}]}"#
+    );
+}
+
+// The same letter on the way out. Unescaped it fell through எழுத்து_மறை as
+// itself, putting a raw control character inside a quoted string — something
+// this parser was lenient enough to read back but no other one accepts.
+#[test]
+fn json_escapes_a_windows_line_ending() {
+    let vm = run_with_stdlib(
+        r#"இறக்கு "jEcAZ.qmz";
+           விடை = ஜேசான்_ஆக்கு({a: "one\r\ntwo"});
+           மறுபடி = ஜேசான்_ஆக்கு(மதிப்பு(ஜேசான்_படி(விடை)));"#,
+    )
+    .unwrap();
+
+    assert_eq!(text(&vm, "விடை"), r#"{"a":"one\r\ntwo"}"#);
+    // And it survives being read back, so the escape means what it says.
+    assert_eq!(text(&vm, "மறுபடி"), r#"{"a":"one\r\ntwo"}"#);
+}
+
 // --- Scheduled blocks (இடைவெளி) -------------------------------------------
 // Lifted out of the program at startup like வழி, and needing a server for the
 // same reason: the VM has no clock to hang them on.
