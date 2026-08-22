@@ -108,6 +108,15 @@ getrandom = "0.3"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
 rustls-pemfile = { version = "2", optional = true }
 webpki-roots = { version = "0.26", optional = true }
+# --- MongoDB ---
+# Behind a feature, like the other two non-bundled drivers. It costs about
+# seventy crates, which is fewer than mysql already costs and about the same as
+# postgres, so it is in line rather than exceptional — and none of it is in the
+# default build.
+#
+# The sync feature is what makes it usable here: the VM is synchronous, and the
+# async client would need a runtime driven from inside an interpreter loop.
+mongodb = { version = "3.8.1", default-features = false, features = ["sync", "rustls-tls", "bson-3", "compat-3-3-0"], optional = true }
 
 [features]
 # Optional LLVM code generation (not available on Windows)
@@ -125,6 +134,7 @@ default = ["sqlite", "http-client"]
 rustls = ["dep:rustls"]
 rustls-pemfile = ["dep:rustls-pemfile"]
 webpki-roots = ["dep:webpki-roots"]
+mongodb = ["dep:mongodb"]
 
 [profile.release]
 # The headline feature is a small standalone binary, so optimize for that.

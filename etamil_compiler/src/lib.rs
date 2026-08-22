@@ -11,6 +11,9 @@ pub mod module;
 pub mod repl;
 pub mod signing;
 pub mod redis;
+// Documents, behind a feature like the other non-bundled drivers.
+#[cfg(feature = "mongodb")]
+pub mod mongo;
 // Client certificates are only meaningful when there is a client.
 #[cfg(feature = "http-client")]
 pub mod mtls;
