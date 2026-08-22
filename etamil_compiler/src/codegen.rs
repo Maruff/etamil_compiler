@@ -943,6 +943,27 @@ impl Compiler {
                             var_ptr,
                             CString::new("load").unwrap().as_ptr(),
                         )
+                    } else if self.arrays.contains_key(name) {
+                        // The name is defined — it holds an array, and an array
+                        // is not a value here, so it cannot be returned or
+                        // passed or added to anything.
+                        //
+                        // Saying "nothing defines it" instead sent 33 refusals
+                        // in the parity run to a cause that did not exist:
+                        // nUlakam/aNi.qmz builds up `விடை = []` and returns it,
+                        // and the honest reason is this one, which belongs to
+                        // the boxed-value gap rather than to name resolution.
+                        self.unsupported.push(format!(
+                            "the name {} holds an அணி (an array is not a value here)",
+                            name
+                        ));
+                        self.number_const(0)
+                    } else if self.records.contains_key(name) {
+                        self.unsupported.push(format!(
+                            "the name {} holds a பொருள் (a record is not a value here)",
+                            name
+                        ));
+                        self.number_const(0)
                     } else if name.starts_with('"') && name.ends_with('"') {
                         // The parser hands a string literal through as a
                         // Variable whose name is the quoted text, and print
@@ -973,10 +994,14 @@ impl Compiler {
                         // the quotient of two whole numbers usually is not one
                         // and an i64 has nowhere to keep the rest. It is exact
                         // under தரை or மேல், and that is handled at the call.
+                        //
+                        // Its own words, verbatim: a second phrasing of the
+                        // same cause listed twice in the parity summary and
+                        // halved the rank of what is actually the commonest
+                        // arithmetic gap in the corpus.
                         "/" => {
-                            self.unsupported.push(
-                                "வகுத்தல் without தரை() or மேல் (a bare division)".to_string(),
-                            );
+                            self.unsupported
+                                .push(crate::codegen_limits::DIVISION.to_string());
                             self.number_const(0)
                         }
                         other => {

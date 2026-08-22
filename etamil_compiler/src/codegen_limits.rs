@@ -106,7 +106,11 @@ const DECIMAL_LITERAL: &str = "பதின்ம எண் — இந்த ப
                                (a decimal number: this backend computes in i64, \
                                so it can hold 205 paise but not 2.05 rupees)";
 
-const DIVISION: &str = "வகுத்தல் — தரை() அல்லது மேல்() இல்லாமல்  \
+/// Shared with `codegen.rs`, which refuses a bare division again on its own
+/// account. Two spellings of the one cause showed up as two entries in the
+/// parity run's ranked list, 36 and 35, so the most common gap in the corpus
+/// read as two middling ones. The caller de-duplicates identical strings.
+pub const DIVISION: &str = "வகுத்தல் — தரை() அல்லது மேல்() இல்லாமல்  \
                         (a bare division: whole-number division is exact here, \
                         but only under தரை() or மேல் — on its own its result \
                         has a fractional part and i64 has nowhere to put it)";

@@ -191,16 +191,102 @@ arithmetic compiles now — `ரூபாயும்_பைசாவும்`,
 `சமமாகப்_பிரி` and `விகிதத்தில்_பிரி`, which return arrays. Those wait on gap
 3, not on arithmetic.
 
+## Measured, on Ubuntu, against 68 programs
+
+`scripts/run_parity.sh`, LLVM 18, clang present so every accepted program was
+compiled *and run*:
+
+```
+7 match, 0 mismatch, 57 refused, 0 compiled-only, 4 skipped
+all 68 accounted for
+```
+
+**Nothing disagreed.** Where the backend accepted a program, the compiled binary
+answered what the VM answered. Zero `IR REJECTED` also means clang's verifier
+accepted all seven modules, which is the part `check_llvm_backend.py` cannot
+tell you: the blocks-and-terminators work — `எனில்` containing `திரும்பு`,
+entry-block allocas, the division guard's own basic blocks — produced valid IR.
+
+The four skipped are the three route examples the VM cannot run either, plus
+`mYcIkul_qaLam.qmz` behind `ETAMIL_TEST_MYSQL`.
+
+Six of the seven matches are `examples/backend/*.qmz`, and every one of them was
+*refused* before this round — the print path was matching a string-literal shape
+the parser had stopped producing, so every banner line in the corpus was a
+refusal. The seventh is `examples/finance/paicA_kaNakku.qmz`.
+
+### What stopped the other 57, ranked
+
+Counted by `run_parity.sh` from the refusal lines themselves:
+
+```
+48  array index
+48  a comparison used as a value
+47  ஒவ்வொரு (for-each) over a numeric array
+45  function call நீளம்
+45  function call சரி
+43  function call தவறு
+41  expression உரை (a text value)
+41  expression a boolean literal
+38  expression a logical operator
+36  வகுத்தல் without தரை() or மேல்
+33  the name விடை
+32  expression a record literal
+27  function call இணை
+25  function call மதிப்பு
+19  function call சொல்லாக்கு
+15  statement an expression statement
+15  function call தவறா
+13  record field தொடக்கம்
+13  expression இல்லை (not)
+```
+
+**Read that as reasons, not as programs.** A program with eight reasons needs all
+eight before it compiles, so the ranking says what is *common*, not what is on
+the critical path. Clearing the top line alone would move the match count by
+approximately nothing.
+
+Two entries in the first run of this list were the backend misreporting itself,
+and both are fixed rather than left in the table above:
+
+- A bare division appeared **twice**, at 36 and 35, because `codegen_limits` and
+  `codegen.rs` refused it in two different words. It is one cause, and it is the
+  commonest arithmetic gap in the corpus — the split reading hid that. Both now
+  push the same constant.
+- `the name விடை (nothing here defines it)`, 33 of them, named a cause that does
+  not exist. `nUlakam/aNi.qmz` builds up `விடை = []` and returns it; the name is
+  perfectly well defined, it just holds an array, and an array is not a value
+  here. Those 33 belong to gap 3 and now say so.
+
+A refusal list is a roadmap, so a wrong reason in it is worse than a missing
+one. Both were mine.
+
 ## Suggested order from here
 
-1. **Run `scripts/run_parity.sh` on Ubuntu.** Everything below this line is
-   reasoning; that is measurement. It reports what stopped each example, ranked,
-   and fails only where the two backends *disagree* — a refusal is expected.
-2. **The boxed value** (gap 3): a tagged struct the IR passes by pointer, the
-   same shape `Value` has. Strings, arrays, records and results all wait on it,
-   and so does the rest of `kAcu.qmz`.
-3. **Builtins over the C ABI** (gap 2), mostly mechanical once 3 exists.
+The measurement agrees with the reasoning above, which was not guaranteed:
+
+1. **The boxed value** (gap 3): a tagged struct the IR passes by pointer, the
+   same shape `Value` has. It gates the top of the list outright — array index,
+   for-each, text, record literal, the 33 `விடை`-shaped returns — and it gates
+   the builtins below it, because `நீளம்` and `இணை` take and return exactly
+   those. Include `சரி`/`தவறு` in it: the result type is 128 occurrences across
+   `நீளம்`, `சரி`, `தவறு`, `மதிப்பு` and `தவறா`, because that is how nUlakam
+   reports failure.
+2. **Booleans, which are cheaper than they look and were not in the old plan.**
+   Comparisons-as-values, boolean literals, logical operators and `இல்லை` come
+   to about 140 occurrences, and none of them needs a heap — an i64 0 or 1 does
+   it. What they need is knowing *at the print site* that a value is a boolean,
+   because `அச்சு` renders one as `true`, not `1`. A two-state static type
+   (number or boolean) threaded through `compile_expr` buys all four, and
+   booleans only ever arise from comparisons, logical operators, `இல்லை`,
+   literals, and calls returning them. Worth doing before 1 if the aim is to
+   raise the match count for the least work; worth doing after 1 if the aim is
+   nUlakam, which needs the boxed value regardless.
+3. **Builtins over the C ABI** (gap 2), mostly mechanical once 1 exists.
 4. **Full decimal arithmetic** (gap 1), for whoever needs more than two places.
+
+Before starting any of them, re-run the parity script: these numbers are from
+one commit, and the two corrected reasons above will redraw the ranking.
 
 ## Type-checking this file on a machine that cannot build it
 
@@ -228,29 +314,3 @@ This catches every type error and every borrow error. It cannot catch invalid
 IR, and it cannot catch a wrong answer. Those are what Ubuntu and
 `run_parity.sh` are for, and a clean run here is not evidence the backend
 works.
-
-all 68 accounted for
-
-  What the LLVM backend still cannot build, most frequent first:
-         48 array index
-         48 a comparison used as a value (மெய்/பொய் has no representation here)
-         47 ஒவ்வொரு (for-each) over a numeric array
-         45 function call நீளம்
-         45 function call சரி
-         43 function call தவறு
-         41 expression உரை (a text value)
-         41 expression a boolean literal
-         38 expression a logical operator
-         36 வகுத்தல் — தரை() அல்லது மேல்() இல்லாமல்  (a bare division: whole-number division is exact here, but only under தரை() or மேல் — on its own its result has a fractional part and i64 has nowhere to put it)
-         35 வகுத்தல் without தரை() or மேல் (a bare division)
-         33 the name விடை (nothing here defines it)
-         32 expression a record literal
-         27 function call இணை
-         25 function call மதிப்பு
-         19 function call சொல்லாக்கு
-         15 statement an expression statement
-         15 function call தவறா
-         13 record field தொடக்கம்
-         13 expression இல்லை (not)
-
-  No disagreement: where the LLVM backend accepted a program, it agreed with the VM.
