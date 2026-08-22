@@ -10,6 +10,7 @@ use crate::parser::Stmt;
 
 pub mod router;
 pub mod request;
+pub mod multipart;  // multipart/form-data, over bytes
 pub mod response;
 pub mod handler;
 pub mod async_server;  // --async: tokio accept loop, blocking handlers
@@ -208,7 +209,7 @@ impl HttpServer {
     /// Returns None if the connection closes early or the request exceeds
     /// `MAX_REQUEST`, so a client cannot exhaust memory by promising a body
     /// it never sends.
-    fn read_request(stream: &mut TcpStream) -> Option<String> {
+    fn read_request(stream: &mut TcpStream) -> Option<Vec<u8>> {
         const CHUNK: usize = 4096;
         const MAX_REQUEST: usize = 1024 * 1024;
         const SEPARATOR: &[u8] = b"\r\n\r\n";
@@ -263,7 +264,7 @@ impl HttpServer {
             }
         }
 
-        Some(String::from_utf8_lossy(&raw).into_owned())
+        Some(raw)
     }
 
     /// Read one request off a connection, run it, and write the response.
@@ -271,12 +272,12 @@ impl HttpServer {
         let request_id = generate_request_id();
         let start_time = Instant::now();
 
-        let request_str = match Self::read_request(&mut tcp_stream) {
+        let request_raw = match Self::read_request(&mut tcp_stream) {
             Some(raw) => raw,
             None => return,
         };
 
-        match HttpRequest::parse(&request_str) {
+        match HttpRequest::parse_bytes(&request_raw) {
             Ok(request) => {
                 let mut req_context = std::collections::HashMap::new();
                 req_context.insert("request_id".to_string(), request_id);

@@ -2,6 +2,14 @@
 
 use std::collections::HashMap;
 
+/// Where does `needle` first appear in `haystack`?
+fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+    if needle.is_empty() || needle.len() > haystack.len() {
+        return None;
+    }
+    haystack.windows(needle.len()).position(|w| w == needle)
+}
+
 #[derive(Debug, Clone)]
 pub struct HttpRequest {
     pub method: String,
@@ -10,24 +18,44 @@ pub struct HttpRequest {
     pub headers: HashMap<String, String>,
     pub query_params: HashMap<String, String>,
     pub body: String,
+    /// The body as it arrived. `body` is this decoded leniently, which is
+    /// right for JSON and wrong for an upload: a PDF is not UTF-8, and the
+    /// lenient decode replaces every byte it dislikes. Anything that might
+    /// not be text reads this instead.
+    pub body_bytes: Vec<u8>,
 }
 
 impl HttpRequest {
-    /// Parse HTTP request from raw string
+    /// Parse an HTTP request from text. Convenience over `parse_bytes` for
+    /// callers that already hold a String — a test fixture, mostly.
     pub fn parse(raw: &str) -> Result<Self, String> {
-        // A blank line separates the headers from the body, and everything
-        // after it is the body exactly as sent.
-        //
-        // This used to walk the whole request line by line, re-joining body
-        // lines with '\n' and dropping blank ones. Any payload that was not
-        // single-line JSON came out altered, which for a language that posts
-        // journal entries is a silent corruption rather than an error.
-        let (head, body) = match raw.split_once("\r\n\r\n") {
-            Some((head, body)) => (head, body),
-            // Some clients (and most hand-written test fixtures) use bare LF.
-            None => raw.split_once("\n\n").unwrap_or((raw, "")),
-        };
+        Self::parse_bytes(raw.as_bytes())
+    }
 
+    /// Parse an HTTP request from the bytes that arrived.
+    ///
+    /// The head is text by definition and is decoded leniently. The body is
+    /// kept as bytes and only *also* offered as text, because a multipart
+    /// upload stops being the file it was the moment it becomes a String.
+    pub fn parse_bytes(raw: &[u8]) -> Result<Self, String> {
+        let (head_end, body_at) = match find_bytes(raw, b"\r\n\r\n") {
+            Some(at) => (at, at + 4),
+            // Some clients (and most hand-written test fixtures) use bare LF.
+            None => match find_bytes(raw, b"\n\n") {
+                Some(at) => (at, at + 2),
+                None => (raw.len(), raw.len()),
+            },
+        };
+        let head = String::from_utf8_lossy(&raw[..head_end]).into_owned();
+        let body_bytes = raw[body_at..].to_vec();
+        let mut request = Self::parse_head(&head)?;
+        request.body = String::from_utf8_lossy(&body_bytes).into_owned();
+        request.body_bytes = body_bytes;
+        Ok(request)
+    }
+
+    /// The request line and headers.
+    fn parse_head(head: &str) -> Result<Self, String> {
         let mut lines = head.lines();
 
         // Parse request line
@@ -63,7 +91,9 @@ impl HttpRequest {
             version,
             headers,
             query_params,
-            body: body.to_string(),
+            // Both filled in by parse_bytes, which is the only caller.
+            body: String::new(),
+            body_bytes: Vec::new(),
         })
     }
 

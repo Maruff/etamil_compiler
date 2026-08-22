@@ -146,7 +146,7 @@ async fn serve_connection(mut stream: TcpStream, handlers: Arc<HashMap<String, B
         None => return,
     };
 
-    let response = match HttpRequest::parse(&raw) {
+    let response = match HttpRequest::parse_bytes(&raw) {
         Ok(request) => {
             // The VM blocks — on the interpreter itself, and on whatever
             // database driver the handler reaches for. Running it here would
@@ -175,7 +175,7 @@ async fn serve_connection(mut stream: TcpStream, handlers: Arc<HashMap<String, B
 /// truncate a larger body while leaving the request line and headers intact,
 /// so the parse would still succeed and the handler would act on half a
 /// payload.
-async fn read_request(stream: &mut TcpStream) -> Option<String> {
+async fn read_request(stream: &mut TcpStream) -> Option<Vec<u8>> {
     const SEPARATOR: &[u8] = b"\r\n\r\n";
 
     let mut raw: Vec<u8> = Vec::with_capacity(CHUNK);
@@ -222,5 +222,5 @@ async fn read_request(stream: &mut TcpStream) -> Option<String> {
         }
     }
 
-    Some(String::from_utf8_lossy(&raw).into_owned())
+    Some(raw)
 }

@@ -7,6 +7,7 @@ pub mod value;
 
 pub use bytecode::{Bytecode, Instruction};
 pub use interpreter::VM;
+pub use interpreter::Upload;
 pub use value::Value;
 
 /// Initialize the eTamil VM with bytecode
