@@ -151,6 +151,27 @@ jobs:
   # AST node and the pattern in codegen.rs was left naming too few, which is a
   # hard error rather than a warning. Building it here is the only thing that
   # catches that before someone with LLVM installed tries to use it.
+  # Same reasoning as the LLVM job below: a feature nothing else builds is a
+  # feature that breaks without anyone noticing. This one needs no server —
+  # the conversion between eTamil values and BSON is where the risk is, and it
+  # is unit-tested. Talking to a real deployment is gated on ETAMIL_MONGO and
+  # is not run here.
+  mongodb-driver:
+    name: MongoDB driver builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: etamil_compiler
+
+      - name: Build and test with --features mongodb
+        working-directory: etamil_compiler
+        run: cargo test --features mongodb mongo
+
   llvm-backend:
     name: LLVM backend builds
     runs-on: ubuntu-latest

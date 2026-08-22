@@ -97,7 +97,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | String escapes | ✅ Working | `\n` `\t` `\r` `\"` `\\`; an unknown escape keeps both characters |
 | `ஜேசான்_உரை` statement | ❌ Not implemented | parses but the VM refuses it — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்` |
 | Redis | ✅ Working | `ரெடிஸ்_இணை` `ரெடிஸ்_கட்டளை` `ரெடிஸ்_பிரி`, with RESP implemented here rather than taken from a crate. One generic command, because that is the shape of Redis — every command works. Arguments are length-prefixed, so a value holding CRLF cannot become a second command; a missing key is nil and not `""`. Not pooled: Redis keeps per-connection state |
-| MongoDB | ❌ Not implemented | needs BSON and the wire protocol, or the `mongodb` crate and its async runtime. A design decision, not an afternoon |
+| MongoDB | ✅ Working | `--features mongodb`. A document is a `பொருள்` and a collection of them an array of records, so the value model was already document-shaped. **Money is stored as `Decimal128`, never a double** — a balance written as a double is not reliably the balance that comes back. `மொங்கோ_கட்டளை` is `runCommand`, so anything the server takes works. About seventy crates, fewer than `mysql` already costs, and none of it in the default build |
 | Async HTTP server (`--async`) | ✅ Working | tokio accept loop, handlers on the blocking pool; the VM stays synchronous |
 | Parse error positions | ✅ Working | every error carries a line and column, bilingually |
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |

@@ -3334,6 +3334,90 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "மொங்கோ_இணை",
+    "forms": [
+      "மொங்கோ_இணை",
+      "mowkO_iNY",
+      "_mongoConnect"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மொங்கோ_கட்டளை",
+    "forms": [
+      "மொங்கோ_கட்டளை",
+      "mowkO_kattaLY",
+      "_mongoCommand"
+    ],
+    "params": null,
+    "arity": 1,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மொங்கோ_செருகு",
+    "forms": [
+      "மொங்கோ_செருகு",
+      "mowkO_ceruku",
+      "_mongoInsert"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மொங்கோ_கண்டுபிடி",
+    "forms": [
+      "மொங்கோ_கண்டுபிடி",
+      "mowkO_kaNtupiti",
+      "_mongoFind"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மொங்கோ_புதுப்பி",
+    "forms": [
+      "மொங்கோ_புதுப்பி",
+      "mowkO_puquppi",
+      "_mongoUpdate"
+    ],
+    "params": null,
+    "arity": 4,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மொங்கோ_நீக்கு",
+    "forms": [
+      "மொங்கோ_நீக்கு",
+      "mowkO_nIkku",
+      "_mongoDelete"
+    ],
+    "params": null,
+    "arity": 3,
+    "doc": "",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கடவுச்சொல்_மறை",
     "forms": [
       "கடவுச்சொல்_மறை",

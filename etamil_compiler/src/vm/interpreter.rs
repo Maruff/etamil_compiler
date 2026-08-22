@@ -132,6 +132,12 @@ pub struct VM {
     /// Files that came with this request, in the order they were sent.
     /// Empty except while a multipart request is being handled.
     pub uploads: Vec<Upload>,
+    /// An open MongoDB connection, if the program asked for one.
+    ///
+    /// Behind the feature, so a default build carries neither the field nor
+    /// the seventy crates the driver brings.
+    #[cfg(feature = "mongodb")]
+    pub documents: Option<crate::mongo::Connection>,
     /// An open Redis connection, if the program asked for one.
     ///
     /// Not pooled, and deliberately. Redis keeps state on a connection —
@@ -149,6 +155,8 @@ impl VM {
             instruction_pointer: 0,
             file_modes: HashMap::new(),
             uploads: Vec::new(),
+            #[cfg(feature = "mongodb")]
+            documents: None,
             cache: None,
             frames: Vec::new(),
             connections: Connections::default(),
@@ -920,6 +928,137 @@ impl VM {
                 Ok(Value::Boolean(was))
             }
 
+            // --- MongoDB ----------------------------------------------------
+            // A document is a பொருள் and a collection of them is an array of
+            // records, so the mapping needed no invention — the value model was
+            // already document-shaped. What did need care is numbers: see
+            // src/mongo.rs. Nothing written from here is a double.
+            //
+            // Behind --features mongodb. Without it these say so rather than
+            // not existing, because "no such function" sends someone hunting
+            // for a typo.
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => {
+                Self::expect_args(name, &args, 2)?;
+                let uri = args[0].to_string();
+                let database = args[1].to_string();
+                match crate::mongo::Connection::open(&uri, &database) {
+                    Ok(connection) => {
+                        self.documents = Some(connection);
+                        Ok(Value::Ok(Box::new(Value::String(database))))
+                    }
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // மொங்கோ_கட்டளை(கட்டளைப்_பொருள்) — runCommand, the generic door
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_கட்டளை" | "mowkO_kattaLY" | "_mongoCommand" => {
+                Self::expect_args(name, &args, 1)?;
+                let command = match crate::mongo::to_document(&args[0]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                match Self::mongo_of(&self.documents) {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => match connection.command(command) {
+                        Ok(reply) => Ok(Value::Ok(Box::new(reply))),
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+            // மொங்கோ_செருகு(தொகுப்பு, ஆவணம்) — insert one, answering its id
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_செருகு" | "mowkO_ceruku" | "_mongoInsert" => {
+                Self::expect_args(name, &args, 2)?;
+                let collection = args[0].to_string();
+                let document = match crate::mongo::to_document(&args[1]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                match Self::mongo_of(&self.documents) {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => match connection.insert(&collection, document) {
+                        Ok(id) => Ok(Value::Ok(Box::new(id))),
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+            // மொங்கோ_கண்டுபிடி(தொகுப்பு, வடிகட்டி) — every match, as an array
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_கண்டுபிடி" | "mowkO_kaNtupiti" | "_mongoFind" => {
+                Self::expect_args(name, &args, 2)?;
+                let collection = args[0].to_string();
+                let filter = match crate::mongo::to_document(&args[1]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                match Self::mongo_of(&self.documents) {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => match connection.find(&collection, filter) {
+                        Ok(found) => Ok(Value::Ok(Box::new(found))),
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+            // மொங்கோ_புதுப்பி(தொகுப்பு, வடிகட்டி, மாற்றம், அனைத்துமா)
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_புதுப்பி" | "mowkO_puquppi" | "_mongoUpdate" => {
+                Self::expect_args(name, &args, 4)?;
+                let collection = args[0].to_string();
+                let filter = match crate::mongo::to_document(&args[1]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                let change = match crate::mongo::to_document(&args[2]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                let many = args[3].is_truthy();
+                match Self::mongo_of(&self.documents) {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => {
+                        match connection.update(&collection, filter, change, many) {
+                            Ok(changed) => Ok(Value::Ok(Box::new(Value::Number(
+                                Decimal::from(changed),
+                            )))),
+                            Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                        }
+                    }
+                }
+            }
+            // மொங்கோ_நீக்கு(தொகுப்பு, வடிகட்டி, அனைத்துமா)
+            //
+            // அனைத்துமா is not defaulted on purpose: "delete one" and "delete
+            // everything that matches" are different enough that a caller
+            // should have to say which, and the wrong default is unrecoverable.
+            #[cfg(feature = "mongodb")]
+            "மொங்கோ_நீக்கு" | "mowkO_nIkku" | "_mongoDelete" => {
+                Self::expect_args(name, &args, 3)?;
+                let collection = args[0].to_string();
+                let filter = match crate::mongo::to_document(&args[1]) {
+                    Ok(document) => document,
+                    Err(why) => return Ok(Value::Err(Box::new(Value::String(why)))),
+                };
+                let many = args[2].is_truthy();
+                match Self::mongo_of(&self.documents) {
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => match connection.delete(&collection, filter, many) {
+                        Ok(gone) => {
+                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(gone)))))
+                        }
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
+                }
+            }
+            // Built without the feature: say so, rather than leaving someone to
+            // hunt for a typo in a name that is spelled correctly.
+            #[cfg(not(feature = "mongodb"))]
+            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => Err(
+                "மொங்கோ ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+                 (this build has no MongoDB support): rebuild with --features mongodb"
+                    .to_string(),
+            ),
+
             // --- Authentication ---
             // bcrypt, HMAC-SHA256, base64 and randomness are not expressible
             // in eTamil, so they live in the host. Everything above them —
@@ -1302,6 +1441,18 @@ impl VM {
             String::from_utf8_lossy(&printed).to_string(),
             String::from_utf8_lossy(&complained).to_string(),
         ))
+    }
+
+    /// The MongoDB connection, or an explanation of why there is none.
+    #[cfg(feature = "mongodb")]
+    fn mongo_of(
+        held: &Option<crate::mongo::Connection>,
+    ) -> Result<&crate::mongo::Connection, String> {
+        held.as_ref().ok_or_else(|| {
+            "மொங்கோ இணைக்கப்படவில்லை  (not connected to MongoDB): \
+             use மொங்கோ_இணை first"
+                .to_string()
+        })
     }
 
     /// One entry of a zip package, decoded as UTF-8.
