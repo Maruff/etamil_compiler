@@ -36,7 +36,11 @@ impl BytecodeCompiler {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
             }
-            Stmt::FunctionDef { name, params, body } => {
+            Stmt::FunctionDef { name, params, body, .. } => {
+                // The VM binds parameters by name; the declared types are
+                // the checker's business and are already enforced by now.
+                let params: Vec<String> =
+                    params.into_iter().map(|param| param.name).collect();
                 // The body is emitted inline, so execution has to jump over it.
                 let jump_idx = self.bytecode.len();
                 self.bytecode.push(Instruction::Jump(0)); // patched below

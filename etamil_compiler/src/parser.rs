@@ -78,6 +78,17 @@ pub enum DeclaredType {
     Any,
 }
 
+/// One parameter of a `செயல்`, with the type it was declared as if it was.
+///
+/// `at` is where the name was written, so a call that passes the wrong thing
+/// can be pointed at the parameter it disagrees with.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Param {
+    pub name: String,
+    pub declared: Option<DeclaredType>,
+    pub at: Position,
+}
+
 impl DeclaredType {
     /// The keyword an author would have written, for error messages.
     pub fn name(&self) -> &'static str {
@@ -156,11 +167,16 @@ pub enum Stmt {
         /// Where the name was written, for the checker to point at.
         at: Position,
     },
-    // ceyal name(params) { body }
+    // ceyal name(params) returns { body }
     FunctionDef {
         name: String,
-        params: Vec<String>,
+        params: Vec<Param>,
+        /// The type the function promises to return, if it said.
+        returns: Option<DeclaredType>,
         body: Vec<Stmt>,
+        /// Where the function's name was written, so a திரும்பு that breaks
+        /// the declared return type has somewhere to point.
+        at: Position,
     },
     // qirumpu value;
     Return(Option<Expr>),
@@ -557,21 +573,48 @@ impl<'a> Parser<'a> {
 
         match &current.token {
             Token::Function => {
+                let at = match self.peek_spanned() {
+                    Some(spanned) => Position {
+                        line: spanned.line,
+                        column: spanned.column,
+                    },
+                    None => Position {
+                        line: self.last.0,
+                        column: self.last.1,
+                    },
+                };
                 let name = self.take_name("a function name")?;
                 self.expect(Token::LParen)?;
                 let mut params = Vec::new();
                 if !self.matches(Token::RParen) {
                     loop {
-                        params.push(self.take_name("a parameter name")?);
+                        params.push(self.parse_param()?);
                         if !self.matches(Token::Comma) {
                             break;
                         }
                     }
                     self.expect(Token::RParen)?;
                 }
+
+                // An optional return type, between the parameter list and the
+                // body. Nothing else can appear there, so it needs no marker.
+                let returns = match self.peek_token() {
+                    Some(token) if Self::is_type_token(token) => {
+                        let token = self.take("a return type")?;
+                        Some(Self::type_of(&token.token))
+                    }
+                    _ => None,
+                };
+
                 self.expect(Token::LBrace)?;
                 let body = self.parse_block()?;
-                Ok(Stmt::FunctionDef { name, params, body })
+                Ok(Stmt::FunctionDef {
+                    name,
+                    params,
+                    returns,
+                    body,
+                    at,
+                })
             }
             Token::Import => {
                 let path = self.parse_expression()?;
@@ -1152,6 +1195,32 @@ impl<'a> Parser<'a> {
                 | Token::ObjectType
                 | Token::DateType
         )
+    }
+
+    /// One parameter: an optional type keyword, then the name. The same order
+    /// a variable declaration uses, so `எண் தொகை` reads the same in both places.
+    fn parse_param(&mut self) -> Result<Param, ParseError> {
+        let declared = match self.peek_token() {
+            Some(token) if Self::is_type_token(token) => {
+                let token = self.take("a parameter type")?;
+                Some(Self::type_of(&token.token))
+            }
+            _ => None,
+        };
+
+        let spanned = self.take("a parameter name")?;
+        if !Self::is_identifier_like(&spanned.token) || Self::is_type_token(&spanned.token) {
+            return Err(self.mismatch(spanned, "a parameter name"));
+        }
+        let at = Position {
+            line: spanned.line,
+            column: spanned.column,
+        };
+        Ok(Param {
+            name: self.name_of(spanned),
+            declared,
+            at,
+        })
     }
 
     /// The declared type a type keyword names.

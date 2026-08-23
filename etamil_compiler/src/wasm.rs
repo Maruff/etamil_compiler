@@ -363,10 +363,26 @@ fn walk(
                 let detail = declared.as_ref().map(|d| d.name().to_string()).unwrap_or_default();
                 push(out, seen, owner, name, "variable", detail);
             }
-            Stmt::FunctionDef { name, params, body } => {
-                push(out, seen, owner, name, "function", format!("({})", params.join(", ")));
+            Stmt::FunctionDef { name, params, returns, body } => {
+                let shown: Vec<String> = params
+                    .iter()
+                    .map(|param| match &param.declared {
+                        Some(declared) => format!("{} {}", declared.name(), param.name),
+                        None => param.name.clone(),
+                    })
+                    .collect();
+                let signature = match returns {
+                    Some(declared) => format!("({}) {}", shown.join(", "), declared.name()),
+                    None => format!("({})", shown.join(", ")),
+                };
+                push(out, seen, owner, name, "function", signature);
                 for param in params {
-                    push(out, seen, Some(name), param, "parameter", String::new());
+                    let detail = param
+                        .declared
+                        .as_ref()
+                        .map(|d| d.name().to_string())
+                        .unwrap_or_default();
+                    push(out, seen, Some(name), &param.name, "parameter", detail);
                 }
                 walk(body, Some(name), out, seen);
             }

@@ -9,18 +9,23 @@
 //! wrong, and stays silent everywhere else:
 //!
 //! - a value assigned to a declaration whose type it cannot be;
-//! - a later assignment to a variable that was declared with a type.
+//! - a later assignment to a variable that was declared with a type;
+//! - an argument that cannot be the type its parameter was declared;
+//! - a `திரும்பு` that cannot be the declared return type.
 //!
 //! It does **not** invent constraints the language does not have. Arithmetic
 //! on text is legal on purpose, because `உள்ளிடு` yields text and the VM
 //! converts it when it is used as a number; flagging that would break the
-//! language's own headline example. Calls infer as unconstrained, because
-//! functions have no declared signatures yet. Silence is not approval here —
-//! it is the absence of a claim.
+//! language's own headline example.
+//!
+//! A signature is optional in every part, so a `செயல்` that declares nothing
+//! is checked exactly as it was before. What is *not* optional is that a
+//! declaration which is written gets held to: an unenforced type reads as a
+//! guarantee, and silence is not approval — it is the absence of a claim.
 
 use std::collections::HashMap;
 
-use crate::parser::{DeclaredType, Expr, Position, Stmt};
+use crate::parser::{DeclaredType, Expr, Param, Position, Stmt};
 
 /// A type error, carrying the position of the name it concerns.
 #[derive(Debug, Clone, PartialEq)]
@@ -114,8 +119,13 @@ impl Inferred {
 pub fn check(statements: &[Stmt]) -> Result<(), Vec<TypeError>> {
     let mut checker = Checker {
         declared: HashMap::new(),
+        signatures: HashMap::new(),
+        returns: None,
         errors: Vec::new(),
     };
+    // Signatures first, at every depth, so a call can be checked against a
+    // function defined further down the file than the call is.
+    collect_signatures(statements, &mut checker.signatures);
     checker.check_block(statements);
 
     if checker.errors.is_empty() {
@@ -125,9 +135,59 @@ pub fn check(statements: &[Stmt]) -> Result<(), Vec<TypeError>> {
     }
 }
 
+/// What a `செயல்` promised: a type per parameter where it said, and a return
+/// type where it said.
+#[derive(Debug, Clone)]
+struct Signature {
+    params: Vec<Param>,
+    returns: Option<DeclaredType>,
+}
+
+fn collect_signatures(statements: &[Stmt], into: &mut HashMap<String, Signature>) {
+    for statement in statements {
+        match statement {
+            Stmt::FunctionDef {
+                name,
+                params,
+                returns,
+                body,
+                ..
+            } => {
+                into.insert(
+                    name.clone(),
+                    Signature {
+                        params: params.clone(),
+                        returns: *returns,
+                    },
+                );
+                collect_signatures(body, into);
+            }
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                collect_signatures(then_branch, into);
+                if let Some(branch) = else_branch {
+                    collect_signatures(branch, into);
+                }
+            }
+            Stmt::Loop { body, .. }
+            | Stmt::ForEach { body, .. }
+            | Stmt::DefineRoute { handler: body, .. }
+            | Stmt::Schedule { body, .. } => collect_signatures(body, into),
+            _ => {}
+        }
+    }
+}
+
 struct Checker {
     /// Types the program has committed to, by name.
     declared: HashMap<String, DeclaredType>,
+    /// What each `செயல்` promised about its parameters and its result.
+    signatures: HashMap<String, Signature>,
+    /// The return type of the function being checked, if it declared one.
+    returns: Option<(String, DeclaredType, Position)>,
     errors: Vec<TypeError>,
 }
 
@@ -144,15 +204,50 @@ impl Checker {
                 self.check_assign(name, value, *declared, *at);
             }
 
-            // A function body is checked, but its parameters are not declared,
-            // so a name inside can shadow an outer declaration without
-            // inheriting its type. Checking the body against the outer scope
-            // would report errors about variables that are not the same
-            // variable.
-            Stmt::FunctionDef { body, .. } => {
+            // A function body is checked in its own scope, so a name inside
+            // cannot inherit an outer declaration for a variable that is not
+            // the same variable. What it *does* start with is its parameters,
+            // each carrying the type it was declared as — which is the point
+            // of declaring one.
+            Stmt::FunctionDef {
+                name,
+                params,
+                returns,
+                body,
+                at,
+            } => {
                 let outer = std::mem::take(&mut self.declared);
+                let outer_returns = self.returns.take();
+
+                for param in params {
+                    if let Some(declared) = param.declared {
+                        self.declared.insert(param.name.clone(), declared);
+                    }
+                }
+                self.returns = returns.map(|declared| (name.clone(), declared, *at));
+
                 self.check_block(body);
+
                 self.declared = outer;
+                self.returns = outer_returns;
+            }
+
+            // A திரும்பு is held to the function's declared return type. Its
+            // position is the function's name: the AST carries no span for a
+            // statement here, and the declaration is the thing being broken.
+            Stmt::Return(Some(value)) => {
+                if let Some((name, declared, at)) = self.returns.clone() {
+                    let found = self.infer(value);
+                    if !found.satisfies(declared) {
+                        self.errors.push(TypeError {
+                            line: at.line,
+                            column: at.column,
+                            name,
+                            declared,
+                            found: found.name(),
+                        });
+                    }
+                }
             }
 
             Stmt::If { then_branch, else_branch, .. } => {
@@ -168,6 +263,7 @@ impl Checker {
                 self.declared.remove(var);
                 self.check_block(body);
             }
+            Stmt::Expression(value) | Stmt::Print(value) => self.check_calls(value),
             Stmt::DefineRoute { handler, .. } => self.check_block(handler),
             Stmt::Schedule { body, .. } => self.check_block(body),
 
@@ -190,6 +286,67 @@ impl Checker {
         }
     }
 
+    /// Every call inside an expression, against what the function promised.
+    ///
+    /// An argument's error points at the *parameter*, because `Expr::Call`
+    /// carries no span — and the parameter is where the promise was made, so
+    /// it is a useful thing to be shown either way.
+    fn check_calls(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Call { name, args } => {
+                for argument in args {
+                    self.check_calls(argument);
+                }
+
+                if let Some(signature) = self.signatures.get(name).cloned() {
+                    for (argument, param) in args.iter().zip(signature.params.iter()) {
+                        let Some(declared) = param.declared else {
+                            continue;
+                        };
+                        let found = self.infer(argument);
+                        if !found.satisfies(declared) {
+                            self.errors.push(TypeError {
+                                line: param.at.line,
+                                column: param.at.column,
+                                name: param.name.clone(),
+                                declared,
+                                found: found.name(),
+                            });
+                        }
+                    }
+                }
+            }
+            Expr::BinaryOp { left, right, .. }
+            | Expr::Comparison { left, right, .. }
+            | Expr::Concat { left, right }
+            | Expr::Logical { left, right, .. } => {
+                self.check_calls(left);
+                self.check_calls(right);
+            }
+            Expr::Not(inner) | Expr::Try(inner) => self.check_calls(inner),
+            Expr::ArrayLiteral(items) => {
+                for item in items {
+                    self.check_calls(item);
+                }
+            }
+            Expr::RecordLiteral(fields) => {
+                for (_, value) in fields {
+                    self.check_calls(value);
+                }
+            }
+            Expr::Index { base, index } => {
+                self.check_calls(base);
+                self.check_calls(index);
+            }
+            Expr::Field { base, .. } => self.check_calls(base),
+            Expr::Number(_)
+            | Expr::String(_)
+            | Expr::Boolean(_)
+            | Expr::Null
+            | Expr::Variable(_) => {}
+        }
+    }
+
     fn check_assign(
         &mut self,
         name: &str,
@@ -197,6 +354,8 @@ impl Checker {
         declared: Option<DeclaredType>,
         at: Position,
     ) {
+        self.check_calls(value);
+
         // A declaration on this statement wins; failing that, one the program
         // made earlier still applies.
         let expected = declared.or_else(|| self.declared.get(name).copied());
@@ -248,12 +407,23 @@ impl Checker {
                 Some(DeclaredType::Any) | None => Inferred::Unknown,
             },
 
-            // Functions have no declared signatures, and indexing a collection
-            // says nothing about what is inside it.
-            Expr::Call { .. }
-            | Expr::Index { .. }
-            | Expr::Field { .. }
-            | Expr::Try(_) => Inferred::Unknown,
+            // A call is whatever the function promised to return. Without a
+            // declaration it is still unconstrained, which is most calls.
+            Expr::Call { name, .. } => match self
+                .signatures
+                .get(name)
+                .and_then(|signature| signature.returns)
+            {
+                Some(DeclaredType::Number) => Inferred::Number,
+                Some(DeclaredType::Text) | Some(DeclaredType::Date) => Inferred::Text,
+                Some(DeclaredType::Boolean) => Inferred::Boolean,
+                Some(DeclaredType::Array) => Inferred::Array,
+                Some(DeclaredType::Record) => Inferred::Record,
+                Some(DeclaredType::Any) | None => Inferred::Unknown,
+            },
+
+            // Indexing a collection says nothing about what is inside it.
+            Expr::Index { .. } | Expr::Field { .. } | Expr::Try(_) => Inferred::Unknown,
         }
     }
 }

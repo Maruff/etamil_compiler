@@ -354,7 +354,10 @@ impl Compiler {
             }
 
             for statement in &statements {
-                if let Stmt::FunctionDef { name, params, body } = statement {
+                if let Stmt::FunctionDef {
+                    name, params, body, ..
+                } = statement
+                {
                     self.compile_function(name, params, body);
                 }
             }
@@ -706,7 +709,7 @@ impl Compiler {
         }
     }
 
-    fn compile_function(&mut self, name: &str, params: &[String], body: &[Stmt]) {
+    fn compile_function(&mut self, name: &str, params: &[crate::parser::Param], body: &[Stmt]) {
         unsafe {
             let function = self.declare_function(name, params.len());
             let saved_function = self.function;
@@ -729,12 +732,12 @@ impl Compiler {
                 let slot = LLVMBuildAlloca(
                     self.builder,
                     self.value(),
-                    CString::new(parameter.as_str())
+                    CString::new(parameter.name.as_str())
                         .unwrap_or_else(|_| CString::new("param").unwrap())
                         .as_ptr(),
                 );
                 LLVMBuildStore(self.builder, LLVMGetParam(function, index as u32), slot);
-                self.variables.insert(parameter.clone(), slot);
+                self.variables.insert(parameter.name.clone(), slot);
             }
 
             for statement in body {

@@ -181,6 +181,60 @@ fn a_json_response_refuses_a_body_that_is_not_text() {
     );
 }
 
+// --- Declared function signatures ----------------------------------------
+//
+// Every part is optional. What is not optional is that a part which is written
+// gets held to — an unenforced type reads as a guarantee.
+
+#[test]
+fn a_declared_signature_accepts_what_it_asked_for() {
+    let vm = run("ceyal vari(eN qokY) eN { qirumpu qokY * 18; } out = vari(1000);").unwrap();
+    assert_eq!(num(&vm, "out"), dec(18000));
+}
+
+#[test]
+fn an_argument_must_be_the_type_the_parameter_declared() {
+    let why = run("ceyal vari(eN qokY) eN { qirumpu qokY * 18; } out = vari({\"a\": 1});")
+        .unwrap_err();
+    // Pointed at the parameter, because that is where the promise was made and
+    // Expr::Call carries no span.
+    assert!(why.contains("qokY"), "it should name the parameter: {}", why);
+}
+
+#[test]
+fn a_return_must_be_the_type_the_function_declared() {
+    let why = run("ceyal vari(eN qokY) aNi { qirumpu qokY * 18; }").unwrap_err();
+    assert!(why.contains("vari"), "it should name the function: {}", why);
+}
+
+#[test]
+fn a_declared_return_type_flows_into_the_caller() {
+    // The whole point of declaring one: `aNi a = peyar();` is now checkable,
+    // where before a call inferred as unconstrained and this passed.
+    let why = run("ceyal peyar() col { qirumpu \"ravi\"; } aNi a = peyar();").unwrap_err();
+    assert!(why.contains("a"), "{}", why);
+
+    // And the matching declaration is accepted.
+    let vm = run("ceyal peyar() col { qirumpu \"ravi\"; } col b = peyar();").unwrap();
+    assert_eq!(text(&vm, "b"), "ravi");
+}
+
+#[test]
+fn a_signature_that_declares_nothing_is_checked_as_it_always_was() {
+    // No annotation is no claim, so anything may be passed and returned.
+    let vm = run("ceyal f(a) { qirumpu a; } x = f(\"anything\"); y = f(5);").unwrap();
+    assert_eq!(text(&vm, "x"), "anything");
+    assert_eq!(num(&vm, "y"), dec(5));
+}
+
+#[test]
+fn a_parameter_type_is_in_scope_inside_the_body() {
+    // Declaring the parameter constrains what the body may do with the name,
+    // which is what makes the declaration worth writing.
+    let why = run("ceyal f(eN a) { aNi b = a; qirumpu b; }").unwrap_err();
+    assert!(why.contains("b"), "{}", why);
+}
+
 // --- Arithmetic and control flow -----------------------------------------
 
 #[test]
