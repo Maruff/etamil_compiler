@@ -58,7 +58,6 @@ pub mod db;
 #[cfg(not(target_family = "wasm"))]
 pub mod codegen;
 #[cfg(not(target_family = "wasm"))]
-pub mod fileio;
 // Portable: the bytecode compiler and value layer touch no OS at all, and the
 // interpreter's input and output go through vm::host, which has a browser
 // implementation. The archive and subprocess helpers inside it are gated

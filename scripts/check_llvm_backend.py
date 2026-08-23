@@ -42,10 +42,21 @@ LOCK = os.path.join(CRATE, "Cargo.lock")
 LOCK_BACKUP = os.path.join(CRATE, "target", "Cargo.lock.before-llvm-check")
 
 # The only two files that touch llvm-sys.
-SOURCES = [
-    os.path.join(CRATE, "src", "codegen.rs"),
-    os.path.join(CRATE, "src", "fileio", "csv_handler.rs"),
-]
+# Every source that names an LLVM symbol, found rather than listed: a hardcoded
+# list goes stale silently, and this one did — src/fileio/csv_handler.rs was
+# deleted and the script then crashed on a missing file instead of checking
+# anything.
+def llvm_sources():
+    found = []
+    for base, _, files in os.walk(os.path.join(CRATE, "src")):
+        for name in files:
+            if not name.endswith(".rs"):
+                continue
+            path = os.path.join(base, name)
+            with io.open(path, encoding="utf-8") as handle:
+                if "llvm_sys" in handle.read():
+                    found.append(path)
+    return sorted(found)
 
 # Type aliases and enums the declarations refer to. Over-broad on purpose: an
 # alias nothing uses costs nothing, and a missing one is a confusing error.
@@ -94,7 +105,7 @@ def find_llvm_sys():
 
 def symbols_used():
     names = set()
-    for path in SOURCES:
+    for path in llvm_sources():
         text = io.open(path, encoding="utf-8").read()
         names.update(re.findall(r"\bLLVM[A-Za-z0-9_]+", text))
     return names

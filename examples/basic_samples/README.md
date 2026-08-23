@@ -92,7 +92,6 @@ Perfect for learning:
 
 - `../io_samples/README.md` - File I/O examples
 - `../db_samples/README.md` - Database examples
-- `../crypto_samples/README.md` - Encryption examples
 - `../README_EXAMPLES.md` - Complete guide to all examples
 - `../../ARCHITECTURE.md` - System architecture
 
