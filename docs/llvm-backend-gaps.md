@@ -181,3 +181,147 @@ semantics live in `src/runtime.rs` rather than in the emitted IR. The part most
 likely to be wrong is now the part that runs under `cargo test` on any machine:
 `0.1 + 0.2` is `"0.3"` and `1 / 3` is all twenty-eight digits, asserted rather
 than argued.
+
+./scripts/run_parity.sh 
+  skipped          examples/api/simple_api.qmz (the VM cannot run it either)
+  skipped          examples/api/vari_cEvY.qmz (the VM cannot run it either)
+  match            examples/backend/calculator_server.qmz
+  match            examples/backend/hello_server.qmz
+  match            examples/backend/loop_server.qmz
+  match            examples/backend/simple_api.qmz
+  match            examples/backend/status_server.qmz
+  match            examples/backend/user_server.qmz
+  MISMATCH         examples/basic_samples/example.qmz
+  refused          examples/db_samples/inventory_system.qmz
+  refused          examples/db_samples/kaNakku_qaLam.qmz
+  skipped          examples/db_samples/mYcIkul_qaLam.qmz (set ETAMIL_TEST_MYSQL=1 to run it)
+  refused          examples/db_samples/payroll_system.qmz
+  refused          examples/db_samples/student_management.qmz
+  match            examples/finance/campaLam.qmz
+  match            examples/finance/kaNakkiyal.qmz
+  match            examples/finance/niluvY_vayaqu.qmz
+  match            examples/finance/paicA_kaNakku.qmz
+  match            examples/finance/vaNikavari_pattiyal.qmz
+  match            examples/io_samples/AvaNam_uqAraNam.qmz
+  refused          examples/io_samples/fileio_example.qmz
+  refused          examples/io_samples/simple_fileio.qmz
+  skipped          examples/kadai/kadai_cEvY.qmz (the VM cannot run it either)
+  refused          examples/kadai/kadai_kAttu.qmz
+  match            examples/kadai/kadai.qmz
+  match            examples/language/aNikaL_poruLkaL.qmz
+  match            examples/language/ceyalkaL.qmz
+  match            nUlakam/aNi.qmz
+  match            nUlakam/AvaNam.qmz
+  match            nUlakam/cawkili/fabric_cOqaZY.qmz
+  match            nUlakam/cawkili/fabric.qmz
+  match            nUlakam/col.qmz
+  match            nUlakam/cOqaZY.qmz
+  match            nUlakam/cuwkam/cuwkam_cOqaZY.qmz
+  match            nUlakam/cuwkam/cuwkam.qmz
+  match            nUlakam/jEcAZ.qmz
+  match            nUlakam/kAcu_cOqaZY.qmz
+  match            nUlakam/kAcu.qmz
+  match            nUlakam/kaNakkiyal/aRikkYkaL.qmz
+  match            nUlakam/kaNakkiyal/coqqu_Uqiyam_cOqaZY.qmz
+  match            nUlakam/kaNakkiyal/kAlam.qmz
+  match            nUlakam/kaNakkiyal/kaNakkukaL.qmz
+  match            nUlakam/kaNakkiyal/mutippu.qmz
+  match            nUlakam/kaNakkiyal/niRuvaZam.qmz
+  match            nUlakam/kaNakkiyal/oqukkItu.qmz
+  match            nUlakam/kaNakkiyal/pErEtu.qmz
+  match            nUlakam/kaNakkiyal/qEymAZam.qmz
+  match            nUlakam/kaNakkiyal/Uqiyam.qmz
+  match            nUlakam/kaNakkiyal/vari_cOqaZY.qmz
+  match            nUlakam/kaNakkiyal/vari.qmz
+  refused          nUlakam/kaNakkiyal/vari_viziqam_cOqaZY.qmz
+  refused          nUlakam/kaNakkiyal/vari_viziqam.qmz
+  match            nUlakam/kaNiqam.qmz
+  match            nUlakam/kAppIttu/kAppIttu_cOqaZY.qmz
+  match            nUlakam/kAppIttu/kAppIttu.qmz
+  match            nUlakam/kuRiyAkkam.qmz
+  match            nUlakam/paNam.qmz
+  match            nUlakam/poruL.qmz
+  match            nUlakam/qaLam/retis_cOqaZY.qmz
+  match            nUlakam/qaLam/retis.qmz
+  match            nUlakam/upi/nilYmY.qmz
+  MISMATCH         nUlakam/upi/upi_cOqaZY.qmz
+  match            nUlakam/upi/vilAcam.qmz
+  refused          nUlakam/vawki/coqqu_cOqaZY.qmz
+  refused          nUlakam/vawki/coqqu.qmz
+  match            nUlakam/vawki/kadaZ.qmz
+  match            nUlakam/vawki/vatti.qmz
+  match            nUlakam/vawki/vawki_cOqaZY.qmz
+
+-------------------------------------------
+  51 match, 2 mismatch, 11 refused, 0 compiled-only, 4 skipped
+  all 68 accounted for
+
+  What the LLVM backend still cannot build, most frequent first:
+          6 statement தளம்_வினா (query)
+          5 statement கோப்பு_மூடு (close a file)
+          5 statement கோப்பு_திற (open a file)
+          4 the name கிடைத்தவை (nothing here defines it)
+          4 statement தளம்_செய் (execute)
+          4 statement தரவுசேமி_இணை (connect to a database)
+          4 statement CSV_படி (read a CSV)
+          4 statement CSV_எழுது (write a CSV)
+          2 the name வரிசைகள் (nothing here defines it)
+          2 statement தரவுசேமி_பிரி (disconnect)
+          2 statement கோப்பு_படி (read a file)
+          2 statement கோப்பு_எழுது (write a file)
+          1 the name வரவுகள் (nothing here defines it)
+          1 the name மீதி (nothing here defines it)
+          1 the name பட்டியல் (nothing here defines it)
+          1 the name செலவுகள் (nothing here defines it)
+          1 the name கிடைப்பு (nothing here defines it)
+          1 the name உள்ளடக்கம் (nothing here defines it)
+          1 the name ஆணைகள் (nothing here defines it)
+
+  Counts of reasons, not of programs. A program with eight reasons
+  needs all eight, so that list says what is common rather than what
+  is on the critical path. This one says what is nearly there:
+
+  Closest to compiling — fewest distinct reasons first:
+    nUlakam/vawki/coqqu.qmz (2)
+        statement தளம்_வினா (query)
+        the name கிடைத்தவை (nothing here defines it)
+    nUlakam/kaNakkiyal/vari_viziqam.qmz (3)
+        statement தளம்_வினா (query)
+        the name கிடைத்தவை (nothing here defines it)
+        the name வரிசைகள் (nothing here defines it)
+    examples/db_samples/inventory_system.qmz (4)
+        statement CSV_எழுது (write a CSV)
+        statement CSV_படி (read a CSV)
+        statement கோப்பு_திற (open a file)
+        statement கோப்பு_மூடு (close a file)
+    examples/db_samples/payroll_system.qmz (4)
+        statement CSV_எழுது (write a CSV)
+        statement CSV_படி (read a CSV)
+        statement கோப்பு_திற (open a file)
+        statement கோப்பு_மூடு (close a file)
+    examples/io_samples/simple_fileio.qmz (4)
+        statement கோப்பு_எழுது (write a file)
+        statement கோப்பு_திற (open a file)
+        statement கோப்பு_படி (read a file)
+        statement கோப்பு_மூடு (close a file)
+    nUlakam/vawki/coqqu_cOqaZY.qmz (4)
+        statement தரவுசேமி_இணை (connect to a database)
+        statement தளம்_செய் (execute)
+        statement தளம்_வினா (query)
+        the name கிடைத்தவை (nothing here defines it)
+    examples/db_samples/student_management.qmz (5)
+        statement CSV_எழுது (write a CSV)
+        statement CSV_படி (read a CSV)
+        statement கோப்பு_எழுது (write a file)
+        statement கோப்பு_திற (open a file)
+        statement கோப்பு_மூடு (close a file)
+    nUlakam/kaNakkiyal/vari_viziqam_cOqaZY.qmz (5)
+        statement தரவுசேமி_இணை (connect to a database)
+        statement தளம்_செய் (execute)
+        statement தளம்_வினா (query)
+        the name கிடைத்தவை (nothing here defines it)
+        the name வரிசைகள் (nothing here defines it)
+
+  The two backends disagree — a refusal is expected, a wrong answer is not:
+    - examples/basic_samples/example.qmz
+    - nUlakam/upi/upi_cOqaZY.qmz
