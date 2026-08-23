@@ -41,12 +41,12 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
         continue-on-error: true
 
-      # Audits every keyword's romanization against the ezuqqu scheme.
-      # 19 pre-existing keywords are off-scheme; drop continue-on-error
-      # once they are swept. See docs/ROADMAP.md item 6.
+      # Audits every keyword's romanization against the ezuqqu scheme. It was
+      # non-gating while 19 keywords were off-scheme; 18 are now on-scheme and
+      # the one that stays is recorded in transliterate.py with its reason, so a
+      # failure here is a real regression. See docs/ROADMAP.md item 6.
       - name: Romanization scheme check
         run: python ../scripts/transliterate.py --check
-        continue-on-error: true
 
       - name: Build (release)
         run: cargo build --release

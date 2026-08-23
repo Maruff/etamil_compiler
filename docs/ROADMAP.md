@@ -133,12 +133,35 @@ The three nasals now have distinct letters: **ண = `N`, ந = `n`, ன = `Z`.**
 
 This is a **breaking change to romanized source**; Tamil-script source is unaffected.
 
-### Follow-up: 19 keywords are still off-scheme for other letters
+### Done: the romanization is on-scheme, bar one
 
-`scripts/transliterate.py` implements the scheme and `--check` audits the lexer against it. It reproduces 177 of 196 keywords exactly; the other 19 use letters the scheme does not assign, or assigns elsewhere:
+`scripts/transliterate.py` implements the scheme and `--check` audits the lexer
+against it. Nineteen keywords were off-scheme — `t`/`q` swapped, `ச` written `s`,
+letters the scheme does not assign (`D`, `g`, `zh`), dropped doubled consonants,
+and the compound convention before `_`.
 
-| Problem | Examples |
-|---|---|
+Eighteen are fixed, and **without the breaking rename this section used to
+assume was necessary**. The audit reads the *second* alternative of each
+`#[regex(...)]` as the canonical romanization, so the scheme's spelling was
+inserted there and the old one kept after it. Both lex; the canonical one is the
+scheme's; no program stopped compiling. 523 spellings across 202 tokens, up from
+505.
+
+The cost is that eighteen romanized words are newly reserved — `utal`, `paqil`,
+`vazi` and the rest. Every `.qmz` in the repository was checked for them as real
+identifiers, ignoring strings and comments, and none used one. Romanized code
+outside the repository could.
+
+**`தொகை` keeps `toqai` rather than becoming `qokY`, deliberately.** `qokY` is a
+record field name in four examples — `examples/db_samples/kaNakku_qaLam.qmz`,
+`mYcIkul_qaLam.qmz`, `examples/kadai/kadai_cEvY.qmz` and `kadai_kAttu.qmz` —
+matching the SQL column each selects. A keyword used as a field name is stored
+under its *token* name rather than as written, so `பதிவு.qokY` would have started
+looking for a field called `Amount` and found nothing. A romanization nicety does
+not get to break working code; `transliterate.py` records the exception with that
+reason, so `--check` can be made a gating CI step as it stands.
+
+---|---|
 | `t`/`q` swapped (ட is `t`, த is `q`) | `soqqu`→`coqqu`, `toqai`→`qokY`, `uqal`→`utal`, `talY`→`qalY` |
 | Letters not in the scheme at all | `matippIDu` (`D`), `toguippu` (`g`), `vazhi` (`zh`), `paDil` (`D`) |
 | ச written `s` instead of `c` | `soqqu`→`coqqu` |

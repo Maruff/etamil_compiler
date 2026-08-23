@@ -88,26 +88,62 @@ def transliterate(word: str) -> str:
     return "".join(out)
 
 
+# Keywords that keep an off-scheme romanization, and why. An exception with a
+# stated reason is a decision; a count of nineteen with no reasons was a chore
+# nobody could evaluate.
+#
+# The scheme's spelling can be *added* to a keyword without breaking anything —
+# the lexer accepts several, and this audit reads the second alternative as the
+# canonical one. What it cannot do is take a spelling that working code already
+# uses as a name.
+EXCEPTIONS = {
+    "தொகை": (
+        "qokY is a record field name in examples/db_samples/kaNakku_qaLam.qmz, "
+        "mYcIkul_qaLam.qmz, examples/kadai/kadai_cEvY.qmz and kadai_kAttu.qmz, "
+        "matching the SQL column each one selects. A keyword used as a field is "
+        "stored under its token name rather than as written, so பதிவு.qokY would "
+        "start looking for a field called Amount and find nothing."
+    ),
+}
+
+
 def check() -> int:
-    """Compare every keyword's stored romanization against the scheme."""
+    """Compare every keyword's stored romanization against the scheme.
+
+    Returns the number of *unexplained* mismatches, so a clean run means the
+    lexer is on-scheme except where EXCEPTIONS says otherwise and gives a
+    reason. That is what makes this safe to run as a gating CI step.
+    """
     text = LEXER.read_text(encoding="utf-8")
     rows = re.findall(r'#\[regex\("([^"]+)"\)\]\s*(\w+)', text)
     mismatches = []
+    explained = []
     for alts, token in rows:
         parts = alts.split("|")
         if len(parts) < 2:
             continue
         tamil, stored = parts[0], parts[1]
         expected = transliterate(tamil)
-        if expected != stored:
+        if expected == stored:
+            continue
+        if tamil in EXCEPTIONS:
+            explained.append((tamil, stored, expected, token))
+        else:
             mismatches.append((tamil, stored, expected, token))
 
-    print(f"checked {len(rows)} keywords, {len(mismatches)} off-scheme\n")
+    print(
+        f"checked {len(rows)} keywords, {len(mismatches)} off-scheme, "
+        f"{len(explained)} off-scheme on purpose\n"
+    )
     if mismatches:
         print(f"{'Tamil':<22} {'in lexer':<22} {'per scheme':<22} token")
         print("-" * 88)
         for tamil, stored, expected, token in mismatches:
             print(f"{tamil:<22} {stored:<22} {expected:<22} {token}")
+        print()
+    for tamil, stored, expected, token in explained:
+        print(f"{tamil} keeps {stored} rather than {expected} ({token}):")
+        print(f"    {EXCEPTIONS[tamil]}")
     return len(mismatches)
 
 

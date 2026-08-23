@@ -92,7 +92,7 @@
     },
     {
       "name": "keyword.control.route.etamil",
-      "match": "\\b(?:_route|vazhi|வழி)\\b"
+      "match": "\\b(?:_route|vazhi|vazi|வழி)\\b"
     },
     {
       "name": "keyword.control.every.etamil",
@@ -112,7 +112,7 @@
     },
     {
       "name": "keyword.other.response.etamil",
-      "match": "\\b(?:_response|paDil|பதில்)\\b"
+      "match": "\\b(?:_response|paDil|paqil|பதில்)\\b"
     },
     {
       "name": "storage.type.etamil",
@@ -128,7 +128,7 @@
     },
     {
       "name": "support.constant.http-method.etamil",
-      "match": "\\b(?:_options|_delete|_patch|qerivu|தெரிவு|_head|_post|ஒட்டு|_get|_put|ottu|paqi|peRu|talY|பெறு|azi|itu|அழி|இடு|தலை|பதி)\\b"
+      "match": "\\b(?:_options|_delete|_patch|qerivu|தெரிவு|_head|_post|ஒட்டு|_get|_put|ottu|paqi|peRu|qalY|talY|பெறு|azi|itu|அழி|இடு|தலை|பதி)\\b"
     },
     {
       "name": "support.constant.database.etamil",
@@ -144,7 +144,7 @@
     },
     {
       "name": "keyword.other.database.etamil",
-      "match": "\\b(?:_createTable|அட்டை_நீக்கு|அட்டை_மாற்று|_alterTable|_collection|_foreignKey|_primaryKey|அட்டை_ஆக்கு|_dropTable|attY_mARRu|attY_nIkku|taZik_vicY|attY_Akku|veLi_vicY|தனிக_விசை|வெளி_விசை|kuRiyItu|toguippu|குறியீடு|தொகுப்பு|_column|_index|_table|paqqi|அட்டை|பத்தி|_key|_row|attY|nirY|vicY|நிரை|விசை)\\b"
+      "match": "\\b(?:_createTable|அட்டை_நீக்கு|அட்டை_மாற்று|_alterTable|_collection|_foreignKey|_primaryKey|qaZika_vicY|அட்டை_ஆக்கு|_dropTable|attY_mARRu|attY_nIkku|taZik_vicY|attY_Akku|veLi_vicY|தனிக_விசை|வெளி_விசை|kuRiyItu|toguippu|குறியீடு|தொகுப்பு|_column|qokuppu|_index|_table|paqqi|அட்டை|பத்தி|_key|_row|attY|nirY|vicY|நிரை|விசை)\\b"
     },
     {
       "name": "keyword.other.sql.etamil",
@@ -152,7 +152,7 @@
     },
     {
       "name": "keyword.other.http.etamil",
-      "match": "\\b(?:vazawki_toqotawku|vazawki_niRuqqu|வழங்கி_நிறுத்து|_statusMessage|வழங்கி_தொடங்கு|_bearerToken|_contentType|_startServer|pAtY_aLavuru|viZA_aLavuru|இறுதி_புள்ளி|_queryParam|_statusCode|_stopServer|iraqi_pulli|நிலை_செய்தி|பாதை_அளவுரு|வினா_அளவுரு|_pathParam|nilY_ceyqi|குறிதாங்கி|ஜேசான்_உரை|_endpoint|_jsonBody|jEcAZ_urY|kuRiqAwki|nilY_kuRi|puravalaZ|நிலை_குறி|_request|qaLa_itY|urY_vakY|கோரிக்கை|_header|_method|aLavuru|kOrikkY|talYppu|உரை_வகை|தலைப்பு|புரவலன்|_param|_serve|அளவுரு|தள_இடை|_auth|_body|_host|_port|uRuqi|urali|உறுதி|_api|_url|cEvY|kuqY|muRY|uqal|உடல்|உரலி|குதை|சேவை|முறை)\\b"
+      "match": "\\b(?:vazawki_toqotawku|vazawki_niRuqqu|vazawki_qotawku|வழங்கி_நிறுத்து|_statusMessage|வழங்கி_தொடங்கு|_bearerToken|_contentType|_startServer|pAqY_aLavuru|pAtY_aLavuru|viZA_aLavuru|இறுதி_புள்ளி|_queryParam|_statusCode|_stopServer|iRuqi_puLLi|iraqi_pulli|நிலை_செய்தி|பாதை_அளவுரு|வினா_அளவுரு|_pathParam|nilY_ceyqi|குறிதாங்கி|ஜேசான்_உரை|_endpoint|_jsonBody|jEcAZ_urY|kuRiqAwki|nilY_kuRi|puravalaZ|நிலை_குறி|_request|qaLa_itY|urY_vakY|கோரிக்கை|_header|_method|aLavuru|kOrikkY|qalYppu|talYppu|உரை_வகை|தலைப்பு|புரவலன்|_param|_serve|அளவுரு|தள_இடை|_auth|_body|_host|_port|uRuqi|urali|உறுதி|_api|_url|cEvY|kuqY|muRY|uqal|utal|உடல்|உரலி|குதை|சேவை|முறை)\\b"
     },
     {
       "name": "keyword.other.security.etamil",
@@ -160,7 +160,7 @@
     },
     {
       "name": "support.type.domain.etamil",
-      "match": "\\b(?:முத்திரைத்தீர்வை|மதிப்பீட்டாண்டு|varumAZ_aRikkY|வரிப்பிடித்தம்|வருமான_அறிக்கை|விலைப்பட்டியல்|maqippIttANtu|muqqirYqqIrvY|paNappuzakkam|parivarttaZai|varippitiqqam|vilYppattiyal|நிதித்திட்டம்|carakkiruppu|kataZ_qIrppu|matippuyarvu|natappilillA|varumAZ_vari|உள்ளீட்டுவரி|கடன்தீர்ப்பு|சரக்கிருப்பு|நடப்பிலில்லா|பணப்புழக்கம்|மதிப்புயர்வு|niqiqqittam|uLLIttuvari|variyaRikkY|viqivilakku|இருப்பாய்வு|இருப்புநிலை|கோப்பு_நிரை|பரிவர்த்தனை|விதிவிலக்கு|_fileLines|iruppunilY|kOppu_nirY|kataZ_attY|parimARRam|pawkuqArar|peRaqqakka|vaNikavari|கடன்_அட்டை|நிதியாண்டு|பங்குதாரர்|பரிமாற்றம்|வரியறிக்கை|வருமான_வரி|cuwkavari|iruppAyvu|kalAlvari|kotukkAqa|mUlataZam|matippIDu|niqiyANtu|qaLLupati|varumAZam|ஈவுத்தொகை|ஒப்பந்தம்|கொடுக்காத|கொள்முதல்|தேய்மானம்|பெறத்தக்க|மதிப்பீடு|வாங்குநர்|IvuqqokY|aparAqam|kattaNam|koLmuqal|muZpaNam|mukavari|muqalItu|nilYyAZa|oppanqam|qEymAZam|vAwkunar|viRpaZar|கலால்வரி|காப்பீடு|காலாண்டு|சுங்கவரி|தள்ளுபடி|பொறுப்பு|முன்பணம்|வருமானம்|விற்பனர்|carakku|kAlANtu|kAppItu|kaNakku|nANayam|natappu|poRuppu|qaNikkY|varuvAy|viRpaZY|vilakku|அடுக்கு|அபராதம்|அறிக்கை|இருப்பு|எடுப்பு|கட்டணம்|தணிக்கை|நிலையான|முதலீடு|மூலதனம்|வணிகவரி|வருவாய்|விற்பனை|விலக்கு|Uqiyam|aRikkY|atukku|celavu|etuppu|iruppu|izappu|kAcOlY|nikara|niluvY|pErEtu|paqivu|qavaNY|racIqu|vAtakY|varavu|இழப்பு|ஊதியம்|கணக்கு|காசோலை|சரக்கு|சொத்து|நடப்பு|நாணயம்|நிலுவை|பேரேடு|முகவரி|வைப்பு|kataZ|moqqa|paNam|paRRu|pawku|payaZ|soqqu|toqai|vIqam|vYppu|vatti|vawki|செலவு|பங்கு|பதிவு|பற்று|மொத்த|ரசீது|வங்கி|வட்டி|வாடகை|வீதம்|_GST|_ITC|_ITR|_TDS|acal|mARi|nilY|niqi|vari|vilY|அசல்|கடன்|தவணை|தொகை|நிகர|நிதி|நிலை|பணம்|பயன்|மாறி|வரவு|விலை|வரி)\\b"
+      "match": "\\b(?:முத்திரைத்தீர்வை|varumAZa_aRikkY|மதிப்பீட்டாண்டு|varumAZ_aRikkY|வரிப்பிடித்தம்|வருமான_அறிக்கை|விலைப்பட்டியல்|maqippIttANtu|muqqirYqqIrvY|paNappuzakkam|parivarttaZai|varippitiqqam|varumAZa_vari|vilYppattiyal|நிதித்திட்டம்|carakkiruppu|kataZ_qIrppu|maqippuyarvu|matippuyarvu|natappilillA|parivarqqaZY|varumAZ_vari|உள்ளீட்டுவரி|கடன்தீர்ப்பு|சரக்கிருப்பு|நடப்பிலில்லா|பணப்புழக்கம்|மதிப்புயர்வு|kataZqIrppu|niqiqqittam|uLLIttuvari|variyaRikkY|viqivilakku|இருப்பாய்வு|இருப்புநிலை|கோப்பு_நிரை|பரிவர்த்தனை|விதிவிலக்கு|_fileLines|iruppunilY|kOppu_nirY|kataZ_attY|parimARRam|pawkuqArar|peRaqqakka|vaNikavari|கடன்_அட்டை|நிதியாண்டு|பங்குதாரர்|பரிமாற்றம்|வரியறிக்கை|வருமான_வரி|cuwkavari|iruppAyvu|kalAlvari|kotukkAqa|mUlaqaZam|mUlataZam|maqippItu|matippIDu|niqiyANtu|qaLLupati|varumAZam|ஈவுத்தொகை|ஒப்பந்தம்|கொடுக்காத|கொள்முதல்|தேய்மானம்|பெறத்தக்க|மதிப்பீடு|வாங்குநர்|IvuqqokY|aparAqam|kattaNam|koLmuqal|muZpaNam|mukavari|muqalItu|nilYyAZa|oppanqam|qEymAZam|vAwkunar|viRpaZar|கலால்வரி|காப்பீடு|காலாண்டு|சுங்கவரி|தள்ளுபடி|பொறுப்பு|முன்பணம்|வருமானம்|விற்பனர்|carakku|kAlANtu|kAppItu|kaNakku|nANayam|natappu|poRuppu|qaNikkY|varuvAy|viRpaZY|vilakku|அடுக்கு|அபராதம்|அறிக்கை|இருப்பு|எடுப்பு|கட்டணம்|தணிக்கை|நிலையான|முதலீடு|மூலதனம்|வணிகவரி|வருவாய்|விற்பனை|விலக்கு|Uqiyam|aRikkY|atukku|celavu|etuppu|iruppu|izappu|kAcOlY|nikara|niluvY|pErEtu|paqivu|qavaNY|racIqu|vAtakY|varavu|இழப்பு|ஊதியம்|கணக்கு|காசோலை|சரக்கு|சொத்து|நடப்பு|நாணயம்|நிலுவை|பேரேடு|முகவரி|வைப்பு|coqqu|kataZ|moqqa|paNam|paRRu|pawku|payaZ|soqqu|toqai|vIqam|vYppu|vatti|vawki|செலவு|பங்கு|பதிவு|பற்று|மொத்த|ரசீது|வங்கி|வட்டி|வாடகை|வீதம்|_GST|_ITC|_ITR|_TDS|acal|mARi|nilY|niqi|vari|vilY|அசல்|கடன்|தவணை|தொகை|நிகர|நிதி|நிலை|பணம்|பயன்|மாறி|வரவு|விலை|வரி)\\b"
     },
     {
       "name": "support.function.builtin.etamil",

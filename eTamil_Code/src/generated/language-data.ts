@@ -99,6 +99,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Asset",
     "forms": [
       "சொத்து",
+      "coqqu",
       "soqqu"
     ],
     "group": "Core Financial & Accounting",
@@ -320,6 +321,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Valuation",
     "forms": [
       "மதிப்பீடு",
+      "maqippItu",
       "matippIDu"
     ],
     "group": "Core Financial & Accounting",
@@ -502,6 +504,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Transaction",
     "forms": [
       "பரிவர்த்தனை",
+      "parivarqqaZY",
       "parivarttaZai"
     ],
     "group": "Core Financial & Accounting",
@@ -528,6 +531,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Amortization",
     "forms": [
       "கடன்தீர்ப்பு",
+      "kataZqIrppu",
       "kataZ_qIrppu"
     ],
     "group": "Core Financial & Accounting",
@@ -541,6 +545,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Appreciation",
     "forms": [
       "மதிப்புயர்வு",
+      "maqippuyarvu",
       "matippuyarvu"
     ],
     "group": "Core Financial & Accounting",
@@ -554,6 +559,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Capital",
     "forms": [
       "மூலதனம்",
+      "mUlaqaZam",
       "mUlataZam"
     ],
     "group": "Core Financial & Accounting",
@@ -593,6 +599,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "IncomeStatement",
     "forms": [
       "வருமான_அறிக்கை",
+      "varumAZa_aRikkY",
       "varumAZ_aRikkY"
     ],
     "group": "Core Financial & Accounting",
@@ -619,6 +626,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "IncomeTax",
     "forms": [
       "வருமான_வரி",
+      "varumAZa_vari",
       "varumAZ_vari"
     ],
     "group": "Core Financial & Accounting",
@@ -1920,6 +1928,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Collection",
     "forms": [
       "தொகுப்பு",
+      "qokuppu",
       "toguippu",
       "_collection"
     ],
@@ -1976,6 +1985,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "PrimaryKey",
     "forms": [
       "தனிக_விசை",
+      "qaZika_vicY",
       "taZik_vicY",
       "_primaryKey"
     ],
@@ -2256,6 +2266,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Endpoint",
     "forms": [
       "இறுதி_புள்ளி",
+      "iRuqi_puLLi",
       "iraqi_pulli",
       "_endpoint"
     ],
@@ -2270,6 +2281,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Route",
     "forms": [
       "வழி",
+      "vazi",
       "vazhi",
       "_route"
     ],
@@ -2312,6 +2324,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Response",
     "forms": [
       "பதில்",
+      "paqil",
       "paDil",
       "_response"
     ],
@@ -2326,6 +2339,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Header",
     "forms": [
       "தலைப்பு",
+      "qalYppu",
       "talYppu",
       "_header"
     ],
@@ -2340,6 +2354,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Body",
     "forms": [
       "உடல்",
+      "utal",
       "uqal",
       "_body"
     ],
@@ -2382,6 +2397,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "PathParam",
     "forms": [
       "பாதை_அளவுரு",
+      "pAqY_aLavuru",
       "pAtY_aLavuru",
       "_pathParam"
     ],
@@ -2550,6 +2566,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "HttpHead",
     "forms": [
       "தலை",
+      "qalY",
       "talY",
       "_head"
     ],
@@ -2648,6 +2665,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "StartServer",
     "forms": [
       "வழங்கி_தொடங்கு",
+      "vazawki_qotawku",
       "vazawki_toqotawku",
       "_startServer"
     ],
