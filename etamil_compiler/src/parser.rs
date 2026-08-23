@@ -880,27 +880,57 @@ impl<'a> Parser<'a> {
         self.parse_comparison()
     }
 
+    /// One comparison, not a chain.
+    ///
+    /// This used to loop, which made comparison left-associative: `அ > ஆ > இ`
+    /// parsed as `(அ > ஆ) > இ`, a Boolean compared against a number. `3 > 2 > 1`
+    /// was **false**, and nothing said so.
+    ///
+    /// A second comparison operator is now an error rather than that. Chaining
+    /// it the way Python does — `அ > ஆ மற்றும் ஆ > இ` — is what a language full
+    /// of tax slabs actually wants, and it is the obvious next step. It needs
+    /// the middle operand evaluated exactly once, and there is no way to say
+    /// "once" in this AST, so `f() > g() > h()` would call `g` twice. Trading a
+    /// wrong answer for a subtler wrong answer is not a fix.
     fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
-        let mut left = self.parse_additive()?;
-        loop {
-            let op = match self.peek_token() {
-                Some(Token::GreaterThan) => ">",
-                Some(Token::LessThan) => "<",
-                Some(Token::Equals) => "==",
-                Some(Token::NotEquals) => "!=",
-                Some(Token::GreaterThanOrEqual) => ">=",
-                Some(Token::LessThanOrEqual) => "<=",
-                _ => break,
-            };
-            self.advance();
-            let right = self.parse_additive()?;
-            left = Expr::Comparison {
-                left: Box::new(left),
-                op: op.to_string(),
-                right: Box::new(right),
-            };
+        let left = self.parse_additive()?;
+
+        let op = match self.peek_token() {
+            Some(Token::GreaterThan) => ">",
+            Some(Token::LessThan) => "<",
+            Some(Token::Equals) => "==",
+            Some(Token::NotEquals) => "!=",
+            Some(Token::GreaterThanOrEqual) => ">=",
+            Some(Token::LessThanOrEqual) => "<=",
+            _ => return Ok(left),
+        };
+        self.advance();
+        let right = self.parse_additive()?;
+        let comparison = Expr::Comparison {
+            left: Box::new(left),
+            op: op.to_string(),
+            right: Box::new(right),
+        };
+
+        // A second one in a row is the mistake this arm exists to catch.
+        if matches!(
+            self.peek_token(),
+            Some(Token::GreaterThan)
+                | Some(Token::LessThan)
+                | Some(Token::Equals)
+                | Some(Token::NotEquals)
+                | Some(Token::GreaterThanOrEqual)
+                | Some(Token::LessThanOrEqual)
+        ) {
+            let spanned = self.peek_spanned().cloned();
+            let expected = "ஒரே ஒப்பீடு  (one comparison at a time: write (அ > ஆ) மற்றும் (ஆ > இ))";
+            return Err(match spanned {
+                Some(spanned) => self.mismatch(&spanned, expected),
+                None => self.at_end(expected),
+            });
         }
-        Ok(left)
+
+        Ok(comparison)
     }
 
     fn parse_additive(&mut self) -> Result<Expr, ParseError> {
@@ -976,6 +1006,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
+        // `இல்லை` as an operand, so that `"விடை: " & இல்லை காலியா(அ)` parses.
+        // It was reachable only from `parse_not`, which sits above comparison
+        // and therefore above `&`, so this was a parse error rather than an
+        // expression. Binding it tightly here changes no existing meaning:
+        // `இல்லை அ > ஆ` still goes through `parse_not` first, and still means
+        // `இல்லை (அ > ஆ)` rather than `(இல்லை அ) > ஆ`.
+        if self.peek_token() == Some(&Token::Not) {
+            self.advance();
+            return Ok(Expr::Not(Box::new(self.parse_factor()?)));
+        }
+
         let spanned = self.take("a value")?;
 
         match &spanned.token {

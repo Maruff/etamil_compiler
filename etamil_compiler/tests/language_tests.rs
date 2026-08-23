@@ -118,6 +118,69 @@ fn boolean_literals_are_values_not_variables() {
     assert_eq!(vm.variables.get("f"), Some(&Value::Boolean(false)));
 }
 
+#[test]
+fn a_chained_comparison_is_refused_rather_than_answered_wrongly() {
+    // This used to parse as (3 > 2) > 1 — a Boolean compared against a number —
+    // so `3 > 2 > 1` was false and nothing said so.
+    let why = run("x = 3 > 2 > 1;").unwrap_err();
+    assert!(
+        why.contains("one comparison at a time"),
+        "it should say what to write instead: {}",
+        why
+    );
+
+    // One comparison is still one comparison.
+    let vm = run("x = 3; (x > 2) eZil { hit = 1; } iZREl { hit = 0; }").unwrap();
+    assert_eq!(num(&vm, "hit"), dec(1));
+}
+
+#[test]
+fn not_can_be_an_operand_of_concatenation() {
+    // `& illY f(x)` was a parse error: இல்லை was reachable only above
+    // comparison, and therefore above `&`.
+    let vm = run("ceyal empty(a) { qirumpu a == 0; } s = \"answer: \" & illY empty(5);").unwrap();
+    assert_eq!(text(&vm, "s"), "answer: true");
+}
+
+#[test]
+fn not_still_binds_looser_than_comparison() {
+    // The fix above must not have turned `illY a > b` into `(illY a) > b`.
+    // 3 > 2 is true, so this is false — not "not 3, compared with 2".
+    let vm = run("x = illY 3 > 2;").unwrap();
+    assert_eq!(vm.variables.get("x"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn a_json_response_sets_the_content_type_for_you() {
+    // ஜேசான்_உரை parsed and was then refused by the VM, so the only way to
+    // answer JSON was to set the header by hand through பதில்.
+    let vm = run("jEcAZ_urY \"{\\\"ok\\\": mey}\", 201;").unwrap();
+
+    assert_eq!(num(&vm, "response_status"), dec(201));
+    assert_eq!(text(&vm, "response_body"), "{\"ok\": mey}");
+    match vm.variables.get("response_headers") {
+        Some(Value::Map(fields)) => assert_eq!(
+            fields.get("Content-Type"),
+            Some(&Value::String("application/json".to_string()))
+        ),
+        other => panic!("expected a header record, got {:?}", other),
+    }
+}
+
+#[test]
+fn a_json_response_refuses_a_body_that_is_not_text() {
+    // Rendering a record here would need a second JSON encoder in Rust beside
+    // nUlakam's ஜேசான்_ஆக்கு, and eTamil's own record syntax is not JSON. So it
+    // asks for the encoder that exists rather than emitting something that only
+    // looks like JSON.
+    let why = run("jEcAZ_urY {\"a\": 1}, 200;").unwrap_err();
+    assert!(
+        why.contains("ஜேசான்_ஆக்கு"),
+        "it should name the encoder to use: {}",
+        why
+    );
+}
+
 // --- Arithmetic and control flow -----------------------------------------
 
 #[test]

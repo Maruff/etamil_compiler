@@ -2243,6 +2243,42 @@ impl VM {
                     self.variables
                         .insert("response_headers".to_string(), headers);
                 }
+                // ஜேசான்_உரை தரவு, நிலை; — பதில் with the JSON content type
+                // already on it, which is the whole of what it saves you.
+                //
+                // The body must already be text. Rendering a record here would
+                // need a second JSON encoder in Rust beside nUlakam's
+                // ஜேசான்_ஆக்கு, and two encoders are two answers to the same
+                // question — so this asks for the one that exists rather than
+                // quietly emitting eTamil's record syntax and calling it JSON.
+                Instruction::SendJSON => {
+                    let data = self.pop()?;
+                    let status = self.pop()?;
+                    let body = match data {
+                        Value::String(text) => text,
+                        other => {
+                            return Err(format!(
+                                "ஜேசான்_உரை க்கு உரை தேவை — ஜேசான்_ஆக்கு() ஐப் பயன்படுத்துங்கள்  \
+                                 (json response needs text, got {}: encode it with ஜேசான்_ஆக்கு first)",
+                                Self::type_name(&other)
+                            ));
+                        }
+                    };
+
+                    let mut headers = HashMap::new();
+                    headers.insert(
+                        "Content-Type".to_string(),
+                        Value::String("application/json".to_string()),
+                    );
+
+                    // The same three globals பதில் writes, for the same reason:
+                    // the server reads them after the handler has returned.
+                    self.variables.insert("response_status".to_string(), status);
+                    self.variables
+                        .insert("response_body".to_string(), Value::String(body));
+                    self.variables
+                        .insert("response_headers".to_string(), Value::Map(headers));
+                }
                 Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(
                         "வழங்கி செயல்பாடுகள் VM இல் இன்னும் இல்லை  (server operations are not implemented in the VM yet)"

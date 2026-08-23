@@ -225,6 +225,18 @@ impl BytecodeCompiler {
                 }
                 self.bytecode.push(Instruction::SendResponse);
             }
+            Stmt::SendJSON { data, status_code } => {
+                // The status is optional in the grammar; a JSON body with
+                // nothing said about it is a 200.
+                match status_code {
+                    Some(expr) => self.compile_expr(expr),
+                    None => self
+                        .bytecode
+                        .push(Instruction::Push(Value::Number(Decimal::from(200)))),
+                }
+                self.compile_expr(data);
+                self.bytecode.push(Instruction::SendJSON);
+            }
             Stmt::DBConnect { db_type, connection_string } => {
                 self.compile_expr(connection_string);
                 self.bytecode.push(Instruction::DBConnect(db_type));
@@ -273,7 +285,6 @@ impl BytecodeCompiler {
             Stmt::StartServer { .. } => "வழங்கி_தொடங்கு (start server)",
             Stmt::StopServer => "வழங்கி_நிறுத்து (stop server)",
             Stmt::SendResponse { .. } => "பதில் (response)",
-            Stmt::SendJSON { .. } => "ஜேசான்_உரை (json response)",
             Stmt::GetRequestBody { .. } => "உடல் (request body)",
             Stmt::GetRequestParam { .. } => "அளவுரு (request param)",
             Stmt::GetHeader { .. } | Stmt::SetHeader { .. } => "தலைப்பு (header)",

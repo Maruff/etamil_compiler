@@ -89,6 +89,8 @@ pub enum Instruction {
     DefineRoute(String, String), // method, path
     /// Pop body then status; record them for the server to send back.
     SendResponse,
+    /// ஜேசான்_உரை — a response with the JSON content type on it.
+    SendJSON,
     StartServer(String, u16),    // host, port
 
     // Functions

@@ -18,10 +18,24 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN="${ETAMIL_BIN:-$ROOT/etamil_compiler/target/release/etamil}"
 
+# A relative ETAMIL_BIN cannot survive the `cd` into a temporary directory
+# below, and the failure is silent in the worst way: every invocation fails
+# with "No such file or directory", which this script reads as the program
+# being refused rather than as the harness being broken. CI passes a relative
+# path, so its parity job was measuring nothing and exiting 0.
+case "$BIN" in
+    /*) ;;
+    *) BIN="$(cd "$(dirname "$BIN")" 2>/dev/null && pwd)/$(basename "$BIN")" ;;
+esac
+
 if [[ ! -x "$BIN" ]]; then
-    echo "error: $BIN not found."
-    echo "       build it first: (cd etamil_compiler && cargo build --release)"
-    exit 1
+    if [[ -x "$BIN.exe" ]]; then
+        BIN="$BIN.exe"
+    else
+        echo "error: $BIN not found."
+        echo "       build it first: (cd etamil_compiler && cargo build --release)"
+        exit 1
+    fi
 fi
 
 # இறக்கு resolves relative to the importing file first, but set this so
