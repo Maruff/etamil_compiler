@@ -212,5 +212,3 @@ semantics live in `src/runtime.rs` rather than in the emitted IR. The part most
 likely to be wrong is now the part that runs under `cargo test` on any machine:
 `0.1 + 0.2` is `"0.3"` and `1 / 3` is all twenty-eight digits, asserted rather
 than argued.
-
-git pull && cd etamil_compiler && cargo build --release --features llvm && cd .. && ./scripts/run_parity.sh --diff nUlakam/upi/upi_cOqaZY.qmz

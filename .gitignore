@@ -60,3 +60,7 @@ dist/
 examples/io_samples/data.txt
 examples/io_samples/output.txt
 examples/io_samples/transactions.csv
+
+# Python bytecode from scripts/. Reappears after every run of the
+# generators and the parity checks.
+__pycache__/

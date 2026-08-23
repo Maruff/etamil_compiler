@@ -17,6 +17,17 @@
   On a platform with no prebuilt package — macOS today — the same entry opens
   the releases page and points at the source build.
 
+### Changed
+
+- The generated keyword data now carries **523 spellings across 202 tokens**, up
+  from 505. Eighteen keywords gained their on-scheme romanization — `utal`,
+  `paqil`, `vazi` and the rest — while keeping the spelling they had, so both
+  highlight and complete. Nothing that lexed before stops lexing.
+
+- Completions show a `செயல்`'s declared signature where it has one, because
+  parameters and return types can now be declared:
+  `செயல் வரி(எண் தொகை) எண் { … }`.
+
 ## 0.3.0
 
 The keyword data is now generated from the compiler instead of maintained by
