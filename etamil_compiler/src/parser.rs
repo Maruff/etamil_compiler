@@ -974,45 +974,94 @@ impl<'a> Parser<'a> {
     /// the middle operand evaluated exactly once, and there is no way to say
     /// "once" in this AST, so `f() > g() > h()` would call `g` twice. Trading a
     /// wrong answer for a subtler wrong answer is not a fix.
+    /// A comparison, or a chain of them.
+    ///
+    /// `300000 < வருமானம் <= 700000` is how a tax slab reads, and this language
+    /// is full of tax slabs. It used to parse left-associatively as
+    /// `(300000 < வருமானம்) <= 700000` — a boolean compared against a number —
+    /// so `3 > 2 > 1` was **false** and nothing said so.
+    ///
+    /// A chain becomes `மற்றும்` over neighbouring pairs, which short-circuits
+    /// and needs no new AST node. The one cost is that each middle operand is
+    /// written twice, so it is only accepted where reading it twice does
+    /// nothing twice — see `is_repeatable`. A middle operand that is a call is
+    /// refused rather than quietly called twice.
     fn parse_comparison(&mut self) -> Result<Expr, ParseError> {
-        let left = self.parse_additive()?;
+        let mut operands = vec![self.parse_additive()?];
+        let mut ops: Vec<&'static str> = Vec::new();
 
-        let op = match self.peek_token() {
-            Some(Token::GreaterThan) => ">",
-            Some(Token::LessThan) => "<",
-            Some(Token::Equals) => "==",
-            Some(Token::NotEquals) => "!=",
-            Some(Token::GreaterThanOrEqual) => ">=",
-            Some(Token::LessThanOrEqual) => "<=",
-            _ => return Ok(left),
-        };
-        self.advance();
-        let right = self.parse_additive()?;
-        let comparison = Expr::Comparison {
-            left: Box::new(left),
-            op: op.to_string(),
-            right: Box::new(right),
-        };
-
-        // A second one in a row is the mistake this arm exists to catch.
-        if matches!(
-            self.peek_token(),
-            Some(Token::GreaterThan)
-                | Some(Token::LessThan)
-                | Some(Token::Equals)
-                | Some(Token::NotEquals)
-                | Some(Token::GreaterThanOrEqual)
-                | Some(Token::LessThanOrEqual)
-        ) {
+        loop {
+            let op = match self.peek_token() {
+                Some(Token::GreaterThan) => ">",
+                Some(Token::LessThan) => "<",
+                Some(Token::Equals) => "==",
+                Some(Token::NotEquals) => "!=",
+                Some(Token::GreaterThanOrEqual) => ">=",
+                Some(Token::LessThanOrEqual) => "<=",
+                _ => break,
+            };
             let spanned = self.peek_spanned().cloned();
-            let expected = "ஒரே ஒப்பீடு  (one comparison at a time: write (அ > ஆ) மற்றும் (ஆ > இ))";
-            return Err(match spanned {
-                Some(spanned) => self.mismatch(&spanned, expected),
-                None => self.at_end(expected),
-            });
+            self.advance();
+            operands.push(self.parse_additive()?);
+            ops.push(op);
+
+            // Every operand between two operators is read twice. A name or a
+            // literal does not mind; a call would happen twice, and a chain
+            // that calls something twice is worse than one that will not
+            // compile.
+            if ops.len() > 1 {
+                let middle = &operands[operands.len() - 2];
+                if !Self::is_repeatable(middle) {
+                    let expected = "தொடரின் நடுவில் ஒரு பெயர் அல்லது மாறிலி  \
+                                    (the middle of a chain must be a name or a literal, \
+                                    because it is compared twice: put the value in a \
+                                    variable first)";
+                    return Err(match spanned {
+                        Some(spanned) => self.mismatch(&spanned, expected),
+                        None => self.at_end(expected),
+                    });
+                }
+            }
         }
 
-        Ok(comparison)
+        if ops.is_empty() {
+            return Ok(operands.pop().expect("one operand"));
+        }
+
+        // One comparison keeps exactly the shape it always had, so nothing
+        // downstream sees a difference for the ordinary case.
+        let mut pairs = ops.iter().enumerate().map(|(index, op)| Expr::Comparison {
+            left: Box::new(operands[index].clone()),
+            op: op.to_string(),
+            right: Box::new(operands[index + 1].clone()),
+        });
+
+        let first = pairs.next().expect("at least one pair");
+        Ok(pairs.fold(first, |left, right| Expr::Logical {
+            op: "&&".to_string(),
+            left: Box::new(left),
+            right: Box::new(right),
+        }))
+    }
+
+    /// Can this expression be evaluated twice without doing anything twice?
+    ///
+    /// Reading a name, a literal, a field or an index is a read. A call is not,
+    /// and neither is anything containing one, so `?` and arithmetic over a
+    /// call are excluded along with the call itself.
+    fn is_repeatable(expr: &Expr) -> bool {
+        match expr {
+            Expr::Variable(_)
+            | Expr::Number(_)
+            | Expr::String(_)
+            | Expr::Boolean(_)
+            | Expr::Null => true,
+            Expr::Field { base, .. } => Self::is_repeatable(base),
+            Expr::Index { base, index } => {
+                Self::is_repeatable(base) && Self::is_repeatable(index)
+            }
+            _ => false,
+        }
     }
 
     fn parse_additive(&mut self) -> Result<Expr, ParseError> {

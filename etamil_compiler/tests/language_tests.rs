@@ -119,19 +119,69 @@ fn boolean_literals_are_values_not_variables() {
 }
 
 #[test]
-fn a_chained_comparison_is_refused_rather_than_answered_wrongly() {
+fn a_chained_comparison_compares_neighbouring_pairs() {
     // This used to parse as (3 > 2) > 1 — a Boolean compared against a number —
-    // so `3 > 2 > 1` was false and nothing said so.
-    let why = run("x = 3 > 2 > 1;").unwrap_err();
-    assert!(
-        why.contains("one comparison at a time"),
-        "it should say what to write instead: {}",
-        why
-    );
+    // so `3 > 2 > 1` was false and nothing said so. Then it was an error. Now
+    // it is மற்றும் over neighbouring pairs, which is what it reads as.
+    let vm = run("a = 3 > 2 > 1; b = 1 < 2 < 3; c = 3 < 2 < 1;").unwrap();
+    assert_eq!(vm.variables.get("a"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("b"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("c"), Some(&Value::Boolean(false)));
 
     // One comparison is still one comparison.
     let vm = run("x = 3; (x > 2) eZil { hit = 1; } iZREl { hit = 0; }").unwrap();
     assert_eq!(num(&vm, "hit"), dec(1));
+}
+
+#[test]
+fn a_tax_slab_reads_the_way_it_is_written() {
+    // The reason this feature exists: every slab in the language looks like
+    // this, and writing it out longhand is where a boundary gets typed wrong.
+    let src = "varumAZam = 500000;                (300000 < varumAZam <= 700000) eZil { slab = 5; } iZREl { slab = 0; }";
+    assert_eq!(num(&run(src).unwrap(), "slab"), dec(5));
+
+    // And the boundaries are the boundaries.
+    let at_top = "varumAZam = 700000;                   (300000 < varumAZam <= 700000) eZil { slab = 5; } iZREl { slab = 0; }";
+    assert_eq!(num(&run(at_top).unwrap(), "slab"), dec(5));
+    let past_top = "varumAZam = 700001;                     (300000 < varumAZam <= 700000) eZil { slab = 5; } iZREl { slab = 0; }";
+    assert_eq!(num(&run(past_top).unwrap(), "slab"), dec(0));
+}
+
+#[test]
+fn a_chain_may_hold_a_field_or_an_index_in_the_middle() {
+    // Reading one of these twice reads it twice, which does nothing twice.
+    let vm = run("p = {\"q\": 5}; a = [4]; x = 1 < p.q < 10; y = 1 < a[0] < 10;").unwrap();
+    assert_eq!(vm.variables.get("x"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("y"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_chain_refuses_a_call_in_the_middle_rather_than_calling_it_twice() {
+    // The desugaring writes the middle operand twice, so a call there would
+    // happen twice. Refused, and the message says to name the value.
+    let why = run("ceyal f() { qirumpu 5; } x = 1 < f() < 10;").unwrap_err();
+    assert!(
+        why.contains("middle of a chain"),
+        "it should say what to do instead: {}",
+        why
+    );
+
+    // At either end there is only one reading, so a call is fine.
+    let vm = run("ceyal f() { qirumpu 5; } x = f() < 10; y = 1 < f();").unwrap();
+    assert_eq!(vm.variables.get("x"), Some(&Value::Boolean(true)));
+    assert_eq!(vm.variables.get("y"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn a_chain_short_circuits_because_it_is_built_from_maRRum() {
+    // The right-hand comparison is not reached once the left has decided, which
+    // falls out of the desugaring rather than being arranged. What makes it
+    // observable: reading an undefined name is a runtime error, so if the second
+    // half were evaluated this would fail rather than answer false.
+    let vm = run("n = 0; a = [1]; x = 1 < n < aNi_nILam_illY;").unwrap_or_else(|e| {
+        panic!("a short-circuited chain should not touch the second half: {}", e)
+    });
+    assert_eq!(vm.variables.get("x"), Some(&Value::Boolean(false)));
 }
 
 #[test]
