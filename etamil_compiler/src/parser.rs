@@ -243,6 +243,9 @@ pub enum Stmt {
     DBConnect {
         db_type: String,
         connection_string: Expr,
+        /// The name this connection is known by. Defaults to the driver name,
+        /// which is how a program that names nothing keeps working.
+        handle: Option<String>,
     },
     DBDisconnect {
         db_type: String,
@@ -252,11 +255,15 @@ pub enum Stmt {
         query: Expr,
         params: Expr,
         result_var: String,
+        /// Which connection to ask. `None` means the only open one.
+        handle: Option<String>,
     },
     // தளம்_செய் "sql", [params];
     DBExecute {
         command: Expr,
         params: Expr,
+        /// Which connection to run this on. `None` means the only open one.
+        handle: Option<String>,
     },
     DBInsert {
         table: String,
@@ -486,6 +493,18 @@ impl<'a> Parser<'a> {
     /// which `db::open` matches on, and an HTTP method, which the router
     /// matches on. Those are not the author's names, so they do not follow the
     /// author's spelling.
+    /// A trailing `, name` naming which connection a statement means.
+    ///
+    /// Absent for every program written before handles existed, which is why
+    /// it is optional rather than a new required slot.
+    fn optional_handle(&mut self, expected: &str) -> Result<Option<String>, ParseError> {
+        if !self.matches(Token::Comma) {
+            return Ok(None);
+        }
+        let spanned = self.take(expected)?;
+        Ok(Some(Self::token_name(&spanned.token)))
+    }
+
     fn token_name(token: &Token) -> String {
         match token {
             Token::Identifier(name) => name.clone(),
@@ -701,8 +720,17 @@ impl<'a> Parser<'a> {
                 let db_type = Self::token_name(&self.take("a database type")?.token);
                 self.expect(Token::Comma)?;
                 let connection_string = self.parse_expression()?;
+                // An optional name for this connection, so a second one can be
+                // opened and told apart. Trailing, because the grammar is
+                // fixed-arity and a trailing name therefore cannot be mistaken
+                // for anything else.
+                let handle = self.optional_handle("a name for this connection")?;
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::DBConnect { db_type, connection_string })
+                Ok(Stmt::DBConnect {
+                    db_type,
+                    connection_string,
+                    handle,
+                })
             }
             Token::DBDisconnect => {
                 let db_type = Self::token_name(&self.take("a database type")?.token);
@@ -715,15 +743,26 @@ impl<'a> Parser<'a> {
                 let params = self.parse_expression()?;
                 self.expect(Token::Comma)?;
                 let result_var = self.take_name("a variable to hold the rows")?;
+                let handle = self.optional_handle("the connection to query")?;
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::DBQuery { query, params, result_var })
+                Ok(Stmt::DBQuery {
+                    query,
+                    params,
+                    result_var,
+                    handle,
+                })
             }
             Token::DBExecute => {
                 let command = self.parse_expression()?;
                 self.expect(Token::Comma)?;
                 let params = self.parse_expression()?;
+                let handle = self.optional_handle("the connection to run this on")?;
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::DBExecute { command, params })
+                Ok(Stmt::DBExecute {
+                    command,
+                    params,
+                    handle,
+                })
             }
             Token::DBInsert => {
                 let table = self.take_name("a table name")?;

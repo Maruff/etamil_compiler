@@ -77,13 +77,16 @@ pub enum Instruction {
     // Database. Queries carry their parameters separately so values are
     // bound by the driver rather than spliced into the SQL text.
     /// Pop the connection string; open a connection under this type name.
-    DBConnect(String),
+    /// Driver, and the name this connection is known by.
+    DBConnect(String, String),
     /// Close and forget the connection for this type name.
     DBDisconnect(String),
     /// Pop params then SQL; push an array of records, one per row.
-    DBQuery,
+    /// Which connection to ask; `None` means the only open one.
+    DBQuery(Option<String>),
     /// Pop params then SQL; run it, discarding the affected-row count.
-    DBExecute,
+    /// Which connection to run on; `None` means the only open one.
+    DBExecute(Option<String>),
 
     // API
     DefineRoute(String, String), // method, path

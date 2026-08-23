@@ -123,6 +123,13 @@ impl Connections {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
+    /// The handles that are open, for an error that has to say which.
+    pub fn names(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.0.keys().map(|name| name.as_str()).collect();
+        names.sort();
+        names
+    }
 }
 
 #[derive(Debug)]
@@ -172,7 +179,27 @@ impl VM {
 
     /// The connection to use for a query. There is one per database type, and
     /// with a single type open the choice is unambiguous.
-    fn connection_mut(&mut self) -> Result<&mut dyn crate::db::Database, String> {
+    /// The connection a statement means.
+    ///
+    /// Named, and it is that one. Unnamed, and it is the only open one — which
+    /// is every program written before handles existed. Unnamed with several
+    /// open is refused: guessing which of two databases a query meant is the
+    /// kind of wrong answer this project does not give.
+    fn connection_for(
+        &mut self,
+        handle: Option<&str>,
+    ) -> Result<&mut dyn crate::db::Database, String> {
+        if let Some(handle) = handle {
+            return match self.connections.0.get_mut(handle) {
+                Some(open) => Ok(open.lease.as_mut()),
+                None => Err(format!(
+                    "'{}' என்ற இணைப்பு இல்லை  (there is no connection named '{}'): \
+                     open one with தளம்_இணை … , {}",
+                    handle, handle, handle
+                )),
+            };
+        }
+
         if self.connections.0.len() == 1 {
             return Ok(self
                 .connections
@@ -190,11 +217,16 @@ impl VM {
                     .to_string(),
             );
         }
-        Err(
-            "பல தரவுத்தளங்கள் திறந்துள்ளன  (several databases are open); \
-             close all but one for now"
-                .to_string(),
-        )
+        Err(format!(
+            "பல இணைப்புகள் திறந்துள்ளன  (several connections are open: {}); \
+             name the one you mean as a last argument",
+            self.connections.names().join(", ")
+        ))
+    }
+
+    /// The only open connection, for the statements that take no handle yet.
+    fn connection_mut(&mut self) -> Result<&mut dyn crate::db::Database, String> {
+        self.connection_for(None)
     }
 
     /// Read a name: the current call's locals shadow globals.
@@ -2163,7 +2195,7 @@ impl VM {
                         }
                     }
                 }
-                Instruction::DBConnect(db_type) => {
+                Instruction::DBConnect(db_type, handle) => {
                     let connection = self.pop()?.to_string();
 
                     // Connecting again through the same driver used to replace
@@ -2178,13 +2210,13 @@ impl VM {
                     // the language cannot express: தளம்_வினா names no handle,
                     // so there would be no way to say which one a query meant.
                     // Refusing is the honest answer until it can.
-                    if let Some(already) = self.connections.connection_of(&db_type) {
+                    if let Some(already) = self.connections.connection_of(&handle) {
                         if already != connection {
                             return Err(format!(
                                 "'{}' ஏற்கனவே '{}' உடன் இணைக்கப்பட்டுள்ளது  \
                                  ('{}' is already connected to '{}'): \
-                                 தளம்_பிரி first — a query cannot say which of two it means",
-                                db_type, already, db_type, already
+                                 தளம்_பிரி it first, or give this one its own name",
+                                handle, already, handle, already
                             ));
                         }
                         // The same database again: already connected, so there
@@ -2197,8 +2229,10 @@ impl VM {
                     // runs on a fresh VM, so this statement is reached once per
                     // request and used to mean a new connection each time.
                     let lease = crate::db::pool::checkout(&db_type, &connection)?;
-                    self.connections.insert(db_type, connection, lease);
+                    self.connections.insert(handle, connection, lease);
                 }
+                // The operand is a handle, which for an unnamed connection is
+                // its driver name — so `தளம்_பிரி SQL` still means what it did.
                 Instruction::DBDisconnect(db_type) => {
                     // Returns the connection to the cache rather than closing
                     // it. தளம்_பிரி means "I am done with this", which is what
@@ -2214,19 +2248,19 @@ impl VM {
                         }
                     }
                 }
-                Instruction::DBExecute => {
+                Instruction::DBExecute(named) => {
                     let params = crate::db::params_from(&self.pop()?)?;
                     let sql = self.pop()?.to_string();
-                    let handle = self.connection_mut()?;
-                    handle.execute(&sql, &params)?;
+                    let connection = self.connection_for(named.as_deref())?;
+                    connection.execute(&sql, &params)?;
                 }
-                Instruction::DBQuery => {
+                Instruction::DBQuery(named) => {
                     let params = crate::db::params_from(&self.pop()?)?;
                     let sql = self.pop()?.to_string();
-                    let handle = self.connection_mut()?;
+                    let connection = self.connection_for(named.as_deref())?;
                     // One record per row, so a result set is an array of
                     // records — a table in the language's own terms.
-                    let rows = handle.query(&sql, &params)?;
+                    let rows = connection.query(&sql, &params)?;
                     self.stack.push(Value::Array(rows));
                 }
                 Instruction::SendResponse => {

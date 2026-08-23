@@ -241,22 +241,25 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::SendJSON);
             }
-            Stmt::DBConnect { db_type, connection_string } => {
+            Stmt::DBConnect { db_type, connection_string, handle } => {
                 self.compile_expr(connection_string);
-                self.bytecode.push(Instruction::DBConnect(db_type));
+                // Unnamed, and the driver name is the handle — which is what it
+                // has always been, so an existing program is unchanged.
+                let handle = handle.unwrap_or_else(|| db_type.clone());
+                self.bytecode.push(Instruction::DBConnect(db_type, handle));
             }
             Stmt::DBDisconnect { db_type } => {
                 self.bytecode.push(Instruction::DBDisconnect(db_type));
             }
-            Stmt::DBExecute { command, params } => {
+            Stmt::DBExecute { command, params, handle } => {
                 self.compile_expr(command);
                 self.compile_expr(params);
-                self.bytecode.push(Instruction::DBExecute);
+                self.bytecode.push(Instruction::DBExecute(handle));
             }
-            Stmt::DBQuery { query, params, result_var } => {
+            Stmt::DBQuery { query, params, result_var, handle } => {
                 self.compile_expr(query);
                 self.compile_expr(params);
-                self.bytecode.push(Instruction::DBQuery);
+                self.bytecode.push(Instruction::DBQuery(handle));
                 self.bytecode.push(Instruction::StoreVar(result_var));
             }
             // The remaining database and server statements parse, but the VM

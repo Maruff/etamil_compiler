@@ -1884,6 +1884,87 @@ fn run_with_db(source: &str, rows: Vec<Value>) -> (Result<VM, String>, Arc<Mutex
     (outcome, log)
 }
 
+/// Two stand-in connections under names of the program's choosing, each with
+/// its own log, so a query can be shown to reach the one it named.
+fn run_with_two_dbs(
+    source: &str,
+    first: (&str, Vec<Value>),
+    second: (&str, Vec<Value>),
+) -> (Result<VM, String>, Arc<Mutex<Recorded>>, Arc<Mutex<Recorded>>) {
+    let one = Arc::new(Mutex::new(Recorded::default()));
+    let two = Arc::new(Mutex::new(Recorded::default()));
+
+    let ast = match etamil_compiler::module::load_source(source, &std::env::temp_dir()) {
+        Ok(ast) => ast,
+        Err(e) => return (Err(e), one, two),
+    };
+    let bytecode = BytecodeCompiler::compile_statements(ast);
+    let mut vm = VM::new();
+    for (handle, rows, log) in [
+        (first.0, first.1, Arc::clone(&one)),
+        (second.0, second.1, Arc::clone(&two)),
+    ] {
+        vm.connections.insert(
+            handle.to_string(),
+            ":fake:".to_string(),
+            etamil_compiler::db::pool::Lease::detached(Box::new(FakeDb { log, rows })),
+        );
+    }
+    let outcome = vm.execute(bytecode).map(|_| vm);
+    (outcome, one, two)
+}
+
+#[test]
+fn a_named_connection_is_the_one_that_gets_the_query() {
+    // Two databases open at once, which the language could not express at all
+    // before: connections were keyed by driver, so the second SQL connection
+    // had nowhere to go.
+    let src = r#"qaLam_viZA "SELECT * FROM one", [], r1, muqal;
+                 qaLam_viZA "SELECT * FROM two", [], r2, iraNdu;"#;
+    let (vm, one, two) = run_with_two_dbs(src, ("muqal", vec![]), ("iraNdu", vec![]));
+    assert!(vm.is_ok(), "{:?}", vm.err());
+
+    assert_eq!(one.lock().unwrap().sql, vec!["SELECT * FROM one".to_string()]);
+    assert_eq!(two.lock().unwrap().sql, vec!["SELECT * FROM two".to_string()]);
+}
+
+#[test]
+fn an_unnamed_query_is_refused_when_several_are_open() {
+    // Guessing which of two databases a query meant is exactly the wrong
+    // answer this refuses to give. The message names the open handles.
+    let src = r#"qaLam_viZA "SELECT 1", [], r;"#;
+    let (vm, _, _) = run_with_two_dbs(src, ("muqal", vec![]), ("iraNdu", vec![]));
+    let why = vm.unwrap_err();
+    assert!(why.contains("muqal") && why.contains("iraNdu"), "{}", why);
+}
+
+#[test]
+fn naming_a_connection_that_is_not_open_says_so() {
+    let src = r#"qaLam_viZA "SELECT 1", [], r, mUZRu;"#;
+    let (vm, _, _) = run_with_two_dbs(src, ("muqal", vec![]), ("iraNdu", vec![]));
+    let why = vm.unwrap_err();
+    assert!(why.contains("mUZRu"), "it should name the handle: {}", why);
+}
+
+#[test]
+fn an_unnamed_query_still_works_when_only_one_is_open() {
+    // The whole point of the handle being optional: every program written
+    // before it keeps its meaning.
+    let rows = vec![record(&[("n", Value::Number(dec(7)))])];
+    let src = r#"qaLam_viZA "SELECT count(*) AS n FROM t", [], r; out = r[0].n;"#;
+    let (vm, _) = run_with_db(src, rows);
+    assert_eq!(num(&vm.unwrap(), "out"), dec(7));
+}
+
+#[test]
+fn an_execute_can_name_its_connection_too() {
+    let src = r#"qaLam_cey "DELETE FROM t", [], iraNdu;"#;
+    let (vm, one, two) = run_with_two_dbs(src, ("muqal", vec![]), ("iraNdu", vec![]));
+    assert!(vm.is_ok(), "{:?}", vm.err());
+    assert!(one.lock().unwrap().sql.is_empty(), "the wrong one was used");
+    assert_eq!(two.lock().unwrap().sql, vec!["DELETE FROM t".to_string()]);
+}
+
 #[test]
 fn query_returns_an_array_of_records() {
     let rows = vec![
