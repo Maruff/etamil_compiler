@@ -96,15 +96,7 @@ def transliterate(word: str) -> str:
 # the lexer accepts several, and this audit reads the second alternative as the
 # canonical one. What it cannot do is take a spelling that working code already
 # uses as a name.
-EXCEPTIONS = {
-    "தொகை": (
-        "qokY is a record field name in examples/db_samples/kaNakku_qaLam.qmz, "
-        "mYcIkul_qaLam.qmz, examples/kadai/kadai_cEvY.qmz and kadai_kAttu.qmz, "
-        "matching the SQL column each one selects. A keyword used as a field is "
-        "stored under its token name rather than as written, so பதிவு.qokY would "
-        "start looking for a field called Amount and find nothing."
-    ),
-}
+EXCEPTIONS: dict[str, str] = {}
 
 
 def check() -> int:

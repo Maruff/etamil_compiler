@@ -478,6 +478,7 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Amount",
     "forms": [
       "தொகை",
+      "qokY",
       "toqai"
     ],
     "group": "Core Financial & Accounting",

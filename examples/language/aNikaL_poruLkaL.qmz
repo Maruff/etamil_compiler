@@ -18,10 +18,11 @@
 
 // பொருள் — a row
 //
-// Careful with field names: a word that is already a keyword is stored under
-// its token name, so {நிலுவை: 1} becomes the field "Outstanding" and a
-// string lookup of "நிலுவை" will not find it. Compound names like
-// நிலுவைத்_தொகை are ordinary identifiers and are stored as written.
+// Field names may be keywords, and are stored exactly as written: {நிலுவை: 1}
+// is the field "நிலுவை", found by நிலுவை and by "நிலுவை" alike. Of the 202
+// keywords, 89 may be used as names this way — the domain nouns a program is
+// written about. The other 113 may not, and using one as a field name is a
+// parse error rather than a surprise.
 வாடிக்கையாளர் = {பெயர்: "ராஜா", ஊர்: "சென்னை", கடன்_வரம்பு: 50000};
 அச்சு "வாடிக்கையாளர்: " & வாடிக்கையாளர்.பெயர் & ", " & வாடிக்கையாளர்.ஊர்;
 

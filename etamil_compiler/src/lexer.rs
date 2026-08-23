@@ -46,7 +46,7 @@ pub enum Token {
     #[regex("நடப்பு|natappu")] Current,
     #[regex("நடப்பிலில்லா|natappilillA")] NonCurrent,
     #[regex("முகவரி|mukavari")] Address,
-    #[regex("தொகை|toqai")] Amount,
+    #[regex("தொகை|qokY|toqai")] Amount,
     #[regex("நாணயம்|nANayam")] Currency,
     #[regex("பரிவர்த்தனை|parivarqqaZY|parivarttaZai")] Transaction,
     #[regex("தேய்மானம்|qEymAZam")] Depreciation,

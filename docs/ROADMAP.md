@@ -133,33 +133,30 @@ The three nasals now have distinct letters: **ண = `N`, ந = `n`, ன = `Z`.**
 
 This is a **breaking change to romanized source**; Tamil-script source is unaffected.
 
-### Done: the romanization is on-scheme, bar one
+### Done: the romanization is on-scheme
 
 `scripts/transliterate.py` implements the scheme and `--check` audits the lexer
 against it. Nineteen keywords were off-scheme — `t`/`q` swapped, `ச` written `s`,
 letters the scheme does not assign (`D`, `g`, `zh`), dropped doubled consonants,
-and the compound convention before `_`.
+and the compound convention before `_`. All nineteen are fixed, and **without
+the breaking rename this section used to assume was necessary**.
 
-Eighteen are fixed, and **without the breaking rename this section used to
-assume was necessary**. The audit reads the *second* alternative of each
-`#[regex(...)]` as the canonical romanization, so the scheme's spelling was
-inserted there and the old one kept after it. Both lex; the canonical one is the
-scheme's; no program stopped compiling. 523 spellings across 202 tokens, up from
-505.
+A keyword may carry several spellings. The audit reads the *second* alternative
+of each `#[regex(...)]` as canonical, so the scheme's spelling goes there and the
+old one stays after it. Both lex; no program stopped compiling. 524 spellings
+across 202 tokens, up from 505, and `--check` is a gating CI step.
 
-The cost is that eighteen romanized words are newly reserved — `utal`, `paqil`,
-`vazi` and the rest. Every `.qmz` in the repository was checked for them as real
-identifiers, ignoring strings and comments, and none used one. Romanized code
-outside the repository could.
+`தொகை` was held back for a while on a mistaken reading, and the mistake is worth
+recording because it was in an example's own comment. That comment claimed a
+keyword used as a field name is stored under its *token* name, so `{நிலுவை: 1}`
+would become the field `Outstanding`. It is not: `name_of` returns the source
+text, so a field name is stored exactly as written, and `qokY` becoming a keyword
+leaves `பதிவு.qokY` reading the same SQL column it always did. Checked against
+the four examples that use it, plus the whole suite.
 
-**`தொகை` keeps `toqai` rather than becoming `qokY`, deliberately.** `qokY` is a
-record field name in four examples — `examples/db_samples/kaNakku_qaLam.qmz`,
-`mYcIkul_qaLam.qmz`, `examples/kadai/kadai_cEvY.qmz` and `kadai_kAttu.qmz` —
-matching the SQL column each selects. A keyword used as a field name is stored
-under its *token* name rather than as written, so `பதிவு.qokY` would have started
-looking for a field called `Amount` and found nothing. A romanization nicety does
-not get to break working code; `transliterate.py` records the exception with that
-reason, so `--check` can be made a gating CI step as it stands.
+What is true is narrower and already documented above: 89 of the 202 keywords may
+be used as names, and the other 113 may not — using one of those as a field name
+is a parse error, not a silent rename.
 
 ---|---|
 | `t`/`q` swapped (ட is `t`, த is `q`) | `soqqu`→`coqqu`, `toqai`→`qokY`, `uqal`→`utal`, `talY`→`qalY` |
