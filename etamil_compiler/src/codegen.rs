@@ -403,26 +403,22 @@ impl Compiler {
                     self.call_void("etamil_print", &mut [handle]);
                 }
                 Stmt::Input(expr) => {
-                    // `உள்ளிடு "prompt" & name` — print the prompt, read a line
-                    // into the name.
-                    match expr {
-                        Expr::Concat { left, right } => {
-                            let prompt = self.compile_expr(&left);
-                            self.call_void("etamil_prompt", &mut [prompt]);
-                            if let Expr::Variable(name) = right.as_ref() {
-                                let line =
-                                    self.invoke("etamil_read_line", vec![], self.value(), &mut []);
-                                let slot = self.storage_for(name);
-                                LLVMBuildStore(self.builder, line, slot);
-                            } else {
-                                self.unsupported
-                                    .push("உள்ளிடு into something that is not a name".to_string());
-                            }
-                        }
-                        other => {
-                            let prompt = self.compile_expr(&other);
-                            self.call_void("etamil_prompt", &mut [prompt]);
-                        }
+                    // Exactly what the VM's bytecode does, which is less than
+                    // it looks like it should: a line is always read, and it is
+                    // stored only when the operand is a bare name. So
+                    // `உள்ளிடு "prompt" & பெயர்` reads a line and throws it
+                    // away, and no prompt is printed by either backend.
+                    //
+                    // This file used to print the prompt and, for a bare name,
+                    // print the name's current value instead of reading at all.
+                    // That was invented rather than read out of the VM, and it
+                    // is what made examples/basic_samples/example.qmz the one
+                    // program where the two backends disagreed: the compiled
+                    // one printed `nil` and never consumed its input.
+                    let line = self.invoke("etamil_read_line", vec![], self.value(), &mut []);
+                    if let Expr::Variable(name) = &expr {
+                        let slot = self.storage_for(name);
+                        LLVMBuildStore(self.builder, line, slot);
                     }
                 }
                 Stmt::SetIndex { name, index, value } => {

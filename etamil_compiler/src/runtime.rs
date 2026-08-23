@@ -450,15 +450,6 @@ pub extern "C" fn etamil_print(value: i64) {
     println!("{}", get(value).to_string());
 }
 
-/// A prompt: the same rendering as `etamil_print` with no newline after it, and
-/// flushed, because a prompt nobody sees before typing is not a prompt.
-#[unsafe(no_mangle)]
-pub extern "C" fn etamil_prompt(value: i64) {
-    use std::io::Write;
-    print!("{}", get(value).to_string());
-    let _ = std::io::stdout().flush();
-}
-
 /// `உள்ளிடு`. A line of input, as text, exactly as the VM's `Input` leaves it.
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_read_line() -> i64 {

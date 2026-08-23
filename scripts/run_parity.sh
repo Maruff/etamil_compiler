@@ -12,6 +12,11 @@
 # a list of things to build rather than an impression.
 #
 #   ./scripts/run_parity.sh
+#   ./scripts/run_parity.sh --diff nUlakam/upi/upi_cOqaZY.qmz
+#
+# The second form runs one program under both backends and shows where their
+# output parts company. The summary form reports *that* two backends disagree
+# and never about what, which made every MISMATCH cost a round trip.
 #
 # Needs a binary built with the LLVM feature:
 #
@@ -81,6 +86,60 @@ if [[ ! -e "$RUNTIME_DIR/libetamil_compiler.so" \
     echo "error: no runtime library in $RUNTIME_DIR."
     echo "       The emitted IR calls into it, so there is nothing to link against."
     echo "       build it: (cd etamil_compiler && cargo build --release --features llvm)"
+    exit 1
+fi
+
+# --- one file, shown rather than counted -----------------------------------
+if [[ "${1:-}" == "--diff" ]]; then
+    target="${2:-}"
+    if [[ -z "$target" ]]; then
+        echo "usage: $0 --diff <file.qmz>"
+        exit 2
+    fi
+    [[ -f "$target" ]] || target="$ROOT/$target"
+    if [[ ! -f "$target" ]]; then
+        echo "error: no such file: ${2}"
+        exit 2
+    fi
+
+    vm_out="$(cd "$(dirname "$target")" && echo "0" | "$BIN" --vm "$target" 2>&1)"
+    vm_body="$(sed -n '/=== Execution Output ===/,$p' <<<"$vm_out" \
+               | sed '1d;/^✓ Execution completed successfully$/d' | sed '/^$/d')"
+
+    work="$(mktemp -d)"
+    llvm_out="$(cd "$work" && echo "0" | "$BIN" --llvm "$target" 2>&1)"
+    if [[ $? -ne 0 ]]; then
+        echo "The backend refuses this program, so there is nothing to compare:"
+        grep -E '^    - ' <<<"$llvm_out" | sed 's/^    - /  /'
+        rm -rf "$work"
+        exit 0
+    fi
+
+    if [[ $have_clang -eq 0 ]]; then
+        echo "clang is not on PATH, so the IR cannot be run."
+        rm -rf "$work"
+        exit 2
+    fi
+
+    if ! (cd "$work" && clang output.ll -o prog \
+              -L "$RUNTIME_DIR" -letamil_compiler \
+              -Wl,-rpath,"$RUNTIME_DIR" -lm 2>&1); then
+        echo "clang would not build the emitted IR (above)."
+        rm -rf "$work"
+        exit 1
+    fi
+
+    native_body="$(cd "$work" && echo "0" | ./prog 2>&1 | sed '/^$/d')"
+    rm -rf "$work"
+
+    if [[ "$vm_body" == "$native_body" ]]; then
+        echo "They agree on $(basename "$target")."
+        exit 0
+    fi
+
+    echo "They disagree. < is the VM, > is the compiled program:"
+    echo
+    diff <(printf '%s\n' "$vm_body") <(printf '%s\n' "$native_body") || true
     exit 1
 fi
 
