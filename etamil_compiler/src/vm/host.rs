@@ -170,6 +170,7 @@ mod imp {
 mod imp {
     use std::cell::RefCell;
     use std::collections::HashMap;
+    use std::collections::VecDeque;
 
     thread_local! {
         /// Everything the program has printed, waiting to be drained.
@@ -177,6 +178,13 @@ mod imp {
         /// The program's filesystem. Starts empty every run.
         static FILES: RefCell<HashMap<String, Vec<u8>>> =
             RefCell::new(HashMap::new());
+        /// Lines waiting for `உள்ளிடு`, in the order it will read them.
+        ///
+        /// A page has no console to type at, so it supplies a program's
+        /// input before the run rather than during it — the same arrangement
+        /// the native half offers an embedder, and the reason this is a queue
+        /// and not a callback: nothing here can block waiting for a key.
+        static INPUT: RefCell<VecDeque<String>> = RefCell::new(VecDeque::new());
     }
 
     pub fn print_line(text: &str) {
@@ -187,12 +195,18 @@ mod imp {
         });
     }
 
-    /// There is no console to read from. Returning an error rather than an
-    /// empty string means `உள்ளிடு` reports why it did nothing instead of
-    /// silently yielding "".
+    /// Take the next queued line.
+    ///
+    /// There is no stdin to fall back to, so this is the native half's
+    /// capturing branch and nothing else: what was queued, then an error.
+    /// An error rather than an empty string means `உள்ளிடு` says why it
+    /// did nothing instead of silently yielding "".
     pub fn read_line() -> Result<String, String> {
-        Err("உள்ளிடு உலாவியில் கிடைக்காது  \
-             (input is not available in the browser)"
+        if let Some(line) = INPUT.with(|input| input.borrow_mut().pop_front()) {
+            return Ok(line);
+        }
+        Err("உள்ளிடு தரவு தீர்ந்தது  \
+             (no input left to read)"
             .to_string())
     }
 
@@ -250,16 +264,25 @@ mod imp {
         OUTPUT.with(|out| std::mem::take(&mut *out.borrow_mut()))
     }
 
-    /// Clear output and files. Called before each run so one program cannot
-    /// see the last one's leftovers.
+    /// Clear output, files and queued input. Called before each run so one
+    /// program cannot see the last one's leftovers.
     pub fn reset() {
         OUTPUT.with(|out| out.borrow_mut().clear());
         FILES.with(|files| files.borrow_mut().clear());
+        INPUT.with(|input| input.borrow_mut().clear());
     }
 
     /// Seed a file before a run, so an example can read input it did not write.
     pub fn put_file(path: &str, contents: &str) {
         let _ = write(path, contents.as_bytes());
+    }
+
+    /// Queue one line for `உள்ளிடு`, in the order the program reads them.
+    ///
+    /// The trailing newline is added here because that is what a real
+    /// `read_line` returns, and `உள்ளிடு` trims it.
+    pub fn push_input(line: &str) {
+        INPUT.with(|input| input.borrow_mut().push_back(format!("{}\n", line)));
     }
 
     /// Paths the program wrote, sorted, so the embedder can show them.

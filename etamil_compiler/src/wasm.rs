@@ -446,17 +446,40 @@ const STEP_LIMIT: u64 = 10_000_000;
 /// console or a disk.
 #[wasm_bindgen]
 pub fn run(source: &str) -> String {
-    let result = execute(source);
+    let result = execute(source, "");
     serde_json::to_string(&result).unwrap_or_else(|_| {
         r#"{"ok":false,"output":"","error":"result could not be encoded","stage":"run","files":[]}"#
             .to_string()
     })
 }
 
-fn execute(source: &str) -> RunResult {
+/// Compile and run one source file, with input for `உள்ளிடு`.
+///
+/// `input` is everything a person would have typed, newline-separated; the
+/// program reads one line per `உள்ளிடு`. It arrives with the program rather
+/// than during the run because a page has nowhere to type while the run is
+/// happening — the VM would have to block, and a blocked page is a hung tab.
+/// Asking for more lines than were supplied is the program's own error, the
+/// same as reading past the end of a file.
+#[wasm_bindgen]
+pub fn run_with_input(source: &str, input: &str) -> String {
+    let result = execute(source, input);
+    serde_json::to_string(&result).unwrap_or_else(|_| {
+        r#"{"ok":false,"output":"","error":"result could not be encoded","stage":"run","files":[]}"#
+            .to_string()
+    })
+}
+
+fn execute(source: &str, input: &str) -> RunResult {
     // Nothing carries over between runs: last run's output and files are gone
     // before this one starts.
     host::reset();
+
+    // After the reset, which clears the queue. `lines()` drops the trailing
+    // newline, so one trailing newline does not add an empty line to read.
+    for line in input.lines() {
+        host::push_input(line);
+    }
 
     let failed = |stage: &'static str, error: String| RunResult {
         ok: false,
