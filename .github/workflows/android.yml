@@ -1,0 +1,219 @@
+# Build the Android app.
+#
+# Nothing here needs Android Studio, and nothing needs to be installed on a
+# developer's machine. Android Studio is an IDE; the things that actually build
+# an APK are the SDK's command-line tools, the NDK, and Gradle, and a GitHub
+# runner either has them already or can fetch them in a step. So the APK is
+# built here and downloaded from the run's artifacts.
+#
+#   Actions -> Android app -> Run workflow
+#
+# Two jobs, deliberately unequal in cost:
+#
+#   `bridge` type-checks the JNI code against the host toolchain. It needs no
+#   NDK and no SDK and finishes in about a minute, so it runs on every push --
+#   and it catches the whole class of mistake that matters most here, which is
+#   the bridge going out of step with the compiler's own API.
+#
+#   `apk` does the real cross-compilation. It is minutes rather than a minute,
+#   because the compiler and its dependency tree are built once per ABI, so it
+#   runs on demand and on a release tag rather than on every commit.
+name: Android app
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  # Only when something the app is made of actually changed. A commit touching
+  # docs or the LLVM backend cannot break an APK.
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'etamil_compiler/src/**'
+      - 'etamil_compiler/Cargo.toml'
+      - '.github/workflows/android.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+  # Pinned. An NDK bump is a thing to do deliberately, having read its release
+  # notes, not something to discover from a build that broke overnight.
+  NDK_VERSION: r27c
+  # No wrapper JAR is committed -- see android/README.md -- so the version is
+  # named here instead.
+  GRADLE_VERSION: '8.10.2'
+
+jobs:
+  # The cheap gate: does the bridge still compile?
+  #
+  # Against the host target, not Android. The `jni` crate builds anywhere, so
+  # every type error, every renamed function in etamil_compiler and every
+  # misspelled field is caught here without an NDK in sight. What this cannot
+  # catch is a dependency that fails to cross-compile, which is what `apk` is
+  # for.
+  bridge:
+    name: JNI bridge type-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: android/rust
+
+      - name: Check
+        working-directory: android/rust
+        run: cargo check --all-targets
+
+      - name: Clippy
+        working-directory: android/rust
+        run: cargo clippy --all-targets -- -D warnings
+        # Non-gating for the same reason ci.yml's is: the compiler crate it
+        # links has a lint backlog, and some of it surfaces through here.
+        continue-on-error: true
+
+  apk:
+    name: APK
+    runs-on: ubuntu-latest
+    needs: bridge
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # AGP 8.7 requires a JDK of at least 17, and the runner's default has
+      # been known to move.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Which ABIs to build, and why it is not always all of them.
+      #
+      # Each ABI is a full build of the compiler and its dependency tree, so a
+      # third one costs a third more wall clock for a slice of hardware nobody
+      # is testing on. arm64-v8a is every Android phone sold since about 2017;
+      # x86_64 is what an emulator runs, so a reviewer can actually install the
+      # artifact without a device. armeabi-v7a -- 32-bit ARM, still a lot of
+      # cheap and older handsets -- is added for a release, where "runs on the
+      # phone somebody actually has" stops being hypothetical.
+      - name: Choose ABIs
+        id: abis
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "targets=-t arm64-v8a -t armeabi-v7a -t x86_64" >> "$GITHUB_OUTPUT"
+            echo "Building all three ABIs for a release tag."
+          else
+            echo "targets=-t arm64-v8a -t x86_64" >> "$GITHUB_OUTPUT"
+            echo "Building arm64-v8a and x86_64. Tag a release to include armeabi-v7a."
+          fi
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # cargo-ndk picks the linker and sysroot, but the standard library for
+          # each target still has to be present.
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: android/rust
+
+      # The NDK is the only Android component the Rust half needs: it supplies
+      # the clang that links for each ABI, and the C compiler that builds
+      # bundled SQLite. It is a zip, not an installer.
+      - name: Install the NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ env.NDK_VERSION }}
+          # The runner is thrown away; caching it costs more than fetching it.
+          local-cache: false
+
+      - name: Install cargo-ndk
+        # --locked so a fresh release of one of its dependencies cannot change
+        # what this step installs from one day to the next.
+        run: cargo install cargo-ndk --locked
+
+      # The one step that does the cross-compilation.
+      #
+      # `-o` is the jniLibs directory: cargo-ndk writes libetamil_android.so
+      # into the right per-ABI subdirectory of it, which is exactly where
+      # Gradle expects to find a prebuilt library. Gradle never invokes cargo
+      # and cargo never invokes Gradle.
+      #
+      # Release profile always, even for a debug APK. A debug build of this
+      # compiler is several times larger and slow enough to be noticeable when
+      # a program runs on a phone; the Kotlin around it is what "debug" is for.
+      - name: Cross-compile the compiler for Android
+        working-directory: android/rust
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          cargo ndk ${{ steps.abis.outputs.targets }} \
+            -o ../app/src/main/jniLibs \
+            build --release
+
+      - name: Show what was built
+        run: |
+          find android/app/src/main/jniLibs -name '*.so' -printf '%p  %s bytes\n'
+
+      # No wrapper JAR in the repository, so Gradle itself is installed here.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
+      # A release build only when there is a key to sign it with. Without one
+      # the APK cannot be installed at all, so building it anyway would produce
+      # an artifact whose only use is to disappoint whoever downloads it.
+      #
+      # To enable: add ETAMIL_KEYSTORE_BASE64, ETAMIL_KEYSTORE_PASSWORD,
+      # ETAMIL_KEY_ALIAS and ETAMIL_KEY_PASSWORD as repository secrets.
+      # The `secrets` context cannot be read from a step's `if:`, and a step's
+      # own `env:` block is not in scope for its own `if:` either. So the
+      # question "is there a key?" is answered in a step that can see secrets,
+      # and its answer is read as an output by the step that cannot.
+      - name: Is there a signing key?
+        id: signing
+        env:
+          KEYSTORE: ${{ secrets.ETAMIL_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "No ETAMIL_KEYSTORE_BASE64 secret; skipping the release APK."
+          fi
+
+      - name: Assemble release APK
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && steps.signing.outputs.have == 'true' }}
+        working-directory: android
+        env:
+          # Through the environment rather than interpolated into the script.
+          # `${{ secrets.x }}` inside a `run:` block is substituted as text
+          # before the shell sees it, so a key containing shell metacharacters
+          # would be executed rather than decoded.
+          KEYSTORE: ${{ secrets.ETAMIL_KEYSTORE_BASE64 }}
+          ETAMIL_KEYSTORE_PATH: ${{ runner.temp }}/etamil.keystore
+          ETAMIL_KEYSTORE_PASSWORD: ${{ secrets.ETAMIL_KEYSTORE_PASSWORD }}
+          ETAMIL_KEY_ALIAS: ${{ secrets.ETAMIL_KEY_ALIAS }}
+          ETAMIL_KEY_PASSWORD: ${{ secrets.ETAMIL_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$KEYSTORE" | base64 -d > "$ETAMIL_KEYSTORE_PATH"
+          # The key is removed even if Gradle fails, rather than being left in
+          # the runner's temp directory for whatever runs next.
+          trap 'rm -f "$ETAMIL_KEYSTORE_PATH"' EXIT
+          gradle --no-daemon assembleRelease
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: etamil-android
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

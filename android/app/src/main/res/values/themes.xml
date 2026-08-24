@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DayNight, so the app follows the system. An editor is a screen somebody stares
+  at, and a white one at night is its own argument.
+
+  Only the accent colours are set. Everything else is Material's default, which
+  is a deliberate choice rather than laziness: a theme that overrides more than
+  it needs to is a theme that breaks on the next Material release.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.ETamil" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/etamil_teal</item>
+        <item name="colorPrimaryVariant">@color/etamil_teal_dark</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">@color/etamil_gold</item>
+        <item name="colorOnSecondary">@android:color/black</item>
+    </style>
+
+</resources>

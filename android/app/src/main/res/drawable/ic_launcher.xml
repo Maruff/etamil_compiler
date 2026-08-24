@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Placeholder launcher icon.
+
+  Geometry only, and deliberately so: the obvious icon for this language is a
+  Tamil letter, and a letter in a vector drawable has to be traced into path
+  data — at which point it is no longer text anyone can correct, just a long
+  string of numbers that renders as a glyph on a good day. A real icon set,
+  drawn from the actual letterform, belongs here before this is published.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#0F5257"
+        android:pathData="M22,10 L86,10 A12,12 0 0 1 98,22 L98,86 A12,12 0 0 1 86,98 L22,98 A12,12 0 0 1 10,86 L10,22 A12,12 0 0 1 22,10 Z" />
+
+    <!-- An open curl over a baseline: a mark, not a letter. -->
+    <path
+        android:strokeColor="#F2C14E"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M38,38 A16,16 0 1 1 54,54 L54,70" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M34,82 L74,82" />
+</vector>

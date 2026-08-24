@@ -1,0 +1,64 @@
+# android/rust/Cargo.toml
+#
+# The JNI shim the Android app loads. It is a crate of its own rather than a
+# module of etamil_compiler, for two reasons:
+#
+#   - `jni` would otherwise join the compiler's dependency graph on every
+#     platform, and a plain `cargo build` on a laptop would compile it for
+#     nothing. The wasm bindings live inside the crate because wasm-bindgen is
+#     declared per-target and disappears from a native build; there is no
+#     equivalent trick for a dependency that has to exist on the host too.
+#   - the compiler crate's Cargo.toml stays untouched, so the app can be built,
+#     versioned and released without a commit that reaches into it.
+#
+# It links etamil_compiler by path, so the app always carries the compiler from
+# the same checkout — an APK cannot silently be a version behind.
+
+[package]
+name = "etamil_android"
+version = "0.4.0"
+edition = "2024"
+rust-version = "1.88"
+authors = ["Esan Maruff <esan@etamil.in>"]
+description = "JNI bindings that let an Android app run eTamil programs"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/Maruff/etamil_compiler"
+homepage = "https://etamil.in"
+publish = false
+
+# cdylib only. Nothing links this but Android's dynamic loader, and an rlib
+# would be built and thrown away.
+[lib]
+name = "etamil_android"
+crate-type = ["cdylib"]
+
+[dependencies]
+# The compiler itself, from this checkout. Default features are left on, so the
+# app gets the whole language rather than the front end: bundled SQLite for
+# அட்டவணை, and the ureq/rustls client for வேண்டு. Both cross-compile to Android
+# with the NDK — SQLite is C that the `cc` crate knows how to aim at it, and
+# ring ships Android support — but if either ever becomes the reason a build
+# fails, `--no-default-features` still yields a usable app that lexes, parses,
+# type-checks and runs anything that touches neither a database nor the network.
+etamil_compiler = { path = "../../etamil_compiler" }
+
+# 0.21 is the release with the `&mut JNIEnv` API used below; 0.20 and earlier
+# take `&self` and will not compile against this file.
+jni = "0.21"
+
+# The bridge hands Kotlin one JSON string per call rather than building Java
+# objects through JNI. Constructing a class, finding its fields and setting each
+# one costs a dozen fallible env calls per result; `JSONObject` on the other
+# side costs one line. It is also the same envelope src/wasm.rs hands
+# JavaScript, so the two embeddings of this compiler agree on what a result
+# looks like.
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+# Same reasoning as the compiler's own release profile, and it matters more
+# here: this is a shared library shipped inside an APK, once per ABI.
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "z"

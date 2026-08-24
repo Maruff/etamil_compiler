@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bilingual throughout, Tamil first, matching how the compiler itself reports
+  everything. A user-facing string in this project is not English with a Tamil
+  translation bolted on; both are the message.
+-->
+<resources>
+    <string name="app_name">eTamil</string>
+
+    <!-- %1$s is the compiler version reported by the native library itself. -->
+    <string name="title_with_version">eTamil %1$s</string>
+
+    <string name="hint_source">இங்கே நிரலை எழுதுங்கள்  (write a program here)</string>
+    <string name="hint_input">உள்ளிடு பதில்கள், வரிக்கு ஒன்று  (உள்ளிடு answers, one per line)</string>
+
+    <string name="action_run">இயக்கு\nRun</string>
+    <string name="action_check">சரிபார்\nCheck</string>
+    <string name="action_examples">எடுத்துக்காட்டு\nExamples</string>
+
+    <string name="running">இயங்குகிறது…  (running…)</string>
+    <string name="checking">சரிபார்க்கிறது…  (checking…)</string>
+    <string name="no_errors">✓ பிழைகள் இல்லை  (no errors)</string>
+    <string name="ran_silently">✓ நிரல் இயங்கியது, எதுவும் அச்சிடவில்லை  (ran, printed nothing)</string>
+    <string name="unknown_error">அறியப்படாத பிழை  (unknown error)</string>
+    <string name="pick_example">எடுத்துக்காட்டு தேர்வு  (pick an example)</string>
+    <string name="no_examples">எடுத்துக்காட்டுகள் இல்லை  (no examples unpacked)</string>
+
+    <!-- %1$s is a file name. -->
+    <string name="could_not_read">✗ \'%1$s\' படிக்க முடியவில்லை  (could not read \'%1$s\')</string>
+</resources>

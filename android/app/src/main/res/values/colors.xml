@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The two colours from the launcher icon, so the app and its icon agree. -->
+<resources>
+    <color name="etamil_teal">#0F5257</color>
+    <color name="etamil_teal_dark">#093639</color>
+    <color name="etamil_gold">#F2C14E</color>
+</resources>
