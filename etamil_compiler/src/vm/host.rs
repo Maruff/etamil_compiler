@@ -22,15 +22,62 @@
 
 #[cfg(not(target_family = "wasm"))]
 mod imp {
+    use std::cell::RefCell;
+    use std::collections::VecDeque;
     use std::fs;
     use std::fs::OpenOptions;
     use std::io::Write as _;
 
+    thread_local! {
+        /// Where output goes when there is no console to send it to.
+        ///
+        /// `None` — the ordinary case — means print to stdout as before, so the
+        /// command line, the REPL and the servers are unaffected. An embedder
+        /// that has no stdout worth writing to calls `begin_capture` and drains
+        /// the buffer afterwards.
+        ///
+        /// This exists for Android. An app is a native build, so it takes this
+        /// module's native half and its `println!` goes to a stdout nobody
+        /// reads; the browser half already solved the same problem, but a phone
+        /// wants the rest of the native build — real files, real sockets — so it
+        /// cannot simply borrow it.
+        static CAPTURE: RefCell<Option<String>> = const { RefCell::new(None) };
+
+        /// Lines handed to `உள்ளிடு` before it would reach for stdin.
+        ///
+        /// An embedder supplies a program's input up front, because there is
+        /// nobody at a terminal to type it while the program runs.
+        static INPUT: RefCell<VecDeque<String>> = RefCell::new(VecDeque::new());
+    }
+
     pub fn print_line(text: &str) {
-        println!("{}", text);
+        CAPTURE.with(|capture| match &mut *capture.borrow_mut() {
+            Some(buffer) => {
+                buffer.push_str(text);
+                buffer.push('\n');
+            }
+            None => println!("{}", text),
+        })
     }
 
     pub fn read_line() -> Result<String, String> {
+        // Queued input first, whether or not output is being captured: a caller
+        // may want to feed a program its answers even on the command line.
+        if let Some(line) = INPUT.with(|input| input.borrow_mut().pop_front()) {
+            return Ok(line);
+        }
+
+        // Falling through to stdin is right at a terminal and wrong in an app,
+        // where it would block on a handle that never produces a byte and hang
+        // the caller for good. Capture is what distinguishes the two, so an
+        // exhausted queue reports itself the way the browser does rather than
+        // waiting forever.
+        if capturing() {
+            return Err("உள்ளிடு தரவு தீர்ந்தது  \
+                        (no input left to read)"
+                .to_string());
+        }
+
         let mut input = String::new();
         std::io::stdin()
             .read_line(&mut input)
@@ -59,10 +106,61 @@ mod imp {
     ///
     /// Exiting does not unwind, so anything still buffered would be lost --
     /// including the summary line that explains the status.
+    ///
+    /// Under capture the process is not the program's to end: in an app it is
+    /// the app, and `வெளியேறு` would take the whole thing down with it and lose
+    /// the output that says why. So it reports the status instead, exactly as
+    /// the browser does.
     pub fn exit(status: i32) -> Result<(), String> {
+        if capturing() {
+            return if status == 0 {
+                Ok(())
+            } else {
+                Err(format!(
+                    "நிரல் {} நிலையுடன் நின்றது  (the program exited with status {})",
+                    status, status
+                ))
+            };
+        }
+
         let _ = std::io::stdout().flush();
         let _ = std::io::stderr().flush();
         std::process::exit(status);
+    }
+
+    // --- Embedding ----------------------------------------------------------
+    //
+    // Only an embedder calls these. Nothing in the compiler does, and with
+    // `begin_capture` never called this module behaves as it did before they
+    // existed.
+
+    /// Is output being collected rather than printed?
+    pub fn capturing() -> bool {
+        CAPTURE.with(|capture| capture.borrow().is_some())
+    }
+
+    /// Start collecting output, discarding anything already collected.
+    pub fn begin_capture() {
+        CAPTURE.with(|capture| *capture.borrow_mut() = Some(String::new()));
+    }
+
+    /// Stop collecting, and return everything collected since `begin_capture`.
+    ///
+    /// Also drops any input left unread, so one run cannot answer the next
+    /// one's `உள்ளிடு`.
+    pub fn end_capture() -> String {
+        INPUT.with(|input| input.borrow_mut().clear());
+        CAPTURE
+            .with(|capture| capture.borrow_mut().take())
+            .unwrap_or_default()
+    }
+
+    /// Queue one line for `உள்ளிடு`, in the order the program will read them.
+    ///
+    /// The trailing newline is added here because that is what a real
+    /// `read_line` returns, and `உள்ளிடு` trims it.
+    pub fn push_input(line: &str) {
+        INPUT.with(|input| input.borrow_mut().push_back(format!("{}\n", line)));
     }
 }
 
