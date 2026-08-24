@@ -172,6 +172,35 @@ jobs:
         working-directory: etamil_compiler
         run: cargo test --features mongodb mongo
 
+  # The browser build, which nothing here checked until it broke twice in one
+  # afternoon and neither failure showed up on a native build.
+  #
+  # Both were mine and both were invisible natively: a `#[cfg(not(wasm))]` left
+  # orphaned onto `pub mod vm;` when the module below it was deleted, which took
+  # the VM out of the browser build entirely; and a `FunctionDef` pattern in
+  # wasm.rs that stopped naming every field after one was added. A native build
+  # compiles happily through both.
+  #
+  # `--lib` on purpose: the binary needs a filesystem, sockets and tokio, and is
+  # not what runs in a browser.
+  wasm-build:
+    name: browser build (wasm32)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: etamil_compiler
+
+      - name: Check the library for wasm32
+        working-directory: etamil_compiler
+        run: cargo check --lib --target wasm32-unknown-unknown --no-default-features
+
   llvm-backend:
     name: LLVM backend builds
     runs-on: ubuntu-latest

@@ -363,7 +363,7 @@ fn walk(
                 let detail = declared.as_ref().map(|d| d.name().to_string()).unwrap_or_default();
                 push(out, seen, owner, name, "variable", detail);
             }
-            Stmt::FunctionDef { name, params, returns, body } => {
+            Stmt::FunctionDef { name, params, returns, body, .. } => {
                 let shown: Vec<String> = params
                     .iter()
                     .map(|param| match &param.declared {
