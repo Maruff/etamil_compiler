@@ -1346,6 +1346,35 @@ impl VM {
             // which the language has. What is signed, and what a signature
             // means, stays in eTamil.
             // கையொப்பம்(விசை, செய்தி) — HMAC-SHA256 as lowercase hex
+            // --- Authenticated encryption ---------------------------------
+            // XChaCha20-Poly1305 over an Argon2id key, in crate::crypt. These
+            // three are why மறை and வெளிப்படு stopped being reserved words with
+            // nothing behind them.
+
+            // மறை(உரை, கடவுச்சொல்) — encrypt, as one base64 string
+            "மறை" | "maRY" | "_encrypt" => {
+                Self::expect_args(name, &args, 2)?;
+                let sealed = crate::crypt::encrypt(&args[0].to_string(), &args[1].to_string())?;
+                Ok(Value::String(sealed))
+            }
+            // வெளிப்படு(மறையீடு, கடவுச்சொல்) — decrypt, as a result
+            //
+            // A result rather than a runtime error: a wrong passphrase and a
+            // tampered file are things a program handles, not things that
+            // should stop it. `இயல்பு` and `?` work on it like any other.
+            "வெளிப்படு" | "veLippatu" | "_decrypt" => {
+                Self::expect_args(name, &args, 2)?;
+                match crate::crypt::decrypt(&args[0].to_string(), &args[1].to_string()) {
+                    Ok(text) => Ok(Value::Ok(Box::new(Value::String(text)))),
+                    Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                }
+            }
+            // மறை_விசை() — a fresh passphrase, for a program that would rather
+            // store a strong one than ask a person to invent it
+            "மறை_விசை" | "maRY_vicY" | "_encryptionKey" => {
+                Self::expect_args(name, &args, 0)?;
+                Ok(Value::String(crate::crypt::fresh_key()?))
+            }
             "கையொப்பம்" | "kYyoppam" | "_sign" => {
                 Self::expect_args(name, &args, 2)?;
                 Ok(Value::String(crate::net::sign(

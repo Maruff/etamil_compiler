@@ -173,7 +173,7 @@ fn a_chain_refuses_a_call_in_the_middle_rather_than_calling_it_twice() {
 }
 
 #[test]
-fn a_chain_short_circuits_because_it_is_built_from_maRRum() {
+fn a_chain_short_circuits_because_it_is_built_from_and() {
     // The right-hand comparison is not reached once the left has decided, which
     // falls out of the desugaring rather than being arranged. What makes it
     // observable: reading an undefined name is a runtime error, so if the second
@@ -283,6 +283,68 @@ fn a_parameter_type_is_in_scope_inside_the_body() {
     // which is what makes the declaration worth writing.
     let why = run("ceyal f(eN a) { aNi b = a; qirumpu b; }").unwrap_err();
     assert!(why.contains("b"), "{}", why);
+}
+
+// --- Encryption ----------------------------------------------------------
+//
+// The cipher itself is tested in src/crypt.rs. These check the language side:
+// that the three keywords reach it, and that failure arrives as a value.
+
+#[test]
+fn a_round_trip_through_the_language_returns_the_text() {
+    let vm = run(r#"k = maRY_vicY(); out = maRY("₹2.05", k); back = veLippatu(out, k);"#)
+        .unwrap();
+    match vm.variables.get("back") {
+        Some(Value::Ok(inner)) => assert_eq!(inner.to_string(), "₹2.05"),
+        other => panic!("expected a successful result, got {:?}", other),
+    }
+}
+
+#[test]
+fn a_wrong_passphrase_arrives_as_a_value_not_an_error() {
+    // veLippatu answers a result, so this is something a program handles. A
+    // runtime error would take that choice away.
+    let vm = run(
+        r#"out = maRY("secret", "right"); back = veLippatu(out, "wrong");
+           failed = qavaRA(back);"#,
+    )
+    .unwrap();
+    assert_eq!(vm.variables.get("failed"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn text_that_was_never_encrypted_is_refused() {
+    let vm = run(r#"back = veLippatu("just a sentence", "k"); failed = qavaRA(back);"#).unwrap();
+    assert_eq!(vm.variables.get("failed"), Some(&Value::Boolean(true)));
+}
+
+#[test]
+fn the_same_text_twice_gives_different_ciphertext() {
+    // A fresh salt and nonce per message. Without it, equal plaintexts would be
+    // visibly equal — which in a ledger is a leak.
+    let vm = run(r#"a = maRY("1000", "k"); b = maRY("1000", "k"); same = a == b;"#).unwrap();
+    assert_eq!(vm.variables.get("same"), Some(&Value::Boolean(false)));
+}
+
+#[test]
+fn a_generated_passphrase_is_long_enough_to_be_one() {
+    // 32 random bytes as base64 is 44 characters.
+    let vm = run("k = maRY_vicY(); n = nILam(k);").unwrap();
+    assert_eq!(num(&vm, "n"), dec(44));
+}
+
+#[test]
+fn an_empty_passphrase_is_refused_at_the_language_boundary_too() {
+    let why = run(r#"out = maRY("x", "");"#).unwrap_err();
+    assert!(why.contains("must not be empty"), "{}", why);
+}
+
+#[test]
+fn the_security_words_are_ordinary_names_again() {
+    // All four were reserved with nothing behind them. Three are builtins now,
+    // and kuRimuRY is simply a noun — usable, like the other domain words.
+    let vm = run("kuRimuRY = 5; out = kuRimuRY + 1;").unwrap();
+    assert_eq!(num(&vm, "out"), dec(6));
 }
 
 // --- Arithmetic and control flow -----------------------------------------

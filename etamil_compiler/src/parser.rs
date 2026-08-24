@@ -1259,8 +1259,6 @@ impl<'a> Parser<'a> {
             Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body | Token::Param | Token::QueryParam | Token::PathParam => false,
             Token::URL | Token::Host | Token::Port | Token::Method | Token::StatusCode | Token::StatusMessage | Token::Auth | Token::BearerToken | Token::ContentType | Token::Serve => false,
             Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
-            // Security
-            Token::Encrypt | Token::Decrypt | Token::Password | Token::EncryptionKey => false,
             // Financial and accounting keywords ARE usable as names: வருவாய்,
             // வரி and the rest are the domain nouns programs are written
             // about. They have no statement syntax of their own, and listing

@@ -32,6 +32,10 @@ pub mod module;
 // Reads stdin, writes stdout.
 #[cfg(not(target_family = "wasm"))]
 pub mod repl;
+// Authenticated encryption behind மறை and வெளிப்படு. Portable: XChaCha20-
+// Poly1305 and Argon2id are pure Rust, and getrandom already has its wasm_js
+// feature enabled below, so this works in the browser build too.
+pub mod crypt;
 // Portable: HMAC-SHA256 over hmac/sha2/subtle, all pure Rust.
 pub mod signing;
 #[cfg(not(target_family = "wasm"))]
@@ -57,7 +61,6 @@ pub mod db;
 // build; gated here too so a wasm build does not depend on that staying true.
 #[cfg(not(target_family = "wasm"))]
 pub mod codegen;
-#[cfg(not(target_family = "wasm"))]
 // Portable: the bytecode compiler and value layer touch no OS at all, and the
 // interpreter's input and output go through vm::host, which has a browser
 // implementation. The archive and subprocess helpers inside it are gated

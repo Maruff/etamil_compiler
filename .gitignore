@@ -64,3 +64,20 @@ examples/io_samples/transactions.csv
 # Python bytecode from scripts/. Reappears after every run of the
 # generators and the parity checks.
 __pycache__/
+
+# Written by examples/crypto_samples/maRYyAkkam.qmz when it runs.
+*.enc
+
+# --- Android app ---
+# The JNI shim's own Rust build directory, alongside the compiler's above.
+android/rust/target/
+# Gradle's build output and local state. The APK is a release asset or a CI
+# artifact, never a commit, for the same reason dist/ is not committed.
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+# Produced by cargo-ndk on the way to an APK. One .so per ABI, several
+# megabytes each, and rebuilt from the Rust source every time — nothing a
+# clone should be paying to download.
+android/app/src/main/jniLibs/

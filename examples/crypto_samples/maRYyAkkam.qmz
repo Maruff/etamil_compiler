@@ -1,0 +1,76 @@
+// examples/crypto_samples/maRYyAkkam.qmz — மறையாக்கம்: encrypting a file
+//
+//   etamil --vm examples/crypto_samples/maRYyAkkam.qmz
+//
+// There is no "encrypt this file" statement, and there does not need to be.
+// மறை works on a value, so file encryption is the three things the language
+// already had, in order: read, encrypt, write.
+//
+// Underneath: XChaCha20-Poly1305 with the key derived from the passphrase by
+// Argon2id, a fresh salt and nonce per message, and the whole thing base64 so
+// the result is an ordinary சொல். See etamil_compiler/src/crypt.rs.
+
+// --- a passphrase ---------------------------------------------------------
+//
+// மறை_விசை() invents a strong one so a program does not have to. It is not a
+// separate kind of key — it goes in the same argument slot a typed passphrase
+// does, because 32 random bytes written as base64 simply *is* a good passphrase.
+//
+// A real program reads this from the environment or asks for it. It does not
+// keep it in the source, and it does not write it next to the file it protects.
+என்_விசை = மறை_விசை();
+
+// --- encrypt --------------------------------------------------------------
+கணக்கு = "வாடகை,செலவு,25000
+விற்பனை,வரவு,184500";
+
+மறையீடு = மறை(கணக்கு, என்_விசை);
+
+அச்சு "மூலம்    : " & நீளம்(கணக்கு) & " எழுத்து";
+அச்சு "மறையீடு  : " & நீளம்(மறையீடு) & " எழுத்து (base64)";
+அச்சு "";
+
+// The same text encrypted twice is not the same ciphertext, because the salt
+// and nonce are fresh each time. Without that, a ledger full of repeated
+// amounts would leak which rows match.
+அச்சு "இருமுறை வேறுபடுமா : " & (மறை(கணக்கு, என்_விசை) != மறை(கணக்கு, என்_விசை));
+அச்சு "";
+
+// --- write it, read it back ----------------------------------------------
+கோப்பு_திற "kaNakku.enc", "write";
+கோப்பு_எழுது "kaNakku.enc", மறையீடு;
+கோப்பு_மூடு "kaNakku.enc";
+
+கோப்பு_படி "kaNakku.enc", கோப்பிலிருந்து;
+
+// --- decrypt --------------------------------------------------------------
+//
+// வெளிப்படு answers a *result*, not the text. A wrong passphrase and a
+// tampered file are things a program handles, so they are values — not errors
+// that stop it. `?` and `இயல்பு` work on this like on any other result.
+விடை = வெளிப்படு(கோப்பிலிருந்து, என்_விசை);
+
+(சரியா(விடை)) எனில் {
+    அச்சு "மறைநீக்கியது :";
+    அச்சு மதிப்பு(விடை);
+}
+இன்றேல் {
+    அச்சு "தோல்வி : " & தவறு_மதிப்பு(விடை);
+}
+அச்சு "";
+
+// --- the failures, which are the point -----------------------------------
+
+// A wrong passphrase is refused, and says only that. It does not say how wrong.
+தவறான_விசை = வெளிப்படு(கோப்பிலிருந்து, "வேறு கடவுச்சொல்");
+அச்சு "தவறான கடவுச்சொல் : " & தவறா(தவறான_விசை);
+
+// Text that was never encrypted is refused before any key is derived.
+வேறு_உரை = வெளிப்படு("இது வெறும் வாக்கியம்", என்_விசை);
+அச்சு "மறையாக்கப்படாத உரை : " & தவறா(வேறு_உரை);
+
+// The third failure is the one that matters most and is not shown here, because
+// demonstrating it needs a substring and this file deliberately imports nothing:
+// change a single byte of the ciphertext and decryption *fails* rather than
+// handing back plausible-looking rubbish. That is what the authentication tag is
+// for, and `a_tampered_byte_is_detected` in etamil_compiler/src/crypt.rs pins it.

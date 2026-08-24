@@ -2699,8 +2699,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
       "_encrypt"
     ],
     "group": "Encryption & Security",
-    "scope": "keyword.other.security.etamil",
-    "reserved": true,
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
     "noSyntax": true,
     "snippetTamil": null,
     "snippetLatin": null
@@ -2713,8 +2713,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
       "_decrypt"
     ],
     "group": "Encryption & Security",
-    "scope": "keyword.other.security.etamil",
-    "reserved": true,
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
     "noSyntax": true,
     "snippetTamil": null,
     "snippetLatin": null
@@ -2727,8 +2727,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
       "_password"
     ],
     "group": "Encryption & Security",
-    "scope": "keyword.other.security.etamil",
-    "reserved": true,
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
     "noSyntax": true,
     "snippetTamil": null,
     "snippetLatin": null
@@ -2741,8 +2741,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
       "_encryptionKey"
     ],
     "group": "Encryption & Security",
-    "scope": "keyword.other.security.etamil",
-    "reserved": true,
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
     "noSyntax": true,
     "snippetTamil": null,
     "snippetLatin": null
@@ -3549,6 +3549,48 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
+    "name": "மறை",
+    "forms": [
+      "மறை",
+      "maRY",
+      "_encrypt"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "மறை(உரை, கடவுச்சொல்) — encrypt, as one base64 string",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "வெளிப்படு",
+    "forms": [
+      "வெளிப்படு",
+      "veLippatu",
+      "_decrypt"
+    ],
+    "params": null,
+    "arity": 2,
+    "doc": "வெளிப்படு(மறையீடு, கடவுச்சொல்) — decrypt, as a result",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
+    "name": "மறை_விசை",
+    "forms": [
+      "மறை_விசை",
+      "maRY_vicY",
+      "_encryptionKey"
+    ],
+    "params": null,
+    "arity": 0,
+    "doc": "மறை_விசை() — a fresh passphrase, for a program that would rather",
+    "kind": "builtin",
+    "module": null,
+    "line": null
+  },
+  {
     "name": "கையொப்பம்",
     "forms": [
       "கையொப்பம்",
@@ -3557,7 +3599,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     ],
     "params": null,
     "arity": 2,
-    "doc": "கையொப்பம்(விசை, செய்தி) — HMAC-SHA256 as lowercase hex",
+    "doc": "",
     "kind": "builtin",
     "module": null,
     "line": null
