@@ -27,8 +27,8 @@ frameworks built on top of it.
 | `upi/nilYmY.qmz` | UPI payment states — `பணம்_வந்ததா` `சரிபார்க்கவா` `நகர்வு_சரியா` `நகர்த்து` |
 | `kaNakkiyal/qEymAZam.qmz` | depreciation — `நேர்கோட்டு_ஆண்டு` `குறையும்_ஆண்டு` `பகுதி_ஆண்டு` `நேர்கோட்டு_அட்டவணை` `குறையும்_அட்டவணை` `தொகுதி_தேய்வு` |
 | `kaNakkiyal/Uqiyam.qmz` | payroll — `மொத்தச்_சம்பளம்` `நாட்களுக்கு_ஏற்ப` `வரம்புடன்_பங்களிப்பு` `தகுதிக்குள்_பங்களிப்பு` `படிநிலை_வரி` `பணிக்கொடை` `சம்பளச்_சீட்டு` |
-| `kaNakkiyal/vari_viziqam.qmz` | tax rates — `விகிதம்_தேடு` `படிகளை_ஏற்று` `படி_வரி_கணக்கிடு` `உள்_மாநிலமா` `மாநிலப்_பெயர்` |
-| `kAppIttu/kAppIttu.qmz` | insurance — `முனைமம்` `ஆயிரத்திற்கு_முனைமம்` `சராசரி_விதி` `கோரல்_தீர்வு` `கோரல்_இல்லா_சலுகை` `நிலுவைக்_கோரல்கள்` |
+| `kaNakkiyal/vari_vikiqam.qmz` | tax rates — `விகிதம்_தேடு` `படிகளை_ஏற்று` `படி_வரி_கணக்கிடு` `உள்_மாநிலமா` `மாநிலப்_பெயர்` |
+| `kAppItu/kAppItu.qmz` | insurance — `முனைமம்` `ஆயிரத்திற்கு_முனைமம்` `சராசரி_விதி` `கோரல்_தீர்வு` `கோரல்_இல்லா_சலுகை` `நிலுவைக்_கோரல்கள்` |
 | `cuwkam/cuwkam.qmz` | customs and trade — `மதிப்பிடத்தக்க_மதிப்பு` `சுங்கக்_கணக்கு` `தலைப்பு_சரியா` `பொருந்துமா` `செல்லுபடி_நாட்கள்` `வழிச்சீட்டு_சரிபார்` |
 | `qaLam/retis.qmz` | Redis — `சேமி` `காலத்துடன்_சேமி` `எடு` `இருக்கிறதா` `நீக்கு` `ஒன்று_கூட்டு` `முன்_சேர்` `வரிசைப்_பகுதி` `இல்லையெனில்_இயல்பு` |
 | `paNam.qmz` | money — `ரூபாய்` `காசு_வடிவம்` `காசாக` `லட்சம்` `கோடி` |
@@ -275,10 +275,10 @@ professional tax usually reads.
 
 ### The rate tables
 
-`vari.qmz` computes a tax once you know the rate. `vari_viziqam.qmz` is where
+`vari.qmz` computes a tax once you know the rate. `vari_vikiqam.qmz` is where
 the rate comes from, and holds none: GST by HSN, TDS by section, income tax and
 professional tax as slabs, VAT where it survives — one effective-dated table,
-described in `vari_viziqam.sql`.
+described in `vari_vikiqam.sql`.
 
 **Every function takes the date it is being asked about, and none defaults it
 to today.** A return for last quarter is computed on the rates in force last
@@ -329,7 +329,7 @@ installed.
 
 ## Insurance: the average clause
 
-`kAppIttu/` is policy, premium and claim. Most of it is small arithmetic. One
+`kAppItu/` is policy, premium and claim. Most of it is small arithmetic. One
 part is not, and it is the reason the module exists.
 
 When a property is insured for less than it is worth, the insurer pays only the

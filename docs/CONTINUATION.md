@@ -23,7 +23,7 @@ cd .. && bash scripts/run_examples.sh     # 66 as expected, 1 skipped
 | Money as whole paise | `nUlakam/kAcu.qmz` |
 | LLVM refusal for f64 arithmetic | `etamil_compiler/src/codegen_limits.rs`, `docs/llvm-backend-gaps.md` |
 | Database attempt-and-report; `:memory:` never pooled | `interpreter.rs`, `db/pool.rs` |
-| Insurance, customs and trade | `nUlakam/kAppIttu/`, `nUlakam/cuwkam/` |
+| Insurance, customs and trade | `nUlakam/kAppItu/`, `nUlakam/cuwkam/` |
 | MongoDB (`--features mongodb`) | `src/mongo.rs` |
 | Array and record equality (was broken) | `src/vm/value.rs` |
 | Redis, RESP implemented here | `src/redis.rs`, `nUlakam/qaLam/retis.qmz` |
@@ -158,5 +158,5 @@ effective-dated so a return re-run next year produces what it produced when it
 was filed, and `சரிபார்க்கப்படாதவை`-style functions list rows still marked
 `PLACEHOLDER` so a program can refuse to file a figure nobody has vouched for.
 
-`nUlakam/kaNakkiyal/vari_viziqam.sql` ships the schema and the 36 states with
+`nUlakam/kaNakkiyal/vari_vikiqam.sql` ships the schema and the 36 states with
 their GST codes, and **no rates at all**.

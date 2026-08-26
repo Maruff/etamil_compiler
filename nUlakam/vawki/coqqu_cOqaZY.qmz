@@ -17,7 +17,7 @@
              vakY TEXT NOT NULL,
              nAtkaL_muqal INTEGER NOT NULL,
              nAtkaL_varY INTEGER,
-             oqukkItu_viziqam REAL NOT NULL,
+             oqukkItu_vikiqam REAL NOT NULL,
              amal_qotakkam TEXT NOT NULL,
              amal_muDivu TEXT,
              mUlam TEXT NOT NULL)", [];
@@ -29,7 +29,7 @@
 // loader asks for `amal_muDivu IS NULL`, and a row holding "" is a row still
 // in force according to nobody. Omitting the column is how a NULL is written
 // from here.
-நிரல்கள் = "(vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam, amal_qotakkam, mUlam)";
+நிரல்கள் = "(vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, amal_qotakkam, mUlam)";
 
 தளம்_செய் "INSERT INTO coqqu_viqimuRY " & நிரல்கள் & " VALUES (?,?,?,?,?,?)",
           ["நல்லது", 0, 90, 1, "2020-01-01", "சோதனை"];
@@ -38,13 +38,13 @@
 
 // No upper bound at all: that column is left out too.
 தளம்_செய் "INSERT INTO coqqu_viqimuRY
-             (vakY, nAtkaL_muqal, oqukkItu_viziqam, amal_qotakkam, mUlam)
+             (vakY, nAtkaL_muqal, oqukkItu_vikiqam, amal_qotakkam, mUlam)
              VALUES (?,?,?,?,?)",
           ["இழப்பு", 366, 100, "2020-01-01", "PLACEHOLDER — invented"];
 
 // A rule that was replaced: in force until 2020, and must not be seen after.
 தளம்_செய் "INSERT INTO coqqu_viqimuRY
-             (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam,
+             (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam,
               amal_qotakkam, amal_muDivu, mUlam)
              VALUES (?,?,?,?,?,?,?)",
           ["பழையது", 0, 90, 5, "2010-01-01", "2020-01-01", "சோதனை"];

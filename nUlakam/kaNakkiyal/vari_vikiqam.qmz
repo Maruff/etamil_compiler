@@ -1,8 +1,8 @@
-// nUlakam/kaNakkiyal/vari_viziqam.qmz — finding the rate that applied
+// nUlakam/kaNakkiyal/vari_vikiqam.qmz — finding the rate that applied
 //
 // vari.qmz computes a tax once you know the rate. This is where the rate comes
 // from, and it holds none: they live in the table described by
-// vari_viziqam.sql, effective-dated, and this reads them as they stood on a
+// vari_vikiqam.sql, effective-dated, and this reads them as they stood on a
 // given day.
 //
 // That date is the point. A return for last quarter is computed on the rates
@@ -26,9 +26,9 @@
 // of nothing are different, and returning zero for the first understates a
 // liability without saying so.
 செயல் விகிதம்_தேடு(வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள்) {
-    தளம்_வினா "SELECT vari_vakY, kuRi, mAnilam, viziqam, nilYq_qokY,
+    தளம்_வினா "SELECT vari_vakY, kuRi, mAnilam, vikiqam, nilYq_qokY,
                        varampu_muqal, varampu_varY, mUlam
-                  FROM vari_viziqam
+                  FROM vari_vikiqam
                  WHERE vari_vakY = ?
                    AND kuRi = ?
                    AND (mAnilam = ? OR mAnilam = '')
@@ -51,8 +51,8 @@
 // படிநிலை_வரி in Uqiyam.qmz takes. Income tax, professional tax and anything
 // else stated as bands go through the same two functions.
 செயல் படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்) {
-    தளம்_வினா "SELECT varampu_muqal, viziqam, nilYq_qokY, mUlam
-                  FROM vari_viziqam
+    தளம்_வினா "SELECT varampu_muqal, vikiqam, nilYq_qokY, mUlam
+                  FROM vari_vikiqam
                  WHERE vari_vakY = ?
                    AND (mAnilam = ? OR mAnilam = '')
                    AND amal_qotakkam <= ?
@@ -62,7 +62,7 @@
 
     படிகள் = [];
     ஒவ்வொரு ஒரு_வரிசை இல் வரிசைகள் {
-        விகித_மதிப்பு = ஒரு_வரிசை["viziqam"];
+        விகித_மதிப்பு = ஒரு_வரிசை["vikiqam"];
         (வகை(விகித_மதிப்பு) == "nil") எனில் { விகித_மதிப்பு = 0; }
 
         நிலைத்தது = ஒரு_வரிசை["nilYq_qokY"];
@@ -119,7 +119,7 @@
 // return. This lists them so a program can stop rather than file.
 செயல் சரிபார்க்கப்படாத_விகிதங்கள்(நாள்) {
     தளம்_வினா "SELECT vari_vakY, kuRi, mAnilam, mUlam
-                  FROM vari_viziqam
+                  FROM vari_vikiqam
                  WHERE (mUlam LIKE 'PLACEHOLDER%' OR mUlam LIKE 'CHECK%')
                    AND amal_qotakkam <= ?
                    AND (amal_muDivu IS NULL OR amal_muDivu > ?)",

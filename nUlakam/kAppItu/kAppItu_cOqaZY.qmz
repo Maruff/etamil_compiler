@@ -1,12 +1,12 @@
 // காப்பீடு சோதனை — policy, premium and claim
 //
-//   etamil --vm nUlakam/kAppIttu/kAppIttu_cOqaZY.qmz
+//   etamil --vm nUlakam/kAppItu/kAppItu_cOqaZY.qmz
 //
 // No rate or limit here is a claim about any real policy. They are arguments,
 // chosen so the arithmetic can be checked by hand.
 
 இறக்கு "../cOqaZY.qmz";
-இறக்கு "kAppIttu.qmz";
+இறக்கு "kAppItu.qmz";
 
 ஓட்டம் = சோதனை_தொடக்கம்("காப்பீடு");
 

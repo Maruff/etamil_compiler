@@ -1,20 +1,20 @@
 // வரி விகித சோதனை — finding the rate that applied
 //
-//   etamil --vm nUlakam/kaNakkiyal/vari_viziqam_cOqaZY.qmz
+//   etamil --vm nUlakam/kaNakkiyal/vari_vikiqam_cOqaZY.qmz
 //
 // Builds its own table in memory, so it needs no fixture and every figure it
 // asserts on is visibly its own. Nothing here is a claim about what any real
 // rate is — they are invented to make the lookup rules checkable.
 
 இறக்கு "../cOqaZY.qmz";
-இறக்கு "vari_viziqam.qmz";
+இறக்கு "vari_vikiqam.qmz";
 இறக்கு "vari.qmz";
 
 தளம்_இணை சீகுலைட், ":memory:";
 
-தளம்_செய் "CREATE TABLE vari_viziqam (
+தளம்_செய் "CREATE TABLE vari_vikiqam (
              vari_vakY TEXT NOT NULL, kuRi TEXT NOT NULL, mAnilam TEXT NOT NULL,
-             viziqam REAL, nilYq_qokY REAL,
+             vikiqam REAL, nilYq_qokY REAL,
              varampu_muqal REAL NOT NULL DEFAULT 0, varampu_varY REAL,
              amal_qotakkam TEXT NOT NULL, amal_muDivu TEXT, mUlam TEXT NOT NULL)", [];
 தளம்_செய் "CREATE TABLE mAnilawkaL (
@@ -22,31 +22,31 @@
              mUlam TEXT NOT NULL)", [];
 
 // A rate that changed: 12 until 2023, 18 after. Both rows stay.
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam,
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam,
               amal_muDivu, mUlam)
              VALUES ('GST','9999','',12,0,'2017-07-01','2023-04-01','சோதனை')", [];
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('GST','9999','',18,0,'2023-04-01','சோதனை')", [];
 
 // An all-India rule, and a state that differs from it.
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('VAT','petrol','',20,0,'2020-01-01','சோதனை')", [];
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('VAT','petrol','33',25,0,'2020-01-01','சோதனை')", [];
 
 // A slab tax, in bands. One row marked for checking.
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('ITR','band1','',0,0,'2020-01-01','சோதனை')", [];
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('ITR','band2','',5,300000,'2020-01-01','சோதனை')", [];
-தளம்_செய் "INSERT INTO vari_viziqam
-             (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+தளம்_செய் "INSERT INTO vari_vikiqam
+             (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
              VALUES ('ITR','band3','',10,700000,'2020-01-01','PLACEHOLDER — invented')", [];
 
 தளம்_செய் "INSERT INTO mAnilawkaL VALUES ('33','Tamil Nadu','மாநிலம்','சோதனை')", [];
@@ -59,11 +59,11 @@
 // The reason every function takes a date. A return for 2022 is computed on the
 // 2022 rate, and looking the rate up "as of now" rewrites what was filed.
 பழையது = விகிதம்_தேடு("GST", "9999", "", "2022-06-01");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பழையது)["viziqam"], 12,
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பழையது)["vikiqam"], 12,
               "a supply in 2022 is taxed at the 2022 rate");
 
 புதியது = விகிதம்_தேடு("GST", "9999", "", "2026-06-01");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(புதியது)["viziqam"], 18,
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(புதியது)["vikiqam"], 18,
               "and one today at today's");
 
 முன்னதாக = விகிதம்_தேடு("GST", "9999", "", "2015-01-01");
@@ -72,11 +72,11 @@
 
 // --- a state rule beats an all-India one ----------------------------------
 நாட்டளவு = விகிதம்_தேடு("VAT", "petrol", "27", "2026-01-01");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நாட்டளவு)["viziqam"], 20,
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நாட்டளவு)["vikiqam"], 20,
               "a state with no rule of its own takes the all-India one");
 
 மாநிலம் = விகிதம்_தேடு("VAT", "petrol", "33", "2026-01-01");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாநிலம்)["viziqam"], 25,
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாநிலம்)["vikiqam"], 25,
               "and a state that has one takes that instead");
 
 // --- nothing found is not nothing due -------------------------------------

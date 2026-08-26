@@ -10,7 +10,7 @@
 // the higher the duty rate.
 //
 // No rate is in this file. Duty by tariff heading is set by notification and
-// amended; rates belong in vari_viziqam, which is effective-dated for exactly
+// amended; rates belong in vari_vikiqam, which is effective-dated for exactly
 // this reason.
 //
 // சரக்கு, கட்டணம் and விலக்கு are keywords, so the words this module wants are

@@ -6251,7 +6251,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 4,
     "doc": "விகிதம்_தேடு(வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள்)",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 28
   },
   {
@@ -6267,7 +6267,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "படிகளை_ஏற்று(வரி_வகை, மாநிலக்_குறி, நாள்)",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 53
   },
   {
@@ -6284,7 +6284,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 4,
     "doc": "படி_வரி_கணக்கிடு(வரி_வகை, மாநிலக்_குறி, நாள், வரிக்குரிய_தொகை)",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 82
   },
   {
@@ -6299,7 +6299,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 2,
     "doc": "உள்_மாநிலமா(விற்பனையாளர்_மாநிலம், வாங்குபவர்_மாநிலம்)",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 97
   },
   {
@@ -6313,7 +6313,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "மாநிலப்_பெயர்(மாநிலக்_குறி) — the state a GST code names",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 102
   },
   {
@@ -6325,7 +6325,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 0,
     "doc": "மாநிலங்கள்() — every state and union territory on record",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 109
   },
   {
@@ -6339,7 +6339,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "சரிபார்க்கப்படாத_விகிதங்கள்(நாள்) — rates whose source still says otherwise",
     "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/vari_viziqam.qmz",
+    "module": "nUlakam/kaNakkiyal/vari_vikiqam.qmz",
     "line": 120
   },
   {
@@ -6498,7 +6498,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 2,
     "doc": "முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) — a premium at a percentage rate",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 25
   },
   {
@@ -6513,7 +6513,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 2,
     "doc": "ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு)",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 34
   },
   {
@@ -6529,7 +6529,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்)",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 43
   },
   {
@@ -6545,7 +6545,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்)",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 52
   },
   {
@@ -6560,7 +6560,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 2,
     "doc": "கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) — the excess the insured bears",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 65
   },
   {
@@ -6576,7 +6576,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு)",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 81
   },
   {
@@ -6590,7 +6590,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "கோரல்_தீர்வு(விவரங்கள்) — what is actually payable",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 104
   },
   {
@@ -6606,7 +6606,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்)",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 147
   },
   {
@@ -6620,7 +6620,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "நிலுவைக்_கோரல்கள்(கோரல்கள்) — what is reported and not yet paid",
     "kind": "stdlib",
-    "module": "nUlakam/kAppIttu/kAppIttu.qmz",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
     "line": 167
   },
   {

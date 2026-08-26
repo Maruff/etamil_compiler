@@ -1,4 +1,4 @@
-// nUlakam/kAppIttu/kAppIttu.qmz — காப்பீடு (insurance): policy, premium, claim
+// nUlakam/kAppItu/kAppItu.qmz — காப்பீடு (insurance): policy, premium, claim
 //
 // Insurance arithmetic is mostly small and one rule is famously not: when a
 // property is insured for less than it is worth, the insurer pays only the

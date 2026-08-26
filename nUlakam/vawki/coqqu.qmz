@@ -25,7 +25,7 @@
 // a library that opens its own connection decides for the program where its
 // data lives.
 செயல் விதிமுறைகளை_ஏற்று(நாள்) {
-    தளம்_வினா "SELECT vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_viziqam, mUlam
+    தளம்_வினா "SELECT vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, mUlam
                  FROM coqqu_viqimuRY
                 WHERE amal_qotakkam <= ?
                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)
@@ -79,7 +79,7 @@
     (தவறா(வகைப்பாடு)) எனில் { திரும்பு வகைப்பாடு; }
 
     விதிமுறை = மதிப்பு(வகைப்பாடு);
-    விழுக்காடு = விதிமுறை["oqukkItu_viziqam"];
+    விழுக்காடு = விதிமுறை["oqukkItu_vikiqam"];
     திரும்பு சரி({"வகைப்பாடு": விதிமுறை["vakY"],
                   "விழுக்காடு": விழுக்காடு,
                   "ஒதுக்கீடு": சதவீதம்(நிலுவைத்_தொகை, விழுக்காடு)});

@@ -1,4 +1,4 @@
--- vari_viziqam — tax rates, by kind, by place, by date
+-- vari_vikiqam — tax rates, by kind, by place, by date
 --
 -- READ THIS BEFORE USING IT.
 --
@@ -18,11 +18,11 @@
 -- and inserting a new one, never updating in place. A filing re-run next year
 -- must produce what it produced when it was filed.
 
-CREATE TABLE IF NOT EXISTS vari_viziqam (
+CREATE TABLE IF NOT EXISTS vari_vikiqam (
     vari_vakY      TEXT    NOT NULL,  -- GST, TDS, ITR, PT, VAT, CESS …
     kuRi           TEXT    NOT NULL,  -- HSN code, TDS section, slab name, ''
     mAnilam        TEXT    NOT NULL,  -- state code, or '' for all-India
-    viziqam        REAL,              -- rate as a number out of 100
+    vikiqam        REAL,              -- rate as a number out of 100
     nilYq_qokY     REAL,              -- a flat amount instead, for PT-style rules
     varampu_muqal  REAL    NOT NULL DEFAULT 0,   -- band starts at
     varampu_varY   REAL,              -- band ends at; NULL = no upper bound
@@ -33,11 +33,11 @@ CREATE TABLE IF NOT EXISTS vari_viziqam (
 
 -- Two rules of the same kind, for the same thing, in the same place, starting
 -- on the same day would make the answer depend on row order.
-CREATE UNIQUE INDEX IF NOT EXISTS vari_viziqam_orey
-    ON vari_viziqam (vari_vakY, kuRi, mAnilam, varampu_muqal, amal_qotakkam);
+CREATE UNIQUE INDEX IF NOT EXISTS vari_vikiqam_orey
+    ON vari_vikiqam (vari_vakY, kuRi, mAnilam, varampu_muqal, amal_qotakkam);
 
-CREATE INDEX IF NOT EXISTS vari_viziqam_qEti
-    ON vari_viziqam (vari_vakY, mAnilam, amal_qotakkam);
+CREATE INDEX IF NOT EXISTS vari_vikiqam_qEti
+    ON vari_vikiqam (vari_vakY, mAnilam, amal_qotakkam);
 
 -- States and union territories, by GST state code.
 CREATE TABLE IF NOT EXISTS mAnilawkaL (
@@ -91,7 +91,7 @@ INSERT INTO mAnilawkaL (kuRi, peyar, vakY, mUlam) VALUES
 
 -- Deliberately empty. Load your own, from the notification that sets them:
 --
---   INSERT INTO vari_viziqam
---       (vari_vakY, kuRi, mAnilam, viziqam, varampu_muqal, amal_qotakkam, mUlam)
+--   INSERT INTO vari_vikiqam
+--       (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
 --   VALUES
 --       ('GST', '8471', '', 18, 0, '2017-07-01', 'Notification 1/2017 …');
