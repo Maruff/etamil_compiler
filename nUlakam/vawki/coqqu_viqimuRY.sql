@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS coqqu_viqimuRY (
     nAtkaL_varY       INTEGER,            -- days overdue, to (inclusive); NULL = no upper bound
     oqukkItu_vikiqam  REAL    NOT NULL,   -- provisioning percentage, written as 15 for 15%
     amal_qotakkam     TEXT    NOT NULL,   -- in force from, ISO date
-    amal_muDivu       TEXT,               -- in force until, ISO date; NULL = still current
+    amal_mutivu       TEXT,               -- in force until, ISO date; NULL = still current
     mUlam             TEXT    NOT NULL    -- which circular this came from
 );
 
@@ -35,7 +35,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS coqqu_viqimuRY_orey
 DELETE FROM coqqu_viqimuRY WHERE mUlam LIKE 'PLACEHOLDER%';
 
 INSERT INTO coqqu_viqimuRY
-    (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, amal_qotakkam, amal_muDivu, mUlam)
+    (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, amal_qotakkam, amal_mutivu, mUlam)
 VALUES
     ('Standard',     0,   90,   0.40, '2000-01-01', NULL, 'PLACEHOLDER — not a real figure'),
     ('Sub-standard', 91,  455,  15.00, '2000-01-01', NULL, 'PLACEHOLDER — not a real figure'),

@@ -80,7 +80,7 @@ Rows return as an array of records, so a result set iterates like any other tabl
 
 **MySQL / MariaDB** is implemented behind `--features mysql` and verified against a live server. Binding is simpler than PostgreSQL's because the server coerces on the way in, so parameters go over as text and stay exact for `DECIMAL`; reading back dispatches on the column type, so a `VARCHAR` of digits comes back a string while a `DECIMAL` comes back a number. `examples/db_samples/mYcIkul_qaLam.qmz` checks that, and `run_examples.sh` skips it unless `ETAMIL_TEST_MYSQL` is set, since it needs a server this repository does not provide.
 
-Transactions work, driven as plain SQL — `தளம்_செய் "BEGIN", []` and its COMMIT — because the VM holds one connection across statements. `examples/kadai` depends on that for order placement. There is no language-level transaction *construct*, which is a different thing and still open.
+Transactions work, driven as plain SQL — `தளம்_செய் "BEGIN", []` and its COMMIT — because the VM holds one connection across statements. `examples/katY` depends on that for order placement. There is no language-level transaction *construct*, which is a different thing and still open.
 
 **One database at a time, and it says so.** `தளம்_வினா` names no handle, so with two open there would be no way to say which one a query meant. Two *drivers* at once was already refused. Two databases through the *same* driver was not: connections are keyed by driver, so a second `தளம்_இணை சீகுலைட்` overwrote the first, the count stayed at one, and every query afterwards went to the second database while the program still believed it was talking to the first. That is now refused, naming the database already open:
 

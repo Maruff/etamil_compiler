@@ -1,4 +1,4 @@
-// examples/finance/paicA_kaNakku.qmz — பைசா கணக்கு: money as whole paise
+// examples/finance/pYcA_kaNakku.qmz — பைசா கணக்கு: money as whole paise
 //
 // This is the example that runs on *both* backends and answers the same thing.
 //
@@ -8,8 +8,8 @@
 // and nothing said so. Holding money in paise and dividing with தரை() is exact
 // in an i64, so the two backends now agree here:
 //
-//   etamil --vm     examples/finance/paicA_kaNakku.qmz
-//   etamil --llvm   examples/finance/paicA_kaNakku.qmz && clang output.ll -o m && ./m
+//   etamil --vm     examples/finance/pYcA_kaNakku.qmz
+//   etamil --llvm   examples/finance/pYcA_kaNakku.qmz && clang output.ll -o m && ./m
 //
 // scripts/run_parity.sh does exactly that comparison for every example. This
 // one is deliberately written inside the backend's limits: no இறக்கு, no

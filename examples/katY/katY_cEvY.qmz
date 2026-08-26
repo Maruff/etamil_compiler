@@ -1,8 +1,8 @@
-// examples/kadai/kadai_cEvY.qmz — the shop's REST API
+// examples/katY/katY_cEvY.qmz — the shop's REST API
 //
-//   etamil --server --port 8090 examples/kadai/kadai_cEvY.qmz
+//   etamil --server --port 8090 examples/katY/katY_cEvY.qmz
 //
-// Run kadai_kAttu.qmz first, in the same directory: it creates kadai.db and
+// Run katY_kAttu.qmz first, in the same directory: it creates katY.db and
 // the catalogue this serves.
 //
 // Under --vm this fails on the first வழி, and that is correct — route
@@ -13,7 +13,7 @@
 // VM — but it borrows from a cache rather than opening a socket, so saying it
 // per route costs nothing.
 
-இறக்கு "kadai.qmz";
+இறக்கு "katY.qmz";
 இறக்கு "../../nUlakam/jEcAZ.qmz";
 
 // The webhook secret the payment gateway signs with. Read from the
@@ -26,7 +26,7 @@
 
 // GET /carakku — the catalogue
 வழி பெறு, "/carakku" {
-    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_இணை சீகுலைட், "katY.db";
     தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL
                WHERE iruppu > 0 ORDER BY kuRi", [], பட்டியல்;
 
@@ -45,7 +45,7 @@
 
 // GET /carakku/:kuRi — one product
 வழி பெறு, "/carakku/:kuRi" {
-    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_இணை சீகுலைட், "katY.db";
     தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL WHERE kuRi = ?",
               [param_kuRi], கிடைப்பு;
 
@@ -75,7 +75,7 @@
     }
     இன்றேல் {
         வேண்டுகோள் = மதிப்பு(படித்தது);
-        தளம்_இணை சீகுலைட், "kadai.db";
+        தளம்_இணை சீகுலைட், "katY.db";
 
         வண்டி = [];
         தவறானது = "";
@@ -124,7 +124,7 @@
         }
         இன்றேல் {
             செய்தி = மதிப்பு(படித்தது);
-            தளம்_இணை சீகுலைட், "kadai.db";
+            தளம்_இணை சீகுலைட், "katY.db";
             தளம்_செய் "UPDATE ANYkaL SET nilY = ? WHERE kuRi = ?",
                       ["செலுத்தப்பட்டது", செய்தி["ANY_kuRi"]];
             பதில் 200, ஜேசான்_ஆக்கு({நிலை: "ஏற்கப்பட்டது", ஆணை: செய்தி["ANY_kuRi"]});
@@ -134,8 +134,8 @@
 
 // GET /ANY/:kuRi — an order and its lines
 வழி பெறு, "/ANY/:kuRi" {
-    தளம்_இணை சீகுலைட், "kadai.db";
-    தளம்_வினா "SELECT kuRi, vAtikkYyALar, naaL, qokY, nilY FROM ANYkaL WHERE kuRi = ?",
+    தளம்_இணை சீகுலைட், "katY.db";
+    தளம்_வினா "SELECT kuRi, vAtikkYyALar, nAL, qokY, nilY FROM ANYkaL WHERE kuRi = ?",
               [param_kuRi], கிடைப்பு;
 
     (நீளம்(கிடைப்பு) == 0) எனில் {
@@ -153,7 +153,7 @@
             });
         }
         பதில் 200, ஜேசான்_ஆக்கு({
-            குறி: ஆணை.kuRi, வாடிக்கையாளர்: ஆணை.vAtikkYyALar, நாள்: ஆணை.naaL,
+            குறி: ஆணை.kuRi, வாடிக்கையாளர்: ஆணை.vAtikkYyALar, நாள்: ஆணை.nAL,
             தொகை: ஆணை.qokY, நிலை: ஆணை.nilY, வரிசைகள்: விடை
         });
     }
@@ -171,7 +171,7 @@
 // and a failure is logged rather than taking the server down — there is no
 // caller to return an error to.
 இடைவெளி 600 {
-    தளம்_இணை சீகுலைட், "kadai.db";
+    தளம்_இணை சீகுலைட், "katY.db";
 
     தளம்_வினா "SELECT COUNT(*) AS eNNikkY, COALESCE(SUM(qokY), 0) AS moqqam
                FROM ANYkaL WHERE nilY = ?", ["இடப்பட்டது"], நிலுவை;
@@ -181,11 +181,11 @@
           & "   மொத்தம் " & ரூபாய்(நிலுவை[0].moqqam);
 
     // Anything still unpaid after a week is worth a human looking at.
-    தளம்_வினா "SELECT kuRi, naaL, qokY FROM ANYkaL
-               WHERE nilY = ? AND naaL < ?", ["இடப்பட்டது", நாள்_கூட்டு(இன்று(), 0 - 7)],
+    தளம்_வினா "SELECT kuRi, nAL, qokY FROM ANYkaL
+               WHERE nilY = ? AND nAL < ?", ["இடப்பட்டது", நாள்_கூட்டு(இன்று(), 0 - 7)],
               பழையவை;
     ஒவ்வொரு ஒரு_ஆணை இல் பழையவை {
-        அச்சு "  ⚠ " & ஒரு_ஆணை.kuRi & " (" & ஒரு_ஆணை.naaL & ") "
+        அச்சு "  ⚠ " & ஒரு_ஆணை.kuRi & " (" & ஒரு_ஆணை.nAL & ") "
               & ரூபாய்(ஒரு_ஆணை.qokY) & " — ஒரு வாரத்திற்கும் மேல்";
     }
 }

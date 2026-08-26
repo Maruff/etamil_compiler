@@ -12,10 +12,10 @@ than a row to reconcile later.
 ## Run it
 
 ```bash
-etamil --vm examples/kadai/kadai_kAttu.qmz
+etamil --vm examples/katY/katY_kAttu.qmz
 ```
 
-Creates `kadai.db` in the working directory, seeds three products at three GST
+Creates `katY.db` in the working directory, seeds three products at three GST
 rates, prices a cart, prints a GST invoice, places one order and refuses
 another for want of stock, then posts everything to the ledger and prints the
 trial balance, income statement and balance sheet.
@@ -23,7 +23,7 @@ trial balance, income statement and balance sheet.
 Then serve it:
 
 ```bash
-etamil --server --port 8090 examples/kadai/kadai_cEvY.qmz
+etamil --server --port 8090 examples/katY/katY_cEvY.qmz
 ```
 
 | Route | What it does |

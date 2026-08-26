@@ -13,7 +13,7 @@ said so — the IR was emitted, it ran, and it answered `0.30000000000000004`.
 
 **Then it computed in `i64`.** Better: exact to 2^63 instead of 2^53, and
 `sdiv` under `தரை` was exactly a floor where `fdiv` could be out by a paisa.
-That version is what `examples/finance/paicA_kaNakku.qmz` was written for, and
+That version is what `examples/finance/pYcA_kaNakku.qmz` was written for, and
 it worked — 7 of 68 examples matched the VM, none disagreed.
 
 But both were the same bargain in different clothes. The IR held the value

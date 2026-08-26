@@ -148,7 +148,7 @@ fi
 declare -A SKIP=(
     ["examples/api/simple_api.qmz"]=1
     ["examples/api/vari_cEvY.qmz"]=1
-    ["examples/kadai/kadai_cEvY.qmz"]=1
+    ["examples/katY/katY_cEvY.qmz"]=1
 )
 
 # Examples needing an external server, and the variable that opts them in —

@@ -19,14 +19,14 @@
              nAtkaL_varY INTEGER,
              oqukkItu_vikiqam REAL NOT NULL,
              amal_qotakkam TEXT NOT NULL,
-             amal_muDivu TEXT,
+             amal_mutivu TEXT,
              mUlam TEXT NOT NULL)", [];
 
 // Three classes, the last with no upper bound.
 //
 // The columns that should be NULL are left out of the INSERT rather than bound
 // to "". eTamil has no nil to pass, and an empty string is not a NULL: the
-// loader asks for `amal_muDivu IS NULL`, and a row holding "" is a row still
+// loader asks for `amal_mutivu IS NULL`, and a row holding "" is a row still
 // in force according to nobody. Omitting the column is how a NULL is written
 // from here.
 நிரல்கள் = "(vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, amal_qotakkam, mUlam)";
@@ -45,7 +45,7 @@
 // A rule that was replaced: in force until 2020, and must not be seen after.
 தளம்_செய் "INSERT INTO coqqu_viqimuRY
              (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam,
-              amal_qotakkam, amal_muDivu, mUlam)
+              amal_qotakkam, amal_mutivu, mUlam)
              VALUES (?,?,?,?,?,?,?)",
           ["பழையது", 0, 90, 5, "2010-01-01", "2020-01-01", "சோதனை"];
 

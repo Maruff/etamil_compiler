@@ -1,6 +1,6 @@
-// examples/kadai/kadai.qmz — கடை: an online shop's pricing and GST
+// examples/katY/katY.qmz — கடை: an online shop's pricing and GST
 //
-// Definitions only; kadai_kAttu.qmz runs them and kadai_cEvY.qmz serves them.
+// Definitions only; katY_kAttu.qmz runs them and katY_cEvY.qmz serves them.
 //
 // GST is computed **per line**, not on the invoice total, because an order can
 // mix rates — 5% on a saree and 18% on a phone case — and taxing the sum at

@@ -28,7 +28,7 @@
     தளம்_வினா "SELECT vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, mUlam
                  FROM coqqu_viqimuRY
                 WHERE amal_qotakkam <= ?
-                  AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+                  AND (amal_mutivu IS NULL OR amal_mutivu > ?)
              ORDER BY nAtkaL_muqal",
               [நாள், நாள்], கிடைத்தவை;
     திரும்பு கிடைத்தவை;

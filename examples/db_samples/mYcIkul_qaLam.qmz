@@ -27,24 +27,24 @@
               peyar VARCHAR(64) NOT NULL,
               vakY VARCHAR(32) NOT NULL,
               qokY DECIMAL(14,2) NOT NULL,
-              naaL DATE NULL) CHARACTER SET utf8mb4", [];
+              nAL DATE NULL) CHARACTER SET utf8mb4", [];
 
-தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, naaL) VALUES (?, ?, ?, ?)",
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, nAL) VALUES (?, ?, ?, ?)",
           ["வாடகை", "செலவு", 25000, "2026-04-01"];
-தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, naaL) VALUES (?, ?, ?, ?)",
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, nAL) VALUES (?, ?, ?, ?)",
           ["விற்பனை", "வரவு", 184500.25, "2026-04-02"];
-தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, naaL) VALUES (?, ?, ?, ?)",
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, nAL) VALUES (?, ?, ?, ?)",
           ["மின்கட்டணம்", "செலவு", 4200.75, "2026-04-03"];
-தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, naaL) VALUES (?, ?, ?, ?)",
+தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY, nAL) VALUES (?, ?, ?, ?)",
           ["ஆலோசனை", "வரவு", 62000, "2026-04-05"];
 
-தளம்_வினா "SELECT peyar, qokY, naaL FROM pativukaL
+தளம்_வினா "SELECT peyar, qokY, nAL FROM pativukaL
            WHERE vakY = ? ORDER BY qokY DESC", ["வரவு"], வரவுகள்;
 
 அச்சு "வரவுகள்";
 அச்சு "---------------------------------";
 ஒவ்வொரு ஒரு_பதிவு இல் வரவுகள் {
-    அச்சு "  " & ஒரு_பதிவு.naaL & "  " & ஒரு_பதிவு.peyar & " — " & ரூபாய்(ஒரு_பதிவு.qokY);
+    அச்சு "  " & ஒரு_பதிவு.nAL & "  " & ஒரு_பதிவு.peyar & " — " & ரூபாய்(ஒரு_பதிவு.qokY);
 }
 
 தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ?", ["செலவு"], செலவுகள்;
@@ -94,8 +94,8 @@
 அச்சு "null -> " & வகை(காலி[0].ஒன்றுமில்லை);
 
 // A DATE column arrives as ISO text, which sorts chronologically.
-தளம்_வினா "SELECT naaL FROM pativukaL WHERE id = ?", [1], நாளது;
-அச்சு "date -> " & நாளது[0].naaL & " (" & வகை(நாளது[0].naaL) & ")";
+தளம்_வினா "SELECT nAL FROM pativukaL WHERE id = ?", [1], நாளது;
+அச்சு "date -> " & நாளது[0].nAL & " (" & வகை(நாளது[0].nAL) & ")";
 
 // The injection payload reaches the driver bound, so it matches nothing and
 // the table is still there afterwards.

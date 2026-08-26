@@ -88,6 +88,47 @@ def transliterate(word: str) -> str:
     return "".join(out)
 
 
+# The scheme is one Latin letter per Tamil letter, so it inverts. The reverse
+# tables are derived from the forward ones rather than written out again: a
+# second copy of the mapping is a second thing to keep in step, which is the
+# drift this file exists to catch.
+_R_CONSONANTS = {v: k for k, v in CONSONANTS.items()} | {"x": "க" + PULLI + "ஷ"}
+_R_VOWELS = {v: k for k, v in VOWELS.items()}
+_R_SIGNS = {v: k for k, v in SIGNS.items()} | {"a": ""}
+
+
+def untransliterate(word: str) -> str:
+    """ezuqqu -> Tamil. The inverse of transliterate().
+
+    A letter the scheme does not assign — `b`, `d`, `f`, `g`, `D` — has no
+    Tamil to become and is passed through as itself. That is the point: run a
+    romanized name back through this and a stray Latin letter sitting inside
+    Tamil output is a letter that was never in the scheme.
+    """
+    out = []
+    i = 0
+    while i < len(word):
+        ch = word[i]
+        if ch in _R_CONSONANTS:
+            base = _R_CONSONANTS[ch]
+            if i + 1 < len(word) and word[i + 1] in _R_SIGNS:
+                out.append(base + _R_SIGNS[word[i + 1]])
+                i += 2
+            else:
+                out.append(base + PULLI)
+                i += 1
+        elif ch in _R_VOWELS:
+            out.append(_R_VOWELS[ch])
+            i += 1
+        elif ch == "h":
+            out.append(AYTHAM)
+            i += 1
+        else:
+            out.append(ch)
+            i += 1
+    return "".join(out)
+
+
 # Keywords that keep an off-scheme romanization, and why. An exception with a
 # stated reason is a decision; a count of nineteen with no reasons was a chore
 # nobody could evaluate.

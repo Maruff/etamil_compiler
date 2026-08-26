@@ -7332,7 +7332,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "மாத_விகிதம்(ஆண்டு_விகிதம்) — the monthly rate as a fraction",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 17
   },
   {
@@ -7348,7 +7348,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) — the EMI",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 30
   },
   {
@@ -7364,7 +7364,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 3,
     "doc": "தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்)",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 50
   },
   {
@@ -7378,7 +7378,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "மொத்த_வட்டி(அட்டவணை) — what the borrowing cost, over the whole term",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 85
   },
   {
@@ -7392,7 +7392,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 1,
     "doc": "மொத்தத்_திருப்பி(அட்டவணை) — every instalment added up",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 94
   },
   {
@@ -7407,7 +7407,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "arity": 2,
     "doc": "முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) — what is owed to settle",
     "kind": "stdlib",
-    "module": "nUlakam/vawki/kadaZ.qmz",
+    "module": "nUlakam/vawki/kataZ.qmz",
     "line": 108
   },
   {

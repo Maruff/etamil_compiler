@@ -19,7 +19,7 @@ cd .. && bash scripts/run_examples.sh     # 66 as expected, 1 skipped
 
 | Area | Where |
 |---|---|
-| LLVM: whole numbers as `i64`, exact division, globals | `src/codegen.rs`, `src/codegen_limits.rs`, `examples/finance/paicA_kaNakku.qmz` |
+| LLVM: whole numbers as `i64`, exact division, globals | `src/codegen.rs`, `src/codegen_limits.rs`, `examples/finance/pYcA_kaNakku.qmz` |
 | Money as whole paise | `nUlakam/kAcu.qmz` |
 | LLVM refusal for f64 arithmetic | `etamil_compiler/src/codegen_limits.rs`, `docs/llvm-backend-gaps.md` |
 | Database attempt-and-report; `:memory:` never pooled | `interpreter.rs`, `db/pool.rs` |
@@ -71,7 +71,7 @@ whether the IR verifies or whether it answers what the VM answers.
 
 `run_parity.sh` runs every example under both backends, fails only where they
 *disagree* — a refusal is expected and counted — and ranks what stopped each
-one. `examples/finance/paicA_kaNakku.qmz` is the example written to compile on
+one. `examples/finance/pYcA_kaNakku.qmz` is the example written to compile on
 both, so it is the one to look at first: if it refuses, read why; if it
 mismatches, that is the bug.
 
@@ -141,7 +141,7 @@ Both `vari.qmz` and `vatti.qmz` pin this in their suites.
 **`&` and `+` bind equally and associate left.** So
 `அச்சு "மொத்தம்: " & அ + ஆ` is `("மொத்தம்: " & அ) + ஆ`, which is a number, and
 the label vanishes from the output with nothing complaining. Bracket the sum:
-`& (அ + ஆ)`. Cost a wrong line in `paicA_kaNakku.qmz` before the VM run caught
+`& (அ + ஆ)`. Cost a wrong line in `pYcA_kaNakku.qmz` before the VM run caught
 it.
 
 **Windows shell.** Heredocs mangle backslashes and backticks in shell

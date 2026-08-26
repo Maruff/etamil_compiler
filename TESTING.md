@@ -396,11 +396,18 @@ explanatory error and exits 1, which is also correct.
 
 ```bash
 python3 scripts/transliterate.py --check
+python3 scripts/check_names.py --check
 ```
 
-**Expect: 19 keywords reported off-scheme.** These are known and catalogued
-in `docs/ROADMAP.md` item 6. The number should go **down**, never up. CI runs
-this as a non-gating step.
+**Expect: 0 off-scheme from each.** Both gate CI, so a failure is a regression.
+
+The first reads `lexer.rs` and holds every keyword's romanization to the
+scheme. The second holds everything that is *not* a keyword — module and file
+names, SQL tables and columns, record keys — because nothing did, and
+`viziqam` for விகிதம் reached a module name, a table and two columns before a
+reader caught it. It works by running each name back through the scheme: a
+Latin letter still sitting inside Tamil output is a letter the scheme never
+assigned. English names that trip it are listed in `ALLOW` in that file.
 
 Transliterate a word by hand:
 
@@ -422,10 +429,11 @@ git diff --stat docs/reference/KEYWORDS.md      # expect no diff if unchanged
 ```bash
 cd etamil_compiler && cargo build --release && cargo test && cd .. \
   && ./scripts/run_examples.sh \
-  && python3 scripts/transliterate.py --check ; echo "audit exit: $?"
+  && python3 scripts/transliterate.py --check \
+  && python3 scripts/check_names.py --check ; echo "exit: $?"
 ```
 
-Everything except the audit should exit 0.
+All of it should exit 0.
 
 ## 11. Build and test the Linux package
 

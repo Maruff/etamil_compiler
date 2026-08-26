@@ -1,17 +1,17 @@
-// examples/kadai/kadai_kAttu.qmz — a shop's whole day, end to end
+// examples/katY/katY_kAttu.qmz — a shop's whole day, end to end
 //
 // Catalogue in SQLite, a cart priced with per-line GST, an order placed
 // atomically against stock, the same order posted into a double-entry ledger,
 // and the three statements that come out of it.
 //
-//   etamil --vm examples/kadai/kadai_kAttu.qmz
+//   etamil --vm examples/katY/katY_kAttu.qmz
 //
-// Self-contained: it creates its own kadai.db in the working directory.
+// Self-contained: it creates its own katY.db in the working directory.
 
-இறக்கு "kadai.qmz";
+இறக்கு "katY.qmz";
 இறக்கு "../../nUlakam/kaNakkiyal/aRikkYkaL.qmz";
 
-தளம்_இணை சீகுலைட், "kadai.db";
+தளம்_இணை சீகுலைட், "katY.db";
 
 // --- The catalogue --------------------------------------------------------
 
@@ -65,7 +65,7 @@
         }
     }
 
-    தளம்_செய் "INSERT INTO ANYkaL (kuRi, vAtikkYyALar, naaL, qokY, nilY)
+    தளம்_செய் "INSERT INTO ANYkaL (kuRi, vAtikkYyALar, nAL, qokY, nilY)
                VALUES (?, ?, ?, ?, ?)",
               [ஆணை_எண், வாடிக்கையாளர்_பெயர், நாள், செலுத்தவேண்டியது, "இடப்பட்டது"];
 
@@ -86,7 +86,7 @@
 தளம்_செய் "DROP TABLE IF EXISTS ANY_varicYkaL", [];
 தளம்_செய் "CREATE TABLE ANYkaL (
               kuRi TEXT PRIMARY KEY, vAtikkYyALar TEXT NOT NULL,
-              naaL TEXT NOT NULL, qokY TEXT NOT NULL, nilY TEXT NOT NULL)", [];
+              nAL TEXT NOT NULL, qokY TEXT NOT NULL, nilY TEXT NOT NULL)", [];
 தளம்_செய் "CREATE TABLE ANY_varicYkaL (
               ANY_kuRi TEXT NOT NULL, carakku_kuRi TEXT NOT NULL,
               aLavu INTEGER NOT NULL, alaku_vilY TEXT NOT NULL,

@@ -48,6 +48,13 @@ jobs:
       - name: Romanization scheme check
         run: python ../scripts/transliterate.py --check
 
+      # The same scheme, applied to the names that are not keywords — modules,
+      # files, SQL tables and columns, record keys. `transliterate.py` reads
+      # lexer.rs and nothing else, which is how `viziqam` for விகிதம் survived
+      # in a module name, a table and two columns without any gate seeing it.
+      - name: Romanized name check
+        run: python ../scripts/check_names.py --check
+
       - name: Build (release)
         run: cargo build --release
 

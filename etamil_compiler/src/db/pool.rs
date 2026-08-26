@@ -7,7 +7,7 @@
 //! What this is **not** is a shared connection. Two requests using one
 //! connection would share its transaction state: a `BEGIN` in one would
 //! enclose the other's queries, and a `COMMIT` in one would commit the other's
-//! half-finished work. Order placement in examples/kadai depends on exactly
+//! half-finished work. Order placement in examples/katY depends on exactly
 //! that not happening. So a connection is leased *exclusively* for as long as
 //! a VM holds it, and only returns to the cache when the VM is done with it.
 //!

@@ -46,7 +46,7 @@ export ETAMIL_PATH="$ROOT"
 declare -A EXPECT_FAIL=(
     ["examples/api/simple_api.qmz"]="not implemented"
     ["examples/api/vari_cEvY.qmz"]="not implemented"
-    ["examples/kadai/kadai_cEvY.qmz"]="not implemented"
+    ["examples/katY/katY_cEvY.qmz"]="not implemented"
 )
 
 # Examples needing an external server, and the variable that opts them in.

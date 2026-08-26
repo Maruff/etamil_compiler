@@ -6,7 +6,7 @@
 // chosen so the arithmetic can be checked by hand.
 
 இறக்கு "../cOqaZY.qmz";
-இறக்கு "kadaZ.qmz";
+இறக்கு "kataZ.qmz";
 
 ஓட்டம் = சோதனை_தொடக்கம்("வங்கி — வட்டி, கடன்");
 

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS vari_vikiqam (
     varampu_muqal  REAL    NOT NULL DEFAULT 0,   -- band starts at
     varampu_varY   REAL,              -- band ends at; NULL = no upper bound
     amal_qotakkam  TEXT    NOT NULL,  -- in force from, ISO date
-    amal_muDivu    TEXT,              -- in force until; NULL = still current
+    amal_mutivu    TEXT,              -- in force until; NULL = still current
     mUlam          TEXT    NOT NULL   -- which notification this came from
 );
 

@@ -33,7 +33,7 @@
                    AND kuRi = ?
                    AND (mAnilam = ? OR mAnilam = '')
                    AND amal_qotakkam <= ?
-                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+                   AND (amal_mutivu IS NULL OR amal_mutivu > ?)
               ORDER BY CASE WHEN mAnilam = '' THEN 1 ELSE 0 END,
                        amal_qotakkam DESC",
               [வரி_வகை, குறியீட்டெண், மாநிலக்_குறி, நாள், நாள்], கிடைத்தவை;
@@ -56,7 +56,7 @@
                  WHERE vari_vakY = ?
                    AND (mAnilam = ? OR mAnilam = '')
                    AND amal_qotakkam <= ?
-                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)
+                   AND (amal_mutivu IS NULL OR amal_mutivu > ?)
               ORDER BY varampu_muqal",
               [வரி_வகை, மாநிலக்_குறி, நாள், நாள்], வரிசைகள்;
 
@@ -122,7 +122,7 @@
                   FROM vari_vikiqam
                  WHERE (mUlam LIKE 'PLACEHOLDER%' OR mUlam LIKE 'CHECK%')
                    AND amal_qotakkam <= ?
-                   AND (amal_muDivu IS NULL OR amal_muDivu > ?)",
+                   AND (amal_mutivu IS NULL OR amal_mutivu > ?)",
               [நாள், நாள்], கிடைத்தவை;
     திரும்பு கிடைத்தவை;
 }

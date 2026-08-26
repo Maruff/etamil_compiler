@@ -16,7 +16,7 @@
              vari_vakY TEXT NOT NULL, kuRi TEXT NOT NULL, mAnilam TEXT NOT NULL,
              vikiqam REAL, nilYq_qokY REAL,
              varampu_muqal REAL NOT NULL DEFAULT 0, varampu_varY REAL,
-             amal_qotakkam TEXT NOT NULL, amal_muDivu TEXT, mUlam TEXT NOT NULL)", [];
+             amal_qotakkam TEXT NOT NULL, amal_mutivu TEXT, mUlam TEXT NOT NULL)", [];
 தளம்_செய் "CREATE TABLE mAnilawkaL (
              kuRi TEXT NOT NULL, peyar TEXT NOT NULL, vakY TEXT NOT NULL,
              mUlam TEXT NOT NULL)", [];
@@ -24,7 +24,7 @@
 // A rate that changed: 12 until 2023, 18 after. Both rows stay.
 தளம்_செய் "INSERT INTO vari_vikiqam
              (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam,
-              amal_muDivu, mUlam)
+              amal_mutivu, mUlam)
              VALUES ('GST','9999','',12,0,'2017-07-01','2023-04-01','சோதனை')", [];
 தளம்_செய் "INSERT INTO vari_vikiqam
              (vari_vakY, kuRi, mAnilam, vikiqam, varampu_muqal, amal_qotakkam, mUlam)
