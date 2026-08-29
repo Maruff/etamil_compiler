@@ -231,7 +231,7 @@ LLVM is a flexible compiler architecture, and as the back-end to eTamil, offers 
 The design of eTamil aims at two objectives, and those are the domain expressiveness of financial operations and the linguistic accessibility of the Tamil language. Key design elements include:
 
 * *Lexical organization***:** A clear, bidirectional mapping between Tamil Unicode and Latin transliterations for keywords and identifiers.  
-* *Built-in financial functions:* Built-in income tax, GST and so on calculators like varumAnavari() and jiesti().  
+* *Built-in financial functions:* Built-in income tax, GST and so on calculators like varumAZavari() and jiesti().  
 * *Dual-script syntax:* The language allows Tamil scripts together with Latin. For example,
 
 *வரவு \> 500000 எனில் { ... }*  
@@ -333,7 +333,7 @@ eTamil is designed on five principles:
 
 ## ***Language Syntax and Keywords***
 
-eTamil accepts two keying forms, Tamil Unicode (e.g., *வருமானவரி*), and Latin transliteration (e.g., *varumAnavari*). This two-script format contains keywords that are explicit and precise and case-sensitive. As an example, one of the simplest tax calculations would be as follows in eTamil:  
+eTamil accepts two keying forms, Tamil Unicode (e.g., *வருமானவரி*), and Latin transliteration (e.g., *varumAZavari*). This two-script format contains keywords that are explicit and precise and case-sensitive. As an example, one of the simplest tax calculations would be as follows in eTamil:  
 *வருமானம் \= 800000*  
 *வரி \= வருமானம் \* 0.1*   
 *அச்சு(வரி)*  

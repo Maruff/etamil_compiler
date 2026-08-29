@@ -178,9 +178,9 @@ Notes:         'ண்' = NN (doubled), 'ை' = Y
 #### DB Query (தளம்_வினா)
 ```
 Tamil:      வினா
-Romanized:  vinA
-Breakdown:  w+i+n+A
-Notes:      'வ' = w, 'ா' = A (long a)
+Romanized:  viZA
+Breakdown:  v+i+Z+A
+Notes:      'ன' = Z (the ன-family letter), 'ா' = A (long a)
 ```
 
 #### DB Insert (தளம்_செருக)
@@ -277,9 +277,9 @@ Notes:      'வ' = w
 #### Amount (தொகை)
 ```
 Tamil:      தொகை
-Romanized:  toqai
-Breakdown:  t+o+q+a+i
-Notes:      'ொ' = o, 'ை' = Y (but here = ai)
+Romanized:  qokY
+Breakdown:  q+o+k+Y
+Notes:      'த' = q, 'க' = k, 'ை' = Y
 ```
 
 #### Bank (வங்கி)

@@ -616,7 +616,7 @@ fn functions_may_be_called_before_they_are_defined() {
 
 #[test]
 fn falling_off_the_end_returns_nil() {
-    let vm = run("ceyal onRumillY() { x = 1; } y = onRumillY();").unwrap();
+    let vm = run("ceyal oZRumillY() { x = 1; } y = oZRumillY();").unwrap();
     assert_eq!(vm.variables.get("y"), Some(&Value::Null));
 }
 
