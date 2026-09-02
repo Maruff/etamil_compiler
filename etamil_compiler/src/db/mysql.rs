@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! MySQL and MariaDB backend, using the blocking `mysql` driver.
 //!
 //! Blocking rather than async for the same reason as the other two: the VM is

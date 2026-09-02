@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // multipart/form-data — the shape a browser posts a file in.
 //
 // This works on bytes and never on a String, because the whole point of an

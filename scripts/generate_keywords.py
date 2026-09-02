@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 """Regenerate docs/reference/KEYWORDS.md from the lexer's token table.
 
 Run from the repository root after changing the token list:

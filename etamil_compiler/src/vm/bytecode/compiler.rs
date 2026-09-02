@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Bytecode compiler: Converts AST to bytecode instructions
 use crate::parser::{Expr, Stmt};
 use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 """Tamil -> ezuqqu romanization, and a checker for the lexer's keyword table.
 
 The ezuqqu scheme assigns one Latin letter per Tamil letter, using case to

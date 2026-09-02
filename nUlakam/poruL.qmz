@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/poruL.qmz — பொருள் (record) helpers
 //
 // Indexing a record by a field it does not have is an error, which is right

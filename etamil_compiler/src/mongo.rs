@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! MongoDB — documents, which the language already has a shape for.
 //!
 //! The roadmap said this needed a design first, because it does not fit a trait

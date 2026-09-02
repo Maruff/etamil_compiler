@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 """Audit the romanized names that are not keywords.
 
 `transliterate.py --check` holds the lexer's keyword table to the scheme. It

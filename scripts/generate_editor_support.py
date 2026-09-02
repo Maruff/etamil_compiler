@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 """Regenerate the VS Code extension's language data from the compiler itself.
 
 The extension used to carry a hand-written keyword list. It drifted: by the

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // The modules live in the library target (src/lib.rs); this binary uses them
 // from there rather than re-declaring them, which previously compiled the
 // whole crate twice.
@@ -138,8 +140,21 @@ fn main() {
                     std::process::exit(2);
                 }
             }
+            // The GNU --version convention: version, who holds the copyright,
+            // the licence, and where the source is. A user who has a binary and
+            // no idea where it came from can find all four here, which is what
+            // the AGPL's notice requirements are for.
             "--version" | "-V" => {
                 println!("etamil {}", env!("CARGO_PKG_VERSION"));
+                println!("Copyright (C) 2026 Mohammed Maruff (Esan Maruff)");
+                println!(
+                    "License AGPL-3.0-or-later: \
+                     <https://www.gnu.org/licenses/agpl-3.0.html>"
+                );
+                println!("This is free software: you are free to change and redistribute it.");
+                println!("There is NO WARRANTY, to the extent permitted by law.");
+                println!();
+                println!("Source: <https://github.com/Maruff/etamil_compiler>");
                 return;
             }
             "--help" | "-h" => {

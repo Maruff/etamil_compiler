@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Browser bindings for the eTamil front end.
 //!
 //! The editor on etamil.in runs the real compiler front end rather than a

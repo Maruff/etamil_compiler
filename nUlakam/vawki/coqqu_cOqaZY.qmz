@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // சொத்து வகைப்பாடு சோதனை — tests for asset classification
 //
 //   etamil --vm nUlakam/vawki/coqqu_cOqaZY.qmz

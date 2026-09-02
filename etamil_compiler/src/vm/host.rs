@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Where the VM's input and output actually go.
 //!
 //! The interpreter used to call `std::fs` and `println!` directly, which tied

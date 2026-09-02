@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! The runtime the LLVM backend's emitted IR calls into.
 //!
 //! ## Why this exists

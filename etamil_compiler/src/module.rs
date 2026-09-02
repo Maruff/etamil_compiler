@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Module loading: `இறக்கு "kOppu.qmz";`
 //!
 //! A program is assembled by splicing each imported file's statements in

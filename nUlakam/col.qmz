@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/col.qmz — சரம் (string) helpers
 //
 // Written in eTamil, not Rust. The only primitives borrowed from the host

@@ -1,0 +1,74 @@
+eTamil — a programming language whose vocabulary is Tamil, for Indian finance.
+
+Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+The full licence text is in the file LICENSE.
+
+
+WHAT THIS FILE IS FOR
+
+The LICENSE file is the Free Software Foundation's licence text, and the
+copyright line in it is theirs — it covers the licence document, not this
+program. This file is where the copyright in the program itself is asserted.
+
+Every source file carries `SPDX-License-Identifier: AGPL-3.0-or-later` and a
+copyright line saying the same thing in one line, which is what automated
+licence scanners read.
+
+
+WHAT THE LICENCE ASKS OF YOU
+
+Use it, study it, change it, share it — commercially included. Two conditions:
+
+  * A modified version you distribute is licensed the same way, with its source
+    available, and the notices in these files kept intact (AGPL sections 4-5).
+
+  * A modified version you run as a **network service** must offer its source to
+    the people using it over that network, even if you never distribute a copy
+    (AGPL section 13). eTamil ships an HTTP server, so this is the ordinary case
+    rather than an edge one.
+
+Attribution is not a courtesy here. Section 5(a) requires that modified files
+carry prominent notices stating that you changed them and when, and section 5(b)
+requires that the notices already present be kept. Removing the copyright lines
+from these files is a licence violation, not a style choice.
+
+
+TRADEMARK
+
+The licence covers copyright. It grants no rights in the name "eTamil", the
+domain etamil.in, or the project's marks. A fork is welcome; calling the fork
+"eTamil" is not, because the name is how people know whose work they are
+reading.
+
+
+THE AUTHOR'S NAME
+
+"Mohammed Maruff" is the legal name, the name on the published research, and the
+name copyright is asserted in. "Esan Maruff" is the same person and is the name
+on GitHub, on etamil.in and throughout the commit history. AUTHORS and .mailmap
+record the correspondence, so the history reads as one author, which it is.
+
+
+CITING THIS WORK
+
+CITATION.cff carries the machine-readable form, and GitHub renders it as a
+"Cite this repository" button. The research this software accompanies is:
+
+  Mohammed Maruff and S. P. Valli. "Developing an Indian DSL (Programming
+  Language) for Accounts, Commerce, Finance, and Fintech Professionals."
+  Department of Computer Applications, School of Computer Information and
+  Mathematical Sciences, B.S. Abdur Rahman Crescent Institute of Science and
+  Technology, Vandalur, Chennai.

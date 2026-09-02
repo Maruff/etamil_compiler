@@ -630,14 +630,26 @@ Please add a test to `etamil_compiler/tests/language_tests.rs` for any language 
 
 ---
 
-## License
+## License and credit
 
+Copyright (C) 2026 Mohammed Maruff (Esan Maruff). Licensed under the
 [GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
+[`NOTICE`](NOTICE) says what that asks of you; [`AUTHORS`](AUTHORS) says who
+wrote it.
 
 The AGPL matters here because eTamil is a backend language: running a modified
 compiler or runtime as a network service counts as distribution, so the changes
 have to be offered back to the people using that service.
 
+Two things the licence does *not* cover. It grants no rights in the name
+**eTamil** or the domain etamil.in — fork the code freely, but a fork under the
+same name misleads people about whose work they are reading. And it is not an
+invitation to drop the attribution: keeping the copyright notices intact is a
+condition of the licence (section 5(b)), not a courtesy.
+
+If you use eTamil in research, please cite it — [`CITATION.cff`](CITATION.cff)
+carries the metadata and GitHub turns it into a **Cite this repository** button.
+
 ---
 
-**Version**: 0.3.0 · **Authors**: Esan Maruff
+**Version**: 0.4.0 · **Author**: Esan Maruff

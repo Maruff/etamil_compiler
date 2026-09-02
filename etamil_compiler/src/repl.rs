@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! An interactive shell: type an expression, see what it comes to.
 //!
 //! The point is to make the language answerable without a file. Two things

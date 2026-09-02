@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/cuwkam/cuwkam.qmz — சுங்கம் (customs) and trade documents
 //
 // The centre of this file is the duty cascade, because the order duties are

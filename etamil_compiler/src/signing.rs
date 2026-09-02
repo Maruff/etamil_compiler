@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! ECDSA over P-256 — signatures that a bank or a ledger will accept.
 //!
 //! HMAC, which this crate already had, proves a message came from someone who

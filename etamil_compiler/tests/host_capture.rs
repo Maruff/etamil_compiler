@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Tests for `vm::host`'s capture mode — the arrangement that lets something
 //! with no console embed the VM.
 //!

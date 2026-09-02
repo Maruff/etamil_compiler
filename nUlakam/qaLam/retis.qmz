@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/qaLam/retis.qmz — Redis, in words rather than command strings
 //
 // The host gives one thing: ரெடிஸ்_கட்டளை, a command name and its arguments.

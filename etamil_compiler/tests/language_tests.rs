@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! End-to-end tests for the eTamil front end: source -> tokens -> AST ->
 //! bytecode -> VM. Each test asserts on the values left in the VM rather than
 //! on the exit status, because every bug these cover exited 0 while producing

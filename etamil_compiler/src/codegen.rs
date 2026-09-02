@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! LLVM code generation for eTamil, over `llvm-sys` (LLVM 18).
 //!
 //! ## What the emitted IR holds

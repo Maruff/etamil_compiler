@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/cOqaZY.qmz — சோதனை (tests), written in eTamil
 //
 // Until now a library written in this language could only be tested from Rust,

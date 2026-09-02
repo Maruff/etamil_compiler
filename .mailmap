@@ -1,0 +1,20 @@
+# Canonical author names, so `git shortlog -sne`, `git log` and GitHub's
+# contributor graph show one author instead of four. Nothing is rewritten: this
+# maps at read time, so every commit hash stays exactly as it was.
+#
+# The canonical name here is "Esan Maruff", which is the name on GitHub and on
+# every other account, so the history matches the profile a reader clicks
+# through to. Copyright is asserted in the legal name, "Mohammed Maruff", in
+# NOTICE and in the file headers. Same person; AUTHORS says so in one place.
+#
+# Format:  Canonical Name <canonical@email>  Commit Name <commit@email>
+# See git-check-mailmap(1) and AUTHORS.
+
+Esan Maruff <esan@etamil.in> Esan Maruff <bmaruff@gmail.com>
+Esan Maruff <esan@etamil.in> Maruff <bmaruff@gmail.com>
+
+# GitHub's placeholder git config, from before user.name and user.email were set
+# on that machine. Three commits, 2026-08-17 to 2026-08-22: 7092e6f, 91fc5a1,
+# 273cea2 — the author's own work on the LLVM backend, Ubuntu packaging and the
+# database error paths.
+Esan Maruff <esan@etamil.in> YourGitHubUsername <YourEmail@example.com>

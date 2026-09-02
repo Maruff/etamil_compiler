@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // வரி_சோதனை — tests for the GST module, written in eTamil
 //
 // Run it like any other program:  etamil --vm nUlakam/kaNakkiyal/vari_cOqaZY.qmz

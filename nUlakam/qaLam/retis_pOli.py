@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 """A very small Redis, for testing without one installed.
 
 Speaks RESP and implements just enough to exercise a client: PING, SET with

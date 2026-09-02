@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Used _ as prefix for ttokens that are English keywords, and capitals letter for abbreviations to avoid conflicts
 
 use logos::Logos;

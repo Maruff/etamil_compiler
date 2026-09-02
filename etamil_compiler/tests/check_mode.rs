@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Tests for `--check`, the front-end-only mode.
 //!
 //! These run the real binary rather than the library, because the whole point

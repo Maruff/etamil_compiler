@@ -1,0 +1,82 @@
+# Citation File Format 1.2.0 — https://citation-file-format.github.io
+#
+# GitHub reads this and renders a "Cite this repository" button, which is the
+# point: crediting the author should be the path of least resistance, not a
+# thing someone has to work out from the commit log.
+#
+# Zenodo reads it too. Once the repository is connected to Zenodo, each GitHub
+# release is archived and given a DOI, and the authorship below is what that DOI
+# records. Add the DOI to `identifiers` when the first one is minted.
+
+cff-version: 1.2.0
+message: "If you use eTamil in your work, please cite it as below."
+type: software
+
+title: "eTamil: a programming language whose vocabulary is Tamil, for Indian finance"
+abstract: >-
+  eTamil is a domain-specific language for Indian finance, tax and accounting,
+  in which the financial vocabulary is part of the grammar rather than a
+  library. Every keyword has a Tamil-script and an ASCII spelling under the
+  ezuqqu romanization scheme, and the two resolve to the same token, verified
+  mechanically. Money is exact decimal at every tier. The standard library
+  covers double-entry accounting, GST, income tax, depreciation, payroll,
+  customs, insurance and UPI, and is written in eTamil itself. The compiler is
+  written in Rust with a bytecode VM and an LLVM backend.
+
+authors:
+  - family-names: Maruff
+    given-names: Mohammed
+    alias: "Esan Maruff"
+    email: esan@etamil.in
+    affiliation: >-
+      Department of Computer Applications, School of Computer Information and
+      Mathematical Sciences, B.S. Abdur Rahman Crescent Institute of Science and
+      Technology, Vandalur, Chennai, India
+    # Add an ORCID iD here once registered — it is free at https://orcid.org and
+    # is what ties the papers, the thesis and this software to one identity.
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+
+repository-code: "https://github.com/Maruff/etamil_compiler"
+url: "https://etamil.in"
+license: AGPL-3.0-or-later
+version: "0.4.0"
+
+keywords:
+  - domain-specific language
+  - programming language
+  - Tamil
+  - transliteration
+  - romanization
+  - fintech
+  - GST
+  - accounting
+  - taxation
+  - India
+  - compiler
+  - Rust
+  - LLVM
+  - decimal arithmetic
+
+# The research this software accompanies. GitHub shows this as the preferred
+# citation, so a reader who clicks "Cite this repository" is pointed at the
+# paper rather than only at the code.
+preferred-citation:
+  type: article
+  title: >-
+    Developing an Indian DSL (Programming Language) for Accounts, Commerce,
+    Finance, and Fintech Professionals
+  authors:
+    - family-names: Maruff
+      given-names: Mohammed
+      email: esan@etamil.in
+      affiliation: >-
+        Department of Computer Applications, B.S. Abdur Rahman Crescent
+        Institute of Science and Technology, Vandalur, Chennai, India
+    - family-names: Valli
+      given-names: S. P.
+      name-particle: Dr.
+      email: vallisp@crescent.education
+      affiliation: >-
+        Department of Computer Science and Engineering, B.S. Abdur Rahman
+        Crescent Institute of Science and Technology, Vandalur, Chennai, India
+  year: 2026

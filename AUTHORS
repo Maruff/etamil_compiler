@@ -1,0 +1,64 @@
+eTamil — authors and copyright holders
+======================================
+
+Copyright in eTamil is held entirely by one person. This file says who, and
+records the names the commit history shows, so that "who wrote this" has a
+single answer rather than four.
+
+  Esan Maruff <esan@etamil.in>
+      Author and sole copyright holder, 2026-present.
+      Design, compiler, standard library, documentation and website.
+
+      One person, two names, and each is used where it does its job:
+
+        **Esan Maruff** is the name on GitHub (@Maruff), on every other
+        account, in Cargo.toml, on etamil.in and throughout the commit history.
+        It is what a reader sees and what he prefers to be addressed as, so it
+        is the canonical name in .mailmap.
+
+        **Mohammed Maruff** is the legal name and the name on the published
+        research. Copyright is asserted in it — in NOTICE and in every source
+        file header — because that is the name that has to hold up if the
+        licence is ever enforced.
+
+      An ORCID iD is the thing that ties both names, the papers, the thesis and
+      this software to one persistent identity. It is free, and registering one
+      is the single highest-value item still outstanding here.
+
+      PhD Scholar, Department of Computer Applications, School of Computer
+      Information and Mathematical Sciences, B.S. Abdur Rahman Crescent
+      Institute of Science and Technology, Vandalur, Chennai.
+
+
+NAMES IN THE COMMIT HISTORY
+
+Four author strings appear across the history. `.mailmap` folds them into one,
+so `git shortlog -sne` and GitHub's contributor graph show a single author
+without any history being rewritten:
+
+  Esan Maruff <bmaruff@gmail.com>                     the usual one
+  Maruff <bmaruff@gmail.com>                          same person, short form
+  YourGitHubUsername <YourEmail@example.com>          see below
+  Claude <noreply@anthropic.com>                      Co-Authored-By trailers
+
+The third is GitHub's placeholder git config, committed before `user.name` and
+`user.email` were set on that machine. It covers three commits between
+2026-08-17 and 2026-08-22 (`7092e6f`, `91fc5a1`, `273cea2`). They are the
+author's own work and `.mailmap` records them as such.
+
+The fourth is an AI assistant credited in `Co-Authored-By` trailers on commits
+it helped write. It is a record of how the work was done, not a claim of
+authorship or copyright: those commits were directed, reviewed and committed by
+the author, and copyright in them is his.
+
+
+CONTRIBUTIONS
+
+None yet — every line is the author's. Contributors will be added here as they
+arrive, and CONTRIBUTING.md sets out the Developer Certificate of Origin
+sign-off that keeps this record accurate as that happens.
+
+Copyright is not assigned to the project. A contributor keeps copyright in what
+they wrote and licenses it under AGPL-3.0-or-later by signing off. That means
+this file stops being a list of one person and becomes the list of everyone the
+licence has to be honoured towards.

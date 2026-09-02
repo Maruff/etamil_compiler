@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Monitoring & Metrics Module for eTamil Backend - Backend milestone 3
 // Provides performance metrics, health checks, and observability hooks
 

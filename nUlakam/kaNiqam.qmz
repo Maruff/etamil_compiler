@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // nUlakam/kaNiqam.qmz — கணிதம் (math) helpers
 //
 // Rounding, floor and ceiling come from the host because they need the

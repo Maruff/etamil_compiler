@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Backend milestone 4: Redis Cache Module
 // In-memory and distributed caching with TTL support
 

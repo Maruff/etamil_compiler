@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Structured Logging Module for eTamil Backend - Backend milestone 3
 // Provides JSON-formatted logging with context, log levels, and request tracking
 

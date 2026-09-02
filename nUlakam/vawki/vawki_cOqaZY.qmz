@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // வங்கி சோதனை — tests for interest and loans
 //
 //   etamil --vm nUlakam/vawki/vawki_cOqaZY.qmz

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 //! Redis, over the protocol it actually speaks.
 //!
 //! The roadmap said Redis needed a design before an implementation, because it
