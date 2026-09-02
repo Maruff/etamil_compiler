@@ -1,5 +1,10 @@
 # Rust build artifacts
 etamil_compiler/target/
+scripts/bench/compare/rust/target/
+
+# Benchmark build artifacts
+scripts/bench/compare/csharp/bin/
+scripts/bench/compare/csharp/obj/
 *.exe
 *.pdb
 

@@ -1,0 +1,21 @@
+// Building a list by appending, N times — the shape the accounting framework
+// uses. `பதிவிடு` appends a transaction to a ledger, so a book of N entries is
+// N appends.
+//
+// This is measured separately from tax.qmz because it is not a per-iteration
+// cost at all. `இணை` clones the whole array before pushing, so N appends copy
+// about N²/2 elements. Run it at N and 2N: if the time quadruples rather than
+// doubles, the growth is quadratic.
+//
+// N arrives on stdin, then is converted once. Leaving it as text would make
+// every loop comparison re-parse it.
+uLLitu eNNikkY;
+eNNikkY = iyalpu(eNNAkku(eNNikkY), 0);
+
+pattiyal = [];
+i = 0;
+(i < eNNikkY) cuRRu {
+    pattiyal = iNY(pattiyal, i);
+    i = i + 1;
+}
+accu nILam(pattiyal);

@@ -1,0 +1,28 @@
+[package]
+name = "etamil_bench"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+# The same crate, at the same version, that etamil_compiler's VM uses for
+# every value it holds. That is the point of this binary: the difference
+# between it and eTamil is interpretation, not arithmetic.
+rust_decimal = "1.37"
+
+[[bin]]
+name = "tax_decimal"
+path = "src/bin/tax_decimal.rs"
+
+[[bin]]
+name = "tax_f64"
+path = "src/bin/tax_f64.rs"
+
+[[bin]]
+name = "empty"
+path = "src/bin/empty.rs"
+
+[profile.release]
+# Match etamil_compiler's own release profile so neither side is handicapped.
+lto = true
+codegen-units = 1

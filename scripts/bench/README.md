@@ -10,6 +10,14 @@ pwsh scripts/bench/run.ps1        # Windows
 
 Build the release binary first: `cd etamil_compiler && cargo build --release`.
 
+For the cross-language comparison — the same loop in C, Rust, C#, Node and
+Python, grouped by whether the arithmetic is exact — see
+[`compare/`](compare/README.md). It exists separately because a comparison
+needs two things this directory does not have: a workload sized per language,
+so the compiled ones are measured rather than recorded as "below resolution",
+and a loop bound taken from outside the program, so `/O2` cannot fold the whole
+thing to a constant.
+
 ## What each file measures
 
 | File | Measures |
