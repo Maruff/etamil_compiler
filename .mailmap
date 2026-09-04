@@ -18,3 +18,9 @@ Esan Maruff <esan@etamil.in> Maruff <bmaruff@gmail.com>
 # 273cea2 — the author's own work on the LLVM backend, Ubuntu packaging and the
 # database error paths.
 Esan Maruff <esan@etamil.in> YourGitHubUsername <YourEmail@example.com>
+
+# The Co-Authored-By trailer Claude Code appended to 105 commits, 2026-08 to
+# 2026-09. The author of those commits was always the person below; the trailer
+# was a tool default, and it is off now (includeCoAuthoredBy). Mapped here so
+# the graph shows one author. Read time only — no commit is rewritten.
+Esan Maruff <esan@etamil.in> Claude Opus 5 <noreply@anthropic.com>
