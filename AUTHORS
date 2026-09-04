@@ -32,24 +32,17 @@ single answer rather than four.
 
 NAMES IN THE COMMIT HISTORY
 
-Four author strings appear across the history. `.mailmap` folds them into one,
-so `git shortlog -sne` and GitHub's contributor graph show a single author
-without any history being rewritten:
+Three author strings appear across the history. `.mailmap` folds them into one,
+so `git shortlog -sne` and GitHub's contributor graph show a single author:
 
   Esan Maruff <bmaruff@gmail.com>                     the usual one
   Maruff <bmaruff@gmail.com>                          same person, short form
   YourGitHubUsername <YourEmail@example.com>          see below
-  Claude <noreply@anthropic.com>                      Co-Authored-By trailers
 
 The third is GitHub's placeholder git config, committed before `user.name` and
 `user.email` were set on that machine. It covers three commits between
-2026-08-17 and 2026-08-22 (`7092e6f`, `91fc5a1`, `273cea2`). They are the
+2026-08-17 and 2026-08-22 (`4acc386`, `dbf7b81`, `e851140`). They are the
 author's own work and `.mailmap` records them as such.
-
-The fourth is an AI assistant credited in `Co-Authored-By` trailers on commits
-it helped write. It is a record of how the work was done, not a claim of
-authorship or copyright: those commits were directed, reviewed and committed by
-the author, and copyright in them is his.
 
 
 CONTRIBUTIONS
