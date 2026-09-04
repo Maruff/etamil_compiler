@@ -316,15 +316,15 @@ python scripts/check_llvm_backend.py
 ## Quick start
 
 ```bash
-echo 'அச்சு "வணக்கம் உலகம்!";' > hello.etamil
-etamil --vm hello.etamil
+echo 'அச்சு "வணக்கம் உலகம்!";' > hello.qmz
+etamil --vm hello.qmz
 ```
 
 On Windows, write the file as UTF-8:
 
 ```powershell
-'அச்சு "வணக்கம் உலகம்!";' | Out-File hello.etamil -Encoding UTF8
-etamil --vm hello.etamil
+'அச்சு "வணக்கம் உலகம்!";' | Out-File hello.qmz -Encoding UTF8
+etamil --vm hello.qmz
 ```
 
 ---

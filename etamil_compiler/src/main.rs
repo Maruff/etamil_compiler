@@ -316,8 +316,8 @@ fn main() {
             eprintln!("  --async           HTTP async server (production)");
             eprintln!();
             eprintln!("Examples:");
-            eprintln!("  etamil --vm myprogram.etamil");
-            eprintln!("  etamil --async --port 8080 api.etamil");
+            eprintln!("  etamil --vm myprogram.qmz");
+            eprintln!("  etamil --async --port 8080 api.qmz");
             std::process::exit(1);
         }
     }

@@ -60,7 +60,6 @@
           "etamil"
         ],
         "extensions": [
-          ".etamil",
           ".qmz"
         ],
         "configuration": "./language-configuration.json"

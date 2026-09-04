@@ -632,7 +632,7 @@ def build_grammar(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) 
         "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
         "name": "eTamil",
         "scopeName": "source.etamil",
-        "fileTypes": ["etamil", "qmz"],
+        "fileTypes": ["qmz"],
         "_generated": BANNER,
         "patterns": patterns,
         "repository": {},

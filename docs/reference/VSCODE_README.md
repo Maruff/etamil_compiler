@@ -103,7 +103,7 @@ cargo build --release
 - On activation, the extension will prompt to install the eTamil compiler (optional)
 
 ### 2. Create Your First Program
-- Create a file: `hello.etamil`
+- Create a file: `hello.qmz`
 - Type the code below:
 ```etamil
 அச்சு "வணக்கம் உலகம்";
@@ -111,12 +111,12 @@ cargo build --release
 
 ### 3. Run Your Program
 ```bash
-etamil --vm hello.etamil
+etamil --vm hello.qmz
 ```
 
 Or with piped input:
 ```bash
-echo "test input" | etamil --vm hello.etamil
+echo "test input" | etamil --vm hello.qmz
 ```
 
 ---
@@ -222,7 +222,7 @@ echo "test input" | etamil --vm hello.etamil
 
 ```etamil
 // Simple calculator - adds two numbers
-// Usage: echo "10 20" | etamil --vm calc.etamil
+// Usage: echo "10 20" | etamil --vm calc.qmz
 
 // Declare variables
 எண் a = 10;
@@ -337,7 +337,7 @@ cargo build --release
 ### Basic Script Development
 1. Create a `.etamil` file with eTamil code
 2. Use the IntelliSense (Ctrl+Space) for keyword suggestions
-3. Run with: `etamil --vm yourfile.etamil`
+3. Run with: `etamil --vm yourfile.qmz`
 
 ---
 

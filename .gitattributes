@@ -14,7 +14,6 @@
 *.yml       text eol=lf
 *.md        text eol=lf
 *.qmz       text eol=lf
-*.etamil    text eol=lf
 *.json      text eol=lf
 
 # Windows-only scripts keep CRLF.

@@ -5,15 +5,15 @@ Assumes eTamil is installed — see the [Installation Guide](INSTALLATION.md).
 ## Hello world
 
 ```bash
-echo 'அச்சு "வணக்கம் உலகம்!";' > hello.etamil
-etamil --vm hello.etamil
+echo 'அச்சு "வணக்கம் உலகம்!";' > hello.qmz
+etamil --vm hello.qmz
 ```
 
 On Windows, write the file as UTF-8:
 
 ```powershell
-'அச்சு "வணக்கம் உலகம்!";' | Out-File hello.etamil -Encoding UTF8
-etamil --vm hello.etamil
+'அச்சு "வணக்கம் உலகம்!";' | Out-File hello.qmz -Encoding UTF8
+etamil --vm hello.qmz
 ```
 
 Output:
@@ -104,7 +104,7 @@ Conditions can be combined:
 ```
 
 ```bash
-echo "950000" | etamil --vm tax.etamil
+echo "950000" | etamil --vm tax.qmz
 ```
 
 A `20%` literal becomes `0.2` at lex time.
