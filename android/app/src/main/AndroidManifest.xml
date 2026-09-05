@@ -11,13 +11,20 @@
     -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+      The icon below is a vector, not the usual set of five PNG densities: a
+      placeholder icon that is one readable text file beats five binaries nobody
+      can review in a diff. Replace it with a real icon set before publishing
+      anywhere.
+
+      This note sits above the element rather than beside the attribute it
+      describes because XML does not allow a comment inside a start tag. One
+      there fails the build at :app:processDebugMainManifest, and the manifest
+      merger reports it only as "Error parsing AndroidManifest.xml" with no line
+      number, which is a long way from the actual mistake.
+    -->
     <application
         android:allowBackup="true"
-        <!--
-          A vector, not the usual set of five PNG densities: a placeholder icon
-          that is one readable text file beats five binaries nobody can review in
-          a diff. Replace it with a real icon set before publishing anywhere.
-        -->
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
