@@ -273,18 +273,3 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           done
 
-          # A MISMATCH line names the file and nothing else, which is a round
-          # trip to find out what actually differed. run_parity.sh already has a
-          # --diff mode that prints the two outputs against each other, so run it
-          # here for every file that mismatched.
-          parity="$RUNNER_TEMP/llvm-parity.log"
-          if [ -f "$parity" ]; then
-            awk '/^  MISMATCH /{print $2}' "$parity" | while read -r file; do
-              {
-                echo "### what differs in $file"
-                echo '```'
-                ETAMIL_BIN=etamil_compiler/target/debug/etamil                   ./scripts/run_parity.sh --diff "$file" 2>&1 | tail -n 40
-                echo '```'
-              } >> "$GITHUB_STEP_SUMMARY"
-            done
-          fi

@@ -273,6 +273,15 @@ for file in "${FILES[@]}"; do
         ((matched++))
     else
         echo "  MISMATCH         $rel"
+        # Both outputs are in hand right here and were being thrown away, so
+        # every mismatch cost a second run with --diff on a machine that has
+        # LLVM. Print it now: this is the line somebody actually reads.
+        #
+        # Capped, because a backend that goes wrong early differs on every line
+        # after it and the first difference is the one that matters.
+        echo "                   < is the VM, > is the compiled program:"
+        diff <(printf "%s\n" "$vm_body") <(printf "%s\n" "$native_body") \
+            | head -n 20 | sed 's/^/                   /' || true
         MISMATCHES+=("$rel")
         ((mismatched++))
     fi
