@@ -331,22 +331,22 @@ pub extern "C" fn etamil_index(base: i64, index: i64) -> i64 {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_index_set(base: i64, index: i64, value: i64) {
-    let position = get(index).to_number();
+pub extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *const c_char) {
+    let name = unsafe { borrow_str(name) };
+    let index = get(index);
     let value = get(value);
-    let position = match rust_decimal::prelude::ToPrimitive::to_usize(&position) {
-        Some(position) => position,
-        None => fail("அணி முகவரி ஒரு முழு எண்  (an array index must be a whole number)"),
-    };
     ARENA.with(|arena| {
         let mut arena = arena.borrow_mut();
         match arena.get_mut(base.max(0) as usize) {
-            Some(Value::Array(items)) if position < items.len() => items[position] = value,
-            Some(Value::Array(_)) => fail(&format!(
-                "அணி முகவரி வரம்பை மீறியது: {}  (array index {} is out of range)",
-                position, position
+            Some(slot) => {
+                if let Err(why) = VM::index_assign(slot, &index, value, &name) {
+                    fail(&why);
+                }
+            }
+            None => fail(&format!(
+                "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                name, name
             )),
-            _ => fail("அணி எதிர்பார்க்கப்பட்டது  (expected an array)"),
         }
     })
 }
@@ -577,8 +577,26 @@ mod tests {
         etamil_array_push(array, number("20"));
         assert_eq!(shown(etamil_index(array, number("1"))), "20");
 
-        etamil_index_set(array, number("0"), number("99"));
+        let name = std::ffi::CString::new("aNi").unwrap();
+        etamil_index_set(array, number("0"), number("99"), name.as_ptr());
         assert_eq!(shown(etamil_index(array, number("0"))), "99");
+    }
+
+    /// The bug the parity job caught: this aborted the compiled program with
+    /// "expected an array" while the VM inserted the field, so every program
+    /// that filled a record by key — `விடை[திறவுகோல்] = மதிப்பு`, which is how
+    /// vilAcam.qmz reads a upi:// link back — computed a different answer under
+    /// --llvm than under --vm.
+    #[test]
+    fn a_record_can_be_filled_by_key_the_way_the_vm_fills_one() {
+        let record = etamil_record();
+        let name = std::ffi::CString::new("vitY").unwrap();
+
+        etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr());
+        etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr());
+
+        assert_eq!(shown(etamil_index(record, text("pa"))), "shop@okhdfcbank");
+        assert_eq!(shown(etamil_index(record, text("tr"))), "INV-9");
     }
 
     #[test]

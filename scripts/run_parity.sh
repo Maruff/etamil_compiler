@@ -281,7 +281,9 @@ for file in "${FILES[@]}"; do
         # after it and the first difference is the one that matters.
         echo "                   < is the VM, > is the compiled program:"
         diff <(printf "%s\n" "$vm_body") <(printf "%s\n" "$native_body") \
-            | head -n 20 | sed 's/^/                   /' || true
+            | head -n 60 | sed 's/^/                   /' || true
+        echo "                   the compiled program ended with:"
+        printf '%s\n' "$native_body" | tail -n 2 | sed 's/^/                   /'
         MISMATCHES+=("$rel")
         ((mismatched++))
     fi

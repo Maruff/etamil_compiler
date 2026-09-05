@@ -345,6 +345,42 @@ impl VM {
     /// Public because `crate::runtime` reaches for it: the LLVM backend's
     /// emitted IR indexes through the same function the VM uses, rather than
     /// through a second implementation that would drift from it.
+    /// Indexed assignment, shared with the LLVM backend's runtime.
+    ///
+    /// `index_of` below has always been shared, so reads could not drift apart.
+    /// This one was not, and it drifted: the runtime handled `Value::Array` and
+    /// nothing else, so `record[key] = value` aborted a compiled program with
+    /// "expected an array" while the VM inserted the field. Every program that
+    /// built a record in a loop was affected, and the parity job found it in
+    /// upi/vilAcam.qmz reading a upi:// link back into a record.
+    ///
+    /// `name` is only for the message. The VM has it from the instruction and
+    /// the backend passes it in, so both say the same thing when the base turns
+    /// out to be something that cannot be indexed at all.
+    pub fn index_assign(
+        base: &mut Value,
+        index: &Value,
+        value: Value,
+        name: &str,
+    ) -> Result<(), String> {
+        match base {
+            Value::Array(items) => {
+                let i = Self::array_index(items.len(), index)?;
+                items[i] = value;
+                Ok(())
+            }
+            Value::Map(fields) => {
+                fields.insert(index.to_string(), value);
+                Ok(())
+            }
+            other => Err(format!(
+                "'{}' ஐ அட்டவணைப்படுத்த முடியாது  (cannot index into {})",
+                name,
+                Self::type_name(other)
+            )),
+        }
+    }
+
     pub fn index_of(base: &Value, index: &Value) -> Result<Value, String> {
         match base {
             Value::Array(items) => {
@@ -2088,22 +2124,7 @@ impl VM {
                     let mut base = self.get_var(&name).ok_or_else(|| {
                         format!("அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')", name, name)
                     })?;
-                    match &mut base {
-                        Value::Array(items) => {
-                            let i = Self::array_index(items.len(), &index)?;
-                            items[i] = value;
-                        }
-                        Value::Map(fields) => {
-                            fields.insert(index.to_string(), value);
-                        }
-                        other => {
-                            return Err(format!(
-                                "'{}' ஐ அட்டவணைப்படுத்த முடியாது  (cannot index into {})",
-                                name,
-                                Self::type_name(other)
-                            ));
-                        }
-                    }
+                    Self::index_assign(&mut base, &index, value, &name)?;
                     self.set_var(name, base);
                 }
                 Instruction::SetField(name, field) => {

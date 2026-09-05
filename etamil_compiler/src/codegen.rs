@@ -434,10 +434,17 @@ impl Compiler {
                             );
                             let position = self.compile_expr(&index);
                             let handle = self.compile_expr(&value);
-                            self.call_void(
-                                "etamil_index_set",
-                                &mut [base, position, handle],
-                            );
+                            // The name travels with the call only so that a
+                            // base that cannot be indexed reports the same
+                            // message the VM reports.
+                            if let Some(label) = self.constant_text(&name, "name") {
+                                self.invoke(
+                                    "etamil_index_set",
+                                    vec![self.value(), self.value(), self.value(), self.text()],
+                                    self.nothing(),
+                                    &mut [base, position, handle, label],
+                                );
+                            }
                         }
                         None => self
                             .unsupported
