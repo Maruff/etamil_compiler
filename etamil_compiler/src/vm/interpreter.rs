@@ -428,6 +428,11 @@ impl VM {
 
     /// Builtins, callable under Tamil, romanized or English names. This is
     /// the extension point the tax and accounting builtins will plug into.
+    // rustfmt is off here on purpose: scripts/generate_editor_support.py reads
+    // these arms a line at a time, and wrapping one across lines makes it
+    // invisible to the generator — which then writes editor data missing
+    // whatever it could not see, and CI gates on that file.
+    #[rustfmt::skip]
     fn call_builtin(&mut self, name: &str, argc: usize) -> Result<Value, String> {
         let mut args = Vec::with_capacity(argc);
         for _ in 0..argc {
@@ -529,7 +534,8 @@ impl VM {
                     Value::Ok(inner) => Ok((**inner).clone()),
                     Value::Err(error) => Err(format!(
                         "தவறான முடிவை விரித்தது: {}  (unwrap on an error: {})",
-                        error, error
+                        error,
+                        error
                     )),
                     other => Err(format!(
                         "மதிப்பு க்கு ஒரு முடிவு தேவை  (unwrap needs a result, got {})",
@@ -556,7 +562,8 @@ impl VM {
                     Value::Ok(inner) => Err(format!(
                         "வெற்றியான முடிவில் பிழை இல்லை: {}  \
                          (there is no error in a successful result: {})",
-                        inner, inner
+                        inner,
+                        inner
                     )),
                     other => Err(format!(
                         "தவறு_மதிப்பு க்கு ஒரு முடிவு தேவை  (it needs a result, got {})",
@@ -789,8 +796,8 @@ impl VM {
                         ));
                     }
                 };
-                let seconds =
-                    rust_decimal::prelude::ToPrimitive::to_u64(&args[2].to_number()).unwrap_or(0);
+                let seconds = rust_decimal::prelude::ToPrimitive::to_u64(&args[2].to_number())
+                    .unwrap_or(0);
                 match Self::run_program(&program, &parameters, seconds) {
                     Ok((code, out, err)) => {
                         let mut answer = HashMap::new();
@@ -890,8 +897,7 @@ impl VM {
             // The issuer and audience are arguments and not optional: a token
             // an identity provider really signed, for somebody else's
             // application, is a real token and must still be refused.
-            "சீட்டு_பொதுச்_சரிபார்" | "cIttu_poquc_caripAr" | "_verifyTokenRSA" =>
-            {
+            "சீட்டு_பொதுச்_சரிபார்" | "cIttu_poquc_caripAr" | "_verifyTokenRSA" => {
                 Self::expect_args(name, &args, 5)?;
                 match crate::http::auth::verify_rsa_token(
                     &args[0].to_string(),
@@ -916,8 +922,8 @@ impl VM {
             // Nothing is returned, because nothing continues.
             "வெளியேறு" | "veLiyERu" | "_exit" => {
                 Self::expect_args(name, &args, 1)?;
-                let status =
-                    rust_decimal::prelude::ToPrimitive::to_i32(&args[0].to_number()).unwrap_or(1);
+                let status = rust_decimal::prelude::ToPrimitive::to_i32(&args[0].to_number())
+                    .unwrap_or(1);
                 // Exiting does not unwind, so anything still buffered would be
                 // lost — including the summary line that explains the status.
                 host::exit(status)?;
@@ -1037,10 +1043,9 @@ impl VM {
                 Self::expect_args(name, &args, 2)?;
                 let command = args[0].to_string();
                 let arguments = match &args[1] {
-                    Value::Array(items) => items
-                        .iter()
-                        .map(|item| item.to_string())
-                        .collect::<Vec<_>>(),
+                    Value::Array(items) => {
+                        items.iter().map(|item| item.to_string()).collect::<Vec<_>>()
+                    }
                     other => {
                         return Err(format!(
                             "ரெடிஸ்_கட்டளை அளபுருக்கள் ஒரு அணி தேவை  \
@@ -1165,12 +1170,14 @@ impl VM {
                 let many = args[3].is_truthy();
                 match Self::mongo_of(&self.documents) {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
-                    Ok(connection) => match connection.update(&collection, filter, change, many) {
-                        Ok(changed) => {
-                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(changed)))))
+                    Ok(connection) => {
+                        match connection.update(&collection, filter, change, many) {
+                            Ok(changed) => Ok(Value::Ok(Box::new(Value::Number(
+                                Decimal::from(changed),
+                            )))),
+                            Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                         }
-                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
-                    },
+                    }
                 }
             }
             // மொங்கோ_நீக்கு(தொகுப்பு, வடிகட்டி, அனைத்துமா)
@@ -1190,7 +1197,9 @@ impl VM {
                 match Self::mongo_of(&self.documents) {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     Ok(connection) => match connection.delete(&collection, filter, many) {
-                        Ok(gone) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(gone))))),
+                        Ok(gone) => {
+                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(gone)))))
+                        }
                         Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     },
                 }
@@ -1198,11 +1207,11 @@ impl VM {
             // Built without the feature: say so, rather than leaving someone to
             // hunt for a typo in a name that is spelled correctly.
             #[cfg(not(feature = "mongodb"))]
-            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => {
-                Err("மொங்கோ ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => Err(
+                "மொங்கோ ஆதரவு இல்லாமல் கட்டப்பட்டது  \
                  (this build has no MongoDB support): rebuild with --features mongodb"
-                    .to_string())
-            }
+                    .to_string(),
+            ),
 
             // --- A database write that can fail without ending the program ---
             //
@@ -1229,8 +1238,7 @@ impl VM {
 
             // தளம்_செய்_முயற்சி(வினா, அளபுருக்கள்) — attempt it; answers the
             // number of rows touched, or why not
-            "தளம்_செய்_முயற்சி" | "qaLam_cey_muyaRci" | "_tryExecute" =>
-            {
+            "தளம்_செய்_முயற்சி" | "qaLam_cey_muyaRci" | "_tryExecute" => {
                 Self::expect_args(name, &args, 2)?;
                 let sql = args[0].to_string();
                 let params = match crate::db::params_from(&args[1]) {
@@ -1240,9 +1248,9 @@ impl VM {
                 match self.connection_mut() {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     Ok(handle) => match handle.execute(&sql, &params) {
-                        Ok(touched) => {
-                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(touched)))))
-                        }
+                        Ok(touched) => Ok(Value::Ok(Box::new(Value::Number(
+                            Decimal::from(touched),
+                        )))),
                         Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     },
                 }
@@ -1253,8 +1261,7 @@ impl VM {
             // No rows is a successful query answering nothing, and stays a
             // சரி holding an empty array. Only a query that could not run is a
             // தவறு — a missing column, a syntax error, a lost connection.
-            "தளம்_வினா_முயற்சி" | "qaLam_viZA_muyaRci" | "_tryQuery" =>
-            {
+            "தளம்_வினா_முயற்சி" | "qaLam_viZA_muyaRci" | "_tryQuery" => {
                 Self::expect_args(name, &args, 2)?;
                 let sql = args[0].to_string();
                 let params = match crate::db::params_from(&args[1]) {
@@ -1284,8 +1291,7 @@ impl VM {
                 )?))
             }
             // கடவுச்சொல்_சரியா(கடவுச்சொல், மறையீடு) — does it match?
-            "கடவுச்சொல்_சரியா" | "kataveuccol_cariyA" | "_verifyPassword" =>
-            {
+            "கடவுச்சொல்_சரியா" | "kataveuccol_cariyA" | "_verifyPassword" => {
                 Self::expect_args(name, &args, 2)?;
                 Ok(Value::Boolean(crate::http::auth::verify_password(
                     &args[0].to_string(),
@@ -1301,9 +1307,7 @@ impl VM {
             "சீட்டு_ஆக்கு" | "cIttu_Akku" | "_issueToken" => {
                 Self::expect_args(name, &args, 2)?;
                 let seconds = rust_decimal::prelude::ToPrimitive::to_i64(&args[1].to_number())
-                    .ok_or(
-                        "நொடிகள் ஒரு முழு எண்  (the lifetime must be a whole number of seconds)",
-                    )?;
+                    .ok_or("நொடிகள் ஒரு முழு எண்  (the lifetime must be a whole number of seconds)")?;
                 Ok(Value::String(crate::http::auth::issue_token(
                     &args[0].to_string(),
                     seconds,
@@ -1432,8 +1436,7 @@ impl VM {
             // Use this rather than comparing கையொப்பம்(...) with `==`: that
             // comparison stops at the first wrong character, and how long it
             // took reveals how much of the signature was right.
-            "கையொப்பம்_சரியா" | "kYyoppam_cariyA" | "_verifySignature" =>
-            {
+            "கையொப்பம்_சரியா" | "kYyoppam_cariyA" | "_verifySignature" => {
                 Self::expect_args(name, &args, 3)?;
                 Ok(Value::Boolean(crate::net::verify(
                     &args[0].to_string(),

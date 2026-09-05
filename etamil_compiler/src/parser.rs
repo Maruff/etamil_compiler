@@ -1261,6 +1261,11 @@ impl<'a> Parser<'a> {
 
     // --- Token classification ---------------------------------------------
 
+    // rustfmt is off here on purpose: scripts/generate_editor_support.py reads
+    // these arms a line at a time, and wrapping one across lines makes it
+    // invisible to the generator — which then writes editor data missing
+    // whatever it could not see, and CI gates on that file.
+    #[rustfmt::skip]
     fn is_identifier_like(token: &Token) -> bool {
         match token {
             Token::Number(_) | Token::Percentage(_) | Token::String(_) => false,
@@ -1269,108 +1274,25 @@ impl<'a> Parser<'a> {
             Token::True | Token::False | Token::Null => false,
             Token::Function | Token::Return => false,
             Token::ForEach | Token::In | Token::Import => false,
-            Token::Assign
-            | Token::Plus
-            | Token::Minus
-            | Token::Multiply
-            | Token::Divide
-            | Token::Ampersand => false,
+            Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
             Token::Question | Token::Dot | Token::Colon => false,
             Token::LBracket | Token::RBracket => false,
-            Token::LParen
-            | Token::RParen
-            | Token::LBrace
-            | Token::RBrace
-            | Token::Comma
-            | Token::Semicolon => false,
-            Token::GreaterThan
-            | Token::LessThan
-            | Token::Equals
-            | Token::NotEquals
-            | Token::GreaterThanOrEqual
-            | Token::LessThanOrEqual => false,
-            Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => {
-                false
-            }
-            Token::FileOpen
-            | Token::FileClose
-            | Token::FileRead
-            | Token::FileWrite
-            | Token::ReadCSV
-            | Token::WriteCSV => false,
+            Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
+            Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
+            Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => false,
+            Token::FileOpen | Token::FileClose | Token::FileRead | Token::FileWrite | Token::ReadCSV | Token::WriteCSV => false,
             // Database operations
-            Token::Database
-            | Token::DBConnect
-            | Token::DBDisconnect
-            | Token::DBQuery
-            | Token::DBExecute
-            | Token::DBSearch
-            | Token::DBInsert
-            | Token::DBUpdate
-            | Token::DBDelete => false,
-            Token::Table
-            | Token::Collection
-            | Token::Row
-            | Token::Column
-            | Token::Key
-            | Token::PrimaryKey
-            | Token::ForeignKey
-            | Token::Index => false,
+            Token::Database | Token::DBConnect | Token::DBDisconnect | Token::DBQuery | Token::DBExecute | Token::DBSearch | Token::DBInsert | Token::DBUpdate | Token::DBDelete => false,
+            Token::Table | Token::Collection | Token::Row | Token::Column | Token::Key | Token::PrimaryKey | Token::ForeignKey | Token::Index => false,
             Token::CreateTable | Token::AlterTable | Token::DropTable => false,
-            Token::Select
-            | Token::From
-            | Token::Where
-            | Token::OrderBy
-            | Token::GroupBy
-            | Token::Join
-            | Token::Left
-            | Token::Right
-            | Token::Inner
-            | Token::Outer
-            | Token::Distinct
-            | Token::Limit
-            | Token::Offset => false,
+            Token::Select | Token::From | Token::Where | Token::OrderBy | Token::GroupBy | Token::Join | Token::Left | Token::Right | Token::Inner | Token::Outer | Token::Distinct | Token::Limit | Token::Offset => false,
             // Database types
-            Token::SQL
-            | Token::NoSQL
-            | Token::SQLite
-            | Token::MySQL
-            | Token::PostgreSQL
-            | Token::MongoDB
-            | Token::Redis
-            | Token::JSONdb => false,
+            Token::SQL | Token::NoSQL | Token::SQLite | Token::MySQL | Token::PostgreSQL | Token::MongoDB | Token::Redis | Token::JSONdb => false,
             // REST API operations
-            Token::Route
-            | Token::Every
-            | Token::StartServer
-            | Token::StopServer
-            | Token::Response
-            | Token::JSONBody => false,
-            Token::Request
-            | Token::Endpoint
-            | Token::API
-            | Token::Header
-            | Token::Body
-            | Token::Param
-            | Token::QueryParam
-            | Token::PathParam => false,
-            Token::URL
-            | Token::Host
-            | Token::Port
-            | Token::Method
-            | Token::StatusCode
-            | Token::StatusMessage
-            | Token::Auth
-            | Token::BearerToken
-            | Token::ContentType
-            | Token::Serve => false,
-            Token::HttpGet
-            | Token::HttpPost
-            | Token::HttpPut
-            | Token::HttpDelete
-            | Token::HttpPatch
-            | Token::HttpOptions
-            | Token::HttpHead => false,
+            Token::Route | Token::Every | Token::StartServer | Token::StopServer | Token::Response | Token::JSONBody => false,
+            Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body | Token::Param | Token::QueryParam | Token::PathParam => false,
+            Token::URL | Token::Host | Token::Port | Token::Method | Token::StatusCode | Token::StatusMessage | Token::Auth | Token::BearerToken | Token::ContentType | Token::Serve => false,
+            Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
             // Financial and accounting keywords ARE usable as names: வருவாய்,
             // வரி and the rest are the domain nouns programs are written
             // about. They have no statement syntax of their own, and listing
@@ -1380,6 +1302,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // rustfmt is off here on purpose: scripts/generate_editor_support.py reads
+    // these arms a line at a time, and wrapping one across lines makes it
+    // invisible to the generator — which then writes editor data missing
+    // whatever it could not see, and CI gates on that file.
+    #[rustfmt::skip]
     fn is_type_token(token: &Token) -> bool {
         matches!(
             token,
