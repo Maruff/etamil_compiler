@@ -228,9 +228,14 @@ jobs:
           sudo apt-get install -y llvm-18-dev libpolly-18-dev
           echo "LLVM_SYS_180_PREFIX=/usr/lib/llvm-18" >> "$GITHUB_ENV"
 
+      # `set -o pipefail` is not optional here. The runner's shell is `bash -e`
+      # without it, so piping to tee would report the exit status of tee — and
+      # a failing build would pass.
       - name: Build with --features llvm
         working-directory: etamil_compiler
-        run: cargo build --features llvm
+        run: |
+          set -o pipefail
+          cargo build --features llvm 2>&1 | tee "$RUNNER_TEMP/llvm-build.log"
 
       # The two backends must not disagree. A program the LLVM backend refuses
       # is expected and only counted; a program it accepts and then answers
@@ -242,4 +247,28 @@ jobs:
       # Reuses the binary built above rather than a release one: this job is
       # about whether the backend still works, not how fast it is.
       - name: Backend parity (--vm against --llvm)
-        run: ETAMIL_BIN=etamil_compiler/target/debug/etamil ./scripts/run_parity.sh
+        run: |
+          set -o pipefail
+          ETAMIL_BIN=etamil_compiler/target/debug/etamil ./scripts/run_parity.sh 2>&1             | tee "$RUNNER_TEMP/llvm-parity.log"
+
+      # Put the failure where it can be read without opening the log.
+      #
+      # This job fails as a bare "Process completed with exit code 1" in the
+      # annotations panel, which names the job and nothing else. Both plausible
+      # causes — llvm-sys not finding or linking LLVM 18, and the two backends
+      # disagreeing on an answer — look identical from outside, and they have
+      # nothing in common as fixes. So the error goes in the run summary, which
+      # is visible without drilling into a step.
+      - name: Why it failed
+        if: failure()
+        run: |
+          for log in llvm-build llvm-parity; do
+            path="$RUNNER_TEMP/$log.log"
+            [ -f "$path" ] || continue
+            {
+              echo "### $log"
+              echo '```'
+              tail -n 60 "$path"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
