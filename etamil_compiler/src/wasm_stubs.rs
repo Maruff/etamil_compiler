@@ -69,7 +69,9 @@ pub mod db {
         }
 
         impl Lease {
-            pub fn as_mut(&mut self) -> &mut dyn Database {
+            /// Named to match `db::pool::Lease` — the interpreter calls this
+            /// on whichever of the two it was compiled against.
+            pub fn connection(&mut self) -> &mut dyn Database {
                 self.handle.as_mut()
             }
 
