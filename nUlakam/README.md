@@ -74,7 +74,14 @@ which route needs which role — stays in eTamil, and a token's payload crosses
 the boundary as JSON text that `jEcAZ.qmz` reads and writes.
 
 Everything in this directory is built from those. Each also answers to a
-romanized and an `_english` name — see `docs/reference/KEYWORDS.md`.
+romanized name, and to an English one written with a leading underscore:
+`நீளம்` is also `nILam` and `_length`, `இணை` is also `iNY` and `_append`.
+The underscore is part of the name — `length` on its own is not a builtin, it
+is a name your program is free to use.
+
+`docs/reference/KEYWORDS.md` is the reference for the language's *keywords*,
+which are a different set: none of the builtins above appear in it. The three
+forms of each are in `call_builtin` in `etamil_compiler/src/vm/interpreter.rs`.
 
 ## Two behaviours worth knowing
 
