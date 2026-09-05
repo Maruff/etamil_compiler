@@ -332,21 +332,31 @@ pub extern "C" fn etamil_index(base: i64, index: i64) -> i64 {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_index_set(base: i64, index: i64, value: i64) {
-    let position = get(index).to_number();
+    let position = get(index);
     let value = get(value);
-    let position = match rust_decimal::prelude::ToPrimitive::to_usize(&position) {
-        Some(position) => position,
-        None => fail("அணி முகவரி ஒரு முழு எண்  (an array index must be a whole number)"),
-    };
     ARENA.with(|arena| {
         let mut arena = arena.borrow_mut();
         match arena.get_mut(base.max(0) as usize) {
-            Some(Value::Array(items)) if position < items.len() => items[position] = value,
-            Some(Value::Array(_)) => fail(&format!(
-                "அணி முகவரி வரம்பை மீறியது: {}  (array index {} is out of range)",
-                position, position
-            )),
-            _ => fail("அணி எதிர்பார்க்கப்பட்டது  (expected an array)"),
+            Some(Value::Array(items)) => {
+                let raw = position.to_number();
+                if raw.fract() != rust_decimal::Decimal::ZERO {
+                    fail("அணி முகவரி ஒரு முழு எண்  (an array index must be a whole number)");
+                }
+                let position = match rust_decimal::prelude::ToPrimitive::to_i64(&raw) {
+                    Some(position) if position >= 0 && (position as usize) < items.len() => {
+                        position as usize
+                    }
+                    _ => fail(&format!(
+                        "அணி முகவரி வரம்பை மீறியது: {}  (array index {} is out of range)",
+                        raw, raw
+                    )),
+                };
+                items[position] = value;
+            }
+            Some(Value::Map(fields)) => {
+                fields.insert(position.to_string(), value);
+            }
+            _ => fail("அட்டவணைப்படுத்த ஒரு அணி அல்லது பொருள் தேவை  (index assignment needs an array or record)"),
         }
     })
 }
@@ -579,6 +589,14 @@ mod tests {
 
         etamil_index_set(array, number("0"), number("99"));
         assert_eq!(shown(etamil_index(array, number("0"))), "99");
+    }
+
+    #[test]
+    fn index_assignment_sets_record_fields_too() {
+        let record = etamil_record();
+        let key = text("tr");
+        etamil_index_set(record, key, text("INV-9"));
+        assert_eq!(shown(etamil_index(record, key)), "INV-9");
     }
 
     #[test]
