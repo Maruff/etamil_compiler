@@ -55,6 +55,9 @@ NULAKAM = ROOT / "nUlakam"
 EXT = ROOT / "eTamil_Code"
 GRAMMAR_OUT = EXT / "syntaxes" / "etamil.tmLanguage.json"
 DATA_OUT = EXT / "src" / "generated" / "language-data.ts"
+PYGMENTS_OUT = (
+    ROOT / "eTamil_Pygments" / "etamil_pygments" / "_etamil_builtins.py"
+)
 
 TAMIL = "஀-௿"
 # The same identifier shape the lexer accepts, so the grammar cannot scope
@@ -742,6 +745,110 @@ export const IDENTIFIER_SOURCE = {json.dumps(IDENT)};
 
 
 # --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# Pygments word lists
+# --------------------------------------------------------------------------
+#
+# The lexer module itself is hand-written; only the word lists are generated,
+# the way Pygments does it for other languages in `_*_builtins.py`. That keeps
+# the regexes in one reviewable file and the vocabulary in step with the
+# compiler.
+#
+# The groups are named for what the words are, not for a Pygments token, so
+# that the mapping stays a decision the lexer makes in one visible place.
+
+# TextMate scope -> word-list group.
+PYG_GROUPS = {
+    "keyword.control.conditional.etamil": "CONTROL",
+    "keyword.control.loop.etamil": "CONTROL",
+    "keyword.control.flow.return.etamil": "CONTROL",
+    "keyword.control.route.etamil": "CONTROL",
+    "keyword.control.every.etamil": "CONTROL",
+    "keyword.control.import.etamil": "IMPORT",
+    "keyword.declaration.function.etamil": "DECLARE_FUNCTION",
+    "keyword.operator.logical.etamil": "LOGICAL",
+    "keyword.other.io.etamil": "RESERVED",
+    "keyword.other.response.etamil": "RESERVED",
+    "keyword.other.http.etamil": "RESERVED",
+    "keyword.other.sql.etamil": "RESERVED",
+    "keyword.other.database.etamil": "RESERVED",
+    "keyword.other.security.etamil": "RESERVED",
+    "keyword.other.etamil": "RESERVED",
+    "storage.type.etamil": "TYPE",
+    "constant.language.boolean.etamil": "CONSTANT",
+    "constant.language.null.etamil": "CONSTANT",
+    "support.constant.http-method.etamil": "NAMED_CONSTANT",
+    "support.constant.database.etamil": "NAMED_CONSTANT",
+    "support.function.fileio.etamil": "BUILTIN",
+    "support.function.database.etamil": "BUILTIN",
+    "support.type.domain.etamil": "DOMAIN",
+}
+
+# Emission order, and the order the lexer must try them in. A form that lands
+# in two groups belongs to the first one here: DOMAIN is last because it is the
+# largest and the least specific.
+PYG_ORDER = [
+    "DECLARE_FUNCTION",
+    "IMPORT",
+    "CONTROL",
+    "TYPE",
+    "CONSTANT",
+    "RESERVED",
+    "LOGICAL",
+    "NAMED_CONSTANT",
+    "BUILTIN",
+    "DOMAIN",
+]
+
+
+def build_pygments_words(
+    tokens: list[dict], builtins: list[dict], stdlib: list[dict]
+) -> str:
+    """Emit the Pygments word lists from the same tables as the grammar."""
+    groups: dict[str, set[str]] = {name: set() for name in PYG_ORDER}
+
+    for token in tokens:
+        if token["no_syntax"]:
+            continue
+        group = PYG_GROUPS.get(token["scope"])
+        if group is None:
+            die(f"no Pygments group for scope {token['scope']}")
+        groups[group].update(token["forms"])
+
+    for entry in builtins:
+        groups["BUILTIN"].update(entry["forms"])
+    for entry in stdlib:
+        groups["BUILTIN"].update(entry["forms"])
+
+    # One form, one group. Earlier in PYG_ORDER wins.
+    claimed: set[str] = set()
+    for name in PYG_ORDER:
+        groups[name] -= claimed
+        claimed |= groups[name]
+
+    lines = [
+        '"""',
+        "    Word lists for the eTamil lexer.",
+        "",
+        f"    {BANNER}",
+        "",
+        "    :copyright: Copyright 2026 Mohammed Maruff (Esan Maruff).",
+        "    :license: BSD, see LICENSE for details.",
+        '"""',
+        "",
+    ]
+    for name in PYG_ORDER:
+        # Longest first: a prefix must never shadow the longer word it starts.
+        forms = sorted(groups[name], key=lambda form: (-len(form), form))
+        lines.append(f"{name} = (")
+        for form in forms:
+            lines.append(f"    {form!r},")
+        lines.append(")")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -760,7 +867,13 @@ def main() -> int:
     ) + "\n"
     data = build_data(tokens, builtins, stdlib)
 
-    outputs = [(GRAMMAR_OUT, grammar), (DATA_OUT, data)]
+    pygments_words = build_pygments_words(tokens, builtins, stdlib)
+
+    outputs = [
+        (GRAMMAR_OUT, grammar),
+        (DATA_OUT, data),
+        (PYGMENTS_OUT, pygments_words),
+    ]
 
     if args.check:
         stale = []
@@ -789,6 +902,7 @@ def main() -> int:
     reserved = sum(1 for t in tokens if t["reserved"])
     print(f"wrote {GRAMMAR_OUT.relative_to(ROOT).as_posix()}")
     print(f"wrote {DATA_OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {PYGMENTS_OUT.relative_to(ROOT).as_posix()}")
     print(
         f"  {len(tokens)} keywords ({reserved} reserved, "
         f"{len(tokens) - reserved} usable as names), "

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygments-etamil"
+version = "0.4.0"
+description = "Pygments lexer for eTamil, a programming language whose keywords are Tamil words"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "BSD-2-Clause"
+authors = [{ name = "Mohammed Maruff (Esan Maruff)", email = "esan@etamil.in" }]
+keywords = ["pygments", "lexer", "syntax", "highlighting", "etamil", "tamil"]
+dependencies = ["Pygments>=2.14"]
+
+[project.urls]
+Homepage = "https://github.com/Maruff/etamil_compiler"
+
+# This is what makes the lexer available to Sphinx, MkDocs, Jekyll and
+# `pygmentize` the moment the package is installed — no Pygments release
+# required, and no waiting on an upstream review.
+[project.entry-points."pygments.lexers"]
+etamil = "etamil_pygments.etamil:ETamilLexer"
+
+[tool.setuptools]
+packages = ["etamil_pygments"]

@@ -86,3 +86,8 @@ android/local.properties
 # megabytes each, and rebuilt from the Rust source every time — nothing a
 # clone should be paying to download.
 android/app/src/main/jniLibs/
+
+# Python packaging output for the Pygments lexer. `pip install .` writes both,
+# and the staged-artifact mess in the old OneDrive clone started exactly here.
+eTamil_Pygments/build/
+eTamil_Pygments/*.egg-info/
