@@ -3666,95 +3666,6 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
       "உள்ளதா"
     ],
     "params": [
-      "பட்டியல்",
-      "தேடல்"
-    ],
-    "arity": 2,
-    "doc": "உள்ளதா(அணி, மதிப்பு) — membership",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 9
-  },
-  {
-    "name": "இடம்_காண்",
-    "forms": [
-      "இடம்_காண்"
-    ],
-    "params": [
-      "பட்டியல்",
-      "தேடல்"
-    ],
-    "arity": 2,
-    "doc": "இடம்_காண்(அணி, மதிப்பு) — first position, or -1",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 17
-  },
-  {
-    "name": "தலைகீழ்",
-    "forms": [
-      "தலைகீழ்"
-    ],
-    "params": [
-      "பட்டியல்"
-    ],
-    "arity": 1,
-    "doc": "தலைகீழ்(அணி) — reversed copy",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 28
-  },
-  {
-    "name": "வெட்டு",
-    "forms": [
-      "வெட்டு"
-    ],
-    "params": [
-      "பட்டியல்",
-      "தொடக்கம்",
-      "அளவு"
-    ],
-    "arity": 3,
-    "doc": "வெட்டு(அணி, தொடக்கம், அளவு) — slice",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 39
-  },
-  {
-    "name": "புலம்_எடு",
-    "forms": [
-      "புலம்_எடு"
-    ],
-    "params": [
-      "வரிசைகள்",
-      "புலம்"
-    ],
-    "arity": 2,
-    "doc": "புலம்_எடு(வரிசைகள், புலம்) — pluck one field from every record.",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 53
-  },
-  {
-    "name": "காலியா",
-    "forms": [
-      "காலியா"
-    ],
-    "params": [
-      "பட்டியல்"
-    ],
-    "arity": 1,
-    "doc": "காலியா(அணி)",
-    "kind": "stdlib",
-    "module": "nUlakam/aNi.qmz",
-    "line": 62
-  },
-  {
-    "name": "உள்ளதா",
-    "forms": [
-      "உள்ளதா"
-    ],
-    "params": [
       "பாடம்",
       "தேடல்"
     ],
@@ -3904,6 +3815,188 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/AvaNam.qmz",
     "line": 186
+  },
+  {
+    "name": "உள்ளதா",
+    "forms": [
+      "உள்ளதா"
+    ],
+    "params": [
+      "பட்டியல்",
+      "தேடல்"
+    ],
+    "arity": 2,
+    "doc": "உள்ளதா(அணி, மதிப்பு) — membership",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 9
+  },
+  {
+    "name": "இடம்_காண்",
+    "forms": [
+      "இடம்_காண்"
+    ],
+    "params": [
+      "பட்டியல்",
+      "தேடல்"
+    ],
+    "arity": 2,
+    "doc": "இடம்_காண்(அணி, மதிப்பு) — first position, or -1",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 17
+  },
+  {
+    "name": "தலைகீழ்",
+    "forms": [
+      "தலைகீழ்"
+    ],
+    "params": [
+      "பட்டியல்"
+    ],
+    "arity": 1,
+    "doc": "தலைகீழ்(அணி) — reversed copy",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 28
+  },
+  {
+    "name": "வெட்டு",
+    "forms": [
+      "வெட்டு"
+    ],
+    "params": [
+      "பட்டியல்",
+      "தொடக்கம்",
+      "அளவு"
+    ],
+    "arity": 3,
+    "doc": "வெட்டு(அணி, தொடக்கம், அளவு) — slice",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 39
+  },
+  {
+    "name": "புலம்_எடு",
+    "forms": [
+      "புலம்_எடு"
+    ],
+    "params": [
+      "வரிசைகள்",
+      "புலம்"
+    ],
+    "arity": 2,
+    "doc": "புலம்_எடு(வரிசைகள், புலம்) — pluck one field from every record.",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 53
+  },
+  {
+    "name": "காலியா",
+    "forms": [
+      "காலியா"
+    ],
+    "params": [
+      "பட்டியல்"
+    ],
+    "arity": 1,
+    "doc": "காலியா(அணி)",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 62
+  },
+  {
+    "name": "சோதனை_தொடக்கம்",
+    "forms": [
+      "சோதனை_தொடக்கம்"
+    ],
+    "params": [
+      "பெயர்"
+    ],
+    "arity": 1,
+    "doc": "சோதனை_தொடக்கம்(பெயர்) — an empty run",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 24
+  },
+  {
+    "name": "உறுதிசெய்",
+    "forms": [
+      "உறுதிசெய்"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "நிபந்தனை",
+      "விவரம்"
+    ],
+    "arity": 3,
+    "doc": "உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) — the condition must hold",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 30
+  },
+  {
+    "name": "சமம்",
+    "forms": [
+      "சமம்"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "கிடைத்தது",
+      "எதிர்பார்த்தது",
+      "விவரம்"
+    ],
+    "arity": 4,
+    "doc": "சமம்(ஓட்டம், கிடைத்தது, எதிர்பார்த்தது, விவரம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 47
+  },
+  {
+    "name": "வேறுபடு",
+    "forms": [
+      "வேறுபடு"
+    ],
+    "params": [
+      "ஓட்டம்",
+      "கிடைத்தது",
+      "தவிர்க்கப்பட்டது",
+      "விவரம்"
+    ],
+    "arity": 4,
+    "doc": "வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) — these must differ",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 63
+  },
+  {
+    "name": "சேர்_ஓட்டம்",
+    "forms": [
+      "சேர்_ஓட்டம்"
+    ],
+    "params": [
+      "முதல்",
+      "இரண்டாவது"
+    ],
+    "arity": 2,
+    "doc": "சேர்_ஓட்டம்(முதல், இரண்டாவது) — two runs as one, for a suite of suites",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 78
+  },
+  {
+    "name": "சோதனை_முடிவு",
+    "forms": [
+      "சோதனை_முடிவு"
+    ],
+    "params": [
+      "ஓட்டம்"
+    ],
+    "arity": 1,
+    "doc": "சோதனை_முடிவு(ஓட்டம்) — the summary, and the exit status",
+    "kind": "stdlib",
+    "module": "nUlakam/cOqaZY.qmz",
+    "line": 88
   },
   {
     "name": "நுழைவு",
@@ -4180,99 +4273,6 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/col.qmz",
     "line": 113
-  },
-  {
-    "name": "சோதனை_தொடக்கம்",
-    "forms": [
-      "சோதனை_தொடக்கம்"
-    ],
-    "params": [
-      "பெயர்"
-    ],
-    "arity": 1,
-    "doc": "சோதனை_தொடக்கம்(பெயர்) — an empty run",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 24
-  },
-  {
-    "name": "உறுதிசெய்",
-    "forms": [
-      "உறுதிசெய்"
-    ],
-    "params": [
-      "ஓட்டம்",
-      "நிபந்தனை",
-      "விவரம்"
-    ],
-    "arity": 3,
-    "doc": "உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) — the condition must hold",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 30
-  },
-  {
-    "name": "சமம்",
-    "forms": [
-      "சமம்"
-    ],
-    "params": [
-      "ஓட்டம்",
-      "கிடைத்தது",
-      "எதிர்பார்த்தது",
-      "விவரம்"
-    ],
-    "arity": 4,
-    "doc": "சமம்(ஓட்டம், கிடைத்தது, எதிர்பார்த்தது, விவரம்)",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 47
-  },
-  {
-    "name": "வேறுபடு",
-    "forms": [
-      "வேறுபடு"
-    ],
-    "params": [
-      "ஓட்டம்",
-      "கிடைத்தது",
-      "தவிர்க்கப்பட்டது",
-      "விவரம்"
-    ],
-    "arity": 4,
-    "doc": "வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) — these must differ",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 63
-  },
-  {
-    "name": "சேர்_ஓட்டம்",
-    "forms": [
-      "சேர்_ஓட்டம்"
-    ],
-    "params": [
-      "முதல்",
-      "இரண்டாவது"
-    ],
-    "arity": 2,
-    "doc": "சேர்_ஓட்டம்(முதல், இரண்டாவது) — two runs as one, for a suite of suites",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 78
-  },
-  {
-    "name": "சோதனை_முடிவு",
-    "forms": [
-      "சோதனை_முடிவு"
-    ],
-    "params": [
-      "ஓட்டம்"
-    ],
-    "arity": 1,
-    "doc": "சோதனை_முடிவு(ஓட்டம்) — the summary, and the exit status",
-    "kind": "stdlib",
-    "module": "nUlakam/cOqaZY.qmz",
-    "line": 88
   },
   {
     "name": "மதிப்பிடத்தக்க_மதிப்பு",
@@ -4773,6 +4773,253 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kAcu.qmz",
     "line": 145
+  },
+  {
+    "name": "முனைமம்",
+    "forms": [
+      "முனைமம்"
+    ],
+    "params": [
+      "காப்பீட்டுத்_தொகை",
+      "விகிதம்"
+    ],
+    "arity": 2,
+    "doc": "முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) — a premium at a percentage rate",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 27
+  },
+  {
+    "name": "ஆயிரத்திற்கு_முனைமம்",
+    "forms": [
+      "ஆயிரத்திற்கு_முனைமம்"
+    ],
+    "params": [
+      "காப்பீட்டுத்_தொகை",
+      "ஆயிரத்திற்கு"
+    ],
+    "arity": 2,
+    "doc": "ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 36
+  },
+  {
+    "name": "ஏற்ற_இறக்கத்துடன்",
+    "forms": [
+      "ஏற்ற_இறக்கத்துடன்"
+    ],
+    "params": [
+      "அடிப்படை_முனைமம்",
+      "ஏற்ற_விகிதம்",
+      "தள்ளுபடி_விகிதம்"
+    ],
+    "arity": 3,
+    "doc": "ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 45
+  },
+  {
+    "name": "குறுகிய_காலம்",
+    "forms": [
+      "குறுகிய_காலம்"
+    ],
+    "params": [
+      "ஆண்டு_முனைமம்",
+      "நாட்கள்",
+      "ஆண்டு_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 54
+  },
+  {
+    "name": "கழிவுக்குப்_பின்",
+    "forms": [
+      "கழிவுக்குப்_பின்"
+    ],
+    "params": [
+      "இழப்புத்_தொகை",
+      "கழிவு"
+    ],
+    "arity": 2,
+    "doc": "கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) — the excess the insured bears",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 67
+  },
+  {
+    "name": "சராசரி_விதி",
+    "forms": [
+      "சராசரி_விதி"
+    ],
+    "params": [
+      "இழப்புத்_தொகை",
+      "காப்பீட்டுத்_தொகை",
+      "உண்மை_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 83
+  },
+  {
+    "name": "கோரல்_தீர்வு",
+    "forms": [
+      "கோரல்_தீர்வு"
+    ],
+    "params": [
+      "விவரங்கள்"
+    ],
+    "arity": 1,
+    "doc": "கோரல்_தீர்வு(விவரங்கள்) — what is actually payable",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 106
+  },
+  {
+    "name": "கோரல்_இல்லா_சலுகை",
+    "forms": [
+      "கோரல்_இல்லா_சலுகை"
+    ],
+    "params": [
+      "ஆண்டு_முனைமம்",
+      "தொடர்_ஆண்டுகள்",
+      "படிகள்"
+    ],
+    "arity": 3,
+    "doc": "கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 149
+  },
+  {
+    "name": "நிலுவைக்_கோரல்கள்",
+    "forms": [
+      "நிலுவைக்_கோரல்கள்"
+    ],
+    "params": [
+      "கோரல்கள்"
+    ],
+    "arity": 1,
+    "doc": "நிலுவைக்_கோரல்கள்(கோரல்கள்) — what is reported and not yet paid",
+    "kind": "stdlib",
+    "module": "nUlakam/kAppItu/kAppItu.qmz",
+    "line": 169
+  },
+  {
+    "name": "மொத்தச்_சம்பளம்",
+    "forms": [
+      "மொத்தச்_சம்பளம்"
+    ],
+    "params": [
+      "கூறுகள்"
+    ],
+    "arity": 1,
+    "doc": "மொத்தச்_சம்பளம்(கூறுகள்) — the components added up",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 29
+  },
+  {
+    "name": "நாட்களுக்கு_ஏற்ப",
+    "forms": [
+      "நாட்களுக்கு_ஏற்ப"
+    ],
+    "params": [
+      "தொகை_மதிப்பு",
+      "ஊதிய_நாட்கள்",
+      "மாத_நாட்கள்"
+    ],
+    "arity": 3,
+    "doc": "நாட்களுக்கு_ஏற்ப(தொகை_மதிப்பு, ஊதிய_நாட்கள், மாத_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 42
+  },
+  {
+    "name": "வரம்புடன்_பங்களிப்பு",
+    "forms": [
+      "வரம்புடன்_பங்களிப்பு"
+    ],
+    "params": [
+      "பங்களிப்பு_ஊதியம்",
+      "விகிதம்",
+      "உச்ச_வரம்பு"
+    ],
+    "arity": 3,
+    "doc": "வரம்புடன்_பங்களிப்பு(பங்களிப்பு_ஊதியம், விகிதம், உச்ச_வரம்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 56
+  },
+  {
+    "name": "தகுதிக்குள்_பங்களிப்பு",
+    "forms": [
+      "தகுதிக்குள்_பங்களிப்பு"
+    ],
+    "params": [
+      "மொத்தத்_தொகை",
+      "விகிதம்",
+      "தகுதி_எல்லை"
+    ],
+    "arity": 3,
+    "doc": "தகுதிக்குள்_பங்களிப்பு(மொத்தம், விகிதம், தகுதி_எல்லை)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 70
+  },
+  {
+    "name": "படிநிலை_வரி",
+    "forms": [
+      "படிநிலை_வரி"
+    ],
+    "params": [
+      "வரிக்குரிய_தொகை",
+      "படிகள்"
+    ],
+    "arity": 2,
+    "doc": "படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 94
+  },
+  {
+    "name": "பணிக்கொடை",
+    "forms": [
+      "பணிக்கொடை"
+    ],
+    "params": [
+      "கடைசிச்_சம்பளம்",
+      "பணி_ஆண்டுகள்",
+      "மேல்_எண்",
+      "கீழ்_எண்",
+      "உச்ச_வரம்பு"
+    ],
+    "arity": 5,
+    "doc": "பணிக்கொடை(கடைசிச்_சம்பளம், பணி_ஆண்டுகள், மேல்_எண், கீழ்_எண், உச்ச_வரம்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 143
+  },
+  {
+    "name": "சம்பளச்_சீட்டு",
+    "forms": [
+      "சம்பளச்_சீட்டு"
+    ],
+    "params": [
+      "கூறுகள்",
+      "பிடித்தங்கள்"
+    ],
+    "arity": 2,
+    "doc": "சம்பளச்_சீட்டு(கூறுகள், பிடித்தங்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
+    "line": 158
   },
   {
     "name": "இருப்பாய்வு",
@@ -5850,116 +6097,6 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 154
   },
   {
-    "name": "மொத்தச்_சம்பளம்",
-    "forms": [
-      "மொத்தச்_சம்பளம்"
-    ],
-    "params": [
-      "கூறுகள்"
-    ],
-    "arity": 1,
-    "doc": "மொத்தச்_சம்பளம்(கூறுகள்) — the components added up",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 29
-  },
-  {
-    "name": "நாட்களுக்கு_ஏற்ப",
-    "forms": [
-      "நாட்களுக்கு_ஏற்ப"
-    ],
-    "params": [
-      "தொகை_மதிப்பு",
-      "ஊதிய_நாட்கள்",
-      "மாத_நாட்கள்"
-    ],
-    "arity": 3,
-    "doc": "நாட்களுக்கு_ஏற்ப(தொகை_மதிப்பு, ஊதிய_நாட்கள், மாத_நாட்கள்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 42
-  },
-  {
-    "name": "வரம்புடன்_பங்களிப்பு",
-    "forms": [
-      "வரம்புடன்_பங்களிப்பு"
-    ],
-    "params": [
-      "பங்களிப்பு_ஊதியம்",
-      "விகிதம்",
-      "உச்ச_வரம்பு"
-    ],
-    "arity": 3,
-    "doc": "வரம்புடன்_பங்களிப்பு(பங்களிப்பு_ஊதியம், விகிதம், உச்ச_வரம்பு)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 56
-  },
-  {
-    "name": "தகுதிக்குள்_பங்களிப்பு",
-    "forms": [
-      "தகுதிக்குள்_பங்களிப்பு"
-    ],
-    "params": [
-      "மொத்தத்_தொகை",
-      "விகிதம்",
-      "தகுதி_எல்லை"
-    ],
-    "arity": 3,
-    "doc": "தகுதிக்குள்_பங்களிப்பு(மொத்தம், விகிதம், தகுதி_எல்லை)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 70
-  },
-  {
-    "name": "படிநிலை_வரி",
-    "forms": [
-      "படிநிலை_வரி"
-    ],
-    "params": [
-      "வரிக்குரிய_தொகை",
-      "படிகள்"
-    ],
-    "arity": 2,
-    "doc": "படிநிலை_வரி(வரிக்குரிய_தொகை, படிகள்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 94
-  },
-  {
-    "name": "பணிக்கொடை",
-    "forms": [
-      "பணிக்கொடை"
-    ],
-    "params": [
-      "கடைசிச்_சம்பளம்",
-      "பணி_ஆண்டுகள்",
-      "மேல்_எண்",
-      "கீழ்_எண்",
-      "உச்ச_வரம்பு"
-    ],
-    "arity": 5,
-    "doc": "பணிக்கொடை(கடைசிச்_சம்பளம், பணி_ஆண்டுகள், மேல்_எண், கீழ்_எண், உச்ச_வரம்பு)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 143
-  },
-  {
-    "name": "சம்பளச்_சீட்டு",
-    "forms": [
-      "சம்பளச்_சீட்டு"
-    ],
-    "params": [
-      "கூறுகள்",
-      "பிடித்தங்கள்"
-    ],
-    "arity": 2,
-    "doc": "சம்பளச்_சீட்டு(கூறுகள், பிடித்தங்கள்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kaNakkiyal/Uqiyam.qmz",
-    "line": 158
-  },
-  {
     "name": "வரி_விகிதம்_ஆக்கு",
     "forms": [
       "வரி_விகிதம்_ஆக்கு"
@@ -6485,143 +6622,6 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kaNiqam.qmz",
     "line": 80
-  },
-  {
-    "name": "முனைமம்",
-    "forms": [
-      "முனைமம்"
-    ],
-    "params": [
-      "காப்பீட்டுத்_தொகை",
-      "விகிதம்"
-    ],
-    "arity": 2,
-    "doc": "முனைமம்(காப்பீட்டுத்_தொகை, விகிதம்) — a premium at a percentage rate",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 27
-  },
-  {
-    "name": "ஆயிரத்திற்கு_முனைமம்",
-    "forms": [
-      "ஆயிரத்திற்கு_முனைமம்"
-    ],
-    "params": [
-      "காப்பீட்டுத்_தொகை",
-      "ஆயிரத்திற்கு"
-    ],
-    "arity": 2,
-    "doc": "ஆயிரத்திற்கு_முனைமம்(காப்பீட்டுத்_தொகை, ஆயிரத்திற்கு)",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 36
-  },
-  {
-    "name": "ஏற்ற_இறக்கத்துடன்",
-    "forms": [
-      "ஏற்ற_இறக்கத்துடன்"
-    ],
-    "params": [
-      "அடிப்படை_முனைமம்",
-      "ஏற்ற_விகிதம்",
-      "தள்ளுபடி_விகிதம்"
-    ],
-    "arity": 3,
-    "doc": "ஏற்ற_இறக்கத்துடன்(அடிப்படை_முனைமம், ஏற்ற_விகிதம், தள்ளுபடி_விகிதம்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 45
-  },
-  {
-    "name": "குறுகிய_காலம்",
-    "forms": [
-      "குறுகிய_காலம்"
-    ],
-    "params": [
-      "ஆண்டு_முனைமம்",
-      "நாட்கள்",
-      "ஆண்டு_நாட்கள்"
-    ],
-    "arity": 3,
-    "doc": "குறுகிய_காலம்(ஆண்டு_முனைமம், நாட்கள், ஆண்டு_நாட்கள்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 54
-  },
-  {
-    "name": "கழிவுக்குப்_பின்",
-    "forms": [
-      "கழிவுக்குப்_பின்"
-    ],
-    "params": [
-      "இழப்புத்_தொகை",
-      "கழிவு"
-    ],
-    "arity": 2,
-    "doc": "கழிவுக்குப்_பின்(இழப்புத்_தொகை, கழிவு) — the excess the insured bears",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 67
-  },
-  {
-    "name": "சராசரி_விதி",
-    "forms": [
-      "சராசரி_விதி"
-    ],
-    "params": [
-      "இழப்புத்_தொகை",
-      "காப்பீட்டுத்_தொகை",
-      "உண்மை_மதிப்பு"
-    ],
-    "arity": 3,
-    "doc": "சராசரி_விதி(இழப்புத்_தொகை, காப்பீட்டுத்_தொகை, உண்மை_மதிப்பு)",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 83
-  },
-  {
-    "name": "கோரல்_தீர்வு",
-    "forms": [
-      "கோரல்_தீர்வு"
-    ],
-    "params": [
-      "விவரங்கள்"
-    ],
-    "arity": 1,
-    "doc": "கோரல்_தீர்வு(விவரங்கள்) — what is actually payable",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 106
-  },
-  {
-    "name": "கோரல்_இல்லா_சலுகை",
-    "forms": [
-      "கோரல்_இல்லா_சலுகை"
-    ],
-    "params": [
-      "ஆண்டு_முனைமம்",
-      "தொடர்_ஆண்டுகள்",
-      "படிகள்"
-    ],
-    "arity": 3,
-    "doc": "கோரல்_இல்லா_சலுகை(ஆண்டு_முனைமம், தொடர்_ஆண்டுகள், படிகள்)",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 149
-  },
-  {
-    "name": "நிலுவைக்_கோரல்கள்",
-    "forms": [
-      "நிலுவைக்_கோரல்கள்"
-    ],
-    "params": [
-      "கோரல்கள்"
-    ],
-    "arity": 1,
-    "doc": "நிலுவைக்_கோரல்கள்(கோரல்கள்) — what is reported and not yet paid",
-    "kind": "stdlib",
-    "module": "nUlakam/kAppItu/kAppItu.qmz",
-    "line": 169
   },
   {
     "name": "அறுபத்துநான்கு_எழுத்துகள்",

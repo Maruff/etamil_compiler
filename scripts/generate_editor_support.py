@@ -384,7 +384,12 @@ def read_stdlib() -> list[dict]:
     """Every செயல் the standard library defines, with params and doc."""
     functions: list[dict] = []
 
-    for path in sorted(NULAKAM.rglob("*.qmz")):
+    # Sort the POSIX string rather than the Path. Path ordering is
+    # case-insensitive on Windows and case-sensitive everywhere else, so
+    # sorting Path objects makes the output depend on which machine ran
+    # this — aNi.qmz and AvaNam.qmz swap places, and CI then rejects a
+    # file that was correct when it was generated.
+    for path in sorted(NULAKAM.rglob("*.qmz"), key=lambda p: p.as_posix()):
         module = path.relative_to(ROOT).as_posix()
         lines = path.read_text(encoding="utf-8").splitlines()
 
