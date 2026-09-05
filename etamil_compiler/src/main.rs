@@ -3,14 +3,14 @@
 // The modules live in the library target (src/lib.rs); this binary uses them
 // from there rather than re-declaring them, which previously compiled the
 // whole crate twice.
-use std::io::{self, Read};
 use std::env;
+use std::io::{self, Read};
 use std::path::Path;
 
-use etamil_compiler::http::{AsyncHttpServer, HttpServer};
-use etamil_compiler::{module, parser, vm};
 #[cfg(feature = "llvm")]
 use etamil_compiler::codegen;
+use etamil_compiler::http::{AsyncHttpServer, HttpServer};
+use etamil_compiler::{module, parser, vm};
 
 // main is deliberately *not* async.
 //
@@ -95,9 +95,9 @@ fn check_only(loaded: Result<Vec<parser::Stmt>, String>) -> ! {
 fn main() {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
-    let mut use_vm = true;  // Default: use VM executor
+    let mut use_vm = true; // Default: use VM executor
     let mut use_http_server = false;
-    let mut use_async_server = false;  // Backend milestone 2: New async server flag
+    let mut use_async_server = false; // Backend milestone 2: New async server flag
     let mut check_only_mode = false;
     let mut repl_mode = false;
     let mut server_host = "127.0.0.1".to_string();
@@ -112,7 +112,7 @@ fn main() {
             "--check" => check_only_mode = true,
             "--repl" => repl_mode = true,
             "--server" => use_http_server = true,
-            "--async" => use_async_server = true,  // Backend milestone 2: Async server mode
+            "--async" => use_async_server = true, // Backend milestone 2: Async server mode
             "--host" => {
                 if i + 1 < args.len() {
                     server_host = args[i + 1].clone();
@@ -130,7 +130,10 @@ fn main() {
                     match args[i + 1].parse::<u16>() {
                         Ok(port) => server_port = port,
                         Err(_) => {
-                            eprintln!("✗ --port needs a number from 0 to 65535, got '{}'", args[i + 1]);
+                            eprintln!(
+                                "✗ --port needs a number from 0 to 65535, got '{}'",
+                                args[i + 1]
+                            );
                             std::process::exit(2);
                         }
                     }
@@ -172,7 +175,7 @@ fn main() {
         }
         i += 1;
     }
-    
+
     // Before anything asks for a file: in the shell, the typing is the program.
     if repl_mode {
         etamil_compiler::repl::run();
@@ -232,7 +235,7 @@ fn main() {
     } else if use_http_server {
         // === Backend milestone 1: SYNCHRONOUS HTTP SERVER MODE (MVP) ===
         println!("=== eTamil HTTP Server (Minimum Viable Backend) ===\n");
-        
+
         let mut server = HttpServer::new(&server_host, server_port);
         register_routes(
             &mut server,
@@ -242,9 +245,13 @@ fn main() {
         );
 
         // Also register health check endpoint
-        server.register_route("GET", "/health", vec![
-            parser::Stmt::Print(parser::Expr::Number(rust_decimal::Decimal::from(200))),
-        ]);
+        server.register_route(
+            "GET",
+            "/health",
+            vec![parser::Stmt::Print(parser::Expr::Number(
+                rust_decimal::Decimal::from(200),
+            ))],
+        );
 
         // Start the server
         if let Err(e) = server.start() {
@@ -254,12 +261,12 @@ fn main() {
     } else if use_vm {
         // === VM EXECUTION PATH ===
         println!("=== eTamil VM Executor ===\n");
-        
+
         // Compile AST to bytecode
         let bytecode = vm::bytecode::compiler::BytecodeCompiler::compile_statements(ast);
         println!("✓ Bytecode generated ({} instructions)", bytecode.len());
         println!("=== Execution Output ===\n");
-        
+
         // Execute bytecode
         let mut vm = vm::VM::new();
         match vm.execute(bytecode) {
@@ -274,7 +281,7 @@ fn main() {
         #[cfg(feature = "llvm")]
         {
             println!("=== LLVM Code Generation ===");
-            
+
             let mut compiler = codegen::Compiler::new();
             compiler.compile(ast);
 
@@ -294,16 +301,16 @@ fn main() {
                 eprintln!("  Run it on the VM instead:  etamil --vm <file>");
                 std::process::exit(1);
             }
-            
+
             println!("\nGenerated LLVM IR:");
             compiler.dump_module();
-            
+
             match compiler.emit_ir("output.ll") {
                 Ok(_) => println!("\n✓ Successfully saved LLVM IR to output.ll"),
                 Err(e) => eprintln!("✗ Error writing IR: {}", e),
             }
         }
-        
+
         #[cfg(not(feature = "llvm"))]
         {
             eprintln!("❌ Error: LLVM backend is not available on this platform.");
@@ -367,9 +374,8 @@ fn register_routes<S>(
 ) {
     // Routes and timed jobs are both lifted out; what is left is the prelude
     // they share.
-    let (lifted, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) = ast
-        .into_iter()
-        .partition(|s| {
+    let (lifted, prelude): (Vec<parser::Stmt>, Vec<parser::Stmt>) =
+        ast.into_iter().partition(|s| {
             matches!(
                 s,
                 parser::Stmt::DefineRoute { .. } | parser::Stmt::Schedule { .. }
@@ -396,7 +402,10 @@ fn register_routes<S>(
                     rust_decimal::prelude::ToPrimitive::to_u64(&n).unwrap_or(0)
                 }
                 other => {
-                    eprintln!("✗ இடைவெளி needs a literal number of seconds, got {:?}", other);
+                    eprintln!(
+                        "✗ இடைவெளி needs a literal number of seconds, got {:?}",
+                        other
+                    );
                     std::process::exit(1);
                 }
             };
@@ -407,7 +416,12 @@ fn register_routes<S>(
     }
 
     for route in routes {
-        if let parser::Stmt::DefineRoute { method, path, handler } = route {
+        if let parser::Stmt::DefineRoute {
+            method,
+            path,
+            handler,
+        } = route
+        {
             let path = match path {
                 parser::Expr::String(literal) => literal,
                 other => {
@@ -421,4 +435,3 @@ fn register_routes<S>(
         }
     }
 }
-

@@ -2,25 +2,25 @@
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Backend milestone 4: Resilience Patterns (Circuit Breaker, Retries, Timeouts)
 
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, SystemTime};
 use tokio::time::sleep;
 
 /// Circuit breaker states
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CircuitBreakerState {
-    Closed,      // Normal operation
-    Open,        // Failing, rejecting requests
-    HalfOpen,    // Testing if service is back
+    Closed,   // Normal operation
+    Open,     // Failing, rejecting requests
+    HalfOpen, // Testing if service is back
 }
 
 /// Circuit breaker configuration
 #[derive(Clone)]
 pub struct CircuitBreakerConfig {
-    pub failure_threshold: u32,  // Failures before opening
-    pub success_threshold: u32,  // Successes in HalfOpen to close
-    pub timeout: Duration,        // How long to stay open
+    pub failure_threshold: u32, // Failures before opening
+    pub success_threshold: u32, // Successes in HalfOpen to close
+    pub timeout: Duration,      // How long to stay open
 }
 
 impl Default for CircuitBreakerConfig {
@@ -94,18 +94,16 @@ impl CircuitBreaker {
         let state = *self.state.read().await;
 
         match state {
-            CircuitBreakerState::Closed => {
-                match f.await {
-                    Ok(result) => {
-                        self.record_success().await;
-                        Ok(result)
-                    }
-                    Err(e) => {
-                        self.record_failure().await;
-                        Err(e)
-                    }
+            CircuitBreakerState::Closed => match f.await {
+                Ok(result) => {
+                    self.record_success().await;
+                    Ok(result)
                 }
-            }
+                Err(e) => {
+                    self.record_failure().await;
+                    Err(e)
+                }
+            },
             CircuitBreakerState::Open => {
                 let last_failure = *self.last_failure_time.read().await;
                 if let Some(last_time) = last_failure {
@@ -129,18 +127,16 @@ impl CircuitBreaker {
                 }
                 Err("Circuit breaker is open".to_string())
             }
-            CircuitBreakerState::HalfOpen => {
-                match f.await {
-                    Ok(result) => {
-                        self.record_success().await;
-                        Ok(result)
-                    }
-                    Err(e) => {
-                        self.record_failure().await;
-                        Err(e)
-                    }
+            CircuitBreakerState::HalfOpen => match f.await {
+                Ok(result) => {
+                    self.record_success().await;
+                    Ok(result)
                 }
-            }
+                Err(e) => {
+                    self.record_failure().await;
+                    Err(e)
+                }
+            },
         }
     }
 }
@@ -195,11 +191,10 @@ impl Retry {
                     sleep(delay).await;
 
                     // Exponential backoff
-                    let next_delay_secs =
-                        delay.as_secs_f64() * self.config.backoff_factor;
-                    delay = Duration::from_secs_f64(next_delay_secs.min(
-                        self.config.max_delay.as_secs_f64(),
-                    ));
+                    let next_delay_secs = delay.as_secs_f64() * self.config.backoff_factor;
+                    delay = Duration::from_secs_f64(
+                        next_delay_secs.min(self.config.max_delay.as_secs_f64()),
+                    );
                 }
             }
         }
@@ -207,10 +202,7 @@ impl Retry {
 }
 
 /// Request timeout helper
-pub async fn with_timeout<F, T>(
-    duration: Duration,
-    future: F,
-) -> Result<T, String>
+pub async fn with_timeout<F, T>(duration: Duration, future: F) -> Result<T, String>
 where
     F: std::future::Future<Output = T>,
 {
@@ -239,14 +231,14 @@ mod tests {
         let cb = CircuitBreaker::new(config);
 
         // Simulate failures
-        let result = cb.try_request(async {
-            Err::<(), String>("error".to_string())
-        }).await;
+        let result = cb
+            .try_request(async { Err::<(), String>("error".to_string()) })
+            .await;
         assert!(result.is_err());
-        
-        let result = cb.try_request(async {
-            Err::<(), String>("error".to_string())
-        }).await;
+
+        let result = cb
+            .try_request(async { Err::<(), String>("error".to_string()) })
+            .await;
         assert!(result.is_err());
 
         // Should be open now
@@ -259,17 +251,19 @@ mod tests {
         let attempts = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
         let attempts_clone = attempts.clone();
 
-        let result = retry.execute(|| {
-            let attempts = attempts_clone.clone();
-            async move {
-                let count = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                if count < 1 {
-                    Err::<(), String>("retry".to_string())
-                } else {
-                    Ok(())
+        let result = retry
+            .execute(|| {
+                let attempts = attempts_clone.clone();
+                async move {
+                    let count = attempts.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    if count < 1 {
+                        Err::<(), String>("retry".to_string())
+                    } else {
+                        Ok(())
+                    }
                 }
-            }
-        }).await;
+            })
+            .await;
 
         assert!(result.is_ok());
         assert_eq!(attempts.load(std::sync::atomic::Ordering::SeqCst), 2);
@@ -277,13 +271,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_timeout() {
-        let result = with_timeout(
-            Duration::from_millis(100),
-            async {
-                sleep(Duration::from_secs(1)).await;
-                "done"
-            },
-        ).await;
+        let result = with_timeout(Duration::from_millis(100), async {
+            sleep(Duration::from_secs(1)).await;
+            "done"
+        })
+        .await;
 
         assert!(result.is_err());
     }

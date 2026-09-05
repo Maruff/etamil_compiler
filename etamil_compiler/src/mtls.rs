@@ -128,9 +128,9 @@ fn assemble(
                 return Err(format!("'{}' holds no certificate", cert_path));
             }
             let key = read_private_key(&key_path)?;
-            builder.with_client_auth_cert(chain, key).map_err(|e| {
-                format!("the certificate and key were not accepted together: {}", e)
-            })
+            builder
+                .with_client_auth_cert(chain, key)
+                .map_err(|e| format!("the certificate and key were not accepted together: {}", e))
         }
         None => Ok(builder.with_no_client_auth()),
     }
@@ -166,11 +166,14 @@ mod tests {
     #[test]
     fn a_missing_file_is_reported_rather_than_ignored() {
         let outcome = assemble(
-            Some(("no-such-cert.pem".to_string(), "no-such-key.pem".to_string())),
+            Some((
+                "no-such-cert.pem".to_string(),
+                "no-such-key.pem".to_string(),
+            )),
             None,
         );
 
-        let why = outcome.err().expect("a missing certificate cannot succeed");
+        let why = outcome.expect_err("a missing certificate cannot succeed");
         assert!(why.contains("could not be read"), "unexpected: {}", why);
     }
 
@@ -185,7 +188,7 @@ mod tests {
 
         // It fails because the file is rubbish, not because no identity was
         // given — which is the distinction being asserted.
-        let why = outcome.err().expect("rubbish is not a CA");
+        let why = outcome.expect_err("rubbish is not a CA");
         assert!(why.contains("ETAMIL_TLS_CA"), "unexpected: {}", why);
     }
 

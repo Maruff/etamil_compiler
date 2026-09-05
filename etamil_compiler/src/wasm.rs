@@ -103,10 +103,13 @@ fn function_ranges(tokens: &[Spanned]) -> Vec<Scope> {
         // The name follows `செயல்`. Taking `.text` rather than matching on
         // Token::Identifier keeps a keyword used as a function name -- which
         // this language allows -- under the spelling the author wrote.
-        let name = tokens.get(index + 1).map(|t| t.text.clone()).unwrap_or_default();
+        let name = tokens
+            .get(index + 1)
+            .map(|t| t.text.clone())
+            .unwrap_or_default();
 
-        let Some(open) = (index + 1..tokens.len())
-            .find(|&i| matches!(tokens[i].token, Token::LBrace))
+        let Some(open) =
+            (index + 1..tokens.len()).find(|&i| matches!(tokens[i].token, Token::LBrace))
         else {
             break;
         };
@@ -362,10 +365,19 @@ fn walk(
     for statement in statements {
         match statement {
             Stmt::Assign { name, declared, .. } => {
-                let detail = declared.as_ref().map(|d| d.name().to_string()).unwrap_or_default();
+                let detail = declared
+                    .as_ref()
+                    .map(|d| d.name().to_string())
+                    .unwrap_or_default();
                 push(out, seen, owner, name, "variable", detail);
             }
-            Stmt::FunctionDef { name, params, returns, body, .. } => {
+            Stmt::FunctionDef {
+                name,
+                params,
+                returns,
+                body,
+                ..
+            } => {
                 let shown: Vec<String> = params
                     .iter()
                     .map(|param| match &param.declared {
@@ -392,7 +404,11 @@ fn walk(
                 push(out, seen, owner, var, "variable", String::new());
                 walk(body, owner, out, seen);
             }
-            Stmt::If { then_branch, else_branch, .. } => {
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 walk(then_branch, owner, out, seen);
                 if let Some(alternative) = else_branch {
                     walk(alternative, owner, out, seen);

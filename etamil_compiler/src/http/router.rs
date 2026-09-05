@@ -13,9 +13,7 @@ pub struct Router {
 impl Router {
     /// Create a new router
     pub fn new() -> Self {
-        Router {
-            routes: Vec::new(),
-        }
+        Router { routes: Vec::new() }
     }
 
     /// Add a route to the router
@@ -30,14 +28,11 @@ impl Router {
     /// Find a matching route for a request
     pub fn find_route(&self, method: &str, path: &str) -> Option<&Route> {
         let method_upper = method.to_uppercase();
-        
-        for route in &self.routes {
-            if route.method == method_upper && self.path_matches(&route.path, path) {
-                return Some(route);
-            }
-        }
-        
-        None
+
+        self.routes
+            .iter()
+            .find(|&route| route.method == method_upper && self.path_matches(&route.path, path))
+            .map(|v| v as _)
     }
 
     /// Check if a route path matches a request path
@@ -89,7 +84,7 @@ mod tests {
     fn test_add_route() {
         let mut router = Router::new();
         router.add_route("GET", "/api/users");
-        
+
         assert_eq!(router.len(), 1);
         assert_eq!(router.routes[0].method, "GET");
         assert_eq!(router.routes[0].path, "/api/users");
@@ -100,7 +95,7 @@ mod tests {
         let mut router = Router::new();
         router.add_route("GET", "/api/users");
         router.add_route("POST", "/api/users");
-        
+
         assert!(router.find_route("GET", "/api/users").is_some());
         assert!(router.find_route("POST", "/api/users").is_some());
         assert!(router.find_route("DELETE", "/api/users").is_none());
@@ -110,7 +105,7 @@ mod tests {
     fn test_path_with_parameters() {
         let mut router = Router::new();
         router.add_route("GET", "/api/users/:id");
-        
+
         assert!(router.find_route("GET", "/api/users/123").is_some());
         assert!(router.find_route("GET", "/api/users/456").is_some());
     }

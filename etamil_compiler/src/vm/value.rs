@@ -38,39 +38,6 @@ impl Value {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        match self {
-            Value::Number(n) => {
-                if n.fract() == Decimal::ZERO {
-                    n.trunc().to_string()
-                } else {
-                    // normalize() drops trailing zeros, so 1.50 prints as 1.5
-                    // while 1.05 keeps both digits.
-                    n.normalize().to_string()
-                }
-            }
-            Value::String(s) => s.clone(),
-            Value::Boolean(b) => b.to_string(),
-            Value::Null => "nil".to_string(),
-            Value::Array(items) => {
-                let inner: Vec<String> = items.iter().map(|v| v.to_string()).collect();
-                format!("[{}]", inner.join(", "))
-            }
-            Value::Map(fields) => {
-                // Sorted so printing a record is deterministic.
-                let mut keys: Vec<&String> = fields.keys().collect();
-                keys.sort();
-                let inner: Vec<String> = keys
-                    .iter()
-                    .map(|k| format!("{}: {}", k, fields[*k].to_string()))
-                    .collect();
-                format!("{{{}}}", inner.join(", "))
-            }
-            Value::Ok(inner) => format!("சரி({})", inner.to_string()),
-            Value::Err(inner) => format!("தவறு({})", inner.to_string()),
-        }
-    }
-
     pub fn to_boolean(&self) -> bool {
         match self {
             Value::Null => false,
@@ -134,5 +101,46 @@ impl PartialOrd for Value {
             }
             _ => None,
         }
+    }
+}
+
+/// How a value becomes text — printing, string coercion and record keys all
+/// come through here.
+///
+/// This is `Display` rather than an inherent `to_string`, so `to_string()` on a
+/// Value is the standard one every Rust reader expects and `{}` in a format
+/// string works. The output is unchanged.
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&match self {
+            Value::Number(n) => {
+                if n.fract() == Decimal::ZERO {
+                    n.trunc().to_string()
+                } else {
+                    // normalize() drops trailing zeros, so 1.50 prints as 1.5
+                    // while 1.05 keeps both digits.
+                    n.normalize().to_string()
+                }
+            }
+            Value::String(s) => s.clone(),
+            Value::Boolean(b) => b.to_string(),
+            Value::Null => "nil".to_string(),
+            Value::Array(items) => {
+                let inner: Vec<String> = items.iter().map(|v| v.to_string()).collect();
+                format!("[{}]", inner.join(", "))
+            }
+            Value::Map(fields) => {
+                // Sorted so printing a record is deterministic.
+                let mut keys: Vec<&String> = fields.keys().collect();
+                keys.sort();
+                let inner: Vec<String> = keys
+                    .iter()
+                    .map(|k| format!("{}: {}", k, fields[*k]))
+                    .collect();
+                format!("{{{}}}", inner.join(", "))
+            }
+            Value::Ok(inner) => format!("சரி({inner})"),
+            Value::Err(inner) => format!("தவறு({inner})"),
+        })
     }
 }

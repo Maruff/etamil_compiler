@@ -4,9 +4,9 @@
 // Provides JSON-formatted logging with context, log levels, and request tracking
 
 use chrono::Utc;
-use serde::{Serialize, Deserialize};
-use std::sync::{Arc, Mutex};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 /// Log Level enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -116,16 +116,20 @@ impl LogEntry {
     /// Serialize to JSON string
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap_or_else(|_| {
-            format!("{{\"timestamp\":\"{}\",\"level\":\"{}\",\"message\":\"{}\"}}",
-                self.timestamp, self.level, self.message)
+            format!(
+                "{{\"timestamp\":\"{}\",\"level\":\"{}\",\"message\":\"{}\"}}",
+                self.timestamp, self.level, self.message
+            )
         })
     }
 
     /// Serialize to pretty JSON string (for debugging)
     pub fn to_pretty_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| {
-            format!("{{\"timestamp\":\"{}\",\"level\":\"{}\",\"message\":\"{}\"}}",
-                self.timestamp, self.level, self.message)
+            format!(
+                "{{\"timestamp\":\"{}\",\"level\":\"{}\",\"message\":\"{}\"}}",
+                self.timestamp, self.level, self.message
+            )
         })
     }
 }
@@ -225,12 +229,12 @@ impl LogLevel {
 /// Generate a unique request ID
 pub fn generate_request_id() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
-    
+
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    
+
     format!("req-{:x}", nanos)
 }
 
@@ -257,10 +261,9 @@ mod tests {
     fn test_log_with_context() {
         let mut ctx = HashMap::new();
         ctx.insert("user_id".to_string(), "12345".to_string());
-        
-        let entry = LogEntry::new(LogLevel::Info, "User action")
-            .with_context(ctx);
-        
+
+        let entry = LogEntry::new(LogLevel::Info, "User action").with_context(ctx);
+
         let json = entry.to_json();
         assert!(json.contains("user_id"));
     }
@@ -269,7 +272,7 @@ mod tests {
     fn test_log_with_error() {
         let entry = LogEntry::new(LogLevel::Error, "Operation failed")
             .with_error("DB_CONNECTION", "Failed to connect to database");
-        
+
         let json = entry.to_json();
         assert!(json.contains("DB_CONNECTION"));
     }

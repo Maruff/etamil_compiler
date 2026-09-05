@@ -38,9 +38,8 @@ impl MysqlDatabase {
             )
         })?;
 
-        let connection = Conn::new(options).map_err(|e| {
-            format!("மைசீகுல் இணைக்க முடியவில்லை  (cannot connect to MySQL): {}", e)
-        })?;
+        let connection = Conn::new(options)
+            .map_err(|e| format!("மைசீகுல் இணைக்க முடியவில்லை  (cannot connect to MySQL): {}", e))?;
 
         Ok(MysqlDatabase { connection })
     }
@@ -138,10 +137,7 @@ fn value_from(raw: &MyValue, column_type: ColumnType) -> Value {
             if *hour == 0 && *minute == 0 && *second == 0 && *micros == 0 {
                 Value::String(date)
             } else {
-                Value::String(format!(
-                    "{}T{:02}:{:02}:{:02}",
-                    date, hour, minute, second
-                ))
+                Value::String(format!("{}T{:02}:{:02}:{:02}", date, hour, minute, second))
             }
         }
         MyValue::Time(negative, days, hours, minutes, seconds, _micros) => {

@@ -3,7 +3,7 @@
 // Error Handling Module for eTamil Backend - Backend milestone 3
 // Provides custom error types, error recovery, and detailed error context
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// eTamil Backend Error Type
@@ -108,12 +108,14 @@ impl EtamilError {
         match self {
             EtamilError::HttpParseError { message, .. } => message.clone(),
             EtamilError::HandlerError { message, .. } => format!("Handler error: {}", message),
-            EtamilError::DatabaseError {  .. } => "Database operation failed".to_string(),
-            EtamilError::IoError {  .. } => "File operation failed".to_string(),
-            EtamilError::ValidationError { message, .. } => format!("Validation error: {}", message),
+            EtamilError::DatabaseError { .. } => "Database operation failed".to_string(),
+            EtamilError::IoError { .. } => "File operation failed".to_string(),
+            EtamilError::ValidationError { message, .. } => {
+                format!("Validation error: {}", message)
+            }
             EtamilError::ConfigError { message, .. } => format!("Configuration error: {}", message),
-            EtamilError::InternalError {  .. } => "Internal server error".to_string(),
-            EtamilError::TimeoutError {  .. } => "Request timeout".to_string(),
+            EtamilError::InternalError { .. } => "Internal server error".to_string(),
+            EtamilError::TimeoutError { .. } => "Request timeout".to_string(),
             EtamilError::NotFound { message, .. } => message.clone(),
             EtamilError::Unauthorized { message, .. } => message.clone(),
         }
@@ -123,51 +125,148 @@ impl EtamilError {
     pub fn detailed_message(&self) -> String {
         match self {
             EtamilError::HttpParseError { message, details } => {
-                format!("{}{}", message, details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default())
+                format!(
+                    "{}{}",
+                    message,
+                    details
+                        .as_ref()
+                        .map(|d| format!(": {}", d))
+                        .unwrap_or_default()
+                )
             }
-            EtamilError::HandlerError { message, request_path, details } => {
-                let path = request_path.as_ref().map(|p| format!(" [{}]", p)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::HandlerError {
+                message,
+                request_path,
+                details,
+            } => {
+                let path = request_path
+                    .as_ref()
+                    .map(|p| format!(" [{}]", p))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, path, detail)
             }
-            EtamilError::DatabaseError { message, error_code, details } => {
-                let code = error_code.as_ref().map(|c| format!(" [{}]", c)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::DatabaseError {
+                message,
+                error_code,
+                details,
+            } => {
+                let code = error_code
+                    .as_ref()
+                    .map(|c| format!(" [{}]", c))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, code, detail)
             }
-            EtamilError::IoError { message, file_path, details } => {
-                let path = file_path.as_ref().map(|p| format!(" [{}]", p)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::IoError {
+                message,
+                file_path,
+                details,
+            } => {
+                let path = file_path
+                    .as_ref()
+                    .map(|p| format!(" [{}]", p))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, path, detail)
             }
-            EtamilError::ValidationError { message, field, details } => {
-                let f = field.as_ref().map(|fld| format!(" ({})", fld)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::ValidationError {
+                message,
+                field,
+                details,
+            } => {
+                let f = field
+                    .as_ref()
+                    .map(|fld| format!(" ({})", fld))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, f, detail)
             }
-            EtamilError::ConfigError { message, config_key, details } => {
-                let key = config_key.as_ref().map(|k| format!(" [{}]", k)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::ConfigError {
+                message,
+                config_key,
+                details,
+            } => {
+                let key = config_key
+                    .as_ref()
+                    .map(|k| format!(" [{}]", k))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, key, detail)
             }
-            EtamilError::InternalError { message, error_code, details } => {
-                let code = error_code.as_ref().map(|c| format!(" [{}]", c)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::InternalError {
+                message,
+                error_code,
+                details,
+            } => {
+                let code = error_code
+                    .as_ref()
+                    .map(|c| format!(" [{}]", c))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, code, detail)
             }
-            EtamilError::TimeoutError { message, timeout_ms, details } => {
-                let timeout = timeout_ms.as_ref().map(|t| format!(" ({}ms)", t)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::TimeoutError {
+                message,
+                timeout_ms,
+                details,
+            } => {
+                let timeout = timeout_ms
+                    .as_ref()
+                    .map(|t| format!(" ({}ms)", t))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, timeout, detail)
             }
-            EtamilError::NotFound { message, resource, details } => {
-                let res = resource.as_ref().map(|r| format!(" [{}]", r)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::NotFound {
+                message,
+                resource,
+                details,
+            } => {
+                let res = resource
+                    .as_ref()
+                    .map(|r| format!(" [{}]", r))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, res, detail)
             }
-            EtamilError::Unauthorized { message, reason, details } => {
-                let r = reason.as_ref().map(|re| format!(" ({})", re)).unwrap_or_default();
-                let detail = details.as_ref().map(|d| format!(": {}", d)).unwrap_or_default();
+            EtamilError::Unauthorized {
+                message,
+                reason,
+                details,
+            } => {
+                let r = reason
+                    .as_ref()
+                    .map(|re| format!(" ({})", re))
+                    .unwrap_or_default();
+                let detail = details
+                    .as_ref()
+                    .map(|d| format!(": {}", d))
+                    .unwrap_or_default();
                 format!("{}{}{}", message, r, detail)
             }
         }
@@ -176,26 +275,35 @@ impl EtamilError {
     /// Create a recovery suggestion
     pub fn recovery_suggestion(&self) -> String {
         match self {
-            EtamilError::HttpParseError { .. } => 
-                "Check request format and ensure it complies with HTTP/1.1 specification".to_string(),
-            EtamilError::HandlerError { .. } => 
-                "Review handler code for syntax errors or runtime issues".to_string(),
-            EtamilError::DatabaseError { .. } => 
-                "Verify database connection and ensure database is running".to_string(),
-            EtamilError::IoError { .. } => 
-                "Check file paths and ensure proper file permissions".to_string(),
-            EtamilError::ValidationError { .. } => 
-                "Review input data and ensure it matches expected format".to_string(),
-            EtamilError::ConfigError { .. } => 
-                "Check configuration settings and environment variables".to_string(),
-            EtamilError::InternalError { .. } => 
-                "Contact support with request ID and error details".to_string(),
-            EtamilError::TimeoutError { .. } => 
-                "Retry request or increase timeout threshold".to_string(),
-            EtamilError::NotFound { .. } => 
-                "Verify resource exists and path is correct".to_string(),
-            EtamilError::Unauthorized { .. } => 
-                "Provide valid credentials or token".to_string(),
+            EtamilError::HttpParseError { .. } => {
+                "Check request format and ensure it complies with HTTP/1.1 specification"
+                    .to_string()
+            }
+            EtamilError::HandlerError { .. } => {
+                "Review handler code for syntax errors or runtime issues".to_string()
+            }
+            EtamilError::DatabaseError { .. } => {
+                "Verify database connection and ensure database is running".to_string()
+            }
+            EtamilError::IoError { .. } => {
+                "Check file paths and ensure proper file permissions".to_string()
+            }
+            EtamilError::ValidationError { .. } => {
+                "Review input data and ensure it matches expected format".to_string()
+            }
+            EtamilError::ConfigError { .. } => {
+                "Check configuration settings and environment variables".to_string()
+            }
+            EtamilError::InternalError { .. } => {
+                "Contact support with request ID and error details".to_string()
+            }
+            EtamilError::TimeoutError { .. } => {
+                "Retry request or increase timeout threshold".to_string()
+            }
+            EtamilError::NotFound { .. } => {
+                "Verify resource exists and path is correct".to_string()
+            }
+            EtamilError::Unauthorized { .. } => "Provide valid credentials or token".to_string(),
         }
     }
 }
@@ -247,8 +355,10 @@ impl ErrorResponse {
     /// Serialize to JSON
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap_or_else(|_| {
-            format!(r#"{{"error":{{"code":"{}","message":"{}"}}}}"#,
-                self.error.code, self.error.message)
+            format!(
+                r#"{{"error":{{"code":"{}","message":"{}"}}}}"#,
+                self.error.code, self.error.message
+            )
         })
     }
 }

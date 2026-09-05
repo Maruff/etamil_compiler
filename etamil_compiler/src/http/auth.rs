@@ -3,12 +3,12 @@
 // Backend milestone 4: Authentication & Authorization Module
 // JWT-based auth with role-based access control (RBAC)
 
+use bcrypt::{hash, verify};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::OnceLock;
-use bcrypt::{hash, verify};
 
 const JWT_SECRET_ENV: &str = "ETAMIL_JWT_SECRET";
 const BCRYPT_COST: u32 = 12;
@@ -45,11 +45,11 @@ fn jwt_secret() -> &'static [u8] {
 /// JWT Claims structure for access tokens
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TokenClaims {
-    pub sub: String,           // Subject (user ID)
+    pub sub: String, // Subject (user ID)
     pub email: String,
-    pub roles: Vec<String>,    // RBAC roles
-    pub iat: i64,              // Issued at
-    pub exp: i64,              // Expiration
+    pub roles: Vec<String>, // RBAC roles
+    pub iat: i64,           // Issued at
+    pub exp: i64,           // Expiration
 }
 
 /// User credentials for login
@@ -83,6 +83,12 @@ pub struct AuthManager {
     decoding_key: DecodingKey,
 }
 
+impl Default for AuthManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AuthManager {
     /// Create a new auth manager
     pub fn new() -> Self {
@@ -95,13 +101,18 @@ impl AuthManager {
     }
 
     /// Register a new user
-    pub fn register_user(&mut self, email: &str, password: &str, roles: Vec<String>) -> Result<User, String> {
+    pub fn register_user(
+        &mut self,
+        email: &str,
+        password: &str,
+        roles: Vec<String>,
+    ) -> Result<User, String> {
         if self.users.values().any(|u| u.email == email) {
             return Err("User already exists".to_string());
         }
 
-        let password_hash = hash(password, BCRYPT_COST)
-            .map_err(|_| "Failed to hash password".to_string())?;
+        let password_hash =
+            hash(password, BCRYPT_COST).map_err(|_| "Failed to hash password".to_string())?;
 
         let user = User {
             id: format!("user_{}", uuid::Uuid::new_v4()),
@@ -116,7 +127,8 @@ impl AuthManager {
 
     /// Login user and generate JWT tokens
     pub fn login(&self, email: &str, password: &str) -> Result<AuthResponse, String> {
-        let user = self.users
+        let user = self
+            .users
             .values()
             .find(|u| u.email == email)
             .ok_or("User not found".to_string())?;
@@ -126,8 +138,8 @@ impl AuthManager {
         // meant every password was accepted for any account that existed.
         // The test suite missed it because its failure case used an unknown
         // user, which is caught by the lookup above.
-        let password_matches = verify(password, &user.password_hash)
-            .map_err(|_| "Invalid credentials".to_string())?;
+        let password_matches =
+            verify(password, &user.password_hash).map_err(|_| "Invalid credentials".to_string())?;
 
         if !password_matches {
             return Err("Invalid credentials".to_string());
@@ -197,9 +209,8 @@ impl AuthManager {
 
 /// Hash a password for storage.
 pub fn hash_password(password: &str) -> Result<String, String> {
-    hash(password, BCRYPT_COST).map_err(|_| {
-        "கடவுச்சொல்லை மறைக்க முடியவில்லை  (cannot hash the password)".to_string()
-    })
+    hash(password, BCRYPT_COST)
+        .map_err(|_| "கடவுச்சொல்லை மறைக்க முடியவில்லை  (cannot hash the password)".to_string())
 }
 
 /// Check a password against a stored hash.
@@ -208,9 +219,8 @@ pub fn hash_password(password: &str) -> Result<String, String> {
 /// Note the shape — an earlier caller threw away exactly this bool and so
 /// accepted every password.
 pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, String> {
-    verify(password, password_hash).map_err(|_| {
-        "சேமித்த மறையீடு செல்லாதது  (the stored password hash is not valid)".to_string()
-    })
+    verify(password, password_hash)
+        .map_err(|_| "சேமித்த மறையீடு செல்லாதது  (the stored password hash is not valid)".to_string())
 }
 
 /// Sign a JSON payload into a token that expires after `ttl_seconds`.
@@ -223,8 +233,7 @@ pub fn issue_token(payload_json: &str, ttl_seconds: i64) -> Result<String, Strin
     })?;
 
     let object = claims.as_object_mut().ok_or_else(|| {
-        "குறியீட்டுச் சுமை ஒரு பொருளாக இருக்க வேண்டும்  (the token payload must be a record)"
-            .to_string()
+        "குறியீட்டுச் சுமை ஒரு பொருளாக இருக்க வேண்டும்  (the token payload must be a record)".to_string()
     })?;
 
     let now = Utc::now().timestamp();
@@ -249,21 +258,17 @@ pub fn read_token(token: &str) -> Result<String, String> {
     // seconds still covers ordinary skew between a client and this server.
     validation.leeway = 5;
 
-    let data = decode::<serde_json::Value>(
-        token,
-        &DecodingKey::from_secret(jwt_secret()),
-        &validation,
-    )
-    .map_err(|e| match e.kind() {
-        jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
-            "குறியீடு காலாவதியானது  (the token has expired)".to_string()
-        }
-        _ => "குறியீடு செல்லாதது  (the token is not valid)".to_string(),
-    })?;
+    let data =
+        decode::<serde_json::Value>(token, &DecodingKey::from_secret(jwt_secret()), &validation)
+            .map_err(|e| match e.kind() {
+                jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
+                    "குறியீடு காலாவதியானது  (the token has expired)".to_string()
+                }
+                _ => "குறியீடு செல்லாதது  (the token is not valid)".to_string(),
+            })?;
 
     serde_json::to_string(&data.claims).map_err(|_| {
-        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)"
-            .to_string()
+        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)".to_string()
     })
 }
 
@@ -274,13 +279,11 @@ pub fn read_token(token: &str) -> Result<String, String> {
 /// first. Nothing here is trusted: the header is read, the signature is not,
 /// and the answer is only useful for choosing a key to then verify with.
 pub fn token_header(token: &str) -> Result<(String, String), String> {
-    let header = jsonwebtoken::decode_header(token)
-        .map_err(|_| "குறியீட்டின் தலைப்பைப் படிக்க முடியவில்லை  (cannot read the token header)".to_string())?;
+    let header = jsonwebtoken::decode_header(token).map_err(|_| {
+        "குறியீட்டின் தலைப்பைப் படிக்க முடியவில்லை  (cannot read the token header)".to_string()
+    })?;
 
-    Ok((
-        header.kid.unwrap_or_default(),
-        format!("{:?}", header.alg),
-    ))
+    Ok((header.kid.unwrap_or_default(), format!("{:?}", header.alg)))
 }
 
 /// Verify an RS256 token against a public key given as its JWK components.
@@ -303,8 +306,7 @@ pub fn verify_rsa_token(
 ) -> Result<String, String> {
     if issuer.is_empty() || audience.is_empty() {
         return Err(
-            "வழங்குநரும் பார்வையாளரும் தேவை  (the issuer and the audience are both required)"
-                .to_string(),
+            "வழங்குநரும் பார்வையாளரும் தேவை  (the issuer and the audience are both required)".to_string(),
         );
     }
 
@@ -319,8 +321,8 @@ pub fn verify_rsa_token(
     // stated tolerance rather than jsonwebtoken's inherited sixty.
     validation.leeway = 5;
 
-    let data = decode::<serde_json::Value>(token, &key, &validation).map_err(|e| {
-        match e.kind() {
+    let data =
+        decode::<serde_json::Value>(token, &key, &validation).map_err(|e| match e.kind() {
             jsonwebtoken::errors::ErrorKind::ExpiredSignature => {
                 "குறியீடு காலாவதியானது  (the token has expired)".to_string()
             }
@@ -331,12 +333,10 @@ pub fn verify_rsa_token(
                 "பார்வையாளர் பொருந்தவில்லை  (the audience does not match)".to_string()
             }
             _ => "குறியீடு செல்லாதது  (the token is not valid)".to_string(),
-        }
-    })?;
+        })?;
 
     serde_json::to_string(&data.claims).map_err(|_| {
-        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)"
-            .to_string()
+        "குறியீட்டின் உள்ளடக்கத்தைப் படிக்க முடியவில்லை  (cannot read the token's claims)".to_string()
     })
 }
 
@@ -353,7 +353,9 @@ impl RoleGuard {
     }
 
     pub fn check(&self, claims: &TokenClaims) -> bool {
-        self.required_roles.iter().any(|role| claims.roles.contains(role))
+        self.required_roles
+            .iter()
+            .any(|role| claims.roles.contains(role))
     }
 }
 
@@ -374,7 +376,8 @@ mod tests {
     #[test]
     fn test_login_success() {
         let mut auth = AuthManager::new();
-        auth.register_user("user@example.com", "password123", vec!["admin".to_string()]).unwrap();
+        auth.register_user("user@example.com", "password123", vec!["admin".to_string()])
+            .unwrap();
         let result = auth.login("user@example.com", "password123");
         assert!(result.is_ok());
         let auth_resp = result.unwrap();
@@ -396,8 +399,12 @@ mod tests {
     #[test]
     fn login_with_the_wrong_password_is_refused() {
         let mut auth = AuthManager::new();
-        auth.register_user("user@example.com", "correct-horse", vec!["user".to_string()])
-            .unwrap();
+        auth.register_user(
+            "user@example.com",
+            "correct-horse",
+            vec!["user".to_string()],
+        )
+        .unwrap();
 
         assert!(auth.login("user@example.com", "wrong-password").is_err());
         assert!(auth.login("user@example.com", "").is_err());
@@ -407,7 +414,8 @@ mod tests {
     #[test]
     fn test_verify_token() {
         let mut auth = AuthManager::new();
-        auth.register_user("user@example.com", "password123", vec!["user".to_string()]).unwrap();
+        auth.register_user("user@example.com", "password123", vec!["user".to_string()])
+            .unwrap();
         let auth_resp = auth.login("user@example.com", "password123").unwrap();
         let claims = auth.verify_token(&auth_resp.access_token);
         assert!(claims.is_ok());

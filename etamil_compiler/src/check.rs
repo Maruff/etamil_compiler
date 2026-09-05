@@ -100,16 +100,14 @@ impl Inferred {
             // `உள்ளிடு` hands back text that is routinely compared with
             // numbers. Refusing `சொல் குறி = 1234;` would be a rule the rest
             // of the language does not follow.
-            DeclaredType::Text => matches!(
-                self,
-                Inferred::Text | Inferred::Number | Inferred::Unknown
-            ),
+            DeclaredType::Text => {
+                matches!(self, Inferred::Text | Inferred::Number | Inferred::Unknown)
+            }
             // A date is ISO-8601 text — that is the representation the whole
             // language uses, because ISO text sorts chronologically.
-            DeclaredType::Date => matches!(
-                self,
-                Inferred::Text | Inferred::Number | Inferred::Unknown
-            ),
+            DeclaredType::Date => {
+                matches!(self, Inferred::Text | Inferred::Number | Inferred::Unknown)
+            }
         }
     }
 }
@@ -202,7 +200,12 @@ impl Checker {
 
     fn check_stmt(&mut self, statement: &Stmt) {
         match statement {
-            Stmt::Assign { name, value, declared, at } => {
+            Stmt::Assign {
+                name,
+                value,
+                declared,
+                at,
+            } => {
                 self.check_assign(name, value, *declared, *at);
             }
 
@@ -252,7 +255,11 @@ impl Checker {
                 }
             }
 
-            Stmt::If { then_branch, else_branch, .. } => {
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
                 self.check_block(then_branch);
                 if let Some(branch) = else_branch {
                     self.check_block(branch);

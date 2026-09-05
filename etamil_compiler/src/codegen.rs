@@ -44,9 +44,12 @@
 //! does not accept.
 
 #[cfg(feature = "llvm")]
-use llvm_sys::prelude::*;
+use crate::parser::Expr;
+use crate::parser::Stmt;
 #[cfg(feature = "llvm")]
 use llvm_sys::core::*;
+#[cfg(feature = "llvm")]
+use llvm_sys::prelude::*;
 #[cfg(feature = "llvm")]
 use llvm_sys::{LLVMIntPredicate, LLVMLinkage};
 #[cfg(feature = "llvm")]
@@ -55,9 +58,6 @@ use std::collections::HashMap;
 use std::ffi::CString;
 #[cfg(feature = "llvm")]
 use std::ptr;
-use crate::parser::Stmt;
-#[cfg(feature = "llvm")]
-use crate::parser::Expr;
 
 #[cfg(feature = "llvm")]
 pub struct Compiler {
@@ -97,8 +97,7 @@ impl Compiler {
 
             let i32_type = LLVMInt32TypeInContext(context);
             let fn_type = LLVMFunctionType(i32_type, ptr::null_mut(), 0, 0);
-            let function =
-                LLVMAddFunction(module, CString::new("main").unwrap().as_ptr(), fn_type);
+            let function = LLVMAddFunction(module, CString::new("main").unwrap().as_ptr(), fn_type);
 
             let entry = LLVMAppendBasicBlockInContext(
                 context,
@@ -156,8 +155,7 @@ impl Compiler {
         returns: LLVMTypeRef,
     ) -> (LLVMValueRef, LLVMTypeRef) {
         unsafe {
-            let kind =
-                LLVMFunctionType(returns, params.as_mut_ptr(), params.len() as u32, 0);
+            let kind = LLVMFunctionType(returns, params.as_mut_ptr(), params.len() as u32, 0);
             let c_name = CString::new(name).unwrap();
             let existing = LLVMGetNamedFunction(self.module, c_name.as_ptr());
             if !existing.is_null() {
@@ -244,7 +242,9 @@ impl Compiler {
             let slot = LLVMBuildAlloca(
                 self.builder,
                 self.value(),
-                CString::new(name).unwrap_or_else(|_| CString::new("slot").unwrap()).as_ptr(),
+                CString::new(name)
+                    .unwrap_or_else(|_| CString::new("slot").unwrap())
+                    .as_ptr(),
             );
             LLVMPositionBuilderAtEnd(self.builder, here);
             slot
@@ -259,7 +259,9 @@ impl Compiler {
             let global = LLVMAddGlobal(
                 self.module,
                 self.value(),
-                CString::new(name).unwrap_or_else(|_| CString::new("global").unwrap()).as_ptr(),
+                CString::new(name)
+                    .unwrap_or_else(|_| CString::new("global").unwrap())
+                    .as_ptr(),
             );
             // Zero is the nil handle, so an unassigned global reads as இன்மை
             // rather than as a wild index.
@@ -451,30 +453,28 @@ impl Compiler {
                             .push(format!("the name {} (nothing here defines it)", name)),
                     }
                 }
-                Stmt::SetField { name, field, value } => {
-                    match self.lookup(&name) {
-                        Some(slot) => {
-                            let base = LLVMBuildLoad2(
-                                self.builder,
-                                self.value(),
-                                slot,
-                                CString::new("base").unwrap().as_ptr(),
+                Stmt::SetField { name, field, value } => match self.lookup(&name) {
+                    Some(slot) => {
+                        let base = LLVMBuildLoad2(
+                            self.builder,
+                            self.value(),
+                            slot,
+                            CString::new("base").unwrap().as_ptr(),
+                        );
+                        let handle = self.compile_expr(&value);
+                        if let Some(key) = self.constant_text(&field, "field") {
+                            self.invoke(
+                                "etamil_field_set",
+                                vec![self.value(), self.text(), self.value()],
+                                self.nothing(),
+                                &mut [base, key, handle],
                             );
-                            let handle = self.compile_expr(&value);
-                            if let Some(key) = self.constant_text(&field, "field") {
-                                self.invoke(
-                                    "etamil_field_set",
-                                    vec![self.value(), self.text(), self.value()],
-                                    self.nothing(),
-                                    &mut [base, key, handle],
-                                );
-                            }
                         }
-                        None => self
-                            .unsupported
-                            .push(format!("the name {} (nothing here defines it)", name)),
                     }
-                }
+                    None => self
+                        .unsupported
+                        .push(format!("the name {} (nothing here defines it)", name)),
+                },
                 Stmt::Expression(expr) => {
                     // Evaluated for its effect. Discarding the handle is right:
                     // the arena keeps the value alive and nothing reads it.
@@ -690,12 +690,7 @@ impl Compiler {
     fn llvm_function_type(&self, parameter_count: usize) -> LLVMTypeRef {
         unsafe {
             let mut params = vec![self.value(); parameter_count];
-            LLVMFunctionType(
-                self.value(),
-                params.as_mut_ptr(),
-                params.len() as u32,
-                0,
-            )
+            LLVMFunctionType(self.value(), params.as_mut_ptr(), params.len() as u32, 0)
         }
     }
 
@@ -706,7 +701,9 @@ impl Compiler {
         unsafe {
             let function = LLVMAddFunction(
                 self.module,
-                CString::new(name).unwrap_or_else(|_| CString::new("fn").unwrap()).as_ptr(),
+                CString::new(name)
+                    .unwrap_or_else(|_| CString::new("fn").unwrap())
+                    .as_ptr(),
                 self.llvm_function_type(parameter_count),
             );
             self.functions.insert(name.to_string(), function);
@@ -772,17 +769,15 @@ impl Compiler {
             // The decimal's own text, parsed back by the runtime. Exact: a
             // `Decimal` written out and read in is the same value, where a
             // double would lose the thing the runtime exists to keep.
-            Expr::Number(number) => {
-                match self.constant_text(&number.to_string(), "number") {
-                    Some(literal) => self.invoke(
-                        "etamil_number",
-                        vec![self.text()],
-                        self.value(),
-                        &mut [literal],
-                    ),
-                    None => self.nil(),
-                }
-            }
+            Expr::Number(number) => match self.constant_text(&number.to_string(), "number") {
+                Some(literal) => self.invoke(
+                    "etamil_number",
+                    vec![self.text()],
+                    self.value(),
+                    &mut [literal],
+                ),
+                None => self.nil(),
+            },
             Expr::String(body) => match self.constant_text(body, "text") {
                 Some(literal) => self.invoke(
                     "etamil_text",
@@ -849,8 +844,7 @@ impl Compiler {
                     "==" => 4,
                     "!=" => 5,
                     other => {
-                        self.unsupported
-                            .push(format!("the comparison {}", other));
+                        self.unsupported.push(format!("the comparison {}", other));
                         return self.nil();
                     }
                 };
@@ -1020,8 +1014,7 @@ impl Compiler {
         // A builtin. The handles go into a stack array and the runtime reads
         // them back, which is how a variadic call crosses the C ABI without
         // this file knowing anything about any particular builtin.
-        let handles: Vec<LLVMValueRef> =
-            args.iter().map(|arg| self.compile_expr(arg)).collect();
+        let handles: Vec<LLVMValueRef> = args.iter().map(|arg| self.compile_expr(arg)).collect();
         let label = match self.constant_text(name, "builtin") {
             Some(label) => label,
             None => return self.nil(),
@@ -1142,7 +1135,9 @@ impl Compiler {
 
             if success != 0 {
                 let message = if !error.is_null() {
-                    std::ffi::CStr::from_ptr(error).to_string_lossy().to_string()
+                    std::ffi::CStr::from_ptr(error)
+                        .to_string_lossy()
+                        .to_string()
                 } else {
                     "Unknown LLVM error".to_string()
                 };
@@ -1162,6 +1157,18 @@ impl Compiler {
 }
 
 // Placeholder implementations for non-LLVM builds (e.g., Windows without LLVM)
+//
+// Both impls need the cfg. `clippy --fix` added the Default impl directly under
+// the attribute, which silently moved the guard off the impl below it — so a
+// build with --features llvm had two `impl Compiler` blocks and stopped
+// compiling. Nothing but the llvm job builds this file, so nothing else notices.
+#[cfg(not(feature = "llvm"))]
+impl Default for Compiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(not(feature = "llvm"))]
 impl Compiler {
     pub fn new() -> Self {
@@ -1174,8 +1181,10 @@ impl Compiler {
     }
 
     pub fn emit_ir(&self, _filename: &str) -> Result<(), String> {
-        Err("LLVM code generation is not available on this platform. Use --vm flag instead."
-            .to_string())
+        Err(
+            "LLVM code generation is not available on this platform. Use --vm flag instead."
+                .to_string(),
+        )
     }
 
     pub fn dump_module(&self) {

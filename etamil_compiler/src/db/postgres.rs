@@ -14,7 +14,7 @@
 //! declared `TEXT` no longer changes type depending on what it contains.
 
 use bytes::BytesMut;
-use postgres::types::{to_sql_checked, IsNull, ToSql, Type};
+use postgres::types::{IsNull, ToSql, Type, to_sql_checked};
 use postgres::{Client, NoTls};
 use rust_decimal::Decimal;
 use std::collections::HashMap;
@@ -105,11 +105,12 @@ impl ToSql for Bound<'_> {
                     })?
                     .to_sql(ty, out),
                 Type::INT2 | Type::INT4 | Type::INT8 => {
-                    let parsed = s.trim().parse::<i64>().map_err(
-                        |_| -> Box<dyn Error + Sync + Send> {
-                            format!("'{}' is not a whole number", s).into()
-                        },
-                    )?;
+                    let parsed =
+                        s.trim()
+                            .parse::<i64>()
+                            .map_err(|_| -> Box<dyn Error + Sync + Send> {
+                                format!("'{}' is not a whole number", s).into()
+                            })?;
                     Bound(&Value::Number(Decimal::from(parsed))).to_sql(ty, out)
                 }
                 _ => s.as_str().to_sql(ty, out),
@@ -143,7 +144,10 @@ impl ToSql for Bound<'_> {
 /// One column coming back out.
 fn value_from(row: &postgres::Row, index: usize, ty: &Type) -> Result<Value, String> {
     let read = |what: &str, e: postgres::Error| {
-        format!("நெடுவரிசை படிக்க முடியவில்லை  (cannot read {} column): {}", what, e)
+        format!(
+            "நெடுவரிசை படிக்க முடியவில்லை  (cannot read {} column): {}",
+            what, e
+        )
     };
 
     Ok(match *ty {

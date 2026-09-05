@@ -3,37 +3,37 @@
 // HTTP Server Module for eTamil Backend
 // Provides synchronous HTTP server capabilities for Minimum Viable Backend
 
-use std::collections::HashMap;
-use std::net::{TcpListener, TcpStream};
-use std::io::{Read, Write};
-use std::sync::{mpsc, Mutex};
-use std::time::Instant;
 use crate::parser::Stmt;
+use std::collections::HashMap;
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::sync::{Mutex, mpsc};
+use std::time::Instant;
 
-pub mod router;
-pub mod request;
-pub mod multipart;  // multipart/form-data, over bytes
-pub mod response;
-pub mod handler;
-pub mod async_server;  // --async: tokio accept loop, blocking handlers
-pub mod logging;
+pub mod async_server; // --async: tokio accept loop, blocking handlers
+pub mod auth; // Backend milestone 4: Authentication & Authorization
+pub mod cache; // Backend milestone 4: Caching Layer
 pub mod errors;
+pub mod handler;
+pub mod logging;
 pub mod monitoring;
-pub mod auth;       // Backend milestone 4: Authentication & Authorization
-pub mod cache;      // Backend milestone 4: Caching Layer
-pub mod resilience; // Backend milestone 4: Circuit breakers, retries, timeouts
+pub mod multipart; // multipart/form-data, over bytes
+pub mod request;
+pub mod resilience;
+pub mod response;
+pub mod router; // Backend milestone 4: Circuit breakers, retries, timeouts
 
-pub use self::router::Router;
-pub use self::request::HttpRequest;
-pub use self::response::HttpResponse;
-pub use self::handler::{bind_request, response_from};
 pub use self::async_server::AsyncHttpServer;
-pub use self::logging::{Logger, LogLevel, LogEntry, generate_request_id};
 pub use self::errors::ErrorResponse;
-pub use self::monitoring::MetricsCollector;
+pub use self::handler::{bind_request, response_from};
+pub use self::logging::{LogEntry, LogLevel, Logger, generate_request_id};
 pub use self::monitoring::HealthChecker;
 pub use self::monitoring::HealthStatus;
+pub use self::monitoring::MetricsCollector;
 pub use self::monitoring::PerformanceReport;
+pub use self::request::HttpRequest;
+pub use self::response::HttpResponse;
+pub use self::router::Router;
 
 /// Main HTTP Server for eTamil Backend
 pub struct HttpServer {
@@ -97,18 +97,24 @@ impl HttpServer {
         let route_key = format!("{} {}", method.to_uppercase(), path);
         self.handlers.insert(route_key.clone(), bytecode);
         self.router.add_route(method, path);
-        
+
         // Log route registration
-        self.logger.info(format!("Route registered: {} {}", method.to_uppercase(), path));
+        self.logger.info(format!(
+            "Route registered: {} {}",
+            method.to_uppercase(),
+            path
+        ));
     }
 
     /// Start the HTTP server and listen for requests
     pub fn start(&self) -> Result<(), Box<dyn std::error::Error>> {
         let addr = format!("{}:{}", self.host, self.port);
         let listener = TcpListener::bind(&addr)?;
-        
+
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        println!("🚀 eTamil HTTP Server Started (Backend milestone 3 - Production Logging & Error Handling)");
+        println!(
+            "🚀 eTamil HTTP Server Started (Backend milestone 3 - Production Logging & Error Handling)"
+        );
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         println!("📍 Listening on: http://{}", addr);
         println!("📋 Registered Routes:");
@@ -140,9 +146,11 @@ impl HttpServer {
             for (index, (seconds, bytecode)) in self.schedules.iter().enumerate() {
                 let label = format!("#{} every {}s", index + 1, seconds);
                 println!("⏱️  Scheduled job {}", label);
-                scope.spawn(move || loop {
-                    std::thread::sleep(std::time::Duration::from_secs(*seconds));
-                    handler::run_scheduled(&label, bytecode);
+                scope.spawn(move || {
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_secs(*seconds));
+                        handler::run_scheduled(&label, bytecode);
+                    }
                 });
             }
 
@@ -302,7 +310,7 @@ impl HttpServer {
             }
             Err(e) => {
                 let log_entry = LogEntry::new(LogLevel::Error, "Failed to parse HTTP request")
-                    .with_error("HTTP_PARSE_ERROR", &e.to_string());
+                    .with_error("HTTP_PARSE_ERROR", e.to_string());
                 self.logger.log(log_entry);
 
                 let error_response = HttpResponse::bad_request(&e.to_string());

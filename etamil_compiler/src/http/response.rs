@@ -23,7 +23,7 @@ impl HttpResponse {
         let mut headers = HashMap::new();
         headers.insert("Content-Type".to_string(), "application/json".to_string());
         headers.insert("Content-Length".to_string(), body.len().to_string());
-        
+
         HttpResponse {
             status_code,
             status_text: status_text.to_string(),
@@ -42,7 +42,7 @@ impl HttpResponse {
             204 => "No Content",
             _ => "OK",
         };
-        
+
         HttpResponse::new(status_code, status_text, body)
     }
 
@@ -151,7 +151,7 @@ mod tests {
     fn test_http_string_format() {
         let resp = HttpResponse::success(200, "Test".to_string());
         let http_str = String::from_utf8(resp.to_http_bytes()).unwrap();
-        
+
         assert!(http_str.contains("HTTP/1.1 200 OK"));
         assert!(http_str.contains("Content-Type: application/json"));
         assert!(http_str.contains("Test"));
@@ -171,14 +171,17 @@ mod tests {
             .position(|w| w == b"\r\n\r\n")
             .expect("head and body are separated");
 
-        assert_eq!(&raw[split + 4..], &[0x25, 0x50, 0x44, 0x46, 0xFF, 0xFE, 0x00]);
+        assert_eq!(
+            &raw[split + 4..],
+            &[0x25, 0x50, 0x44, 0x46, 0xFF, 0xFE, 0x00]
+        );
     }
 
     #[test]
     fn test_set_header() {
         let mut resp = HttpResponse::success(200, "OK".to_string());
         resp.set_header("X-Custom", "value");
-        
+
         assert_eq!(resp.headers.get("X-Custom"), Some(&"value".to_string()));
     }
 }

@@ -66,9 +66,7 @@ impl Reply {
             // can tell "the key is absent" from "the key holds nothing", and
             // for a cache that difference is the whole question.
             Reply::Nil => Value::Null,
-            Reply::Array(items) => {
-                Value::Array(items.iter().map(|item| item.to_value()).collect())
-            }
+            Reply::Array(items) => Value::Array(items.iter().map(|item| item.to_value()).collect()),
         }
     }
 }
@@ -84,7 +82,7 @@ pub fn encode(command: &str, arguments: &[String]) -> Vec<u8> {
     out.extend_from_slice(format!("*{}\r\n", arguments.len() + 1).as_bytes());
 
     let mut push = |part: &str| {
-        out.extend_from_slice(format!("${}\r\n", part.as_bytes().len()).as_bytes());
+        out.extend_from_slice(format!("${}\r\n", part.len()).as_bytes());
         out.extend_from_slice(part.as_bytes());
         out.extend_from_slice(b"\r\n");
     };
@@ -99,9 +97,12 @@ pub fn encode(command: &str, arguments: &[String]) -> Vec<u8> {
 /// Read one reply.
 pub fn decode(reader: &mut impl BufRead) -> Result<Reply, String> {
     let mut line = String::new();
-    let read = reader
-        .read_line(&mut line)
-        .map_err(|e| format!("ரெடிஸ் பதிலைப் படிக்க முடியவில்லை  (cannot read the reply): {}", e))?;
+    let read = reader.read_line(&mut line).map_err(|e| {
+        format!(
+            "ரெடிஸ் பதிலைப் படிக்க முடியவில்லை  (cannot read the reply): {}",
+            e
+        )
+    })?;
     if read == 0 {
         return Err("ரெடிஸ் இணைப்பு மூடப்பட்டது  (the connection closed)".to_string());
     }
@@ -127,8 +128,12 @@ pub fn decode(reader: &mut impl BufRead) -> Result<Reply, String> {
             // to the next newline instead would truncate any value containing
             // one — which is most serialized things.
             let mut bytes = vec![0u8; length as usize + 2];
-            std::io::Read::read_exact(reader, &mut bytes)
-                .map_err(|e| format!("ரெடிஸ் மதிப்பைப் படிக்க முடியவில்லை  (cannot read the value): {}", e))?;
+            std::io::Read::read_exact(reader, &mut bytes).map_err(|e| {
+                format!(
+                    "ரெடிஸ் மதிப்பைப் படிக்க முடியவில்லை  (cannot read the value): {}",
+                    e
+                )
+            })?;
             bytes.truncate(length as usize);
             Ok(Reply::Bulk(String::from_utf8_lossy(&bytes).into_owned()))
         }
@@ -183,9 +188,12 @@ impl Connection {
         let _ = stream.set_read_timeout(timeout);
         let _ = stream.set_write_timeout(timeout);
 
-        let writer = stream
-            .try_clone()
-            .map_err(|e| format!("ரெடிஸ் இணைப்பை நகலெடுக்க முடியவில்லை  (cannot split the socket): {}", e))?;
+        let writer = stream.try_clone().map_err(|e| {
+            format!(
+                "ரெடிஸ் இணைப்பை நகலெடுக்க முடியவில்லை  (cannot split the socket): {}",
+                e
+            )
+        })?;
 
         Ok(Connection {
             address: address.to_string(),
@@ -202,7 +210,10 @@ impl Connection {
     pub fn command(&mut self, command: &str, arguments: &[String]) -> Result<Reply, String> {
         let request = encode(command, arguments);
         self.writer.write_all(&request).map_err(|e| {
-            format!("ரெடிஸ் கட்டளையை அனுப்ப முடியவில்லை  (cannot send the command): {}", e)
+            format!(
+                "ரெடிஸ் கட்டளையை அனுப்ப முடியவில்லை  (cannot send the command): {}",
+                e
+            )
         })?;
         self.writer
             .flush()
@@ -261,7 +272,10 @@ mod tests {
         assert_eq!(read(b"+OK\r\n").unwrap(), Reply::Simple("OK".to_string()));
         assert_eq!(read(b":42\r\n").unwrap(), Reply::Integer(42));
         assert_eq!(read(b":-1\r\n").unwrap(), Reply::Integer(-1));
-        assert_eq!(read(b"$5\r\nhello\r\n").unwrap(), Reply::Bulk("hello".to_string()));
+        assert_eq!(
+            read(b"$5\r\nhello\r\n").unwrap(),
+            Reply::Bulk("hello".to_string())
+        );
         assert_eq!(
             read(b"-ERR unknown command\r\n").unwrap(),
             Reply::Error("ERR unknown command".to_string())
@@ -323,6 +337,9 @@ mod tests {
     #[test]
     fn an_integer_reply_is_a_number_not_text() {
         // So that INCR can be added to without being parsed first.
-        assert_eq!(Reply::Integer(7).to_value(), Value::Number(Decimal::from(7)));
+        assert_eq!(
+            Reply::Integer(7).to_value(),
+            Value::Number(Decimal::from(7))
+        );
     }
 }

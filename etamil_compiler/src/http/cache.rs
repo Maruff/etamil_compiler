@@ -6,8 +6,8 @@
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use std::time::{Duration, SystemTime};
+use tokio::sync::RwLock;
 
 /// Cache entry with TTL
 #[derive(Clone, Debug)]
@@ -27,6 +27,12 @@ pub struct Cache {
     entries: Arc<RwLock<HashMap<String, CacheEntry>>>,
 }
 
+impl Default for Cache {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Cache {
     /// Create a new cache
     pub fn new() -> Self {
@@ -38,10 +44,7 @@ impl Cache {
     /// Set a cached value with TTL
     pub async fn set(&self, key: String, value: Value, ttl_secs: u64) {
         let expires_at = SystemTime::now() + Duration::from_secs(ttl_secs);
-        let entry = CacheEntry {
-            value,
-            expires_at,
-        };
+        let entry = CacheEntry { value, expires_at };
         let mut entries = self.entries.write().await;
         entries.insert(key, entry);
     }
@@ -49,7 +52,7 @@ impl Cache {
     /// Get a cached value (returns None if expired)
     pub async fn get(&self, key: &str) -> Option<Value> {
         let mut entries = self.entries.write().await;
-        
+
         if let Some(entry) = entries.get(key) {
             if entry.is_expired() {
                 entries.remove(key);
@@ -115,7 +118,7 @@ mod tests {
         let cache = Cache::new();
         let value = serde_json::json!({"test": "data"});
         cache.set("test_key".to_string(), value.clone(), 60).await;
-        
+
         let retrieved = cache.get("test_key").await;
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap(), value);
@@ -126,7 +129,7 @@ mod tests {
         let cache = Cache::new();
         let value = serde_json::json!({"test": "data"});
         cache.set("test_key".to_string(), value, 0).await; // 0 second TTL
-        
+
         tokio::time::sleep(Duration::from_millis(100)).await;
         let retrieved = cache.get("test_key").await;
         assert!(retrieved.is_none());
@@ -137,7 +140,7 @@ mod tests {
         let cache = Cache::new();
         let value = serde_json::json!({"test": "data"});
         cache.set("test_key".to_string(), value, 60).await;
-        
+
         cache.delete("test_key").await;
         let retrieved = cache.get("test_key").await;
         assert!(retrieved.is_none());

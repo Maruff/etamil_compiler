@@ -291,9 +291,9 @@ pub enum Stmt {
     },
     // REST API Operations
     DefineRoute {
-        method: String,      // GET, POST, PUT, DELETE, etc.
-        path: Expr,          // "/api/users"
-        handler: Vec<Stmt>,  // Handler code block
+        method: String,     // GET, POST, PUT, DELETE, etc.
+        path: Expr,         // "/api/users"
+        handler: Vec<Stmt>, // Handler code block
     },
     StartServer {
         host: Expr,
@@ -589,7 +589,12 @@ impl<'a> Parser<'a> {
             self.expect(Token::Assign)?;
             let value = self.parse_expression()?;
             self.expect(Token::Semicolon)?;
-            return Ok(Stmt::Assign { name, value, declared, at });
+            return Ok(Stmt::Assign {
+                name,
+                value,
+                declared,
+                at,
+            });
         }
 
         match &current.token {
@@ -651,7 +656,11 @@ impl<'a> Parser<'a> {
                 let collection = self.parse_expression()?;
                 self.expect(Token::LBrace)?;
                 let body = self.parse_block()?;
-                Ok(Stmt::ForEach { var, collection, body })
+                Ok(Stmt::ForEach {
+                    var,
+                    collection,
+                    body,
+                })
             }
             Token::Return => {
                 if self.matches(Token::Semicolon) {
@@ -783,7 +792,11 @@ impl<'a> Parser<'a> {
                     None
                 };
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::DBUpdate { table, data, condition })
+                Ok(Stmt::DBUpdate {
+                    table,
+                    data,
+                    condition,
+                })
             }
             Token::DBDelete => {
                 let table = self.take_name("a table name")?;
@@ -815,7 +828,11 @@ impl<'a> Parser<'a> {
                     None
                 };
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::Select { columns, from_table, where_clause })
+                Ok(Stmt::Select {
+                    columns,
+                    from_table,
+                    where_clause,
+                })
             }
             Token::Route => {
                 // The HTTP method is matched by the router, so like a database
@@ -826,7 +843,11 @@ impl<'a> Parser<'a> {
                 let path = self.parse_expression()?;
                 self.expect(Token::LBrace)?;
                 let handler = self.parse_block()?;
-                Ok(Stmt::DefineRoute { method, path, handler })
+                Ok(Stmt::DefineRoute {
+                    method,
+                    path,
+                    handler,
+                })
             }
             Token::Every => {
                 let seconds = self.parse_expression()?;
@@ -855,7 +876,11 @@ impl<'a> Parser<'a> {
                     None
                 };
                 self.expect(Token::Semicolon)?;
-                Ok(Stmt::SendResponse { status_code, body, headers })
+                Ok(Stmt::SendResponse {
+                    status_code,
+                    body,
+                    headers,
+                })
             }
             Token::JSONBody => {
                 let data = self.parse_expression()?;
@@ -875,10 +900,10 @@ impl<'a> Parser<'a> {
                 match keyword.token {
                     Token::If => self.parse_if_remainder(condition),
                     Token::Loop => self.parse_loop_remainder(condition),
-                    _ => Err(self.mismatch(
-                        keyword,
-                        "எனில் (eZil) or சுற்று (cuRRu) after a condition",
-                    )),
+                    _ => {
+                        Err(self
+                            .mismatch(keyword, "எனில் (eZil) or சுற்று (cuRRu) after a condition"))
+                    }
                 }
             }
             _ => Err(self.mismatch(current, "a statement")),
@@ -910,7 +935,11 @@ impl<'a> Parser<'a> {
             None
         };
 
-        Ok(Stmt::If { condition, then_branch, else_branch })
+        Ok(Stmt::If {
+            condition,
+            then_branch,
+            else_branch,
+        })
     }
 
     fn parse_loop_remainder(&mut self, condition: Expr) -> Result<Stmt, ParseError> {
@@ -1059,9 +1088,7 @@ impl<'a> Parser<'a> {
             | Expr::Boolean(_)
             | Expr::Null => true,
             Expr::Field { base, .. } => Self::is_repeatable(base),
-            Expr::Index { base, index } => {
-                Self::is_repeatable(base) && Self::is_repeatable(index)
-            }
+            Expr::Index { base, index } => Self::is_repeatable(base) && Self::is_repeatable(index),
             _ => false,
         }
     }
@@ -1242,25 +1269,108 @@ impl<'a> Parser<'a> {
             Token::True | Token::False | Token::Null => false,
             Token::Function | Token::Return => false,
             Token::ForEach | Token::In | Token::Import => false,
-            Token::Assign | Token::Plus | Token::Minus | Token::Multiply | Token::Divide | Token::Ampersand => false,
+            Token::Assign
+            | Token::Plus
+            | Token::Minus
+            | Token::Multiply
+            | Token::Divide
+            | Token::Ampersand => false,
             Token::Question | Token::Dot | Token::Colon => false,
             Token::LBracket | Token::RBracket => false,
-            Token::LParen | Token::RParen | Token::LBrace | Token::RBrace | Token::Comma | Token::Semicolon => false,
-            Token::GreaterThan | Token::LessThan | Token::Equals | Token::NotEquals | Token::GreaterThanOrEqual | Token::LessThanOrEqual => false,
-            Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => false,
-            Token::FileOpen | Token::FileClose | Token::FileRead | Token::FileWrite | Token::ReadCSV | Token::WriteCSV => false,
+            Token::LParen
+            | Token::RParen
+            | Token::LBrace
+            | Token::RBrace
+            | Token::Comma
+            | Token::Semicolon => false,
+            Token::GreaterThan
+            | Token::LessThan
+            | Token::Equals
+            | Token::NotEquals
+            | Token::GreaterThanOrEqual
+            | Token::LessThanOrEqual => false,
+            Token::File | Token::CSV | Token::Read | Token::Write | Token::Open | Token::Close => {
+                false
+            }
+            Token::FileOpen
+            | Token::FileClose
+            | Token::FileRead
+            | Token::FileWrite
+            | Token::ReadCSV
+            | Token::WriteCSV => false,
             // Database operations
-            Token::Database | Token::DBConnect | Token::DBDisconnect | Token::DBQuery | Token::DBExecute | Token::DBSearch | Token::DBInsert | Token::DBUpdate | Token::DBDelete => false,
-            Token::Table | Token::Collection | Token::Row | Token::Column | Token::Key | Token::PrimaryKey | Token::ForeignKey | Token::Index => false,
+            Token::Database
+            | Token::DBConnect
+            | Token::DBDisconnect
+            | Token::DBQuery
+            | Token::DBExecute
+            | Token::DBSearch
+            | Token::DBInsert
+            | Token::DBUpdate
+            | Token::DBDelete => false,
+            Token::Table
+            | Token::Collection
+            | Token::Row
+            | Token::Column
+            | Token::Key
+            | Token::PrimaryKey
+            | Token::ForeignKey
+            | Token::Index => false,
             Token::CreateTable | Token::AlterTable | Token::DropTable => false,
-            Token::Select | Token::From | Token::Where | Token::OrderBy | Token::GroupBy | Token::Join | Token::Left | Token::Right | Token::Inner | Token::Outer | Token::Distinct | Token::Limit | Token::Offset => false,
+            Token::Select
+            | Token::From
+            | Token::Where
+            | Token::OrderBy
+            | Token::GroupBy
+            | Token::Join
+            | Token::Left
+            | Token::Right
+            | Token::Inner
+            | Token::Outer
+            | Token::Distinct
+            | Token::Limit
+            | Token::Offset => false,
             // Database types
-            Token::SQL | Token::NoSQL | Token::SQLite | Token::MySQL | Token::PostgreSQL | Token::MongoDB | Token::Redis | Token::JSONdb => false,
+            Token::SQL
+            | Token::NoSQL
+            | Token::SQLite
+            | Token::MySQL
+            | Token::PostgreSQL
+            | Token::MongoDB
+            | Token::Redis
+            | Token::JSONdb => false,
             // REST API operations
-            Token::Route | Token::Every | Token::StartServer | Token::StopServer | Token::Response | Token::JSONBody => false,
-            Token::Request | Token::Endpoint | Token::API | Token::Header | Token::Body | Token::Param | Token::QueryParam | Token::PathParam => false,
-            Token::URL | Token::Host | Token::Port | Token::Method | Token::StatusCode | Token::StatusMessage | Token::Auth | Token::BearerToken | Token::ContentType | Token::Serve => false,
-            Token::HttpGet | Token::HttpPost | Token::HttpPut | Token::HttpDelete | Token::HttpPatch | Token::HttpOptions | Token::HttpHead => false,
+            Token::Route
+            | Token::Every
+            | Token::StartServer
+            | Token::StopServer
+            | Token::Response
+            | Token::JSONBody => false,
+            Token::Request
+            | Token::Endpoint
+            | Token::API
+            | Token::Header
+            | Token::Body
+            | Token::Param
+            | Token::QueryParam
+            | Token::PathParam => false,
+            Token::URL
+            | Token::Host
+            | Token::Port
+            | Token::Method
+            | Token::StatusCode
+            | Token::StatusMessage
+            | Token::Auth
+            | Token::BearerToken
+            | Token::ContentType
+            | Token::Serve => false,
+            Token::HttpGet
+            | Token::HttpPost
+            | Token::HttpPut
+            | Token::HttpDelete
+            | Token::HttpPatch
+            | Token::HttpOptions
+            | Token::HttpHead => false,
             // Financial and accounting keywords ARE usable as names: வருவாய்,
             // வரி and the rest are the domain nouns programs are written
             // about. They have no statement syntax of their own, and listing

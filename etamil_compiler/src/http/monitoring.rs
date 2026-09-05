@@ -4,9 +4,9 @@
 // Provides performance metrics, health checks, and observability hooks
 
 use chrono::Utc;
-use serde::{Serialize, Deserialize};
-use std::sync::{Arc, Mutex};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 /// Request metrics
@@ -93,10 +93,8 @@ impl MetricsCollector {
         if let Ok(mut total) = self.total_requests.lock() {
             *total += 1;
         }
-        if !success {
-            if let Ok(mut failed) = self.failed_requests.lock() {
-                *failed += 1;
-            }
+        if !success && let Ok(mut failed) = self.failed_requests.lock() {
+            *failed += 1;
         }
 
         // Record response time
@@ -131,7 +129,11 @@ impl MetricsCollector {
     pub fn get_metrics(&self) -> RequestMetrics {
         let total = self.total_requests.lock().map(|t| *t).unwrap_or(0);
         let failed = self.failed_requests.lock().map(|f| *f).unwrap_or(0);
-        let times = self.response_times.lock().map(|t| t.clone()).unwrap_or_default();
+        let times = self
+            .response_times
+            .lock()
+            .map(|t| t.clone())
+            .unwrap_or_default();
 
         let (min_time, max_time, avg_time) = if times.is_empty() {
             (0, 0, 0.0)
@@ -188,9 +190,12 @@ impl Default for MetricsCollector {
     }
 }
 
+/// A registered health check: a closure returning its own result.
+type Check = Box<dyn Fn() -> HealthCheckItem + Send>;
+
 /// Health checker
 pub struct HealthChecker {
-    checks: Arc<Mutex<HashMap<String, Box<dyn Fn() -> HealthCheckItem + Send>>>>,
+    checks: Arc<Mutex<HashMap<String, Check>>>,
 }
 
 impl HealthChecker {
@@ -221,7 +226,9 @@ impl HealthChecker {
                 let result = check_fn();
                 if result.status == HealthStatus::Unhealthy {
                     overall_status = HealthStatus::Unhealthy;
-                } else if result.status == HealthStatus::Degraded && overall_status == HealthStatus::Healthy {
+                } else if result.status == HealthStatus::Degraded
+                    && overall_status == HealthStatus::Healthy
+                {
                     overall_status = HealthStatus::Degraded;
                 }
                 checks_result.insert(name.clone(), result);

@@ -32,7 +32,9 @@ fn check_in(cwd: &std::path::Path, source: &str) -> (i32, String, String) {
         .write_all(source.as_bytes())
         .expect("could not write the program");
 
-    let output = child.wait_with_output().expect("the compiler did not finish");
+    let output = child
+        .wait_with_output()
+        .expect("the compiler did not finish");
     (
         output.status.code().unwrap_or(-1),
         String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -93,11 +95,7 @@ fn a_missing_module_is_reported_rather_than_ignored() {
 /// The reason the mode exists.
 #[test]
 fn checking_a_program_does_not_run_it() {
-    let dir = std::env::temp_dir().join(format!(
-        "etamil-check-{}-{}",
-        std::process::id(),
-        line!()
-    ));
+    let dir = std::env::temp_dir().join(format!("etamil-check-{}-{}", std::process::id(), line!()));
     std::fs::create_dir_all(&dir).expect("could not create the temp directory");
     let witness = dir.join("varavu.txt");
     let _ = std::fs::remove_file(&witness);
@@ -124,11 +122,7 @@ fn checking_a_program_does_not_run_it() {
 /// the author's project.
 #[test]
 fn stdin_resolves_imports_from_the_working_directory() {
-    let dir = std::env::temp_dir().join(format!(
-        "etamil-check-{}-{}",
-        std::process::id(),
-        line!()
-    ));
+    let dir = std::env::temp_dir().join(format!("etamil-check-{}-{}", std::process::id(), line!()));
     std::fs::create_dir_all(&dir).expect("could not create the temp directory");
     std::fs::write(dir.join("tuNY.qmz"), "செயல் இரட்டை(எ) { திரும்பு எ * 2; }\n")
         .expect("could not write the module");

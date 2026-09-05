@@ -31,15 +31,16 @@ jobs:
         with:
           workspaces: etamil_compiler
 
-      # Not yet gating: the existing code predates rustfmt/clippy being run.
-      # Remove continue-on-error once the backlog is clear.
+      # Gating. These were non-gating while the code predated rustfmt and clippy
+      # ever being run; that backlog is now clear, so a failure here is a
+      # regression rather than history. Until it was cleared, every green run
+      # still carried four red annotations, which is how a build ends up with
+      # errors nobody reads.
       - name: Format check
         run: cargo fmt --check
-        continue-on-error: true
 
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
-        continue-on-error: true
 
       # Audits every keyword's romanization against the ezuqqu scheme. It was
       # non-gating while 19 keywords were off-scheme; 18 are now on-scheme and

@@ -22,9 +22,9 @@
 //! ```
 
 // --- Front end: portable, and the whole of what a browser build exposes ---
+pub mod check;
 pub mod lexer;
 pub mod parser;
-pub mod check;
 
 // --- Everything below needs an OS ---
 
@@ -39,9 +39,9 @@ pub mod repl;
 // feature enabled below, so this works in the browser build too.
 pub mod crypt;
 // Portable: HMAC-SHA256 over hmac/sha2/subtle, all pure Rust.
-pub mod signing;
 #[cfg(not(target_family = "wasm"))]
 pub mod redis;
+pub mod signing;
 // What the LLVM backend's emitted IR calls into: every eTamil value as a handle
 // into an arena, and every operation on one as a C-ABI call. Not behind the
 // `llvm` feature and not behind `cfg(not(wasm))` — it links no LLVM and touches
@@ -56,9 +56,9 @@ pub mod mongo;
 pub mod mtls;
 // Portable with `http-client` off, which a wasm build implies: `request` then
 // takes the existing no-HTTP-client fallback, and sign/verify are pure Rust.
-pub mod net;
 #[cfg(not(target_family = "wasm"))]
 pub mod db;
+pub mod net;
 // Internally `#[cfg(feature = "llvm")]` throughout, and llvm-sys has no wasm
 // build; gated here too so a wasm build does not depend on that staying true.
 #[cfg(not(target_family = "wasm"))]
@@ -67,9 +67,9 @@ pub mod codegen;
 // interpreter's input and output go through vm::host, which has a browser
 // implementation. The archive and subprocess helpers inside it are gated
 // individually.
-pub mod vm;
 #[cfg(not(target_family = "wasm"))]
 pub mod http;
+pub mod vm;
 
 // --- Browser bindings ---
 

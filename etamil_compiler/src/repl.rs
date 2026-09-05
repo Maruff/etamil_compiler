@@ -180,7 +180,7 @@ fn show_session(vm: &VM, definitions: &[Stmt]) {
     } else {
         for name in names {
             let value = &vm.variables[name];
-            println!("  {} = {}", name, value.to_string());
+            println!("  {} = {}", name, value);
         }
     }
 

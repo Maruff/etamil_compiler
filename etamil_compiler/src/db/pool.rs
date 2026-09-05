@@ -36,8 +36,12 @@ fn idle_cap() -> usize {
 /// string against a different backend is a different pool.
 type Key = (String, String);
 
-fn cache() -> &'static Mutex<HashMap<Key, Vec<Box<dyn Database>>>> {
-    static CACHE: OnceLock<Mutex<HashMap<Key, Vec<Box<dyn Database>>>>> = OnceLock::new();
+/// Idle connections per key. Named because the type appears twice below and
+/// clippy is right that the spelled-out form is hard to read.
+type Idle = HashMap<Key, Vec<Box<dyn Database>>>;
+
+fn cache() -> &'static Mutex<Idle> {
+    static CACHE: OnceLock<Mutex<Idle>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
@@ -51,7 +55,11 @@ pub struct Lease {
 }
 
 impl Lease {
-    pub fn as_mut(&mut self) -> &mut dyn Database {
+    /// The borrowed connection.
+    ///
+    /// Not `as_mut`: that is `std::convert::AsMut`'s method name, and a reader
+    /// seeing `lease.as_mut()` would reasonably expect the trait.
+    pub fn connection(&mut self) -> &mut dyn Database {
         // Held for the whole life of the Lease; `close` consumes self.
         self.handle
             .as_mut()
@@ -148,15 +156,14 @@ pub fn checkout(db_type: &str, connection: &str) -> Result<Lease, String> {
         });
     }
 
-    if let Ok(mut cache) = cache().lock() {
-        if let Some(idle) = cache.get_mut(&key) {
-            if let Some(handle) = idle.pop() {
-                return Ok(Lease {
-                    handle: Some(handle),
-                    key: Some(key),
-                });
-            }
-        }
+    if let Ok(mut cache) = cache().lock()
+        && let Some(idle) = cache.get_mut(&key)
+        && let Some(handle) = idle.pop()
+    {
+        return Ok(Lease {
+            handle: Some(handle),
+            key: Some(key),
+        });
     }
 
     Ok(Lease {
@@ -201,7 +208,7 @@ mod tests {
         {
             let mut lease = checkout("SQLite", &path).unwrap();
             lease
-                .as_mut()
+                .connection()
                 .execute("CREATE TABLE IF NOT EXISTS t (a INTEGER)", &[])
                 .unwrap();
             assert_eq!(idle_count("SQLite", &path), 0, "still checked out");
@@ -227,7 +234,7 @@ mod tests {
 
         {
             let mut lease = checkout("SQLite", &path).unwrap();
-            let db = lease.as_mut();
+            let db = lease.connection();
             db.execute("CREATE TABLE t (a INTEGER)", &[]).unwrap();
             db.execute("INSERT INTO t VALUES (1)", &[]).unwrap();
 
@@ -238,15 +245,19 @@ mod tests {
 
         // The same connection comes back out of the cache.
         let mut lease = checkout("SQLite", &path).unwrap();
-        let rows = lease.as_mut().query("SELECT a FROM t", &[]).unwrap();
+        let rows = lease.connection().query("SELECT a FROM t", &[]).unwrap();
 
         // One row: the uncommitted 99 was rolled back on return. Two would
         // mean the next borrower inherited an open transaction.
-        assert_eq!(rows.len(), 1, "the abandoned INSERT should have rolled back");
+        assert_eq!(
+            rows.len(),
+            1,
+            "the abandoned INSERT should have rolled back"
+        );
 
         // And a fresh transaction works, which it could not if the old one
         // were still open.
-        let db = lease.as_mut();
+        let db = lease.connection();
         db.execute("BEGIN", &[]).unwrap();
         db.execute("INSERT INTO t VALUES (2)", &[]).unwrap();
         db.execute("COMMIT", &[]).unwrap();
@@ -262,12 +273,12 @@ mod tests {
 
         let mut first = checkout("SQLite", &path).unwrap();
         first
-            .as_mut()
+            .connection()
             .execute("CREATE TABLE IF NOT EXISTS t (a INTEGER)", &[])
             .unwrap();
 
         let mut second = checkout("SQLite", &path).unwrap();
-        second.as_mut().query("SELECT 1", &[]).unwrap();
+        second.connection().query("SELECT 1", &[]).unwrap();
 
         drop(first);
         drop(second);

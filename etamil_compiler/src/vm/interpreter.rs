@@ -11,13 +11,13 @@ use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
 use std::fs;
 // Only reached from package_copy, which a wasm build gates out.
+use crate::vm::host;
+use crate::vm::{Bytecode, Instruction, Value};
+use rust_decimal::Decimal;
 #[cfg(not(target_family = "wasm"))]
 use std::io::Write as IoWrite;
-use rust_decimal::Decimal;
 use std::str::FromStr;
 use unicode_segmentation::UnicodeSegmentation;
-use crate::vm::host;
-use crate::vm::{Value, Instruction, Bytecode};
 
 /// Split text the way a reader would: by written letter. A Tamil letter is
 /// frequently several code points (consonant + vowel sign, or + pulli), so
@@ -163,6 +163,12 @@ pub struct VM {
     pub cache: Option<crate::redis::Connection>,
 }
 
+impl Default for VM {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VM {
     pub fn new() -> Self {
         VM {
@@ -193,7 +199,7 @@ impl VM {
     ) -> Result<&mut dyn crate::db::Database, String> {
         if let Some(handle) = handle {
             return match self.connections.0.get_mut(handle) {
-                Some(open) => Ok(open.lease.as_mut()),
+                Some(open) => Ok(open.lease.connection()),
                 None => Err(format!(
                     "'{}' என்ற இணைப்பு இல்லை  (there is no connection named '{}'): \
                      open one with தளம்_இணை … , {}",
@@ -210,14 +216,12 @@ impl VM {
                 .next()
                 .expect("checked")
                 .lease
-                .as_mut());
+                .connection());
         }
         if self.connections.is_empty() {
-            return Err(
-                "தரவுத்தளம் இணைக்கப்படவில்லை  (not connected to a database): \
+            return Err("தரவுத்தளம் இணைக்கப்படவில்லை  (not connected to a database): \
                  use தளம்_இணை first"
-                    .to_string(),
-            );
+                .to_string());
         }
         Err(format!(
             "பல இணைப்புகள் திறந்துள்ளன  (several connections are open: {}); \
@@ -233,10 +237,10 @@ impl VM {
 
     /// Read a name: the current call's locals shadow globals.
     fn get_var(&self, name: &str) -> Option<Value> {
-        if let Some(frame) = self.frames.last() {
-            if let Some(value) = frame.locals.get(name) {
-                return Some(value.clone());
-            }
+        if let Some(frame) = self.frames.last()
+            && let Some(value) = frame.locals.get(name)
+        {
+            return Some(value.clone());
         }
         self.variables.get(name).cloned()
     }
@@ -257,7 +261,9 @@ impl VM {
 
     /// Pop a value, or report a stack underflow.
     fn pop(&mut self) -> Result<Value, String> {
-        self.stack.pop().ok_or_else(|| "Stack underflow".to_string())
+        self.stack
+            .pop()
+            .ok_or_else(|| "Stack underflow".to_string())
     }
 
     /// Human-readable type name, for error messages.
@@ -523,8 +529,7 @@ impl VM {
                     Value::Ok(inner) => Ok((**inner).clone()),
                     Value::Err(error) => Err(format!(
                         "தவறான முடிவை விரித்தது: {}  (unwrap on an error: {})",
-                        error.to_string(),
-                        error.to_string()
+                        error, error
                     )),
                     other => Err(format!(
                         "மதிப்பு க்கு ஒரு முடிவு தேவை  (unwrap needs a result, got {})",
@@ -551,8 +556,7 @@ impl VM {
                     Value::Ok(inner) => Err(format!(
                         "வெற்றியான முடிவில் பிழை இல்லை: {}  \
                          (there is no error in a successful result: {})",
-                        inner.to_string(),
-                        inner.to_string()
+                        inner, inner
                     )),
                     other => Err(format!(
                         "தவறு_மதிப்பு க்கு ஒரு முடிவு தேவை  (it needs a result, got {})",
@@ -785,8 +789,8 @@ impl VM {
                         ));
                     }
                 };
-                let seconds = rust_decimal::prelude::ToPrimitive::to_u64(&args[2].to_number())
-                    .unwrap_or(0);
+                let seconds =
+                    rust_decimal::prelude::ToPrimitive::to_u64(&args[2].to_number()).unwrap_or(0);
                 match Self::run_program(&program, &parameters, seconds) {
                     Ok((code, out, err)) => {
                         let mut answer = HashMap::new();
@@ -886,7 +890,8 @@ impl VM {
             // The issuer and audience are arguments and not optional: a token
             // an identity provider really signed, for somebody else's
             // application, is a real token and must still be refused.
-            "சீட்டு_பொதுச்_சரிபார்" | "cIttu_poquc_caripAr" | "_verifyTokenRSA" => {
+            "சீட்டு_பொதுச்_சரிபார்" | "cIttu_poquc_caripAr" | "_verifyTokenRSA" =>
+            {
                 Self::expect_args(name, &args, 5)?;
                 match crate::http::auth::verify_rsa_token(
                     &args[0].to_string(),
@@ -911,14 +916,14 @@ impl VM {
             // Nothing is returned, because nothing continues.
             "வெளியேறு" | "veLiyERu" | "_exit" => {
                 Self::expect_args(name, &args, 1)?;
-                let status = rust_decimal::prelude::ToPrimitive::to_i32(&args[0].to_number())
-                    .unwrap_or(1);
+                let status =
+                    rust_decimal::prelude::ToPrimitive::to_i32(&args[0].to_number()).unwrap_or(1);
                 // Exiting does not unwind, so anything still buffered would be
                 // lost — including the summary line that explains the status.
                 host::exit(status)?;
                 // Native `exit` never returns; the browser host has no process
                 // to end, so a zero status falls through and carries on.
-                return Ok(Value::Ok(Box::new(Value::Number(Decimal::from(status)))));
+                Ok(Value::Ok(Box::new(Value::Number(Decimal::from(status)))))
             }
 
             // --- Signing with a key only one side holds ---------------------
@@ -1032,9 +1037,10 @@ impl VM {
                 Self::expect_args(name, &args, 2)?;
                 let command = args[0].to_string();
                 let arguments = match &args[1] {
-                    Value::Array(items) => {
-                        items.iter().map(|item| item.to_string()).collect::<Vec<_>>()
-                    }
+                    Value::Array(items) => items
+                        .iter()
+                        .map(|item| item.to_string())
+                        .collect::<Vec<_>>(),
                     other => {
                         return Err(format!(
                             "ரெடிஸ்_கட்டளை அளபுருக்கள் ஒரு அணி தேவை  \
@@ -1159,14 +1165,12 @@ impl VM {
                 let many = args[3].is_truthy();
                 match Self::mongo_of(&self.documents) {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
-                    Ok(connection) => {
-                        match connection.update(&collection, filter, change, many) {
-                            Ok(changed) => Ok(Value::Ok(Box::new(Value::Number(
-                                Decimal::from(changed),
-                            )))),
-                            Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    Ok(connection) => match connection.update(&collection, filter, change, many) {
+                        Ok(changed) => {
+                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(changed)))))
                         }
-                    }
+                        Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
+                    },
                 }
             }
             // மொங்கோ_நீக்கு(தொகுப்பு, வடிகட்டி, அனைத்துமா)
@@ -1186,9 +1190,7 @@ impl VM {
                 match Self::mongo_of(&self.documents) {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     Ok(connection) => match connection.delete(&collection, filter, many) {
-                        Ok(gone) => {
-                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(gone)))))
-                        }
+                        Ok(gone) => Ok(Value::Ok(Box::new(Value::Number(Decimal::from(gone))))),
                         Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     },
                 }
@@ -1196,11 +1198,11 @@ impl VM {
             // Built without the feature: say so, rather than leaving someone to
             // hunt for a typo in a name that is spelled correctly.
             #[cfg(not(feature = "mongodb"))]
-            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => Err(
-                "மொங்கோ ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+            "மொங்கோ_இணை" | "mowkO_iNY" | "_mongoConnect" => {
+                Err("மொங்கோ ஆதரவு இல்லாமல் கட்டப்பட்டது  \
                  (this build has no MongoDB support): rebuild with --features mongodb"
-                    .to_string(),
-            ),
+                    .to_string())
+            }
 
             // --- A database write that can fail without ending the program ---
             //
@@ -1227,7 +1229,8 @@ impl VM {
 
             // தளம்_செய்_முயற்சி(வினா, அளபுருக்கள்) — attempt it; answers the
             // number of rows touched, or why not
-            "தளம்_செய்_முயற்சி" | "qaLam_cey_muyaRci" | "_tryExecute" => {
+            "தளம்_செய்_முயற்சி" | "qaLam_cey_muyaRci" | "_tryExecute" =>
+            {
                 Self::expect_args(name, &args, 2)?;
                 let sql = args[0].to_string();
                 let params = match crate::db::params_from(&args[1]) {
@@ -1237,9 +1240,9 @@ impl VM {
                 match self.connection_mut() {
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     Ok(handle) => match handle.execute(&sql, &params) {
-                        Ok(touched) => Ok(Value::Ok(Box::new(Value::Number(
-                            Decimal::from(touched),
-                        )))),
+                        Ok(touched) => {
+                            Ok(Value::Ok(Box::new(Value::Number(Decimal::from(touched)))))
+                        }
                         Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                     },
                 }
@@ -1250,7 +1253,8 @@ impl VM {
             // No rows is a successful query answering nothing, and stays a
             // சரி holding an empty array. Only a query that could not run is a
             // தவறு — a missing column, a syntax error, a lost connection.
-            "தளம்_வினா_முயற்சி" | "qaLam_viZA_muyaRci" | "_tryQuery" => {
+            "தளம்_வினா_முயற்சி" | "qaLam_viZA_muyaRci" | "_tryQuery" =>
+            {
                 Self::expect_args(name, &args, 2)?;
                 let sql = args[0].to_string();
                 let params = match crate::db::params_from(&args[1]) {
@@ -1280,7 +1284,8 @@ impl VM {
                 )?))
             }
             // கடவுச்சொல்_சரியா(கடவுச்சொல், மறையீடு) — does it match?
-            "கடவுச்சொல்_சரியா" | "kataveuccol_cariyA" | "_verifyPassword" => {
+            "கடவுச்சொல்_சரியா" | "kataveuccol_cariyA" | "_verifyPassword" =>
+            {
                 Self::expect_args(name, &args, 2)?;
                 Ok(Value::Boolean(crate::http::auth::verify_password(
                     &args[0].to_string(),
@@ -1296,7 +1301,9 @@ impl VM {
             "சீட்டு_ஆக்கு" | "cIttu_Akku" | "_issueToken" => {
                 Self::expect_args(name, &args, 2)?;
                 let seconds = rust_decimal::prelude::ToPrimitive::to_i64(&args[1].to_number())
-                    .ok_or("நொடிகள் ஒரு முழு எண்  (the lifetime must be a whole number of seconds)")?;
+                    .ok_or(
+                        "நொடிகள் ஒரு முழு எண்  (the lifetime must be a whole number of seconds)",
+                    )?;
                 Ok(Value::String(crate::http::auth::issue_token(
                     &args[0].to_string(),
                     seconds,
@@ -1425,7 +1432,8 @@ impl VM {
             // Use this rather than comparing கையொப்பம்(...) with `==`: that
             // comparison stops at the first wrong character, and how long it
             // took reveals how much of the signature was right.
-            "கையொப்பம்_சரியா" | "kYyoppam_cariyA" | "_verifySignature" => {
+            "கையொப்பம்_சரியா" | "kYyoppam_cariyA" | "_verifySignature" =>
+            {
                 Self::expect_args(name, &args, 3)?;
                 Ok(Value::Boolean(crate::net::verify(
                     &args[0].to_string(),
@@ -1527,12 +1535,7 @@ impl VM {
     /// answers 402 with a body saying why, and reporting that as a தவறு would
     /// throw the explanation away. Only a request that never got an answer —
     /// DNS, TLS, connection, timeout — is a failure.
-    fn http_call(
-        method: &str,
-        url: &Value,
-        body: Option<&Value>,
-        headers: &Value,
-    ) -> Value {
+    fn http_call(method: &str, url: &Value, body: Option<&Value>, headers: &Value) -> Value {
         let headers: Vec<(String, String)> = match headers {
             Value::Map(fields) => fields
                 .iter()
@@ -1744,10 +1747,16 @@ impl VM {
             )
         })?;
         let mut archive = zip::ZipArchive::new(file).map_err(|e| {
-            format!("'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}", path, path, e)
+            format!(
+                "'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}",
+                path, path, e
+            )
         })?;
         let mut found = archive.by_name(entry).map_err(|_| {
-            format!("பொதியில் '{}' இல்லை  (no entry '{}' in the package)", entry, entry)
+            format!(
+                "பொதியில் '{}' இல்லை  (no entry '{}' in the package)",
+                entry, entry
+            )
         })?;
         let mut text = String::new();
         std::io::Read::read_to_string(&mut found, &mut text).map_err(|e| {
@@ -1778,11 +1787,18 @@ impl VM {
             )
         })?;
         let mut archive = zip::ZipArchive::new(reader).map_err(|e| {
-            format!("'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}", source, source, e)
+            format!(
+                "'{}' ஒரு பொதி அல்ல  ('{}' is not a package): {}",
+                source, source, e
+            )
         })?;
 
         let names: Vec<String> = (0..archive.len())
-            .map(|index| archive.by_index(index).map(|entry| entry.name().to_string()))
+            .map(|index| {
+                archive
+                    .by_index(index)
+                    .map(|entry| entry.name().to_string())
+            })
             .collect::<Result<_, _>>()
             .map_err(|e| format!("பொதியைப் படிக்க முடியவில்லை  (cannot read the package): {}", e))?;
 
@@ -1857,7 +1873,10 @@ impl VM {
 
     fn append_line(filename: &str, data: &str) -> Result<(), String> {
         host::append_line(filename, data).map_err(|e| {
-            format!("கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}", filename, filename, e)
+            format!(
+                "கோப்பு '{}' எழுத முடியவில்லை  (cannot write '{}'): {}",
+                filename, filename, e
+            )
         })
     }
 
@@ -1890,7 +1909,7 @@ impl VM {
                 }
             }
             let instruction = bytecode.instructions[self.instruction_pointer].clone();
-            
+
             match instruction {
                 Instruction::Push(value) => {
                     self.stack.push(value);
@@ -1918,17 +1937,20 @@ impl VM {
                 Instruction::Add => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    self.stack.push(Value::Number(left.to_number() + right.to_number()));
+                    self.stack
+                        .push(Value::Number(left.to_number() + right.to_number()));
                 }
                 Instruction::Subtract => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    self.stack.push(Value::Number(left.to_number() - right.to_number()));
+                    self.stack
+                        .push(Value::Number(left.to_number() - right.to_number()));
                 }
                 Instruction::Multiply => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    self.stack.push(Value::Number(left.to_number() * right.to_number()));
+                    self.stack
+                        .push(Value::Number(left.to_number() * right.to_number()));
                 }
                 Instruction::Divide => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
@@ -1947,7 +1969,8 @@ impl VM {
                 Instruction::Modulo => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    self.stack.push(Value::Number(left.to_number() % right.to_number()));
+                    self.stack
+                        .push(Value::Number(left.to_number() % right.to_number()));
                 }
                 Instruction::Equal => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
@@ -1962,7 +1985,8 @@ impl VM {
                 Instruction::LessThan => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    let result = left.partial_cmp(&right)
+                    let result = left
+                        .partial_cmp(&right)
                         .map(|ord| ord == std::cmp::Ordering::Less)
                         .unwrap_or(false);
                     self.stack.push(Value::Boolean(result));
@@ -1970,7 +1994,8 @@ impl VM {
                 Instruction::LessOrEqual => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    let result = left.partial_cmp(&right)
+                    let result = left
+                        .partial_cmp(&right)
                         .map(|ord| ord != std::cmp::Ordering::Greater)
                         .unwrap_or(false);
                     self.stack.push(Value::Boolean(result));
@@ -1978,7 +2003,8 @@ impl VM {
                 Instruction::GreaterThan => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    let result = left.partial_cmp(&right)
+                    let result = left
+                        .partial_cmp(&right)
                         .map(|ord| ord == std::cmp::Ordering::Greater)
                         .unwrap_or(false);
                     self.stack.push(Value::Boolean(result));
@@ -1986,7 +2012,8 @@ impl VM {
                 Instruction::GreaterOrEqual => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    let result = left.partial_cmp(&right)
+                    let result = left
+                        .partial_cmp(&right)
                         .map(|ord| ord != std::cmp::Ordering::Less)
                         .unwrap_or(false);
                     self.stack.push(Value::Boolean(result));
@@ -1994,7 +2021,7 @@ impl VM {
                 Instruction::Concat => {
                     let right = self.stack.pop().ok_or("Stack underflow")?;
                     let left = self.stack.pop().ok_or("Stack underflow")?;
-                    let result = format!("{}{}", left.to_string(), right.to_string());
+                    let result = format!("{}{}", left, right);
                     self.stack.push(Value::String(result));
                 }
                 Instruction::Print => {
@@ -2007,11 +2034,11 @@ impl VM {
                     self.stack.push(Value::String(input.trim().to_string()));
                 }
                 Instruction::JumpIfFalse(target) => {
-                    if let Some(value) = self.stack.pop() {
-                        if !value.is_truthy() {
-                            self.instruction_pointer = target;
-                            continue;
-                        }
+                    if let Some(value) = self.stack.pop()
+                        && !value.is_truthy()
+                    {
+                        self.instruction_pointer = target;
+                        continue;
                     }
                 }
                 Instruction::Jump(target) => {
@@ -2021,12 +2048,14 @@ impl VM {
                 Instruction::And => {
                     let right = self.pop()?;
                     let left = self.pop()?;
-                    self.stack.push(Value::Boolean(left.is_truthy() && right.is_truthy()));
+                    self.stack
+                        .push(Value::Boolean(left.is_truthy() && right.is_truthy()));
                 }
                 Instruction::Or => {
                     let right = self.pop()?;
                     let left = self.pop()?;
-                    self.stack.push(Value::Boolean(left.is_truthy() || right.is_truthy()));
+                    self.stack
+                        .push(Value::Boolean(left.is_truthy() || right.is_truthy()));
                 }
                 Instruction::Not => {
                     let value = self.pop()?;
@@ -2037,8 +2066,12 @@ impl VM {
                     // Opening for writing truncates once; later writes append,
                     // so a sequence of writes reads back in order.
                     if mode == "write" {
-                        host::write(&filename, b"")
-                            .map_err(|e| format!("கோப்பு '{}' திறக்க முடியவில்லை  (cannot open '{}' for writing): {}", filename, filename, e))?;
+                        host::write(&filename, b"").map_err(|e| {
+                            format!(
+                                "கோப்பு '{}' திறக்க முடியவில்லை  (cannot open '{}' for writing): {}",
+                                filename, filename, e
+                            )
+                        })?;
                     }
                     self.file_modes.insert(filename, mode);
                 }
@@ -2053,14 +2086,23 @@ impl VM {
                 }
                 Instruction::FileRead => {
                     let filename = self.pop()?.to_string();
-                    let contents = host::read_to_string(&filename)
-                        .map_err(|e| format!("கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}", filename, filename, e))?;
-                    self.stack.push(Value::String(contents.trim_end_matches('\n').to_string()));
+                    let contents = host::read_to_string(&filename).map_err(|e| {
+                        format!(
+                            "கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}",
+                            filename, filename, e
+                        )
+                    })?;
+                    self.stack
+                        .push(Value::String(contents.trim_end_matches('\n').to_string()));
                 }
                 Instruction::ReadCSV => {
                     let filename = self.pop()?.to_string();
-                    let contents = host::read_to_string(&filename)
-                        .map_err(|e| format!("கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}", filename, filename, e))?;
+                    let contents = host::read_to_string(&filename).map_err(|e| {
+                        format!(
+                            "கோப்பு '{}' படிக்க முடியவில்லை  (cannot read '{}'): {}",
+                            filename, filename, e
+                        )
+                    })?;
                     // Count data rows, excluding the header line.
                     let rows = contents.lines().filter(|l| !l.trim().is_empty()).count();
                     let data_rows = if rows > 0 { rows - 1 } else { 0 };
@@ -2104,7 +2146,10 @@ impl VM {
                     match base {
                         Value::Map(fields) => {
                             let value = fields.get(&name).cloned().ok_or_else(|| {
-                                format!("புலம் '{}' இல்லை  (no field '{}' on this record)", name, name)
+                                format!(
+                                    "புலம் '{}' இல்லை  (no field '{}' on this record)",
+                                    name, name
+                                )
                             })?;
                             self.stack.push(value);
                         }
@@ -2122,7 +2167,10 @@ impl VM {
                     let value = self.pop()?;
                     let index = self.pop()?;
                     let mut base = self.get_var(&name).ok_or_else(|| {
-                        format!("அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')", name, name)
+                        format!(
+                            "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                            name, name
+                        )
                     })?;
                     Self::index_assign(&mut base, &index, value, &name)?;
                     self.set_var(name, base);
@@ -2130,7 +2178,10 @@ impl VM {
                 Instruction::SetField(name, field) => {
                     let value = self.pop()?;
                     let mut base = self.get_var(&name).ok_or_else(|| {
-                        format!("அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')", name, name)
+                        format!(
+                            "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                            name, name
+                        )
                     })?;
                     match &mut base {
                         Value::Map(fields) => {
@@ -2168,10 +2219,7 @@ impl VM {
                         continue;
                     }
                     let info = bytecode.functions.get(&name).cloned().ok_or_else(|| {
-                        format!(
-                            "அறியப்படாத செயல் '{}'  (unknown function '{}')",
-                            name, name
-                        )
+                        format!("அறியப்படாத செயல் '{}'  (unknown function '{}')", name, name)
                     })?;
                     if info.params.len() != argc {
                         return Err(format!(
@@ -2209,9 +2257,10 @@ impl VM {
                 }
                 Instruction::Return => {
                     let value = self.pop()?;
-                    let frame = self.frames.pop().ok_or(
-                        "செயலுக்கு வெளியே திரும்பு  (return outside of a function)",
-                    )?;
+                    let frame = self
+                        .frames
+                        .pop()
+                        .ok_or("செயலுக்கு வெளியே திரும்பு  (return outside of a function)")?;
                     self.stack.truncate(frame.base_len);
                     self.instruction_pointer = frame.return_ip;
                     self.stack.push(value);
@@ -2233,8 +2282,7 @@ impl VM {
                                 None => {
                                     return Err(format!(
                                         "கையாளப்படாத தவறு: {}  (unhandled error at top level: {})",
-                                        error.to_string(),
-                                        error.to_string()
+                                        error, error
                                     ));
                                 }
                             }
@@ -2322,8 +2370,7 @@ impl VM {
                     // Written to globals, not the current frame: the server
                     // reads them from the VM once the handler has returned,
                     // and பதில் is often called from inside a function.
-                    self.variables
-                        .insert("response_status".to_string(), status);
+                    self.variables.insert("response_status".to_string(), status);
                     self.variables
                         .insert("response_body".to_string(), Value::String(body.to_string()));
                     self.variables
@@ -2375,10 +2422,10 @@ impl VM {
                     break;
                 }
             }
-            
+
             self.instruction_pointer += 1;
         }
-        
+
         Ok(())
     }
 }

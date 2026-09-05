@@ -27,7 +27,12 @@ impl SqliteDatabase {
         } else {
             Connection::open(path)
         }
-        .map_err(|e| format!("தரவுத்தளம் திறக்க முடியவில்லை  (cannot open database '{}'): {}", path, e))?;
+        .map_err(|e| {
+            format!(
+                "தரவுத்தளம் திறக்க முடியவில்லை  (cannot open database '{}'): {}",
+                path, e
+            )
+        })?;
 
         Ok(SqliteDatabase { connection })
     }
@@ -89,8 +94,11 @@ impl Database for SqliteDatabase {
             .prepare(sql)
             .map_err(|e| format!("வினா தயாரிக்க முடியவில்லை  (cannot prepare query): {}", e))?;
 
-        let column_names: Vec<String> =
-            statement.column_names().iter().map(|c| c.to_string()).collect();
+        let column_names: Vec<String> = statement
+            .column_names()
+            .iter()
+            .map(|c| c.to_string())
+            .collect();
 
         let bound: Vec<Bound<'_>> = params.iter().map(Bound).collect();
         let refs: Vec<&dyn ToSql> = bound.iter().map(|b| b as &dyn ToSql).collect();
@@ -106,9 +114,9 @@ impl Database for SqliteDatabase {
         {
             let mut record = HashMap::with_capacity(column_names.len());
             for (index, name) in column_names.iter().enumerate() {
-                let raw = row
-                    .get_ref(index)
-                    .map_err(|e| format!("நெடுவரிசை படிக்க முடியவில்லை  (cannot read column): {}", e))?;
+                let raw = row.get_ref(index).map_err(|e| {
+                    format!("நெடுவரிசை படிக்க முடியவில்லை  (cannot read column): {}", e)
+                })?;
                 record.insert(name.clone(), value_from(raw));
             }
             out.push(Value::Map(record));

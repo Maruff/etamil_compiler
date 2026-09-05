@@ -6,9 +6,9 @@
 //! the wrong answer.
 
 use etamil_compiler::lexer;
-use rust_decimal::Decimal;
 use etamil_compiler::parser::Parser;
-use etamil_compiler::vm::{BytecodeCompiler, Value, VM};
+use etamil_compiler::vm::{BytecodeCompiler, VM, Value};
+use rust_decimal::Decimal;
 
 /// Run a program to completion and hand back the finished VM.
 fn run(source: &str) -> Result<VM, String> {
@@ -181,7 +181,10 @@ fn a_chain_short_circuits_because_it_is_built_from_and() {
     // observable: reading an undefined name is a runtime error, so if the second
     // half were evaluated this would fail rather than answer false.
     let vm = run("n = 0; a = [1]; x = 1 < n < aNi_nILam_illY;").unwrap_or_else(|e| {
-        panic!("a short-circuited chain should not touch the second half: {}", e)
+        panic!(
+            "a short-circuited chain should not touch the second half: {}",
+            e
+        )
     });
     assert_eq!(vm.variables.get("x"), Some(&Value::Boolean(false)));
 }
@@ -246,11 +249,15 @@ fn a_declared_signature_accepts_what_it_asked_for() {
 
 #[test]
 fn an_argument_must_be_the_type_the_parameter_declared() {
-    let why = run("ceyal vari(eN qokY) eN { qirumpu qokY * 18; } out = vari({\"a\": 1});")
-        .unwrap_err();
+    let why =
+        run("ceyal vari(eN qokY) eN { qirumpu qokY * 18; } out = vari({\"a\": 1});").unwrap_err();
     // Pointed at the parameter, because that is where the promise was made and
     // Expr::Call carries no span.
-    assert!(why.contains("qokY"), "it should name the parameter: {}", why);
+    assert!(
+        why.contains("qokY"),
+        "it should name the parameter: {}",
+        why
+    );
 }
 
 #[test]
@@ -294,8 +301,7 @@ fn a_parameter_type_is_in_scope_inside_the_body() {
 
 #[test]
 fn a_round_trip_through_the_language_returns_the_text() {
-    let vm = run(r#"k = maRY_vicY(); out = maRY("₹2.05", k); back = veLippatu(out, k);"#)
-        .unwrap();
+    let vm = run(r#"k = maRY_vicY(); out = maRY("₹2.05", k); back = veLippatu(out, k);"#).unwrap();
     match vm.variables.get("back") {
         Some(Value::Ok(inner)) => assert_eq!(inner.to_string(), "₹2.05"),
         other => panic!("expected a successful result, got {:?}", other),
@@ -373,7 +379,10 @@ fn addition_is_exact() {
 fn currency_multiplication_is_exact() {
     // f64 gives 299.96999999999997.
     let vm = run("total = 99.99 * 3;").unwrap();
-    assert_eq!(num(&vm, "total"), Decimal::from_str_exact("299.97").unwrap());
+    assert_eq!(
+        num(&vm, "total"),
+        Decimal::from_str_exact("299.97").unwrap()
+    );
     assert_eq!(text(&vm, "total"), "299.97");
 }
 
@@ -401,7 +410,11 @@ fn equality_is_exact_not_approximate() {
 #[test]
 fn division_by_zero_is_an_error() {
     let err = run("x = 1 / 0;").expect_err("division by zero should fail");
-    assert!(err.contains("division by zero"), "unexpected error: {}", err);
+    assert!(
+        err.contains("division by zero"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 #[test]
@@ -426,11 +439,11 @@ fn keyword_backed_names_keep_the_spelling_the_author_used() {
     // sharpest remaining contradiction.
     let roman = run("eN varuvAy = 5;").unwrap();
     assert_eq!(num(&roman, "varuvAy"), dec(5));
-    assert!(roman.variables.get("Revenue").is_none());
+    assert!(!roman.variables.contains_key("Revenue"));
 
     let tamil = run("எண் வருவாய் = 5;").unwrap();
     assert_eq!(num(&tamil, "வருவாய்"), dec(5));
-    assert!(tamil.variables.get("Revenue").is_none());
+    assert!(!tamil.variables.contains_key("Revenue"));
 }
 
 // The other half of the same change: the two spellings now name two different
@@ -500,7 +513,11 @@ fn valid_source_lexes_cleanly() {
 #[test]
 fn undefined_variables_are_an_error() {
     let err = run("accu missing_var;").expect_err("undefined variable should fail");
-    assert!(err.contains("undefined variable"), "unexpected error: {}", err);
+    assert!(
+        err.contains("undefined variable"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 // Regression: server statements compiled to nothing and the program exited
@@ -509,11 +526,7 @@ fn undefined_variables_are_an_error() {
 fn server_statements_fail_loudly() {
     let err = run(r#"vazawki_toqotawku "127.0.0.1", 8080;"#)
         .expect_err("server statements are not implemented in the VM");
-    assert!(
-        err.contains("not implemented"),
-        "unexpected error: {}",
-        err
-    );
+    assert!(err.contains("not implemented"), "unexpected error: {}", err);
 }
 
 // --- File I/O -------------------------------------------------------------
@@ -635,22 +648,29 @@ fn a_function_reads_globals_but_does_not_clobber_them() {
 
 #[test]
 fn parameters_do_not_leak_into_the_caller() {
-    let err = run("ceyal f(x) { qirumpu x; } y = f(1); accu x;")
-        .expect_err("x is local to f");
-    assert!(err.contains("undefined variable"), "unexpected error: {}", err);
+    let err = run("ceyal f(x) { qirumpu x; } y = f(1); accu x;").expect_err("x is local to f");
+    assert!(
+        err.contains("undefined variable"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 #[test]
 fn wrong_argument_count_is_an_error() {
-    let err = run("ceyal f(a, b) { qirumpu a; } y = f(1);")
-        .expect_err("arity mismatch should fail");
+    let err =
+        run("ceyal f(a, b) { qirumpu a; } y = f(1);").expect_err("arity mismatch should fail");
     assert!(err.contains("expects 2"), "unexpected error: {}", err);
 }
 
 #[test]
 fn calling_an_unknown_function_is_an_error() {
     let err = run("y = illAqa_ceyal(1);").expect_err("unknown function should fail");
-    assert!(err.contains("unknown function"), "unexpected error: {}", err);
+    assert!(
+        err.contains("unknown function"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 #[test]
@@ -908,7 +928,10 @@ fn foreach_in_tamil_script() {
 // not — that distinction is what makes `தொகை` above legal.
 #[test]
 fn type_keywords_are_reserved_but_financial_ones_are_not() {
-    assert!(run("eN = 1;").is_err(), "eN (IntegerType) should be reserved");
+    assert!(
+        run("eN = 1;").is_err(),
+        "eN (IntegerType) should be reserved"
+    );
 
     // தொகை / toqai is the Amount keyword, and is a perfectly good name for an
     // amount — which is the whole reason financial keywords are not reserved.
@@ -921,13 +944,17 @@ fn type_keywords_are_reserved_but_financial_ones_are_not() {
 #[test]
 fn ok_and_err_construct_results() {
     let vm = run(r#"a = cari(5); b = qavaRu("thavaru");"#).unwrap();
-    assert_eq!(vm.variables.get("a"), Some(&Value::Ok(Box::new(Value::Number(dec(5))))));
+    assert_eq!(
+        vm.variables.get("a"),
+        Some(&Value::Ok(Box::new(Value::Number(dec(5)))))
+    );
     assert!(matches!(vm.variables.get("b"), Some(Value::Err(_))));
 }
 
 #[test]
 fn is_ok_and_is_err() {
-    let vm = run(r#"a = cariyA(cari(1)); b = qavaRA(qavaRu("x")); c = cariyA(qavaRu("x"));"#).unwrap();
+    let vm =
+        run(r#"a = cariyA(cari(1)); b = qavaRA(qavaRu("x")); c = cariyA(qavaRu("x"));"#).unwrap();
     assert_eq!(vm.variables.get("a"), Some(&Value::Boolean(true)));
     assert_eq!(vm.variables.get("b"), Some(&Value::Boolean(true)));
     assert_eq!(vm.variables.get("c"), Some(&Value::Boolean(false)));
@@ -942,7 +969,11 @@ fn unwrap_returns_the_value() {
 #[test]
 fn unwrap_on_an_error_is_a_runtime_error() {
     let err = run(r#"x = maqippu(qavaRu("pizai"));"#).expect_err("unwrap on Err must fail");
-    assert!(err.contains("unwrap on an error"), "unexpected error: {}", err);
+    assert!(
+        err.contains("unwrap on an error"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 #[test]
@@ -1060,7 +1091,10 @@ fn import_brings_in_a_function() {
         "vari_lib.qmz",
         "ceyal vari(varumAZam) { qirumpu varumAZam * 20%; }",
     );
-    let main = format!(r#"iRakku "{}"; moqqam = vari(100000);"#, lib.file_name().unwrap().to_string_lossy());
+    let main = format!(
+        r#"iRakku "{}"; moqqam = vari(100000);"#,
+        lib.file_name().unwrap().to_string_lossy()
+    );
     let ast = etamil_compiler::module::load_source(&main, &std::env::temp_dir()).unwrap();
     let vm = run_program(ast).unwrap();
     assert_eq!(num(&vm, "moqqam"), dec(20000));
@@ -1082,8 +1116,14 @@ fn importing_the_same_module_twice_includes_it_once() {
 
 #[test]
 fn a_circular_import_terminates() {
-    let a = write_module("cycle_a.qmz", r#"iRakku "etamil_mod_cycle_b.qmz"; a_ready = 1;"#);
-    let b = write_module("cycle_b.qmz", r#"iRakku "etamil_mod_cycle_a.qmz"; b_ready = 1;"#);
+    let a = write_module(
+        "cycle_a.qmz",
+        r#"iRakku "etamil_mod_cycle_b.qmz"; a_ready = 1;"#,
+    );
+    let b = write_module(
+        "cycle_b.qmz",
+        r#"iRakku "etamil_mod_cycle_a.qmz"; b_ready = 1;"#,
+    );
     let main = r#"iRakku "etamil_mod_cycle_a.qmz";"#;
     let ast = etamil_compiler::module::load_source(main, &std::env::temp_dir()).unwrap();
     let vm = run_program(ast).unwrap();
@@ -1107,7 +1147,11 @@ fn a_lexical_error_inside_a_module_is_reported() {
     let main = r#"iRakku "etamil_mod_bad.qmz";"#;
     let err = etamil_compiler::module::load_source(main, &std::env::temp_dir())
         .expect_err("module has a lexical error");
-    assert!(err.contains("unrecognized input"), "unexpected error: {}", err);
+    assert!(
+        err.contains("unrecognized input"),
+        "unexpected error: {}",
+        err
+    );
     let _ = std::fs::remove_file(lib);
 }
 
@@ -1277,13 +1321,8 @@ fn json_refuses_malformed_input() {
     )
     .unwrap();
 
-    for name in [
-        "முடிவற்றது",
-        "மதிப்பற்றது",
-        "மீதியுள்ளது",
-        "சாவியற்றது",
-        "காலியானது",
-    ] {
+    for name in ["முடிவற்றது", "மதிப்பற்றது", "மீதியுள்ளது", "சாவியற்றது", "காலியானது"]
+    {
         assert_eq!(
             vm.variables.get(name),
             Some(&Value::Boolean(true)),
@@ -1326,10 +1365,7 @@ fn json_reads_a_document_with_windows_line_endings() {
     )
     .unwrap();
 
-    assert_eq!(
-        vm.variables.get("சரியா_இருந்ததா"),
-        Some(&Value::Boolean(true))
-    );
+    assert_eq!(vm.variables.get("சரியா_இருந்ததா"), Some(&Value::Boolean(true)));
     assert_eq!(
         text(&vm, "மறுபடி"),
         r#"{"keys":[{"e":"AQAB","kty":"RSA"}]}"#
@@ -1373,10 +1409,8 @@ fn a_schedule_needs_a_server() {
 // mistake inside one without a server.
 #[test]
 fn a_schedule_body_is_checked() {
-    let tokens = etamil_compiler::lexer::tokenize(
-        r#"இடைவெளி 3600 { ஈர்ம கொடியா = [1, 2]; }"#,
-    )
-    .expect("should lex");
+    let tokens = etamil_compiler::lexer::tokenize(r#"இடைவெளி 3600 { ஈர்ம கொடியா = [1, 2]; }"#)
+        .expect("should lex");
     let ast = Parser::new(tokens.iter()).parse().expect("should parse");
 
     let errors = etamil_compiler::check::check(&ast)
@@ -1386,10 +1420,8 @@ fn a_schedule_body_is_checked() {
 
 #[test]
 fn a_schedule_takes_an_interval_and_a_block() {
-    let tokens = etamil_compiler::lexer::tokenize(
-        r#"இடைவெளி 900 { அச்சு "x"; அச்சு "y"; }"#,
-    )
-    .expect("should lex");
+    let tokens = etamil_compiler::lexer::tokenize(r#"இடைவெளி 900 { அச்சு "x"; அச்சு "y"; }"#)
+        .expect("should lex");
     let ast = Parser::new(tokens.iter()).parse().expect("should parse");
 
     assert_eq!(ast.len(), 1);
@@ -1415,13 +1447,11 @@ fn a_schedule_without_a_block_is_a_parse_error() {
 
 #[test]
 fn bytes_are_the_utf8_of_the_text() {
-    let vm = run(
-        r#"ascii = பைட்டுகள்("A");
+    let vm = run(r#"ascii = பைட்டுகள்("A");
            தமிழ் = பைட்டுகள்("வ");
            காலி = நீளம்(பைட்டுகள்(""));
            முதல் = ascii[0];
-           நீ = நீளம்(தமிழ்);"#,
-    )
+           நீ = நீளம்(தமிழ்);"#)
     .unwrap();
 
     assert_eq!(num(&vm, "முதல்"), dec(65));
@@ -1432,11 +1462,9 @@ fn bytes_are_the_utf8_of_the_text() {
 
 #[test]
 fn bytes_round_trip_through_a_string() {
-    let vm = run(
-        r#"மூலம் = "வணக்கம் உலகம்";
+    let vm = run(r#"மூலம் = "வணக்கம் உலகம்";
            மறுபடி = மதிப்பு(பைட்டுச்_சரம்(பைட்டுகள்(மூலம்)));
-           ஒன்றா = மறுபடி == மூலம்;"#,
-    )
+           ஒன்றா = மறுபடி == மூலம்;"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
@@ -1446,10 +1474,8 @@ fn bytes_round_trip_through_a_string() {
 // a தவறு a caller can handle rather than an error that stops the program.
 #[test]
 fn bytes_that_are_not_utf8_are_refused() {
-    let vm = run(
-        r#"தவறியது = தவறா(பைட்டுச்_சரம்([255, 254]));
-           சரியது = சரியா(பைட்டுச்_சரம்([104, 105]));"#,
-    )
+    let vm = run(r#"தவறியது = தவறா(பைட்டுச்_சரம்([255, 254]));
+           சரியது = சரியா(பைட்டுச்_சரம்([104, 105]));"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("தவறியது"), Some(&Value::Boolean(true)));
@@ -1458,8 +1484,14 @@ fn bytes_that_are_not_utf8_are_refused() {
 
 #[test]
 fn a_byte_must_be_a_whole_number_in_range() {
-    assert!(run(r#"விடை = பைட்டுச்_சரம்([300]);"#).is_err(), "300 is not a byte");
-    assert!(run(r#"விடை = பைட்டுச்_சரம்([1.5]);"#).is_err(), "1.5 is not a byte");
+    assert!(
+        run(r#"விடை = பைட்டுச்_சரம்([300]);"#).is_err(),
+        "300 is not a byte"
+    );
+    assert!(
+        run(r#"விடை = பைட்டுச்_சரம்([1.5]);"#).is_err(),
+        "1.5 is not a byte"
+    );
     assert!(run(r#"விடை = பைட்டுச்_சரம்(65);"#).is_err(), "needs an array");
 }
 
@@ -1582,8 +1614,7 @@ fn a_signature_is_sha256_hex() {
 // the signature that came with it.
 #[test]
 fn tampering_with_a_signed_payload_invalidates_it() {
-    let vm = run(
-        r#"இரகசியம் = "wh_secret";
+    let vm = run(r#"இரகசியம் = "wh_secret";
            உண்மை = "{\"amount\":45000}";
            போலி = "{\"amount\":1}";
            கை = கையொப்பம்(இரகசியம், உண்மை);
@@ -1592,12 +1623,12 @@ fn tampering_with_a_signed_payload_invalidates_it() {
            திருத்தியது = கையொப்பம்_சரியா(இரகசியம், போலி, கை);
            வேறு_விசை = கையொப்பம்_சரியா("guess", உண்மை, கை);
            குப்பை = கையொப்பம்_சரியா(இரகசியம், உண்மை, "deadbeef");
-           காலி = கையொப்பம்_சரியா(இரகசியம், உண்மை, "");"#,
-    )
+           காலி = கையொப்பம்_சரியா(இரகசியம், உண்மை, "");"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("உண்மையா"), Some(&Value::Boolean(true)));
-    for refused in ["திருத்தியது", "வேறு_விசை", "குப்பை", "காலி"] {
+    for refused in ["திருத்தியது", "வேறு_விசை", "குப்பை", "காலி"]
+    {
         assert_eq!(
             vm.variables.get(refused),
             Some(&Value::Boolean(false)),
@@ -1610,10 +1641,8 @@ fn tampering_with_a_signed_payload_invalidates_it() {
 // Gateways disagree about the case of the hex they send.
 #[test]
 fn a_signature_verifies_in_either_case() {
-    let vm = run(
-        r#"கை = கையொப்பம்("k", "payload");
-           பெரிய = கையொப்பம்_சரியா("k", "payload", மேல்_எழுத்து(கை));"#,
-    )
+    let vm = run(r#"கை = கையொப்பம்("k", "payload");
+           பெரிய = கையொப்பம்_சரியா("k", "payload", மேல்_எழுத்து(கை));"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("பெரிய"), Some(&Value::Boolean(true)));
@@ -1623,10 +1652,7 @@ fn a_signature_verifies_in_either_case() {
 // coin toss.
 #[test]
 fn signing_is_deterministic() {
-    let vm = run(
-        r#"அ = கையொப்பம்("k", "m"); ஆ = கையொப்பம்("k", "m"); ஒன்றா = அ == ஆ;"#,
-    )
-    .unwrap();
+    let vm = run(r#"அ = கையொப்பம்("k", "m"); ஆ = கையொப்பம்("k", "m"); ஒன்றா = அ == ஆ;"#).unwrap();
 
     assert_eq!(vm.variables.get("ஒன்றா"), Some(&Value::Boolean(true)));
 }
@@ -1661,12 +1687,10 @@ fn a_request_needs_the_right_number_of_arguments() {
 
 #[test]
 fn a_password_hash_verifies_only_the_right_password() {
-    let vm = run(
-        r#"மறையீடு = கடவுச்சொல்_மறை("correct-horse");
+    let vm = run(r#"மறையீடு = கடவுச்சொல்_மறை("correct-horse");
            சரியானது = கடவுச்சொல்_சரியா("correct-horse", மறையீடு);
            தவறானது = கடவுச்சொல்_சரியா("guess", மறையீடு);
-           காலியானது = கடவுச்சொல்_சரியா("", மறையீடு);"#,
-    )
+           காலியானது = கடவுச்சொல்_சரியா("", மறையீடு);"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("சரியானது"), Some(&Value::Boolean(true)));
@@ -1678,12 +1702,10 @@ fn a_password_hash_verifies_only_the_right_password() {
 // table would reveal which accounts share a password.
 #[test]
 fn hashing_the_same_password_twice_gives_different_hashes() {
-    let vm = run(
-        r#"அ = கடவுச்சொல்_மறை("same");
+    let vm = run(r#"அ = கடவுச்சொல்_மறை("same");
            ஆ = கடவுச்சொல்_மறை("same");
            வேறா = அ != ஆ;
-           இரண்டும்_சரி = கடவுச்சொல்_சரியா("same", அ) மற்றும் கடவுச்சொல்_சரியா("same", ஆ);"#,
-    )
+           இரண்டும்_சரி = கடவுச்சொல்_சரியா("same", அ) மற்றும் கடவுச்சொல்_சரியா("same", ஆ);"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("வேறா"), Some(&Value::Boolean(true)));
@@ -1710,10 +1732,7 @@ fn a_token_round_trips_its_claims() {
     assert_eq!(vm.variables.get("ஏற்கப்பட்டது"), Some(&Value::Boolean(true)));
     assert_eq!(text(&vm, "யார்"), "user-1");
     assert_eq!(text(&vm, "பங்கு_பெயர்"), "kaNakkar");
-    assert_eq!(
-        vm.variables.get("காலாவதி_உள்ளதா"),
-        Some(&Value::Boolean(true))
-    );
+    assert_eq!(vm.variables.get("காலாவதி_உள்ளதா"), Some(&Value::Boolean(true)));
 }
 
 // A rejected token is a தவறு rather than a runtime error, so turning a bad
@@ -1733,7 +1752,8 @@ fn a_tampered_or_expired_token_is_refused() {
     )
     .unwrap();
 
-    for name in ["திருத்தப்பட்டது", "குப்பை", "காலியானது", "காலாவதியானது"] {
+    for name in ["திருத்தப்பட்டது", "குப்பை", "காலியானது", "காலாவதியானது"]
+    {
         assert_eq!(
             vm.variables.get(name),
             Some(&Value::Boolean(true)),
@@ -2000,11 +2020,18 @@ fn run_with_db(source: &str, rows: Vec<Value>) -> (Result<VM, String>, Arc<Mutex
 
 /// Two stand-in connections under names of the program's choosing, each with
 /// its own log, so a query can be shown to reach the one it named.
+/// What `run_with_two_dbs` hands back: the run itself, and each database's log.
+type TwoDbRun = (
+    Result<VM, String>,
+    Arc<Mutex<Recorded>>,
+    Arc<Mutex<Recorded>>,
+);
+
 fn run_with_two_dbs(
     source: &str,
     first: (&str, Vec<Value>),
     second: (&str, Vec<Value>),
-) -> (Result<VM, String>, Arc<Mutex<Recorded>>, Arc<Mutex<Recorded>>) {
+) -> TwoDbRun {
     let one = Arc::new(Mutex::new(Recorded::default()));
     let two = Arc::new(Mutex::new(Recorded::default()));
 
@@ -2038,8 +2065,14 @@ fn a_named_connection_is_the_one_that_gets_the_query() {
     let (vm, one, two) = run_with_two_dbs(src, ("muqal", vec![]), ("iraNdu", vec![]));
     assert!(vm.is_ok(), "{:?}", vm.err());
 
-    assert_eq!(one.lock().unwrap().sql, vec!["SELECT * FROM one".to_string()]);
-    assert_eq!(two.lock().unwrap().sql, vec!["SELECT * FROM two".to_string()]);
+    assert_eq!(
+        one.lock().unwrap().sql,
+        vec!["SELECT * FROM one".to_string()]
+    );
+    assert_eq!(
+        two.lock().unwrap().sql,
+        vec!["SELECT * FROM two".to_string()]
+    );
 }
 
 #[test]
@@ -2082,8 +2115,14 @@ fn an_execute_can_name_its_connection_too() {
 #[test]
 fn query_returns_an_array_of_records() {
     let rows = vec![
-        record(&[("peyar", Value::String("Ravi".into())), ("vari", Value::Number(dec(1000)))]),
-        record(&[("peyar", Value::String("Priya".into())), ("vari", Value::Number(dec(2500)))]),
+        record(&[
+            ("peyar", Value::String("Ravi".into())),
+            ("vari", Value::Number(dec(1000))),
+        ]),
+        record(&[
+            ("peyar", Value::String("Priya".into())),
+            ("vari", Value::Number(dec(2500))),
+        ]),
     ];
     let src = r#"qaLam_viZA "SELECT peyar, vari FROM kaNakku", [], varicYkaL;
                  eNNikkY = nILam(varicYkaL);
@@ -2120,7 +2159,10 @@ fn parameters_are_bound_never_spliced() {
     assert_eq!(log.sql[0], "SELECT * FROM kaNakku WHERE peyar = ?");
     // The hostile value arrives as a bound parameter, inert.
     assert_eq!(log.params[0].len(), 1);
-    assert_eq!(log.params[0][0], Value::String("Ravi'; DROP TABLE kaNakku; --".into()));
+    assert_eq!(
+        log.params[0][0],
+        Value::String("Ravi'; DROP TABLE kaNakku; --".into())
+    );
 }
 
 #[test]
@@ -2136,8 +2178,7 @@ fn execute_binds_several_parameters_in_order() {
 
 #[test]
 fn querying_without_a_connection_is_an_error() {
-    let err = run(r#"qaLam_viZA "SELECT 1", [], r;"#)
-        .expect_err("no connection is open");
+    let err = run(r#"qaLam_viZA "SELECT 1", [], r;"#).expect_err("no connection is open");
     assert!(err.contains("not connected"), "unexpected error: {}", err);
 }
 
@@ -2145,14 +2186,22 @@ fn querying_without_a_connection_is_an_error() {
 fn parameters_must_be_an_array() {
     let (vm, _) = run_with_db(r#"qaLam_viZA "SELECT 1", 5, r;"#, vec![]);
     let err = vm.expect_err("5 is not a parameter array");
-    assert!(err.contains("must be an array"), "unexpected error: {}", err);
+    assert!(
+        err.contains("must be an array"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 #[test]
 fn an_unsupported_database_type_says_so() {
-    let err = run(r#"qaLam_iNY mAwkOtipi, "mongodb://localhost";"#)
-        .expect_err("MongoDB has no backend");
-    assert!(err.contains("not supported yet"), "unexpected error: {}", err);
+    let err =
+        run(r#"qaLam_iNY mAwkOtipi, "mongodb://localhost";"#).expect_err("MongoDB has no backend");
+    assert!(
+        err.contains("not supported yet"),
+        "unexpected error: {}",
+        err
+    );
 }
 
 // --- The accounting framework (nUlakam/kaNakkiyal/) ------------------------
@@ -2301,7 +2350,7 @@ fn date_arithmetic() {
                     b = nAL_kUttu("2026-02-28", 1);
                     c = nAL_kUttu("2024-02-28", 1);
                     d = nAL_vERupAtu("2026-04-30", "2026-01-10");"#)
-        .unwrap();
+    .unwrap();
     assert_eq!(num(&vm, "a"), dec(110));
     assert_eq!(text(&vm, "b"), "2026-03-01");
     assert_eq!(text(&vm, "c"), "2024-02-29"); // 2024 is a leap year
@@ -2354,10 +2403,8 @@ fn run_niluvy(body: &str) -> Result<VM, String> {
 
 #[test]
 fn an_unassigned_invoice_is_outstanding_in_full() {
-    let vm = run_niluvy(
-        r#"மீதம் = நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், "INV001", "1100", "சொத்து");"#,
-    )
-    .unwrap();
+    let vm =
+        run_niluvy(r#"மீதம் = நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், "INV001", "1100", "சொத்து");"#).unwrap();
     assert_eq!(num(&vm, "மீதம்"), dec(118000)); // 100,000 + 18%
 }
 
@@ -2573,16 +2620,32 @@ fn a_declared_type_is_enforced() {
     assert!(failure.is_err(), "a string is not a boolean");
 
     let message = failure.unwrap_err();
-    assert!(message.contains("கொடியா"), "should name the variable: {}", message);
-    assert!(message.contains("line 1"), "should give a position: {}", message);
+    assert!(
+        message.contains("கொடியா"),
+        "should name the variable: {}",
+        message
+    );
+    assert!(
+        message.contains("line 1"),
+        "should give a position: {}",
+        message
+    );
 }
 
 #[test]
 fn a_type_error_names_both_the_declared_and_the_actual_type() {
     let message = run("அணி பட்டியல் = 5;").unwrap_err();
 
-    assert!(message.contains("அணி"), "should name the declared type: {}", message);
-    assert!(message.contains("a number"), "should name what it got: {}", message);
+    assert!(
+        message.contains("அணி"),
+        "should name the declared type: {}",
+        message
+    );
+    assert!(
+        message.contains("a number"),
+        "should name what it got: {}",
+        message
+    );
 }
 
 // A later assignment is held to the declaration too, or the check would only
@@ -2609,14 +2672,12 @@ fn every_type_error_is_reported() {
 // The declarations the language's own examples use must keep working.
 #[test]
 fn correct_declarations_are_accepted() {
-    let vm = run(
-        r#"எண் வருவாய் = 950000;
+    let vm = run(r#"எண் வருவாய் = 950000;
            சொல் பெயர் = "ரவி";
            ஈர்ம செல்லுமா = மெய்;
            அணி வரிசைகள் = [1, 2, 3];
            பொருள் பதிவு = {qokY: 500};
-           எண் எண்ணிக்கை;"#,
-    )
+           எண் எண்ணிக்கை;"#)
     .unwrap();
 
     assert_eq!(num(&vm, "வருவாய்"), dec(950000));
@@ -2640,13 +2701,11 @@ fn a_number_may_stand_where_text_was_declared() {
 // the absence of a claim rather than approval.
 #[test]
 fn what_cannot_be_known_is_not_rejected() {
-    let vm = run(
-        r#"ஈர்ம விளைவு = சரியா(சரி(1));
+    let vm = run(r#"ஈர்ம விளைவு = சரியா(சரி(1));
            எண் நீ = நீளம்("வணக்கம்");
            பொருள் ப = {a: 1};
            எண் உள்ளது = ப["a"];
-           ஈர்ம ஏதுமில்லை = இன்மை;"#,
-    )
+           ஈர்ம ஏதுமில்லை = இன்மை;"#)
     .unwrap();
 
     assert_eq!(num(&vm, "நீ"), dec(5));
@@ -2657,14 +2716,12 @@ fn what_cannot_be_known_is_not_rejected() {
 // so a declaration outside must not be imposed on a function body.
 #[test]
 fn a_function_parameter_does_not_inherit_an_outer_declaration() {
-    let vm = run(
-        r#"ஈர்ம மதிப்பு = மெய்;
+    let vm = run(r#"ஈர்ம மதிப்பு = மெய்;
            செயல் இரட்டை(மதிப்பு) {
                மதிப்பு = மதிப்பு * 2;
                திரும்பு மதிப்பு;
            }
-           விளைவு = இரட்டை(21);"#,
-    )
+           விளைவு = இரட்டை(21);"#)
     .unwrap();
 
     assert_eq!(num(&vm, "விளைவு"), dec(42));
@@ -2674,13 +2731,11 @@ fn a_function_parameter_does_not_inherit_an_outer_declaration() {
 // cannot see, so an earlier declaration of that name no longer describes it.
 #[test]
 fn a_loop_variable_drops_an_earlier_declaration() {
-    let vm = run(
-        r#"ஈர்ம உறுப்பு = மெய்;
+    let vm = run(r#"ஈர்ம உறுப்பு = மெய்;
            மொத்தம் = 0;
            ஒவ்வொரு உறுப்பு இல் [1, 2, 3] {
                மொத்தம் = மொத்தம் + உறுப்பு;
-           }"#,
-    )
+           }"#)
     .unwrap();
 
     assert_eq!(num(&vm, "மொத்தம்"), dec(6));
@@ -2708,17 +2763,33 @@ fn a_missing_semicolon_is_reported_with_its_line_and_column() {
     let error = parse_error("x = 1;\ny = 2\nz = 3;");
 
     // The offending token is `z`, at the start of line 3.
-    assert!(error.contains("வரி 3"), "no Tamil line number in: {}", error);
-    assert!(error.contains("line 3"), "no English line number in: {}", error);
+    assert!(
+        error.contains("வரி 3"),
+        "no Tamil line number in: {}",
+        error
+    );
+    assert!(
+        error.contains("line 3"),
+        "no English line number in: {}",
+        error
+    );
     assert!(error.contains("column 1"), "no column in: {}", error);
-    assert!(error.contains("';'"), "does not say what was wanted: {}", error);
+    assert!(
+        error.contains("';'"),
+        "does not say what was wanted: {}",
+        error
+    );
 }
 
 #[test]
 fn a_parse_error_names_the_token_it_found() {
     let error = parse_error("x = 1 y;");
 
-    assert!(error.contains("'y'"), "does not quote the token found: {}", error);
+    assert!(
+        error.contains("'y'"),
+        "does not quote the token found: {}",
+        error
+    );
 }
 
 #[test]
@@ -2820,10 +2891,8 @@ fn a_response_without_headers_records_none() {
 // the JSON the server assumes by default.
 #[test]
 fn a_response_carries_the_headers_it_was_given() {
-    let vm = run(
-        r#"பதில் 200, "<h1>வணக்கம்</h1>", {"Content-Type": "text/html", "X-Rows": "2"};"#,
-    )
-    .unwrap();
+    let vm = run(r#"பதில் 200, "<h1>வணக்கம்</h1>", {"Content-Type": "text/html", "X-Rows": "2"};"#)
+        .unwrap();
 
     match vm.variables.get("response_headers") {
         Some(Value::Map(fields)) => {
@@ -2854,13 +2923,11 @@ fn response_headers_are_not_silently_discarded() {
 // not land in that function's locals.
 #[test]
 fn a_response_sent_from_a_function_is_still_visible() {
-    let vm = run(
-        r#"செயல் அனுப்பு(உரை_மதிப்பு) {
+    let vm = run(r#"செயல் அனுப்பு(உரை_மதிப்பு) {
                பதில் 202, உரை_மதிப்பு;
                திரும்பு 0;
            }
-           விளைவு = அனுப்பு("from a function");"#,
-    )
+           விளைவு = அனுப்பு("from a function");"#)
     .unwrap();
 
     assert_eq!(num(&vm, "response_status"), dec(202));
@@ -2956,8 +3023,7 @@ fn a_document_sized_string_is_not_quadratic() {
     // over 8 KB, so at 256 KB this test would never have returned. No timing
     // assertion — the complexity class is what is being pinned, and a test
     // that finishes at all is the evidence.
-    let vm = run(
-        r#"பெரிது = "a";
+    let vm = run(r#"பெரிது = "a";
            எண்ணி = 0;
            (எண்ணி < 18) சுற்று {
                பெரிது = பெரிது & பெரிது;
@@ -2965,8 +3031,7 @@ fn a_document_sized_string_is_not_quadratic() {
            }
            குறியிட்ட = பெரிது & "MARK";
            விளைவு = மாற்று(குறியிட்ட, "MARK", "xy");
-           அளவு = நீளம்(விளைவு);"#,
-    )
+           அளவு = நீளம்(விளைவு);"#)
     .unwrap();
 
     // 2^18 letters of padding, and the four-letter marker became two.
@@ -2984,7 +3049,8 @@ fn saving_a_file_writes_exactly_the_string() {
     let program = format!(
         r#"விளைவு = கோப்பு_சேமி("{}", "அஆ");
            அளவு = மதிப்பு(விளைவு);"#,
-        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        path.to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
     );
     let vm = run(&program).unwrap();
 
@@ -3011,8 +3077,8 @@ fn write_test_package(path: &std::path::Path, content: &str) {
     let file = std::fs::File::create(path).unwrap();
     let mut zip = zip::ZipWriter::new(file);
 
-    let stored: zip::write::SimpleFileOptions = zip::write::SimpleFileOptions::default()
-        .compression_method(zip::CompressionMethod::Stored);
+    let stored: zip::write::SimpleFileOptions =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     zip.start_file("mimetype", stored).unwrap();
     std::io::Write::write_all(&mut zip, b"application/vnd.oasis.opendocument.text").unwrap();
 
@@ -3036,7 +3102,8 @@ fn a_package_entry_reads_as_text() {
     let program = format!(
         r#"படித்தது = பொதி_படி("{}", "content.xml");
            உரைப்_பாடம் = மதிப்பு(படித்தது);"#,
-        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        path.to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
     );
     let vm = run(&program).unwrap();
     let _ = std::fs::remove_file(&path);
@@ -3052,7 +3119,8 @@ fn a_missing_entry_is_a_result_not_a_crash() {
     let program = format!(
         r#"படித்தது = பொதி_படி("{}", "styles.xml");
            தவறுதானா = தவறா(படித்தது);"#,
-        path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        path.to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
     );
     let vm = run(&program).unwrap();
     let _ = std::fs::remove_file(&path);
@@ -3069,8 +3137,12 @@ fn rewriting_a_package_leaves_the_other_entries_alone() {
     let program = format!(
         r#"எழுதியது = பொதி_மாற்று("{}", "{}", {{"content.xml": "<office:text>ராஜா</office:text>"}});
            எத்தனை = மதிப்பு(எழுதியது);"#,
-        source.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
-        target.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        source
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
+        target
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
     );
     let vm = run(&program).unwrap();
 
@@ -3097,9 +3169,15 @@ fn rewriting_a_package_leaves_the_other_entries_alone() {
 
     // And the bytes that are not text came through untouched.
     let mut picture = Vec::new();
-    std::io::Read::read_to_end(&mut archive.by_name("Pictures/one.png").unwrap(), &mut picture)
-        .unwrap();
-    assert_eq!(picture, vec![0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x00, 0x01]);
+    std::io::Read::read_to_end(
+        &mut archive.by_name("Pictures/one.png").unwrap(),
+        &mut picture,
+    )
+    .unwrap();
+    assert_eq!(
+        picture,
+        vec![0x89, 0x50, 0x4E, 0x47, 0xFF, 0xFE, 0x00, 0x01]
+    );
 
     let _ = std::fs::remove_file(&source);
     let _ = std::fs::remove_file(&target);
@@ -3115,8 +3193,12 @@ fn replacing_an_entry_that_is_not_there_is_refused() {
     let program = format!(
         r#"எழுதியது = பொதி_மாற்று("{}", "{}", {{"contnet.xml": "<x/>"}});
            தவறுதானா = தவறா(எழுதியது);"#,
-        source.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
-        target.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"),
+        source
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
+        target
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
     );
     let vm = run(&program).unwrap();
     let _ = std::fs::remove_file(&source);
@@ -3132,8 +3214,10 @@ fn nothing_runs_unless_it_is_allowed() {
     // Deny by default. This asserts the refusal without setting the variable,
     // because setting an environment variable is process-wide and the tests
     // share a process.
-    let vm = run(r#"விடை = கட்டளை_ஓட்டு("definitely-not-a-real-program", [], 5);
-                    தவறுதானா = தவறா(விடை);"#)
+    let vm = run(
+        r#"விடை = கட்டளை_ஓட்டு("definitely-not-a-real-program", [], 5);
+                    தவறுதானா = தவறா(விடை);"#,
+    )
     .unwrap();
 
     assert_eq!(vm.variables.get("தவறுதானா"), Some(&Value::Boolean(true)));
@@ -3278,10 +3362,22 @@ fn a_row_group_repeats_once_per_item() {
     .unwrap();
 
     let out = text(&vm, "விளைவு");
-    assert!(out.contains("<text:p>1</text:p><text:p>first</text:p>"), "{}", out);
-    assert!(out.contains("<text:p>2</text:p><text:p>second</text:p>"), "{}", out);
+    assert!(
+        out.contains("<text:p>1</text:p><text:p>first</text:p>"),
+        "{}",
+        out
+    );
+    assert!(
+        out.contains("<text:p>2</text:p><text:p>second</text:p>"),
+        "{}",
+        out
+    );
     // The header row survives; the for and endfor rows do not.
-    assert_eq!(out.matches("<table:table-row").count(), 3, "header + two items");
+    assert_eq!(
+        out.matches("<table:table-row").count(),
+        3,
+        "header + two items"
+    );
     assert!(!out.contains("{%tr"), "no loop tag is left behind");
 }
 
@@ -3297,8 +3393,16 @@ fn the_tag_after_a_row_group_is_not_swallowed_with_it() {
     .unwrap();
 
     let out = text(&vm, "விளைவு");
-    assert!(out.contains("</table:table>"), "the table still closes: {}", out);
-    assert!(out.ends_with("</office:body>"), "the body still closes: {}", out);
+    assert!(
+        out.contains("</table:table>"),
+        "the table still closes: {}",
+        out
+    );
+    assert!(
+        out.ends_with("</office:body>"),
+        "the body still closes: {}",
+        out
+    );
 }
 
 #[test]
@@ -3336,7 +3440,11 @@ fn an_empty_group_leaves_no_rows_and_no_tags() {
     .unwrap();
 
     let out = text(&vm, "விளைவு");
-    assert_eq!(out.matches("<table:table-row").count(), 1, "only the header");
+    assert_eq!(
+        out.matches("<table:table-row").count(),
+        1,
+        "only the header"
+    );
     assert!(!out.contains("{%tr"), "{}", out);
 }
 
@@ -3429,7 +3537,9 @@ fn an_empty_record_is_recognised_as_empty() {
 fn a_database(name: &str, table: &str) -> (std::path::PathBuf, String) {
     let path = std::env::temp_dir().join(name);
     let _ = std::fs::remove_file(&path);
-    let shown = path.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
+    let shown = path
+        .to_string_lossy()
+        .replace(std::path::MAIN_SEPARATOR, "/");
     let vm = run(&format!(
         r#"தளம்_இணை சீகுலைட், "{}";
            தளம்_செய் "CREATE TABLE {} (x INTEGER)", [];
@@ -3462,7 +3572,11 @@ fn a_second_different_database_is_refused() {
         "unexpected message: {}",
         failure
     );
-    assert!(failure.contains("etamil_conn_one.db"), "names the open one: {}", failure);
+    assert!(
+        failure.contains("etamil_conn_one.db"),
+        "names the open one: {}",
+        failure
+    );
 }
 
 #[test]
@@ -3586,8 +3700,14 @@ fn the_truth_table_is_unchanged() {
     .unwrap();
 
     for (name, want) in [
-        ("அ", true), ("ஆ", false), ("இ", false), ("ஈ", false),
-        ("உ", true), ("ஊ", true), ("எ", false), ("ஏ", true),
+        ("அ", true),
+        ("ஆ", false),
+        ("இ", false),
+        ("ஈ", false),
+        ("உ", true),
+        ("ஊ", true),
+        ("எ", false),
+        ("ஏ", true),
     ] {
         assert_eq!(
             vm.variables.get(name),
@@ -3717,7 +3837,8 @@ fn arrays_that_differ_are_not_equal() {
     .unwrap();
 
     // An array is ordered, so [1,2] and [2,1] are different arrays.
-    for name in ["மதிப்பு_வேறு", "நீளம்_வேறு", "வரிசை_வேறு"] {
+    for name in ["மதிப்பு_வேறு", "நீளம்_வேறு", "வரிசை_வேறு"]
+    {
         assert_eq!(
             vm.variables.get(name),
             Some(&Value::Boolean(false)),
@@ -3758,7 +3879,8 @@ fn records_that_differ_are_not_equal() {
                     மேலும்_ஒன்று = ({"அ": 1} == {"அ": 1, "ஆ": 2});"#)
     .unwrap();
 
-    for name in ["மதிப்பு_வேறு", "புலம்_வேறு", "மேலும்_ஒன்று"] {
+    for name in ["மதிப்பு_வேறு", "புலம்_வேறு", "மேலும்_ஒன்று"]
+    {
         assert_eq!(
             vm.variables.get(name),
             Some(&Value::Boolean(false)),
@@ -3785,7 +3907,8 @@ fn an_array_is_not_equal_to_something_that_is_not_one() {
                     பொருளுடன் = ([] == {});"#)
     .unwrap();
 
-    for name in ["சொல்லுடன்", "எண்ணுடன்", "பொருளுடன்"] {
+    for name in ["சொல்லுடன்", "எண்ணுடன்", "பொருளுடன்"]
+    {
         assert_eq!(
             vm.variables.get(name),
             Some(&Value::Boolean(false)),
@@ -3918,10 +4041,8 @@ fn rows_come_back_as_records_from_the_attempt_too() {
 
 #[test]
 fn attempting_without_a_connection_is_a_failure_rather_than_a_crash() {
-    let vm = run(
-        r#"விளைவு = தளம்_செய்_முயற்சி("SELECT 1", []);
-           தவறா_இது = தவறா(விளைவு);"#,
-    )
+    let vm = run(r#"விளைவு = தளம்_செய்_முயற்சி("SELECT 1", []);
+           தவறா_இது = தவறா(விளைவு);"#)
     .unwrap();
 
     assert_eq!(vm.variables.get("தவறா_இது"), Some(&Value::Boolean(true)));
@@ -3950,10 +4071,9 @@ fn a_rolled_back_transaction_can_be_driven_from_a_failure() {
 
 #[test]
 fn tamil_and_romanized_forms_compute_the_same_answers() {
-    let tamil = run("எண் வருவாய் = 950000; வரி = 20%; விளைவு = (வருவாய் - 800000) * வரி;")
-        .unwrap();
-    let roman = run("eN varuvAy = 950000; vari = 20%; viLYvu = (varuvAy - 800000) * vari;")
-        .unwrap();
+    let tamil = run("எண் வருவாய் = 950000; வரி = 20%; விளைவு = (வருவாய் - 800000) * வரி;").unwrap();
+    let roman =
+        run("eN varuvAy = 950000; vari = 20%; viLYvu = (varuvAy - 800000) * vari;").unwrap();
 
     // The two spellings are the same *program* — same tokens, same bytecode,
     // same arithmetic. What differs now is only the name each result is filed

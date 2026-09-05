@@ -24,9 +24,12 @@
 /// against one shape on both targets.
 macro_rules! unavailable {
     ($what:literal, $english:literal) => {
-        Err(format!(
-            concat!($what, " உலாவியில் கிடைக்காது  (", $english, " is not available in the browser)")
-        ))
+        Err(format!(concat!(
+            $what,
+            " உலாவியில் கிடைக்காது  (",
+            $english,
+            " is not available in the browser)"
+        )))
     };
 }
 

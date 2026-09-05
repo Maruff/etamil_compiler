@@ -29,7 +29,7 @@ fn to_hex(bytes: &[u8]) -> String {
 
 fn from_hex(text: &str) -> Result<Vec<u8>, String> {
     let cleaned: String = text.chars().filter(|c| !c.is_whitespace()).collect();
-    if cleaned.len() % 2 != 0 {
+    if !cleaned.len().is_multiple_of(2) {
         return Err(format!(
             "பதினாறு எண்ணிக்கை இரட்டையாக இருக்க வேண்டும்  (hex needs an even number of digits, got {})",
             cleaned.len()
@@ -38,8 +38,13 @@ fn from_hex(text: &str) -> Result<Vec<u8>, String> {
     (0..cleaned.len())
         .step_by(2)
         .map(|i| {
-            u8::from_str_radix(&cleaned[i..i + 2], 16)
-                .map_err(|_| format!("'{}' பதினாறு அல்ல  ('{}' is not hex)", &cleaned[i..i + 2], &cleaned[i..i + 2]))
+            u8::from_str_radix(&cleaned[i..i + 2], 16).map_err(|_| {
+                format!(
+                    "'{}' பதினாறு அல்ல  ('{}' is not hex)",
+                    &cleaned[i..i + 2],
+                    &cleaned[i..i + 2]
+                )
+            })
         })
         .collect()
 }
@@ -163,7 +168,10 @@ mod tests {
 
         assert!(sign("m", "not-hex").is_err(), "a key that is not hex");
         assert!(sign("m", "00").is_err(), "a key of the wrong length");
-        assert!(verify("m", "00", "not-hex").is_err(), "a public key that is not hex");
+        assert!(
+            verify("m", "00", "not-hex").is_err(),
+            "a public key that is not hex"
+        );
 
         // A well-formed request whose signature is simply wrong is false, not
         // an error — a program has to be able to handle that outcome.

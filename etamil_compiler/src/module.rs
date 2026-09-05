@@ -94,12 +94,12 @@ fn locate(relative: &str, base_dir: &Path) -> Option<PathBuf> {
         }
     }
 
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let candidate = dir.join(relative);
-            if candidate.exists() {
-                return Some(candidate);
-            }
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent()
+    {
+        let candidate = dir.join(relative);
+        if candidate.exists() {
+            return Some(candidate);
         }
     }
 

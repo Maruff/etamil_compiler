@@ -21,8 +21,8 @@ type HmacSha256 = Hmac<Sha256>;
 /// compare what arrives against this directly without a decoding step the
 /// language would have to provide.
 pub fn sign(key: &str, message: &str) -> String {
-    let mut mac = HmacSha256::new_from_slice(key.as_bytes())
-        .expect("HMAC accepts a key of any length");
+    let mut mac =
+        HmacSha256::new_from_slice(key.as_bytes()).expect("HMAC accepts a key of any length");
     mac.update(message.as_bytes());
 
     mac.finalize()
@@ -124,10 +124,17 @@ pub fn request(
 
     // Read the body after the headers: into_string consumes the response.
     let body = response.into_string().map_err(|e| {
-        format!("பதிலைப் படிக்க முடியவில்லை  (cannot read the response body): {}", e)
+        format!(
+            "பதிலைப் படிக்க முடியவில்லை  (cannot read the response body): {}",
+            e
+        )
     })?;
 
-    Ok(Response { status, body, headers })
+    Ok(Response {
+        status,
+        body,
+        headers,
+    })
 }
 
 #[cfg(not(feature = "http-client"))]

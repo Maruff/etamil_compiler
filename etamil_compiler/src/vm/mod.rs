@@ -3,14 +3,14 @@
 
 // Where input and output go: std::fs and stdout natively, an in-memory
 // buffer and file map in the browser. See host.rs.
-pub mod host;
 pub mod bytecode;
+pub mod host;
 pub mod interpreter;
 pub mod value;
 
 pub use bytecode::{Bytecode, Instruction};
-pub use interpreter::VM;
 pub use interpreter::Upload;
+pub use interpreter::VM;
 pub use value::Value;
 
 /// Initialize the eTamil VM with bytecode

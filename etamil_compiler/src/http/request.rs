@@ -61,8 +61,7 @@ impl HttpRequest {
         let mut lines = head.lines();
 
         // Parse request line
-        let request_line = lines.next()
-            .ok_or("Missing request line".to_string())?;
+        let request_line = lines.next().ok_or("Missing request line".to_string())?;
 
         let parts: Vec<&str> = request_line.split_whitespace().collect();
         if parts.len() < 3 {
@@ -197,7 +196,7 @@ mod tests {
     fn test_parse_get_request() {
         let raw = "GET /api/users HTTP/1.1\r\nHost: localhost\r\nUser-Agent: test\r\n\r\n";
         let req = HttpRequest::parse(raw).unwrap();
-        
+
         assert_eq!(req.method, "GET");
         assert_eq!(req.path, "/api/users");
         assert_eq!(req.version, "HTTP/1.1");
@@ -208,7 +207,7 @@ mod tests {
     fn test_parse_query_params() {
         let raw = "GET /search?q=rust&page=1 HTTP/1.1\r\n\r\n";
         let req = HttpRequest::parse(raw).unwrap();
-        
+
         assert_eq!(req.path, "/search");
         assert_eq!(req.query_param("q"), Some("rust"));
         assert_eq!(req.query_param("page"), Some("1"));
@@ -257,7 +256,8 @@ mod tests {
     // Tamil in a query value is the normal case here, not an edge case.
     #[test]
     fn query_values_are_percent_decoded() {
-        let raw = "GET /q?vakY=%E0%AE%B5%E0%AE%B0%E0%AE%B5%E0%AF%81&note=two+words HTTP/1.1\r\n\r\n";
+        let raw =
+            "GET /q?vakY=%E0%AE%B5%E0%AE%B0%E0%AE%B5%E0%AF%81&note=two+words HTTP/1.1\r\n\r\n";
         let req = HttpRequest::parse(raw).unwrap();
 
         assert_eq!(req.query_param("vakY"), Some("வரவு"));

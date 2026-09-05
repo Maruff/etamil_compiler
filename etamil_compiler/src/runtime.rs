@@ -55,8 +55,8 @@ use std::cell::RefCell;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-use crate::vm::value::Value;
 use crate::vm::VM;
+use crate::vm::value::Value;
 
 thread_local! {
     /// Index 0 is `இன்மை`, so a zeroed handle is a valid value rather than a
@@ -115,17 +115,31 @@ unsafe fn borrow_str(text: *const c_char) -> String {
 /// makes it exact: `codegen.rs` has a `Decimal` at compile time and writes it
 /// out, and `Decimal::from_str` reads back the identical value. Passing a
 /// double here would lose the thing this whole module exists to keep.
+///
+/// # Safety
+///
+/// `text` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_number(text: *const c_char) -> i64 {
+pub unsafe extern "C" fn etamil_number(text: *const c_char) -> i64 {
     let text = unsafe { borrow_str(text) };
     match text.parse::<rust_decimal::Decimal>() {
         Ok(number) => put(Value::Number(number)),
-        Err(_) => fail(&format!("'{}' ஒரு எண் அல்ல  ('{}' is not a number)", text, text)),
+        Err(_) => fail(&format!(
+            "'{}' ஒரு எண் அல்ல  ('{}' is not a number)",
+            text, text
+        )),
     }
 }
 
+/// # Safety
+///
+/// `text` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_text(text: *const c_char) -> i64 {
+pub unsafe extern "C" fn etamil_text(text: *const c_char) -> i64 {
     let text = unsafe { borrow_str(text) };
     put(Value::String(text))
 }
@@ -164,8 +178,15 @@ pub extern "C" fn etamil_record() -> i64 {
     put(Value::Map(std::collections::HashMap::new()))
 }
 
+/// Put a field on a record.
+///
+/// # Safety
+///
+/// `key` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_record_put(record: i64, key: *const c_char, value: i64) {
+pub unsafe extern "C" fn etamil_record_put(record: i64, key: *const c_char, value: i64) {
     let key = unsafe { borrow_str(key) };
     let value = get(value);
     ARENA.with(|arena| {
@@ -186,17 +207,23 @@ pub extern "C" fn etamil_record_put(record: i64, key: *const c_char, value: i64)
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_add(left: i64, right: i64) -> i64 {
-    put(Value::Number(get(left).to_number() + get(right).to_number()))
+    put(Value::Number(
+        get(left).to_number() + get(right).to_number(),
+    ))
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_subtract(left: i64, right: i64) -> i64 {
-    put(Value::Number(get(left).to_number() - get(right).to_number()))
+    put(Value::Number(
+        get(left).to_number() - get(right).to_number(),
+    ))
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_multiply(left: i64, right: i64) -> i64 {
-    put(Value::Number(get(left).to_number() * get(right).to_number()))
+    put(Value::Number(
+        get(left).to_number() * get(right).to_number(),
+    ))
 }
 
 /// Exact to the decimal type's full precision, and rounding is deliberately
@@ -214,7 +241,7 @@ pub extern "C" fn etamil_divide(left: i64, right: i64) -> i64 {
 /// `&`. The VM builds `format!("{}{}", ...)` over `to_string`, so this is that.
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_concat(left: i64, right: i64) -> i64 {
-    let joined = format!("{}{}", get(left).to_string(), get(right).to_string());
+    let joined = format!("{}{}", get(left), get(right));
     put(Value::String(joined))
 }
 
@@ -257,12 +284,16 @@ pub extern "C" fn etamil_compare(left: i64, right: i64, operator: i32) -> i64 {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_and(left: i64, right: i64) -> i64 {
-    put(Value::Boolean(get(left).is_truthy() && get(right).is_truthy()))
+    put(Value::Boolean(
+        get(left).is_truthy() && get(right).is_truthy(),
+    ))
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_or(left: i64, right: i64) -> i64 {
-    put(Value::Boolean(get(left).is_truthy() || get(right).is_truthy()))
+    put(Value::Boolean(
+        get(left).is_truthy() || get(right).is_truthy(),
+    ))
 }
 
 #[unsafe(no_mangle)]
@@ -330,8 +361,15 @@ pub extern "C" fn etamil_index(base: i64, index: i64) -> i64 {
     }
 }
 
+/// Indexed assignment: `a[0] = x` on an array, `r[k] = x` on a record.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *const c_char) {
+pub unsafe extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *const c_char) {
     let name = unsafe { borrow_str(name) };
     let index = get(index);
     let value = get(value);
@@ -351,8 +389,13 @@ pub extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *con
     })
 }
 
+/// # Safety
+///
+/// `key` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_field(base: i64, key: *const c_char) -> i64 {
+pub unsafe extern "C" fn etamil_field(base: i64, key: *const c_char) -> i64 {
     let key = unsafe { borrow_str(key) };
     match get(base) {
         Value::Map(fields) => match fields.get(&key) {
@@ -369,8 +412,13 @@ pub extern "C" fn etamil_field(base: i64, key: *const c_char) -> i64 {
     }
 }
 
+/// # Safety
+///
+/// `key` must be a valid, NUL-terminated C string that stays alive for
+/// the call. The generated code passes a pointer to a constant in its own
+/// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) {
+pub unsafe extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) {
     let key = unsafe { borrow_str(key) };
     let value = get(value);
     ARENA.with(|arena| {
@@ -421,7 +469,7 @@ pub extern "C" fn etamil_nth_or_key(base: i64, position: i64) -> i64 {
 ///
 /// `argv` must point to `argc` handles.
 #[unsafe(no_mangle)]
-pub extern "C" fn etamil_call(name: *const c_char, argv: *const i64, argc: i64) -> i64 {
+pub unsafe extern "C" fn etamil_call(name: *const c_char, argv: *const i64, argc: i64) -> i64 {
     let name = unsafe { borrow_str(name) };
     let count = argc.max(0) as usize;
 
@@ -449,7 +497,7 @@ pub extern "C" fn etamil_call(name: *const c_char, argv: *const i64, argc: i64) 
 /// without the backend having to know anything about text.
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_print(value: i64) {
-    println!("{}", get(value).to_string());
+    println!("{}", get(value));
 }
 
 /// `உள்ளிடு`. A line of input, as text, exactly as the VM's `Input` leaves it.
@@ -458,7 +506,10 @@ pub extern "C" fn etamil_read_line() -> i64 {
     let mut line = String::new();
     match std::io::stdin().read_line(&mut line) {
         Ok(_) => put(Value::String(line.trim().to_string())),
-        Err(why) => fail(&format!("உள்ளிட முடியவில்லை  (could not read input: {})", why)),
+        Err(why) => fail(&format!(
+            "உள்ளிட முடியவில்லை  (could not read input: {})",
+            why
+        )),
     }
 }
 
@@ -473,12 +524,12 @@ mod tests {
 
     fn number(text: &str) -> i64 {
         let c = std::ffi::CString::new(text).unwrap();
-        etamil_number(c.as_ptr())
+        unsafe { etamil_number(c.as_ptr()) }
     }
 
     fn text(value: &str) -> i64 {
         let c = std::ffi::CString::new(value).unwrap();
-        etamil_text(c.as_ptr())
+        unsafe { etamil_text(c.as_ptr()) }
     }
 
     // --- the claim the language opens with -------------------------------
@@ -503,7 +554,10 @@ mod tests {
     #[test]
     fn trailing_zeros_are_trimmed_the_way_the_vm_trims_them() {
         // 1000 * 18% is 180.00 by scale and prints as 180.
-        assert_eq!(shown(etamil_multiply(number("1000"), number("0.18"))), "180");
+        assert_eq!(
+            shown(etamil_multiply(number("1000"), number("0.18"))),
+            "180"
+        );
         assert_eq!(shown(etamil_add(number("2.50"), number("0"))), "2.5");
         assert_eq!(shown(etamil_divide(number("10"), number("2"))), "5");
     }
@@ -524,10 +578,7 @@ mod tests {
         let label = text("விலை: ");
         assert_eq!(shown(etamil_concat(label, number("2.05"))), "விலை: 2.05");
         // A boolean renders as the VM renders it, not as 1.
-        assert_eq!(
-            shown(etamil_concat(text("x"), etamil_boolean(1))),
-            "xtrue"
-        );
+        assert_eq!(shown(etamil_concat(text("x"), etamil_boolean(1))), "xtrue");
     }
 
     #[test]
@@ -540,13 +591,26 @@ mod tests {
 
     #[test]
     fn ordering_and_equality_go_through_value() {
-        assert_eq!(shown(etamil_compare(number("2"), number("3"), COMPARE_LT)), "true");
-        assert_eq!(shown(etamil_compare(number("3"), number("3"), COMPARE_LE)), "true");
-        assert_eq!(shown(etamil_compare(number("3"), number("3"), COMPARE_NE)), "false");
+        assert_eq!(
+            shown(etamil_compare(number("2"), number("3"), COMPARE_LT)),
+            "true"
+        );
+        assert_eq!(
+            shown(etamil_compare(number("3"), number("3"), COMPARE_LE)),
+            "true"
+        );
+        assert_eq!(
+            shown(etamil_compare(number("3"), number("3"), COMPARE_NE)),
+            "false"
+        );
         // Exactly equal, not equal within an epsilon: the f64 backend compared
         // two amounts a hundredth of a paisa apart as the same.
         assert_eq!(
-            shown(etamil_compare(number("2.05"), number("2.0500000001"), COMPARE_EQ)),
+            shown(etamil_compare(
+                number("2.05"),
+                number("2.0500000001"),
+                COMPARE_EQ
+            )),
             "false"
         );
     }
@@ -578,7 +642,7 @@ mod tests {
         assert_eq!(shown(etamil_index(array, number("1"))), "20");
 
         let name = std::ffi::CString::new("aNi").unwrap();
-        etamil_index_set(array, number("0"), number("99"), name.as_ptr());
+        unsafe { etamil_index_set(array, number("0"), number("99"), name.as_ptr()) };
         assert_eq!(shown(etamil_index(array, number("0"))), "99");
     }
 
@@ -592,8 +656,8 @@ mod tests {
         let record = etamil_record();
         let name = std::ffi::CString::new("vitY").unwrap();
 
-        etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr());
-        etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr());
+        unsafe { etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr()) };
+        unsafe { etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr()) };
 
         assert_eq!(shown(etamil_index(record, text("pa"))), "shop@okhdfcbank");
         assert_eq!(shown(etamil_index(record, text("tr"))), "INV-9");
@@ -603,8 +667,8 @@ mod tests {
     fn a_record_holds_and_returns_its_fields() {
         let record = etamil_record();
         let key = std::ffi::CString::new("பெயர்").unwrap();
-        etamil_record_put(record, key.as_ptr(), text("ராஜா"));
-        assert_eq!(shown(etamil_field(record, key.as_ptr())), "ராஜா");
+        unsafe { etamil_record_put(record, key.as_ptr(), text("ராஜா")) };
+        assert_eq!(shown(unsafe { etamil_field(record, key.as_ptr()) }), "ராஜா");
     }
 
     // --- builtins, through the interpreter's dispatch ---------------------
@@ -623,8 +687,8 @@ mod tests {
         let record = etamil_record();
         let b = std::ffi::CString::new("ஆ").unwrap();
         let a = std::ffi::CString::new("அ").unwrap();
-        etamil_record_put(record, b.as_ptr(), number("2"));
-        etamil_record_put(record, a.as_ptr(), number("1"));
+        unsafe { etamil_record_put(record, b.as_ptr(), number("2")) };
+        unsafe { etamil_record_put(record, a.as_ptr(), number("1")) };
         assert_eq!(etamil_count(record), 2);
         assert_eq!(shown(etamil_nth_or_key(record, 0)), "அ");
         assert_eq!(shown(etamil_nth_or_key(record, 1)), "ஆ");
@@ -647,31 +711,40 @@ mod tests {
 
         let name = std::ffi::CString::new("நீளம்").unwrap();
         let argv = [array];
-        assert_eq!(shown(etamil_call(name.as_ptr(), argv.as_ptr(), 1)), "3");
+        assert_eq!(
+            shown(unsafe { etamil_call(name.as_ptr(), argv.as_ptr(), 1) }),
+            "3"
+        );
     }
 
     #[test]
     fn floor_and_ceiling_come_from_the_same_place_too() {
         let floor = std::ffi::CString::new("தரை").unwrap();
         let argv = [etamil_divide(number("205"), number("100"))];
-        assert_eq!(shown(etamil_call(floor.as_ptr(), argv.as_ptr(), 1)), "2");
+        assert_eq!(
+            shown(unsafe { etamil_call(floor.as_ptr(), argv.as_ptr(), 1) }),
+            "2"
+        );
 
         let ceil = std::ffi::CString::new("மேல்").unwrap();
         let argv = [etamil_divide(number("1000"), number("3"))];
-        assert_eq!(shown(etamil_call(ceil.as_ptr(), argv.as_ptr(), 1)), "334");
+        assert_eq!(
+            shown(unsafe { etamil_call(ceil.as_ptr(), argv.as_ptr(), 1) }),
+            "334"
+        );
     }
 
     #[test]
     fn a_result_can_be_tested_and_unwrapped() {
         let ok = std::ffi::CString::new("சரி").unwrap();
         let argv = [number("7")];
-        let wrapped = etamil_call(ok.as_ptr(), argv.as_ptr(), 1);
+        let wrapped = unsafe { etamil_call(ok.as_ptr(), argv.as_ptr(), 1) };
         assert_eq!(etamil_is_error(wrapped), 0);
         assert_eq!(shown(etamil_unwrap(wrapped)), "7");
 
         let err = std::ffi::CString::new("தவறு").unwrap();
         let argv = [text("போச்சு")];
-        let failed = etamil_call(err.as_ptr(), argv.as_ptr(), 1);
+        let failed = unsafe { etamil_call(err.as_ptr(), argv.as_ptr(), 1) };
         assert_eq!(etamil_is_error(failed), 1);
     }
 }

@@ -150,12 +150,8 @@ impl std::fmt::Debug for Connection {
 impl Connection {
     /// Connect with a URI, and name the database to work in.
     pub fn open(uri: &str, database: &str) -> Result<Self, String> {
-        let client = Client::with_uri_str(uri).map_err(|e| {
-            format!(
-                "மொங்கோ இணைக்க முடியவில்லை  (cannot connect to MongoDB): {}",
-                e
-            )
-        })?;
+        let client = Client::with_uri_str(uri)
+            .map_err(|e| format!("மொங்கோ இணைக்க முடியவில்லை  (cannot connect to MongoDB): {}", e))?;
         Ok(Connection {
             client,
             database: database.to_string(),
@@ -305,7 +301,11 @@ mod tests {
         for text in ["0.3", "1234.56", "0.01", "99999999.99", "-0.05"] {
             let original = decimal(text);
             let returned = from_bson(&to_bson(&original));
-            assert_eq!(returned, original, "{} did not survive the round trip", text);
+            assert_eq!(
+                returned, original,
+                "{} did not survive the round trip",
+                text
+            );
         }
     }
 
@@ -356,4 +356,3 @@ mod tests {
         assert_eq!(to_bson(&Value::Ok(Box::new(decimal("5")))), Bson::Int64(5));
     }
 }
-

@@ -9,18 +9,18 @@ pub enum Instruction {
     // Stack operations
     Push(crate::vm::Value),
     Pop,
-    
+
     // Variable operations
     StoreVar(String),
     LoadVar(String),
-    
+
     // Arithmetic
     Add,
     Subtract,
     Multiply,
     Divide,
     Modulo,
-    
+
     // Comparison
     Equal,
     NotEqual,
@@ -28,20 +28,20 @@ pub enum Instruction {
     LessOrEqual,
     GreaterThan,
     GreaterOrEqual,
-    
+
     // Logical
     And,
     Or,
     Not,
-    
+
     // Control flow
     JumpIfFalse(usize),
     Jump(usize),
-    
+
     // I/O
     Print,
     Input,
-    
+
     // String operations
     Concat,
 
@@ -67,7 +67,7 @@ pub enum Instruction {
     /// key of a record (keys sorted so iteration order is stable), or the
     /// nth character of a string. Used to desugar ஒவ்வொரு.
     NthOrKey,
-    
+
     // File I/O — each pops its operands off the stack
     FileOpen(String), // mode; pops filename
     FileClose,        // pops filename
@@ -96,7 +96,7 @@ pub enum Instruction {
     SendResponse,
     /// ஜேசான்_உரை — a response with the JSON content type on it.
     SendJSON,
-    StartServer(String, u16),    // host, port
+    StartServer(String, u16), // host, port
 
     // Functions
     /// Call a named function with this many arguments already on the stack.
@@ -129,6 +129,12 @@ pub struct Bytecode {
     pub functions: std::collections::HashMap<String, FunctionInfo>,
 }
 
+impl Default for Bytecode {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Bytecode {
     pub fn new() -> Self {
         Bytecode {
@@ -143,5 +149,9 @@ impl Bytecode {
 
     pub fn len(&self) -> usize {
         self.instructions.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.instructions.is_empty()
     }
 }

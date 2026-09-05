@@ -58,21 +58,17 @@ pub fn open(db_type: &str, connection: &str) -> Result<Box<dyn Database>, String
         "PostgreSQL" => Ok(Box::new(postgres::PostgresDatabase::open(connection)?)),
 
         #[cfg(not(feature = "postgres"))]
-        "PostgreSQL" => Err(
-            "போச்குரசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+        "PostgreSQL" => Err("போச்குரசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
              (this build has no PostgreSQL support): rebuild with --features postgres"
-                .to_string(),
-        ),
+            .to_string()),
 
         #[cfg(feature = "mysql")]
         "MySQL" => Ok(Box::new(mysql::MysqlDatabase::open(connection)?)),
 
         #[cfg(not(feature = "mysql"))]
-        "MySQL" => Err(
-            "மைசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
+        "MySQL" => Err("மைசீகுல் ஆதரவு இல்லாமல் கட்டப்பட்டது  \
              (this build has no MySQL support): rebuild with --features mysql"
-                .to_string(),
-        ),
+            .to_string()),
 
         "MongoDB" | "Redis" | "JSONdb" | "NoSQL" => Err(format!(
             "{} இன்னும் ஆதரிக்கப்படவில்லை  ({} is not supported yet); \

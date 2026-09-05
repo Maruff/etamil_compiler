@@ -2,14 +2,20 @@
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Bytecode compiler: Converts AST to bytecode instructions
 use crate::parser::{Expr, Stmt};
-use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};
 use crate::vm::Value;
+use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};
 use rust_decimal::Decimal;
 
 pub struct BytecodeCompiler {
     bytecode: Bytecode,
     /// Makes each ஒவ்வொரு loop's hidden variables unique.
     loop_id: usize,
+}
+
+impl Default for BytecodeCompiler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BytecodeCompiler {
@@ -34,15 +40,21 @@ impl BytecodeCompiler {
             // The declared type is the checker's business, not the VM's: by
             // the time bytecode is emitted the program has already been
             // accepted, so there is nothing left to enforce here.
-            Stmt::Assign { name, value, declared: _, at: _ } => {
+            Stmt::Assign {
+                name,
+                value,
+                declared: _,
+                at: _,
+            } => {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
             }
-            Stmt::FunctionDef { name, params, body, .. } => {
+            Stmt::FunctionDef {
+                name, params, body, ..
+            } => {
                 // The VM binds parameters by name; the declared types are
                 // the checker's business and are already enforced by now.
-                let params: Vec<String> =
-                    params.into_iter().map(|param| param.name).collect();
+                let params: Vec<String> = params.into_iter().map(|param| param.name).collect();
                 // The body is emitted inline, so execution has to jump over it.
                 let jump_idx = self.bytecode.len();
                 self.bytecode.push(Instruction::Jump(0)); // patched below
@@ -92,31 +104,38 @@ impl BytecodeCompiler {
                     self.bytecode.push(Instruction::StoreVar(name));
                 }
             }
-            Stmt::If { condition, then_branch, else_branch } => {
+            Stmt::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 self.compile_expr(condition);
-                
+
                 let jump_false_idx = self.bytecode.len();
                 self.bytecode.push(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 for stmt in then_branch {
                     self.compile_stmt(stmt);
                 }
-                
+
                 match else_branch {
                     Some(else_stmts) => {
                         let jump_idx = self.bytecode.len();
                         self.bytecode.push(Instruction::Jump(0)); // Placeholder
-                        
+
                         // Patch jump_if_false to skip to else
                         let else_start = self.bytecode.len();
-                        if let Instruction::JumpIfFalse(_) = &mut self.bytecode.instructions[jump_false_idx] {
-                            self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(else_start);
+                        if let Instruction::JumpIfFalse(_) =
+                            &mut self.bytecode.instructions[jump_false_idx]
+                        {
+                            self.bytecode.instructions[jump_false_idx] =
+                                Instruction::JumpIfFalse(else_start);
                         }
-                        
+
                         for stmt in else_stmts {
                             self.compile_stmt(stmt);
                         }
-                        
+
                         // Patch final jump
                         let end = self.bytecode.len();
                         if let Instruction::Jump(_) = &mut self.bytecode.instructions[jump_idx] {
@@ -125,34 +144,42 @@ impl BytecodeCompiler {
                     }
                     None => {
                         let end = self.bytecode.len();
-                        if let Instruction::JumpIfFalse(_) = &mut self.bytecode.instructions[jump_false_idx] {
-                            self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(end);
+                        if let Instruction::JumpIfFalse(_) =
+                            &mut self.bytecode.instructions[jump_false_idx]
+                        {
+                            self.bytecode.instructions[jump_false_idx] =
+                                Instruction::JumpIfFalse(end);
                         }
                     }
                 }
             }
             Stmt::Loop { condition, body } => {
                 let loop_start = self.bytecode.len();
-                
+
                 self.compile_expr(condition);
                 let jump_false_idx = self.bytecode.len();
                 self.bytecode.push(Instruction::JumpIfFalse(0)); // Placeholder
-                
+
                 for stmt in body {
                     self.compile_stmt(stmt);
                 }
-                
+
                 self.bytecode.push(Instruction::Jump(loop_start));
-                
+
                 let end = self.bytecode.len();
-                if let Instruction::JumpIfFalse(_) = &mut self.bytecode.instructions[jump_false_idx] {
+                if let Instruction::JumpIfFalse(_) = &mut self.bytecode.instructions[jump_false_idx]
+                {
                     self.bytecode.instructions[jump_false_idx] = Instruction::JumpIfFalse(end);
                 }
             }
             // ovvoru item il collection { ... } is desugared into an index
             // loop over hidden variables. The '#' prefix cannot appear in a
             // user identifier, so these can never collide with a real name.
-            Stmt::ForEach { var, collection, body } => {
+            Stmt::ForEach {
+                var,
+                collection,
+                body,
+            } => {
                 let id = self.loop_id;
                 self.loop_id += 1;
                 let items = format!("#each_items_{}", id);
@@ -219,7 +246,11 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::WriteCSV);
             }
-            Stmt::SendResponse { status_code, body, headers } => {
+            Stmt::SendResponse {
+                status_code,
+                body,
+                headers,
+            } => {
                 self.compile_expr(status_code);
                 self.compile_expr(body);
                 // A response always leaves three values for the instruction,
@@ -243,7 +274,11 @@ impl BytecodeCompiler {
                 self.compile_expr(data);
                 self.bytecode.push(Instruction::SendJSON);
             }
-            Stmt::DBConnect { db_type, connection_string, handle } => {
+            Stmt::DBConnect {
+                db_type,
+                connection_string,
+                handle,
+            } => {
                 self.compile_expr(connection_string);
                 // Unnamed, and the driver name is the handle — which is what it
                 // has always been, so an existing program is unchanged.
@@ -253,12 +288,21 @@ impl BytecodeCompiler {
             Stmt::DBDisconnect { db_type } => {
                 self.bytecode.push(Instruction::DBDisconnect(db_type));
             }
-            Stmt::DBExecute { command, params, handle } => {
+            Stmt::DBExecute {
+                command,
+                params,
+                handle,
+            } => {
                 self.compile_expr(command);
                 self.compile_expr(params);
                 self.bytecode.push(Instruction::DBExecute(handle));
             }
-            Stmt::DBQuery { query, params, result_var, handle } => {
+            Stmt::DBQuery {
+                query,
+                params,
+                result_var,
+                handle,
+            } => {
                 self.compile_expr(query);
                 self.compile_expr(params);
                 self.bytecode.push(Instruction::DBQuery(handle));
@@ -322,7 +366,7 @@ impl BytecodeCompiler {
             Expr::BinaryOp { op, left, right } => {
                 self.compile_expr(*left);
                 self.compile_expr(*right);
-                
+
                 match op.as_str() {
                     "+" => self.bytecode.push(Instruction::Add),
                     "-" => self.bytecode.push(Instruction::Subtract),
@@ -335,7 +379,7 @@ impl BytecodeCompiler {
             Expr::Comparison { left, op, right } => {
                 self.compile_expr(*left);
                 self.compile_expr(*right);
-                
+
                 match op.as_str() {
                     // The parser emits "==" for equality; matching "=" here
                     // meant no instruction was emitted and both operands were

@@ -57,10 +57,7 @@ pub fn bind_request(vm: &mut VM, request: &HttpRequest, path_params: &HashMap<St
                         Value::Number(rust_decimal::Decimal::from(vm.uploads.len())),
                     );
                     described.insert("பெயர்".to_string(), Value::String(part.name.clone()));
-                    described.insert(
-                        "கோப்புப்_பெயர்".to_string(),
-                        Value::String(filename.clone()),
-                    );
+                    described.insert("கோப்புப்_பெயர்".to_string(), Value::String(filename.clone()));
                     described.insert(
                         "வகை".to_string(),
                         Value::String(
@@ -116,10 +113,8 @@ pub fn bind_request(vm: &mut VM, request: &HttpRequest, path_params: &HashMap<St
     // Also as param_<name>, which is how path parameters have always been
     // exposed; programs written against that keep working.
     for (name, value) in path_params {
-        vm.variables.insert(
-            format!("param_{}", name),
-            Value::String(value.clone()),
-        );
+        vm.variables
+            .insert(format!("param_{}", name), Value::String(value.clone()));
     }
 }
 
@@ -182,10 +177,7 @@ pub fn response_from(vm: &VM) -> HttpResponse {
             }
             Err(e) => {
                 // Saying so beats sending an empty 200 that looks like success.
-                response = HttpResponse::internal_error(&format!(
-                    "cannot read '{}': {}",
-                    path, e
-                ));
+                response = HttpResponse::internal_error(&format!("cannot read '{}': {}", path, e));
             }
         }
     }
@@ -213,9 +205,7 @@ pub fn path_matches(pattern: &str, path: &str) -> bool {
     pattern_parts
         .iter()
         .zip(path_parts.iter())
-        .all(|(pattern_part, path_part)| {
-            pattern_part.starts_with(':') || pattern_part == path_part
-        })
+        .all(|(pattern_part, path_part)| pattern_part.starts_with(':') || pattern_part == path_part)
 }
 
 /// The `:name` segments of a pattern, paired with what the path had there.
@@ -290,16 +280,14 @@ pub struct RequestHandler;
 
 impl RequestHandler {
     /// Execute a handler for a request
-    pub fn execute(
-        request: &HttpRequest,
-        handler_stmts: &[Stmt],
-    ) -> Result<HttpResponse, String> {
+    pub fn execute(request: &HttpRequest, handler_stmts: &[Stmt]) -> Result<HttpResponse, String> {
         let mut vm = VM::new();
         bind_request(&mut vm, request, &HashMap::new());
 
         // Compile and execute handler
-        let bytecode =
-            crate::vm::bytecode::compiler::BytecodeCompiler::compile_statements(handler_stmts.to_vec());
+        let bytecode = crate::vm::bytecode::compiler::BytecodeCompiler::compile_statements(
+            handler_stmts.to_vec(),
+        );
 
         vm.execute(bytecode)
             .map_err(|e| format!("Handler execution error: {}", e))?;
@@ -354,8 +342,10 @@ mod tests {
     #[test]
     fn path_parameters_do_not_cost_the_query_string_or_headers() {
         let mut req = request("GET", "/api/kaNakku/1000");
-        req.query_params.insert("from".to_string(), "2026-04-01".to_string());
-        req.headers.insert("authorization".to_string(), "Bearer t".to_string());
+        req.query_params
+            .insert("from".to_string(), "2026-04-01".to_string());
+        req.headers
+            .insert("authorization".to_string(), "Bearer t".to_string());
 
         let mut params = HashMap::new();
         params.insert("id".to_string(), "1000".to_string());
@@ -366,7 +356,10 @@ mod tests {
         assert_eq!(text_var(&vm, "param_id"), "1000");
         match vm.variables.get("path_params") {
             Some(Value::Map(fields)) => {
-                assert_eq!(fields.get("id").map(|v| v.to_string()), Some("1000".to_string()));
+                assert_eq!(
+                    fields.get("id").map(|v| v.to_string()),
+                    Some("1000".to_string())
+                );
             }
             other => panic!("path_params should be a record, got {:?}", other),
         }

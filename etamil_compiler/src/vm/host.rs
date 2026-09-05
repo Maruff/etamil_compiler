@@ -49,7 +49,7 @@ mod imp {
         ///
         /// An embedder supplies a program's input up front, because there is
         /// nobody at a terminal to type it while the program runs.
-        static INPUT: RefCell<VecDeque<String>> = RefCell::new(VecDeque::new());
+        static INPUT: RefCell<VecDeque<String>> = const { RefCell::new(VecDeque::new()) };
     }
 
     pub fn print_line(text: &str) {
@@ -217,9 +217,7 @@ mod imp {
             files
                 .borrow()
                 .get(path)
-                .ok_or_else(|| {
-                    format!("கோப்பு '{}' இல்லை  (no such file '{}')", path, path)
-                })
+                .ok_or_else(|| format!("கோப்பு '{}' இல்லை  (no such file '{}')", path, path))
                 .and_then(|bytes| {
                     String::from_utf8(bytes.clone()).map_err(|_| {
                         format!(
@@ -233,7 +231,9 @@ mod imp {
 
     pub fn write(path: &str, contents: &[u8]) -> Result<(), String> {
         FILES.with(|files| {
-            files.borrow_mut().insert(path.to_string(), contents.to_vec());
+            files
+                .borrow_mut()
+                .insert(path.to_string(), contents.to_vec());
         });
         Ok(())
     }
