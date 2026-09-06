@@ -236,6 +236,17 @@ fn a_json_response_refuses_a_body_that_is_not_text() {
     );
 }
 
+#[test]
+fn a_json_response_without_a_status_answers_200() {
+    // The status is optional in the grammar, and the compiler pushes 200 when
+    // it is left off. Nothing else covered that branch, so a change to the
+    // push order would have swapped body and status silently.
+    let vm = run("jEcAZ_urY \"{}\";").unwrap();
+
+    assert_eq!(num(&vm, "response_status"), dec(200));
+    assert_eq!(text(&vm, "response_body"), "{}");
+}
+
 // --- Declared function signatures ----------------------------------------
 //
 // Every part is optional. What is not optional is that a part which is written

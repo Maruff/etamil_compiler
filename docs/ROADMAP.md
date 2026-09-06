@@ -121,7 +121,7 @@ Path parameters (`/kaNakku/:id`) are matched, and arrive as `path_params` and as
 
 Each request still builds a fresh VM, but a connection is no longer reopened with it: `தளம்_இணை` borrows from a process-wide idle cache and the lease returns on release. Exclusively — two requests sharing one connection would share its transaction state, and a `BEGIN` in one would enclose the other's queries. A connection is rolled back as it goes back, so a handler that opened a transaction and failed cannot hand the next request a connection sitting mid-transaction.
 
-**Still to do:** the `ஜேசான்_உரை` *statement* is still unimplemented, though `nUlakam/jEcAZ.qmz` makes it unnecessary — build the body with `ஜேசான்_ஆக்கு` and send it with `பதில்`.
+`ஜேசான்_உரை உடல், 201` sends a body with the JSON content type already on it, defaulting to 200 when the status is left off. It asks for text rather than rendering a record, because a Rust-side encoder beside `nUlakam`'s `ஜேசான்_ஆக்கு` would be a second answer to one question — and eTamil's record syntax is not JSON, so emitting it would only look right.
 
 ---
 
