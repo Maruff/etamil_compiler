@@ -26,7 +26,7 @@ vocabulary is Tamil, aimed at Indian FinTech.
 
 | | |
 |---|---|
-| **Syntax highlighting** | All 201 keywords, in every spelling the compiler accepts — Tamil script, romanized, and the English aliases |
+| **Syntax highlighting** | All 202 keywords, in every spelling the compiler accepts — Tamil script, romanized, and the English aliases |
 | **Errors as you type** | From the compiler's own front end, so they are the errors you will actually get |
 | **Completions** | Keywords with correct statement templates, 23 host builtins, and all 122 `செயல்` functions in the `nUlakam` standard library |
 | **Hover** | Every spelling of a word, whether it is reserved, and the doc comment from its definition |

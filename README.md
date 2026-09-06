@@ -54,7 +54,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 
 | Area | Status | Notes |
 |---|---|---|
-| Lexer (Tamil / romanized / English keywords) | ✅ Working | 201 tokens across ~500 spellings; errors carry line and column |
+| Lexer (Tamil / romanized / English keywords) | ✅ Working | 202 tokens across 524 spellings; errors carry line and column |
 | Variables, arithmetic, percentages, strings | ✅ Working | |
 | Comparisons, `எனில்` / `இன்றேல்`, `சுற்று` loops | ✅ Working | |
 | Logical `மற்றும்` / `அல்லது` / `இல்லை` | ✅ Working | both sides always evaluated — no short-circuiting |
@@ -105,7 +105,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 | Tests in eTamil (`nUlakam/cOqaZY.qmz`) | ✅ Working | assertions, a summary, and a non-zero exit when anything fails, so a suite gates CI. `kaNakkiyal/vari_cOqaZY.qmz` is fifteen of them about GST arithmetic. `வெளியேறு(நிலை)` is what ends the process with a status |
 | Interactive shell (`--repl`) | ✅ Working | variables persist between lines, a செயல் can be typed across several, `இறக்கு` works, and a bare expression is answered rather than refused — `0.1 + 0.2` prints `0.3`. `:vars` shows what the session holds |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 201 keywords in every spelling, completions for 51 builtins and 224 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 202 keywords in every spelling, completions for 62 builtins and 254 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
@@ -546,7 +546,7 @@ record; without one the server answers `application/json`.
 
 ```bash
 cd etamil_compiler
-cargo test          # 196 language tests + 59 unit tests + 8 --check tests
+cargo test          # 288 language + 113 unit + 10 host-capture + 8 --check
 ```
 
 `tests/language_tests.rs` covers the front end end-to-end — operators, control flow, file I/O, the standard library and the accounting framework — by asserting on **program results**, not exit codes. Every bug those cover exited 0 while producing the wrong answer. Unit tests for the HTTP, request and file modules live beside their source.
