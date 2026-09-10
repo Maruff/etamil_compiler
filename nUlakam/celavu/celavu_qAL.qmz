@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/celavu/celavu_qAL.qmz — செலவுத் தாள் (the cost sheet)
+//
+// The cost sheet is a ladder, and its rungs are in a fixed order because each
+// is defined as the one below it plus a class of overhead:
+//
+//     direct material + direct wages + direct expenses   = முதன்மைச் செலவு
+//     + factory overhead, ± work-in-progress             = தொழிற்சாலைச் செலவு
+//     + administrative overhead, ± finished stock        = உற்பத்திச் செலவு
+//     + selling and distribution overhead                = விற்பனைச் செலவு
+//
+// Each rung is a separate function rather than one long sum, because the
+// intermediate figures are what the sheet is read for: works cost per unit is
+// the number a factory is judged on, and it is invisible if only the total is
+// computed.
+//
+// Stock adjustments go where the stock is. Work-in-progress adjusts inside the
+// factory, before administrative overhead is added — putting it after is the
+// classic error, and it overstates works cost by the movement in WIP.
+
+இறக்கு "nilYyam.qmz";
+
+// --- Rung 1: prime cost --------------------------------------------------
+
+// முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்)
+செயல் முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்) {
+    திரும்பு நேரடிப்_பொருட்கள் + நேரடி_ஊதியம் + நேரடிச்_செலவுகள்;
+}
+
+// நுகர்ந்த_பொருட்கள்(ஆரம்பப்_பொருட்கள், வாங்கியவை, இறுதிப்_பொருட்கள்)
+//
+// Raw material consumed, which is what enters prime cost — not purchases.
+// Opening stock plus purchases less closing stock.
+செயல் நுகர்ந்த_பொருட்கள்(ஆரம்பப்_பொருட்கள், வாங்கியவை, இறுதிப்_பொருட்கள்) {
+    திரும்பு ஆரம்பப்_பொருட்கள் + வாங்கியவை - இறுதிப்_பொருட்கள்;
+}
+
+// --- Rung 2: works or factory cost --------------------------------------
+
+// தொழிற்சாலைச்_செலவு(முதன்மை, தொழிற்சாலை_மேல்நிலை, ஆரம்ப_நிறைவேறாதவை,
+//                    இறுதி_நிறைவேறாதவை)
+//
+// Opening WIP is work already begun, so it is added; closing WIP is work not
+// finished, so it is taken out. Pass 0 for both when there is no WIP.
+செயல் தொழிற்சாலைச்_செலவு(முதன்மை, தொழிற்சாலை_மேல்நிலை,
+                          ஆரம்ப_நிறைவேறாதவை, இறுதி_நிறைவேறாதவை) {
+    திரும்பு முதன்மை + தொழிற்சாலை_மேல்நிலை
+             + ஆரம்ப_நிறைவேறாதவை - இறுதி_நிறைவேறாதவை;
+}
+
+// --- Rung 3: cost of production and cost of goods sold ------------------
+
+செயல் உற்பத்திச்_செலவு(தொழிற்சாலை, நிர்வாக_மேல்நிலை) {
+    திரும்பு தொழிற்சாலை + நிர்வாக_மேல்நிலை;
+}
+
+// விற்ற_பொருட்களின்_செலவு(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை)
+//
+// Finished-goods stock adjusts here, after production is complete and before
+// selling overhead is added — selling cost attaches to what was sold, never to
+// what is still in the warehouse.
+செயல் விற்ற_பொருட்களின்_செலவு(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை) {
+    திரும்பு உற்பத்தி + ஆரம்ப_முடிந்தவை - இறுதி_முடிந்தவை;
+}
+
+// --- Rung 4: cost of sales, and what is left ----------------------------
+
+செயல் விற்பனைச்_செலவு(விற்றவை_செலவு, விற்பனை_மேல்நிலை) {
+    திரும்பு விற்றவை_செலவு + விற்பனை_மேல்நிலை;
+}
+
+// லாபம்_ஈட்டியது(விற்பனை_வருவாய், விற்பனைச்_செலவு_மொத்தம்)
+செயல் லாபம்_ஈட்டியது(விற்பனை_வருவாய், விற்பனைச்_செலவு_மொத்தம்) {
+    திரும்பு விற்பனை_வருவாய் - விற்பனைச்_செலவு_மொத்தம்;
+}
+
+// --- Per unit ------------------------------------------------------------
+
+// அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்)
+செயல் அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்) {
+    (அலகுகள் <= 0) எனில் {
+        திரும்பு தவறு("அலகுகள் பூஜ்யம்: அலகுச் செலவு இல்லை");
+    }
+    திரும்பு சரி(மொத்தச்_செலவு / அலகுகள்);
+}
+
+// --- The whole sheet ----------------------------------------------------
+
+// செலவுத்_தாள்_ஆக்கு(தரவுத்_தொகுதி)
+//
+// One record in, one record out, carrying every rung so a caller can print the
+// sheet or read a single level. The input is a record rather than fourteen
+// positional arguments because a cost sheet read in the wrong order is a wrong
+// cost sheet, and named fields cannot be transposed by accident.
+//
+// Expected fields, all numbers:
+//   நேரடிப்_பொருட்கள் நேரடி_ஊதியம் நேரடிச்_செலவுகள்
+//   தொழிற்சாலை_மேல்நிலை நிர்வாக_மேல்நிலை விற்பனை_மேல்நிலை
+//   ஆரம்ப_நிறைவேறாதவை இறுதி_நிறைவேறாதவை
+//   ஆரம்ப_முடிந்தவை இறுதி_முடிந்தவை
+//   விற்பனை_வருவாய் அலகுகள்
+செயல் செலவுத்_தாள்_ஆக்கு(தரவுத்_தொகுதி) {
+    முதன்மை = முதன்மைச்_செலவு(தரவுத்_தொகுதி.நேரடிப்_பொருட்கள்,
+                               தரவுத்_தொகுதி.நேரடி_ஊதியம்,
+                               தரவுத்_தொகுதி.நேரடிச்_செலவுகள்);
+
+    தொழிற்சாலை = தொழிற்சாலைச்_செலவு(முதன்மை,
+                                     தரவுத்_தொகுதி.தொழிற்சாலை_மேல்நிலை,
+                                     தரவுத்_தொகுதி.ஆரம்ப_நிறைவேறாதவை,
+                                     தரவுத்_தொகுதி.இறுதி_நிறைவேறாதவை);
+
+    உற்பத்தி = உற்பத்திச்_செலவு(தொழிற்சாலை, தரவுத்_தொகுதி.நிர்வாக_மேல்நிலை);
+
+    விற்றவை = விற்ற_பொருட்களின்_செலவு(உற்பத்தி,
+                                       தரவுத்_தொகுதி.ஆரம்ப_முடிந்தவை,
+                                       தரவுத்_தொகுதி.இறுதி_முடிந்தவை);
+
+    விற்பனை_மொத்தம் = விற்பனைச்_செலவு(விற்றவை,
+                                        தரவுத்_தொகுதி.விற்பனை_மேல்நிலை);
+
+    ஈட்டியது = லாபம்_ஈட்டியது(தரவுத்_தொகுதி.விற்பனை_வருவாய், விற்பனை_மொத்தம்);
+
+    திரும்பு {
+        முதன்மைச்_செலவு: முதன்மை,
+        தொழிற்சாலைச்_செலவு: தொழிற்சாலை,
+        உற்பத்திச்_செலவு: உற்பத்தி,
+        விற்றவை_செலவு: விற்றவை,
+        விற்பனைச்_செலவு: விற்பனை_மொத்தம்,
+        ஈட்டிய_லாபம்: ஈட்டியது,
+        அலகுகள்: தரவுத்_தொகுதி.அலகுகள்
+    };
+}
+
+// தாளை_அச்சிடு(தாள்) — the sheet as a costing department would read it
+செயல் தாளை_அச்சிடு(தாள்) {
+    அச்சு "── செலவுத் தாள் (cost sheet) ──";
+    அச்சு "  முதன்மைச் செலவு    (prime)      : " & தாள்.முதன்மைச்_செலவு;
+    அச்சு "  தொழிற்சாலைச் செலவு (works)      : " & தாள்.தொழிற்சாலைச்_செலவு;
+    அச்சு "  உற்பத்திச் செலவு   (production) : " & தாள்.உற்பத்திச்_செலவு;
+    அச்சு "  விற்றவை செலவு     (goods sold) : " & தாள்.விற்றவை_செலவு;
+    அச்சு "  விற்பனைச் செலவு    (sales)      : " & தாள்.விற்பனைச்_செலவு;
+    அச்சு "  ஈட்டிய லாபம்       (profit)     : " & தாள்.ஈட்டிய_லாபம்;
+    விடை = அலகுக்குச்_செலவு(தாள்.விற்பனைச்_செலவு, தாள்.அலகுகள்);
+    (சரியா(விடை)) எனில் {
+        அச்சு "  அலகுக்குச் செலவு  (per unit)   : " & மதிப்பு(விடை);
+    }
+    திரும்பு தாள்;
+}

@@ -1,0 +1,146 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/celavu/nilYyam.qmz — நிலையம் (cost centres, objects and elements)
+//
+// Financial accounting asks what was spent. Cost accounting asks where it went
+// and what it attached to, and that needs two structures the ledger does not
+// have: a place that incurs cost (a cost centre) and a thing that carries it
+// (a cost object). Everything else in this directory hangs off them.
+//
+// Field and parameter names here are compound — நிலைய_வகை, கூறு_தொகை — because
+// செலவு, தொகை, விலை, அளவு and நிலை are all keywords in this language. A bare
+// keyword used as a field name is stored under its token name instead, so the
+// record you read back is not the one you wrote. Compounding is the fix, and
+// the same convention runs through kaNakkiyal/.
+
+// --- What kind of place incurred it -------------------------------------
+//
+// The three-way split matters because only the first absorbs cost into
+// product: service and administrative centres have their cost re-apportioned
+// onto production centres before absorption, never onto units directly.
+செயல் வகை_உற்பத்தி()  { திரும்பு "உற்பத்தி"; }
+செயல் வகை_சேவைத்துறை() { திரும்பு "சேவை"; }
+செயல் வகை_நிர்வாகம்()  { திரும்பு "நிர்வாகம்"; }
+
+செயல் நிலைய_வகை_செல்லுபடியா(நிலைய_வகை) {
+    (நிலைய_வகை == "உற்பத்தி") எனில் { திரும்பு மெய்; }
+    (நிலைய_வகை == "சேவை")     எனில் { திரும்பு மெய்; }
+    (நிலைய_வகை == "நிர்வாகம்") எனில் { திரும்பு மெய்; }
+    திரும்பு பொய்;
+}
+
+// உற்பத்தி_நிலையமா(நிலையம்) — does cost absorb into units here?
+செயல் உற்பத்தி_நிலையமா(நிலையம்) {
+    திரும்பு நிலையம்.நிலைய_வகை == "உற்பத்தி";
+}
+
+// நிலையம்_ஆக்கு(நிலைய_குறி, நிலைய_பெயர், நிலைய_வகை)
+செயல் நிலையம்_ஆக்கு(நிலைய_குறி, நிலைய_பெயர், நிலைய_வகை) {
+    (இல்லை நிலைய_வகை_செல்லுபடியா(நிலைய_வகை)) எனில் {
+        திரும்பு தவறு("அறியப்படாத நிலைய வகை: " & நிலைய_வகை);
+    }
+    திரும்பு சரி({
+        நிலைய_குறி: நிலைய_குறி,
+        நிலைய_பெயர்: நிலைய_பெயர்,
+        நிலைய_வகை: நிலைய_வகை
+    });
+}
+
+செயல் நிலையம்_தேடு(நிலையங்கள், நிலைய_குறி) {
+    ஒவ்வொரு ஒரு_நிலையம் இல் நிலையங்கள் {
+        (ஒரு_நிலையம்.நிலைய_குறி == நிலைய_குறி) எனில் {
+            திரும்பு சரி(ஒரு_நிலையம்);
+        }
+    }
+    திரும்பு தவறு("நிலையம் காணவில்லை: " & நிலைய_குறி);
+}
+
+செயல் வகையால்_நிலையங்கள்(நிலையங்கள், நிலைய_வகை) {
+    விடை_பட்டி = [];
+    ஒவ்வொரு ஒரு_நிலையம் இல் நிலையங்கள் {
+        (ஒரு_நிலையம்.நிலைய_வகை == நிலைய_வகை) எனில் {
+            விடை_பட்டி = இணை(விடை_பட்டி, ஒரு_நிலையம்);
+        }
+    }
+    திரும்பு விடை_பட்டி;
+}
+
+// --- What carries it ----------------------------------------------------
+
+// செலவுப்_பொருள்_ஆக்கு(பொருள்_குறி, பொருள்_பெயர், அலகுகள்)
+//
+// The cost object: a job, a batch, a process, a contract, a product line. The
+// unit count is held with it because per-unit cost is meaningless without it,
+// and a cost sheet that reports a unit cost against the wrong quantity is the
+// most common error in the whole discipline.
+செயல் செலவுப்_பொருள்_ஆக்கு(பொருள்_குறி, பொருள்_பெயர், அலகுகள்) {
+    (அலகுகள் < 0) எனில் {
+        திரும்பு தவறு("அலகுகள் எதிர்மறையாக இருக்க முடியாது");
+    }
+    திரும்பு சரி({
+        பொருள்_குறி: பொருள்_குறி,
+        பொருள்_பெயர்: பொருள்_பெயர்,
+        அலகுகள்: அலகுகள்
+    });
+}
+
+// --- The elements of cost -----------------------------------------------
+
+// கூறு_ஆக்கு(கூறு_பெயர், கூறு_தொகை, நேரடியா, மாறுபடுமா)
+//
+// Two independent classifications, and keeping them independent is the point.
+// Direct/indirect answers "can this be traced to the object?" and decides
+// whether it is absorbed or apportioned. Variable/fixed answers "does it move
+// with volume?" and decides whether it enters a contribution calculation.
+// Direct cost is usually variable and indirect usually fixed, but the pairs
+// are not the same question and a semi-variable element belongs to neither
+// cleanly — which is why மாறுபடுமா is a fraction, not a flag.
+செயல் கூறு_ஆக்கு(கூறு_பெயர், கூறு_தொகை, நேரடியா, மாறுபடுமா) {
+    திரும்பு {
+        கூறு_பெயர்: கூறு_பெயர்,
+        கூறு_தொகை: கூறு_தொகை,
+        நேரடியா: நேரடியா,
+        மாறுபடுமா: மாறுபடுமா
+    };
+}
+
+செயல் கூறுகளின்_கூட்டல்(கூறுகள்) {
+    மொத்தக்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
+        மொத்தக்_கூட்டல் = மொத்தக்_கூட்டல் + ஒரு_கூறு.கூறு_தொகை;
+    }
+    திரும்பு மொத்தக்_கூட்டல்;
+}
+
+செயல் நேரடிக்_கூறுகள்(கூறுகள்) {
+    விடை_பட்டி = [];
+    ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
+        (ஒரு_கூறு.நேரடியா) எனில் { விடை_பட்டி = இணை(விடை_பட்டி, ஒரு_கூறு); }
+    }
+    திரும்பு விடை_பட்டி;
+}
+
+செயல் மறைமுகக்_கூறுகள்(கூறுகள்) {
+    விடை_பட்டி = [];
+    ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
+        (இல்லை ஒரு_கூறு.நேரடியா) எனில் { விடை_பட்டி = இணை(விடை_பட்டி, ஒரு_கூறு); }
+    }
+    திரும்பு விடை_பட்டி;
+}
+
+// மாறும்_பகுதி(கூறுகள்) — the volume-sensitive rupees inside a mixed list
+//
+// A semi-variable element with மாறுபடுமா 0.6 contributes 60% of itself here
+// and 40% to நிலையான_பகுதி. Splitting a mixed list this way is what makes a
+// contribution figure computable from an absorption cost sheet.
+செயல் மாறும்_பகுதி(கூறுகள்) {
+    மாறும்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
+        மாறும்_கூட்டல் = மாறும்_கூட்டல் + ஒரு_கூறு.கூறு_தொகை * ஒரு_கூறு.மாறுபடுமா;
+    }
+    திரும்பு மாறும்_கூட்டல்;
+}
+
+செயல் நிலையான_பகுதி(கூறுகள்) {
+    திரும்பு கூறுகளின்_கூட்டல்(கூறுகள்) - மாறும்_பகுதி(கூறுகள்);
+}
