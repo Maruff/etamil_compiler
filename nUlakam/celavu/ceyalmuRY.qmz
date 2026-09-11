@@ -1,0 +1,260 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/celavu/ceyalmuRY.qmz — செயல்முறை, process costing and equivalent units
+//
+// celavu_qAL.qmz costs a job: a batch you can point at, whose costs you can
+// collect against it. A process cannot be pointed at. Sugar, cement, paint and
+// chemicals come out of a continuous run in which no unit is distinguishable
+// from another, so cost is averaged over output rather than traced to it — and
+// the whole difficulty is deciding what "output" means when some of the input
+// was destroyed and some is still half finished.
+//
+// Two rules carry almost all of it, and both are counter-intuitive.
+//
+// **Normal loss bears no cost.** Loss that is expected — evaporation,
+// trimming, the first few metres of every run — is a cost of making the good
+// units, so its cost is absorbed by them. That is achieved by *leaving the
+// normal loss units out of the denominator*, not by a separate charge. Any
+// scrap they fetch reduces the cost to be absorbed.
+//
+// **Abnormal loss does bear cost.** Loss beyond the expected is valued at the
+// same rate as good output and **written off**, so it never touches the
+// product cost. Rolling it into the product is the error this module exists to
+// prevent, and it hides inefficiency in the one number management watches.
+//
+// The practical consequence: the cost per unit is
+//
+//     (total cost − scrap value of normal loss) ÷ (input − normal loss units)
+//
+// and dividing by *good output* instead is wrong whenever there is abnormal
+// loss, because it buries the abnormal loss in the survivors.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// இழப்புகள் — expected and unexpected
+// =========================================================================
+//
+// இயல்பு_இழப்பு_அலகுகள்(உள்ளீட்டு_அலகுகள், இயல்பு_விகிதம்)
+//
+// What the process is expected to destroy. A percentage of input, not of
+// output — the loss happens to what went in.
+செயல் இயல்பு_இழப்பு_அலகுகள்(உள்ளீட்டு_அலகுகள், இயல்பு_விகிதம்) {
+    திரும்பு வட்டமிடு(உள்ளீட்டு_அலகுகள் * இயல்பு_விகிதம் / 100, 4);
+}
+
+// அசாதாரண_வேறுபாடு(இயல்பு_இழப்பு, உண்மை_இழப்பு)
+//
+// Signed, and the sign is the whole story:
+//
+//   positive — an **abnormal loss**: more was destroyed than expected;
+//   negative — an **abnormal gain**: less was destroyed than expected.
+//
+// An abnormal gain is not good news being recorded modestly. It means the
+// normal loss percentage is wrong, or was set loosely enough to flatter the
+// process, and a run of abnormal gains is evidence that the standard needs
+// revising rather than that the plant is excelling.
+செயல் அசாதாரண_வேறுபாடு(இயல்பு_இழப்பு, உண்மை_இழப்பு) {
+    திரும்பு வட்டமிடு(உண்மை_இழப்பு - இயல்பு_இழப்பு, 4);
+}
+
+செயல் நல்ல_வெளியீடு(உள்ளீட்டு_அலகுகள், உண்மை_இழப்பு) {
+    திரும்பு வட்டமிடு(உள்ளீட்டு_அலகுகள் - உண்மை_இழப்பு, 4);
+}
+
+// =========================================================================
+// அலகுக்குச் செலவு — and the denominator that does the work
+// =========================================================================
+//
+// உறிஞ்ச_வேண்டிய_செலவு(மொத்தச்_செலவு, இயல்பு_இழப்பின்_கழிவு_மதிப்பு)
+//
+// Scrap recovered from the normal loss reduces what has to be absorbed. It is
+// a credit to the process, not income: the material was paid for once and part
+// of it came back.
+செயல் உறிஞ்ச_வேண்டிய_செலவு(மொத்தச்_செலவு, இயல்பு_இழப்பின்_கழிவு_மதிப்பு) {
+    திரும்பு வட்டமிடு(மொத்தச்_செலவு - இயல்பு_இழப்பின்_கழிவு_மதிப்பு, 2);
+}
+
+// அலகுக்கான_செலவு(உறிஞ்ச_வேண்டியது, உள்ளீட்டு_அலகுகள், இயல்பு_இழப்பு)
+//
+// **Input less normal loss** is the denominator, and that single choice is how
+// the normal loss gets absorbed. The units that survive divide a cost that
+// includes what was spent on the units that did not.
+//
+// Dividing by *good output* instead looks more natural and is wrong whenever
+// any abnormal loss occurred, because the abnormal loss then quietly inflates
+// every good unit. அலகுக்கான_செலவு_தவறாக exists to price that.
+செயல் அலகுக்கான_செலவு(உறிஞ்ச_வேண்டியது, உள்ளீட்டு_அலகுகள், இயல்பு_இழப்பு) {
+    பயனுள்ள_அலகுகள் = உள்ளீட்டு_அலகுகள் - இயல்பு_இழப்பு;
+    (பயனுள்ள_அலகுகள் <= 0) எனில் {
+        திரும்பு தவறு("இயல்பு இழப்புக்குப் பின் அலகுகள் இல்லை  "
+                       & "(no units survive the normal loss, so there is "
+                       & "nothing to absorb the cost)");
+    }
+    திரும்பு சரி(வட்டமிடு(உறிஞ்ச_வேண்டியது / பயனுள்ள_அலகுகள், 4));
+}
+
+// அலகுக்கான_செலவு_தவறாக(உறிஞ்ச_வேண்டியது, நல்ல_வெளியீடு)
+//
+// The natural-looking mistake: dividing by good output. Offered only so the
+// overstatement can be measured, and it is always an overstatement.
+செயல் அலகுக்கான_செலவு_தவறாக(உறிஞ்ச_வேண்டியது, நல்ல_அலகுகள்) {
+    (நல்ல_அலகுகள் <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(உறிஞ்ச_வேண்டியது / நல்ல_அலகுகள், 4);
+}
+
+// =========================================================================
+// அசாதாரணத்தின் மதிப்பு — valuing what should not have happened
+// =========================================================================
+//
+// அசாதாரண_இழப்பின்_மதிப்பு(அசாதாரண_அலகுகள், அலகுச்_செலவு, அலகுக்_கழிவு_மதிப்பு)
+//
+// An abnormal loss is valued at the **same rate as good output** — it consumed
+// the same material and the same conversion — and then written off to the
+// profit and loss, credited with whatever scrap it fetches.
+//
+// It never touches the product cost. That is the point: the cost of good units
+// is what the process costs when it behaves, and the cost of misbehaving is
+// reported separately where somebody has to answer for it.
+செயல் அசாதாரண_இழப்பின்_மதிப்பு(அசாதாரண_அலகுகள், அலகுச்_செலவு,
+                                 அலகுக்_கழிவு_மதிப்பு) {
+    மொத்த_மதிப்பு = வட்டமிடு(அசாதாரண_அலகுகள் * அலகுச்_செலவு, 2);
+    கழிவு = வட்டமிடு(அசாதாரண_அலகுகள் * அலகுக்_கழிவு_மதிப்பு, 2);
+    திரும்பு {"மொத்த_மதிப்பு": மொத்த_மதிப்பு,
+              "கழிவு_மதிப்பு": கழிவு,
+              "எழுதித்_தள்ளுவது": வட்டமிடு(மொத்த_மதிப்பு - கழிவு, 2)};
+}
+
+// அசாதாரண_ஆதாயத்தின்_மதிப்பு(ஆதாய_அலகுகள், அலகுச்_செலவு, அலகுக்_கழிவு_மதிப்பு)
+//
+// An abnormal gain is valued the same way and credited — but the scrap that
+// the *un-lost* units would have fetched is lost with them, so the gain
+// account is charged with it.
+//
+// That second half is routinely forgotten. A gain of twenty units at ten
+// rupees is not worth two hundred if the twenty units would have sold as scrap
+// for five rupees each; it is worth a hundred, because the process gave up a
+// hundred rupees of scrap revenue to produce them.
+செயல் அசாதாரண_ஆதாயத்தின்_மதிப்பு(ஆதாய_அலகுகள், அலகுச்_செலவு,
+                                    அலகுக்_கழிவு_மதிப்பு) {
+    மொத்த_மதிப்பு = வட்டமிடு(ஆதாய_அலகுகள் * அலகுச்_செலவு, 2);
+    இழந்த_கழிவு = வட்டமிடு(ஆதாய_அலகுகள் * அலகுக்_கழிவு_மதிப்பு, 2);
+    திரும்பு {"மொத்த_மதிப்பு": மொத்த_மதிப்பு,
+              "இழந்த_கழிவு": இழந்த_கழிவு,
+              "நிகர_ஆதாயம்": வட்டமிடு(மொத்த_மதிப்பு - இழந்த_கழிவு, 2)};
+}
+
+// =========================================================================
+// முழுச் செயல்முறை — the process account, in one call
+// =========================================================================
+//
+// செயல்முறையைக்_கணக்கிடு(உள்ளீட்டு_அலகுகள், மொத்தச்_செலவு, இயல்பு_விகிதம்,
+//                          உண்மை_வெளியீடு, அலகுக்_கழிவு_மதிப்பு)
+//
+// Everything above, in the order a process account is prepared, with each
+// intermediate kept.
+//
+// The figures reconcile by construction and the tests assert it: good output
+// plus abnormal loss, valued at the unit cost, equals the cost to be absorbed.
+// A process account that does not close is a process account that has lost
+// track of either units or money, and it is usually units.
+செயல் செயல்முறையைக்_கணக்கிடு(உள்ளீட்டு_அலகுகள், மொத்தச்_செலவு, இயல்பு_விகிதம்,
+                               உண்மை_வெளியீடு, அலகுக்_கழிவு_மதிப்பு) {
+    இயல்பு = இயல்பு_இழப்பு_அலகுகள்(உள்ளீட்டு_அலகுகள், இயல்பு_விகிதம்);
+    உண்மை_இழப்பு = வட்டமிடு(உள்ளீட்டு_அலகுகள் - உண்மை_வெளியீடு, 4);
+    வேறுபாடு = அசாதாரண_வேறுபாடு(இயல்பு, உண்மை_இழப்பு);
+
+    கழிவு_வரவு = வட்டமிடு(இயல்பு * அலகுக்_கழிவு_மதிப்பு, 2);
+    உறிஞ்சுவது = உறிஞ்ச_வேண்டிய_செலவு(மொத்தச்_செலவு, கழிவு_வரவு);
+
+    செலவு_விடை = அலகுக்கான_செலவு(உறிஞ்சுவது, உள்ளீட்டு_அலகுகள், இயல்பு);
+    (தவறா(செலவு_விடை)) எனில் { திரும்பு செலவு_விடை; }
+    அலகுச்_செலவு = மதிப்பு(செலவு_விடை);
+
+    திரும்பு சரி({"இயல்பு_இழப்பு": இயல்பு,
+                  "உண்மை_இழப்பு": உண்மை_இழப்பு,
+                  "அசாதாரண_வேறுபாடு": வேறுபாடு,
+                  "நல்ல_வெளியீடு": வட்டமிடு(உண்மை_வெளியீடு, 4),
+                  "கழிவு_வரவு": கழிவு_வரவு,
+                  "உறிஞ்ச_வேண்டியது": உறிஞ்சுவது,
+                  "அலகுச்_செலவு": அலகுச்_செலவு,
+                  "நல்லதன்_மதிப்பு": வட்டமிடு(உண்மை_வெளியீடு * அலகுச்_செலவு, 2)});
+}
+
+// =========================================================================
+// சமமான அலகுகள் — work in progress
+// =========================================================================
+//
+// Half-finished units are not half units, and they are not whole ones. Three
+// hundred units sixty per cent converted have absorbed as much conversion cost
+// as one hundred and eighty finished ones, so that is what they count as.
+//
+// The completion percentage differs by element. Material is usually issued in
+// full at the start of a process while labour and overhead accrue as the work
+// proceeds, so the same closing stock is 100% complete for material and 60%
+// for conversion — and equivalent units have to be computed per element, which
+// is why these take one percentage rather than assuming one.
+
+// சராசரி_சமமான_அலகுகள்(முடிந்த_அலகுகள், இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு)
+//
+// Weighted average: everything finished this period counts in full, whatever
+// period its work was done in, plus the closing stock's completed fraction.
+//
+// It blends the opening stock's earlier cost into this period's average, which
+// makes the unit cost easier to compute and harder to hold anybody to.
+செயல் சராசரி_சமமான_அலகுகள்(முடிந்த_அலகுகள், இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு) {
+    திரும்பு வட்டமிடு(முடிந்த_அலகுகள்
+                       + இறுதி_நிலை_அலகுகள் * இறுதி_நிறைவு / 100, 4);
+}
+
+// fifo_சமமான_அலகுகள்(தொடக்க_நிலை_அலகுகள், தொடக்க_நிறைவு, முடிந்த_அலகுகள்,
+//                     இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு)
+//
+// FIFO counts **only this period's work**: what it took to finish the opening
+// stock, plus what was started and finished, plus what has been done to the
+// closing stock.
+//
+// The difference from weighted average is exactly the opening stock's
+// prior-period work, and that is the argument for it: FIFO's unit cost is this
+// period's performance and can be compared with last period's, while the
+// weighted average's cannot because it contains last period's.
+செயல் fifo_சமமான_அலகுகள்(தொடக்க_நிலை_அலகுகள், தொடக்க_நிறைவு, முடிந்த_அலகுகள்,
+                          இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு) {
+    தொடக்கத்தை_முடிக்க = தொடக்க_நிலை_அலகுகள் * (100 - தொடக்க_நிறைவு) / 100;
+    தொடங்கி_முடித்தது = முடிந்த_அலகுகள் - தொடக்க_நிலை_அலகுகள்;
+    (தொடங்கி_முடித்தது < 0) எனில் { தொடங்கி_முடித்தது = 0; }
+    திரும்பு வட்டமிடு(தொடக்கத்தை_முடிக்க + தொடங்கி_முடித்தது
+                       + இறுதி_நிலை_அலகுகள் * இறுதி_நிறைவு / 100, 4);
+}
+
+// சமமான_அலகின்_செலவு(காலத்தின்_செலவு, சமமான_அலகுகள்)
+செயல் சமமான_அலகின்_செலவு(காலத்தின்_செலவு, சமமான_அலகுகள்) {
+    (சமமான_அலகுகள் <= 0) எனில் {
+        திரும்பு தவறு("சமமான அலகுகள் இல்லை  (no equivalent units)");
+    }
+    திரும்பு சரி(வட்டமிடு(காலத்தின்_செலவு / சமமான_அலகுகள், 4));
+}
+
+// முறைகளின்_வேறுபாடு(தொடக்க_நிலை_அலகுகள், தொடக்க_நிறைவு, முடிந்த_அலகுகள்,
+//                     இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு)
+//
+// What the two methods disagree by, and why.
+//
+// The gap is the opening stock's prior-period work — nothing else — and
+// showing it as such is more use than showing two unit costs and leaving the
+// reader to wonder which is right. Both are right; they answer different
+// questions.
+செயல் முறைகளின்_வேறுபாடு(தொடக்க_நிலை_அலகுகள், தொடக்க_நிறைவு, முடிந்த_அலகுகள்,
+                          இறுதி_நிலை_அலகுகள், இறுதி_நிறைவு) {
+    சராசரி_விடை = சராசரி_சமமான_அலகுகள்(முடிந்த_அலகுகள், இறுதி_நிலை_அலகுகள்,
+                                    இறுதி_நிறைவு);
+    முதலில்_வந்தது = fifo_சமமான_அலகுகள்(தொடக்க_நிலை_அலகுகள், தொடக்க_நிறைவு,
+                                          முடிந்த_அலகுகள், இறுதி_நிலை_அலகுகள்,
+                                          இறுதி_நிறைவு);
+    திரும்பு {"சராசரி": சராசரி_விடை,
+              "fifo": முதலில்_வந்தது,
+              "வேறுபாடு": வட்டமிடு(சராசரி_விடை - முதலில்_வந்தது, 4),
+              "முந்தைய_கால_வேலை": வட்டமிடு(தொடக்க_நிலை_அலகுகள்
+                                             * தொடக்க_நிறைவு / 100, 4)};
+}

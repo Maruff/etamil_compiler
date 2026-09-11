@@ -1,0 +1,207 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/celavu/ceyalpAtu.qmz — செயல்பாடு, activity-based costing
+//
+// mElnilY.qmz absorbs overhead on a single rate over a single base — labour
+// hours, machine hours, units. That works when overhead is *caused* by volume,
+// and most of it no longer is. Setting up a machine costs the same whether the
+// run is ten units or ten thousand; raising a purchase order costs the same
+// for a small order as a large one; an inspection costs what it costs.
+//
+// Absorbing those on a volume base charges them to whoever produced the most
+// volume, which is precisely the wrong party. The high-volume simple product
+// pays for the low-volume complex one's setups, and the accounts show a
+// healthy margin on the awkward product and a thin one on the bread-and-butter
+// line. Decisions follow: the good product looks marginal and gets dropped.
+//
+// **The total never changes.** Activity-based costing moves overhead between
+// products; it does not reduce it. What it changes is who bears it, and the
+// movement is exactly equal and opposite — which is why குறுக்கு_மானியம்
+// reports one figure for both directions.
+//
+// mElnilY.qmz records அடிப்படை_வகை with every rate precisely so this could be
+// added without changing it, and nothing there needs changing.
+//
+// **It is not automatically better.** Where products consume activities in the
+// same proportions as the volume base, activity-based costing gives the same
+// answer at more expense. `பயனளிக்குமா` says when that is the case.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// செயல்பாடு — a cost pool and its driver
+// =========================================================================
+//
+// செயல்பாடு_ஆக்கு(செயல்பாட்டுக்_குறி, விவரம், தொகுப்புச்_செலவு, இயக்கிப்_பெயர்,
+//                  மொத்த_இயக்கி_அளவு)
+//
+// A pool of cost, and the thing that causes it. The driver must be what
+// actually drives the cost, not what is easy to count — the commonest failure
+// of an activity-based system is a driver chosen because the data existed.
+//
+// மொத்த_இயக்கி_அளவு is the total across all products, which is what makes the
+// rate. A driver volume that omits some products charges the rest too much.
+செயல் செயல்பாடு_ஆக்கு(செயல்பாட்டுக்_குறி, விவரம், தொகுப்புச்_செலவு,
+                        இயக்கிப்_பெயர், மொத்த_இயக்கி_அளவு) {
+    திரும்பு {"குறி": செயல்பாட்டுக்_குறி,
+              "விவரம்": விவரம்,
+              "தொகுப்புச்_செலவு": தொகுப்புச்_செலவு,
+              "இயக்கி": இயக்கிப்_பெயர்,
+              "மொத்த_அளவு": மொத்த_இயக்கி_அளவு};
+}
+
+// இயக்கி_விகிதம்(ஒரு_செயல்பாடு) — cost per unit of driver
+//
+// A driver volume of nothing is a தவறு rather than an infinite rate. An
+// activity that happened no times and cost money is a pool that belongs
+// somewhere else, and dividing by zero would hide that behind an error far
+// from the data.
+செயல் இயக்கி_விகிதம்(ஒரு_செயல்பாடு) {
+    (ஒரு_செயல்பாடு["மொத்த_அளவு"] <= 0) எனில் {
+        திரும்பு தவறு("இயக்கி அளவு இல்லை  (the driver volume for "
+                       & ஒரு_செயல்பாடு["குறி"] & " is nothing, so it has no rate)");
+    }
+    திரும்பு சரி(வட்டமிடு(ஒரு_செயல்பாடு["தொகுப்புச்_செலவு"]
+                           / ஒரு_செயல்பாடு["மொத்த_அளவு"], 4));
+}
+
+செயல் நுகர்வு_ஆக்கு(செயல்பாட்டுக்_குறி, நுகர்ந்த_அளவு) {
+    திரும்பு {"செயல்பாடு": செயல்பாட்டுக்_குறி, "அளவு": நுகர்ந்த_அளவு};
+}
+
+// =========================================================================
+// ஒதுக்கீடு — charging a product
+// =========================================================================
+//
+// தயாரிப்பின்_மேல்நிலை(செயல்பாடுகள், நுகர்வுகள்)
+//
+// What one product costs in overhead: its consumption of each activity at that
+// activity's rate.
+//
+// An activity the product consumes nothing of charges it nothing, which is the
+// whole idea and the thing a blanket rate cannot do.
+செயல் தயாரிப்பின்_மேல்நிலை(செயல்பாடுகள், நுகர்வுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_நுகர்வு இல் நுகர்வுகள் {
+        ஒவ்வொரு ஒரு_செயல்பாடு இல் செயல்பாடுகள் {
+            (ஒரு_செயல்பாடு["குறி"] == ஒரு_நுகர்வு["செயல்பாடு"]) எனில் {
+                விகித_விடை = இயக்கி_விகிதம்(ஒரு_செயல்பாடு);
+                (தவறா(விகித_விடை)) எனில் { திரும்பு விகித_விடை; }
+                கூட்டல் = கூட்டல் + ஒரு_நுகர்வு["அளவு"] * மதிப்பு(விகித_விடை);
+            }
+        }
+    }
+    திரும்பு சரி(வட்டமிடு(கூட்டல், 2));
+}
+
+// பாரம்பரிய_மேல்நிலை(மொத்த_மேல்நிலை, மொத்த_அடிப்படை, தயாரிப்பின்_அடிப்படை)
+//
+// The single blanket rate, for comparison: total overhead over total base,
+// applied to this product's share of the base.
+செயல் பாரம்பரிய_மேல்நிலை(மொத்த_மேல்நிலை, மொத்த_அடிப்படை, தயாரிப்பின்_அடிப்படை) {
+    (மொத்த_அடிப்படை <= 0) எனில் {
+        திரும்பு தவறு("அடிப்படை அளவு இல்லை  (no absorption base)");
+    }
+    திரும்பு சரி(வட்டமிடு(மொத்த_மேல்நிலை * தயாரிப்பின்_அடிப்படை
+                           / மொத்த_அடிப்படை, 2));
+}
+
+செயல் தொகுப்புகளின்_கூட்டல்(செயல்பாடுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_செயல்பாடு இல் செயல்பாடுகள் {
+        கூட்டல் = கூட்டல் + ஒரு_செயல்பாடு["தொகுப்புச்_செலவு"];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// =========================================================================
+// குறுக்கு மானியம் — the cross-subsidy
+// =========================================================================
+//
+// குறுக்கு_மானியம்(செயல்பாடுகள், நுகர்வுகள், மொத்த_அடிப்படை,
+//                   தயாரிப்பின்_அடிப்படை, அலகுகள்)
+//
+// One product, both ways, with the shift and the per-unit effect.
+//
+// The per-unit figures are what matter. A total that moves by a lakh is
+// abstract; a product whose overhead per unit goes from fifteen rupees to
+// three, or from ten to a hundred and twenty-eight, is a pricing decision and
+// possibly a discontinuation decision that was about to be taken on the wrong
+// number.
+//
+// The sign convention: a positive shift means the traditional method charged
+// **more** than the activities justify — the product was subsidising others.
+செயல் குறுக்கு_மானியம்(செயல்பாடுகள், நுகர்வுகள், மொத்த_அடிப்படை,
+                        தயாரிப்பின்_அடிப்படை, அலகுகள்) {
+    செயல்பாட்டு_விடை = தயாரிப்பின்_மேல்நிலை(செயல்பாடுகள், நுகர்வுகள்);
+    (தவறா(செயல்பாட்டு_விடை)) எனில் { திரும்பு செயல்பாட்டு_விடை; }
+
+    மொத்த_மேல்நிலை = தொகுப்புகளின்_கூட்டல்(செயல்பாடுகள்);
+    பாரம்பரிய_விடை = பாரம்பரிய_மேல்நிலை(மொத்த_மேல்நிலை, மொத்த_அடிப்படை,
+                                          தயாரிப்பின்_அடிப்படை);
+    (தவறா(பாரம்பரிய_விடை)) எனில் { திரும்பு பாரம்பரிய_விடை; }
+
+    செயல்பாட்டுத்_தொகை = மதிப்பு(செயல்பாட்டு_விடை);
+    பாரம்பரியத்_தொகை = மதிப்பு(பாரம்பரிய_விடை);
+
+    அலகுக்கு_செயல்பாடு = 0;
+    அலகுக்கு_பாரம்பரியம் = 0;
+    (அலகுகள் > 0) எனில் {
+        அலகுக்கு_செயல்பாடு = வட்டமிடு(செயல்பாட்டுத்_தொகை / அலகுகள், 4);
+        அலகுக்கு_பாரம்பரியம் = வட்டமிடு(பாரம்பரியத்_தொகை / அலகுகள், 4);
+    }
+
+    திரும்பு சரி({"செயல்பாட்டு_அடிப்படை": செயல்பாட்டுத்_தொகை,
+                  "பாரம்பரியம்": பாரம்பரியத்_தொகை,
+                  "மாற்றம்": வட்டமிடு(பாரம்பரியத்_தொகை - செயல்பாட்டுத்_தொகை, 2),
+                  "அலகுக்கு_செயல்பாடு": அலகுக்கு_செயல்பாடு,
+                  "அலகுக்கு_பாரம்பரியம்": அலகுக்கு_பாரம்பரியம்});
+}
+
+// =========================================================================
+// பயனளிக்குமா — when it is worth doing at all
+// =========================================================================
+//
+// பயனளிக்குமா(செயல்பாடுகள், நுகர்வுகள், மொத்த_அடிப்படை, தயாரிப்பின்_அடிப்படை,
+//              பொருட்படும்_விகிதம்)
+//
+// Activity-based costing is worth the trouble only where products consume
+// activities **out of proportion to the volume base**. Where they do not, it
+// arrives at the same answer at more expense, and a system installed for its
+// own sake is overhead added to measure overhead.
+//
+// This answers whether the shift on this product exceeds a materiality
+// threshold, as a percentage of what the traditional method charged. The
+// threshold is a parameter because materiality is a judgement, and there is
+// no default.
+செயல் பயனளிக்குமா(செயல்பாடுகள், நுகர்வுகள், மொத்த_அடிப்படை,
+                   தயாரிப்பின்_அடிப்படை, பொருட்படும்_விகிதம்) {
+    ஒப்பீட்டு_விடை = குறுக்கு_மானியம்(செயல்பாடுகள், நுகர்வுகள், மொத்த_அடிப்படை,
+                                        தயாரிப்பின்_அடிப்படை, 0);
+    (தவறா(ஒப்பீட்டு_விடை)) எனில் { திரும்பு ஒப்பீட்டு_விடை; }
+
+    ஒப்பீடு = மதிப்பு(ஒப்பீட்டு_விடை);
+    (ஒப்பீடு["பாரம்பரியம்"] <= 0) எனில் { திரும்பு சரி(மெய்); }
+
+    மாற்ற_விகிதம் = முழுமதிப்பு(ஒப்பீடு["மாற்றம்"]) * 100
+                     / ஒப்பீடு["பாரம்பரியம்"];
+    திரும்பு சரி(மாற்ற_விகிதம் > பொருட்படும்_விகிதம்);
+}
+
+// மொத்தம்_மாறவில்லையா(செயல்பாட்டுத்_தொகைகள், மொத்த_மேல்நிலை)
+//
+// The property that must hold across every product: what activity-based
+// costing assigns in total is what the pools held.
+//
+// It is worth asserting because the method's whole claim is that it
+// redistributes rather than reduces. A system that assigns less than the pools
+// hold has lost overhead into an activity nobody consumes, and the difference
+// will reappear as an under-absorption nobody can explain.
+செயல் மொத்தம்_மாறவில்லையா(செயல்பாட்டுத்_தொகைகள், மொத்த_மேல்நிலை) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_தொகை இல் செயல்பாட்டுத்_தொகைகள் {
+        கூட்டல் = கூட்டல் + ஒரு_தொகை;
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2) == வட்டமிடு(மொத்த_மேல்நிலை, 2);
+}

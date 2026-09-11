@@ -1,0 +1,361 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/celavu/mILpakirvu.qmz — மீள்பகிர்வு, reciprocal service apportionment
+//
+// mElnilY.qmz's சேவையை_மறுபகிர் spreads a service centre's cost over the
+// production centres and says, at the point of definition, that two service
+// centres serving *each other* needs simultaneous equations and is not
+// attempted there. This is that.
+//
+// The maintenance department services the canteen and the canteen feeds the
+// maintenance staff. Each one's total therefore depends on the other's, and
+// there is no order in which to do the arithmetic once.
+//
+// Three answers are possible and only two of them are the same:
+//
+//   **Simultaneous equations** — solve the mutual dependency exactly. Closed
+//     form for two centres, which is the case that actually occurs.
+//   **Repeated distribution** — hand each service centre's balance out, over
+//     and over, until what is left is immaterial. It **converges to the
+//     simultaneous answer**, and is not an approximation of a different one.
+//   **Step-down** — take the service centres in some order and refuse to send
+//     anything backwards. Faster, wrong, and wrong by exactly the reciprocal
+//     service it declined to recognise.
+//
+// The step-down's real defect is not its size but its arbitrariness: **the
+// answer depends on the order**, two defensible orders give two different
+// product costs, and nothing in the accounts records which was used.
+//
+// Percentages are whole numbers out of a hundred, as everywhere else here.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// கட்டமைப்பு — the shape of the problem
+// =========================================================================
+//
+// சேவை_நிலையம்_ஆக்கு(நிலையக்_குறி, நேரடிச்_செலவு, பகிர்வுகள்)
+//
+// பகிர்வுகள் is a list of {"க்கு", "விகிதம்"} — where this centre's cost goes
+// and in what proportion. Recipients may be production centres or other
+// service centres, which is the whole difficulty.
+//
+// The percentages should total a hundred. They are not checked here because a
+// centre that retains part of its own cost is a real, if unusual, arrangement,
+// and பகிர்வு_மொத்தம் lets a caller check when it wants to.
+செயல் சேவை_நிலையம்_ஆக்கு(நிலையக்_குறி, நேரடிச்_செலவு, பகிர்வுகள்) {
+    திரும்பு {"குறி": நிலையக்_குறி,
+              "நேரடிச்_செலவு": நேரடிச்_செலவு,
+              "பகிர்வுகள்": பகிர்வுகள்};
+}
+
+செயல் பகிர்வு_ஆக்கு(க்கு_குறி, விகித_மதிப்பு) {
+    திரும்பு {"க்கு": க்கு_குறி, "விகிதம்": விகித_மதிப்பு};
+}
+
+செயல் பகிர்வு_மொத்தம்(ஒரு_நிலையம்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
+        கூட்டல் = கூட்டல் + ஒரு_பகிர்வு["விகிதம்"];
+    }
+    திரும்பு கூட்டல்;
+}
+
+// --- small helpers, named so they cannot collide across nUlakam -----------
+
+செயல் உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_குறி) {
+    ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
+        (ஓர்_உற்பத்தி == ஒரு_குறி) எனில் { திரும்பு மெய்; }
+    }
+    திரும்பு பொய்;
+}
+
+செயல் நிலையத்_தொகையைப்_பெறு(இருப்புகள், ஒரு_குறி) {
+    ஒவ்வொரு ஓர்_இருப்பு இல் இருப்புகள் {
+        (ஓர்_இருப்பு["குறி"] == ஒரு_குறி) எனில் { திரும்பு ஓர்_இருப்பு["தொகை"]; }
+    }
+    திரும்பு 0;
+}
+
+// நிலையத்_தொகையைக்_கூட்டு(இருப்புகள், ஒரு_குறி, சேர்க்கும்_தொகை)
+//
+// Answers a new list rather than changing the old one, because a செயல் cannot
+// mutate what it is given. Every accumulation below is a reassignment.
+செயல் நிலையத்_தொகையைக்_கூட்டு(இருப்புகள், ஒரு_குறி, சேர்க்கும்_தொகை) {
+    விடை = [];
+    கிடைத்ததா = பொய்;
+    ஒவ்வொரு ஓர்_இருப்பு இல் இருப்புகள் {
+        (ஓர்_இருப்பு["குறி"] == ஒரு_குறி) எனில் {
+            விடை = இணை(விடை, {"குறி": ஒரு_குறி,
+                                "தொகை": ஓர்_இருப்பு["தொகை"] + சேர்க்கும்_தொகை});
+            கிடைத்ததா = மெய்;
+        } இன்றேல் {
+            விடை = இணை(விடை, ஓர்_இருப்பு);
+        }
+    }
+    (இல்லை கிடைத்ததா) எனில் {
+        விடை = இணை(விடை, {"குறி": ஒரு_குறி, "தொகை": சேர்க்கும்_தொகை});
+    }
+    திரும்பு விடை;
+}
+
+செயல் இருப்புகளின்_கூட்டல்(இருப்புகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஓர்_இருப்பு இல் இருப்புகள் {
+        கூட்டல் = கூட்டல் + ஓர்_இருப்பு["தொகை"];
+    }
+    திரும்பு கூட்டல்;
+}
+
+// =========================================================================
+// ஒரேசமயச் சமன்பாடு — the exact answer, for two centres
+// =========================================================================
+//
+// இரு_சேவை_ஒரேசமயம்(அ_நேரடி, ஆ_நேரடி, அ_இலிருந்து_ஆ, ஆ_இலிருந்து_அ)
+//
+// With two service centres the mutual dependency is two equations in two
+// unknowns:
+//
+//     A = direct(A) + b × B
+//     B = direct(B) + a × A
+//
+// which solve to
+//
+//     A = (direct(A) + b × direct(B)) ÷ (1 − a·b)
+//     B = (direct(B) + a × direct(A)) ÷ (1 − a·b)
+//
+// The grossed-up totals A and B are larger than the direct costs, and that is
+// correct rather than double counting: each is the centre's own cost plus the
+// service it received, and the part it sends back out is removed again when it
+// is distributed. Only what reaches production is charged to a unit.
+//
+// Two centres that send each other everything — a·b = 1 — have no solution,
+// because nothing would ever reach production. It is a தவறு rather than a
+// division by zero.
+செயல் இரு_சேவை_ஒரேசமயம்(அ_நேரடி, ஆ_நேரடி, அ_இலிருந்து_ஆ, ஆ_இலிருந்து_அ) {
+    அ_பின்னம் = அ_இலிருந்து_ஆ / 100;
+    ஆ_பின்னம் = ஆ_இலிருந்து_அ / 100;
+    வகுப்பான் = 1 - அ_பின்னம் * ஆ_பின்னம்;
+
+    (வகுப்பான் <= 0) எனில் {
+        திரும்பு தவறு("சேவை மையங்கள் ஒன்றுக்கொன்று அனைத்தையும் அனுப்புகின்றன  "
+                       & "(the two centres pass everything to each other, so "
+                       & "nothing reaches production and there is no solution)");
+    }
+
+    அ_மொத்தம் = (அ_நேரடி + ஆ_பின்னம் * ஆ_நேரடி) / வகுப்பான்;
+    ஆ_மொத்தம் = (ஆ_நேரடி + அ_பின்னம் * அ_நேரடி) / வகுப்பான்;
+
+    திரும்பு சரி({"அ_மொத்தம்": வட்டமிடு(அ_மொத்தம், 2),
+                  "ஆ_மொத்தம்": வட்டமிடு(ஆ_மொத்தம், 2)});
+}
+
+// =========================================================================
+// மீண்டும் பகிர்தல் — the iterative answer, for any number
+// =========================================================================
+//
+// மீண்டும்_பகிர்(சேவை_நிலையங்கள், உற்பத்திக்_குறிகள், சுற்று_எல்லை, துல்லியம்)
+//
+// Hand every service centre's balance out at once, collect what lands back on
+// service centres, and do it again. Each pass multiplies the service balances
+// by the fraction they send to each other, so they shrink geometrically and
+// the thing terminates.
+//
+// It is **not an approximation of a different method**. The limit it converges
+// to is the simultaneous solution, which is why the tests assert the two agree
+// to the paisa rather than merely being close.
+//
+// For three or more service centres this is the practical method, because the
+// closed form needs matrix inversion the language has no use for elsewhere.
+//
+// The round limit is a guard and not a tuning knob. Reaching it means the
+// service centres pass nearly everything to each other, which is a
+// configuration worth failing on rather than truncating.
+செயல் மீண்டும்_பகிர்(சேவை_நிலையங்கள், உற்பத்திக்_குறிகள், சுற்று_எல்லை,
+                     துல்லியம்) {
+    உற்பத்தி_இருப்புகள் = [];
+    ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
+        உற்பத்தி_இருப்புகள் = இணை(உற்பத்தி_இருப்புகள்,
+                                    {"குறி": ஓர்_உற்பத்தி, "தொகை": 0});
+    }
+
+    சேவை_இருப்புகள் = [];
+    ஒவ்வொரு ஒரு_நிலையம் இல் சேவை_நிலையங்கள் {
+        சேவை_இருப்புகள் = இணை(சேவை_இருப்புகள்,
+                                {"குறி": ஒரு_நிலையம்["குறி"],
+                                 "தொகை": ஒரு_நிலையம்["நேரடிச்_செலவு"]});
+    }
+
+    மீதம் = இருப்புகளின்_கூட்டல்(சேவை_இருப்புகள்);
+    சுற்றெண் = 0;
+
+    (மீதம் > துல்லியம் மற்றும் சுற்றெண் < சுற்று_எல்லை) சுற்று {
+        புதிய_சேவை = [];
+        ஒவ்வொரு ஒரு_நிலையம் இல் சேவை_நிலையங்கள் {
+            புதிய_சேவை = இணை(புதிய_சேவை,
+                              {"குறி": ஒரு_நிலையம்["குறி"], "தொகை": 0});
+        }
+
+        ஒவ்வொரு ஒரு_நிலையம் இல் சேவை_நிலையங்கள் {
+            கையிருப்பு = நிலையத்_தொகையைப்_பெறு(சேவை_இருப்புகள்,
+                                                 ஒரு_நிலையம்["குறி"]);
+            ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
+                // Raw, not சதவீதம் — that rounds to the paisa, and rounding
+                // every share on every round injects money into the total.
+                // Rounding happens once, where the answer leaves.
+                பங்குத்_தொகை = கையிருப்பு * ஒரு_பகிர்வு["விகிதம்"] / 100;
+                (உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_பகிர்வு["க்கு"])) எனில் {
+                    உற்பத்தி_இருப்புகள் = நிலையத்_தொகையைக்_கூட்டு(
+                        உற்பத்தி_இருப்புகள், ஒரு_பகிர்வு["க்கு"], பங்குத்_தொகை);
+                } இன்றேல் {
+                    புதிய_சேவை = நிலையத்_தொகையைக்_கூட்டு(
+                        புதிய_சேவை, ஒரு_பகிர்வு["க்கு"], பங்குத்_தொகை);
+                }
+            }
+        }
+
+        சேவை_இருப்புகள் = புதிய_சேவை;
+        மீதம் = இருப்புகளின்_கூட்டல்(சேவை_இருப்புகள்);
+        சுற்றெண் = சுற்றெண் + 1;
+    }
+
+    (மீதம் > துல்லியம்) எனில் {
+        திரும்பு தவறு("மீள்பகிர்வு ஒன்றுசேரவில்லை  "
+                       & "(repeated distribution did not converge within "
+                       & சொல்லாக்கு(சுற்று_எல்லை) & " rounds; the service "
+                       & "centres pass nearly everything to each other)");
+    }
+
+    விடைப்_பட்டியல் = [];
+    ஒவ்வொரு ஓர்_இருப்பு இல் உற்பத்தி_இருப்புகள் {
+        விடைப்_பட்டியல் = இணை(விடைப்_பட்டியல்,
+                                {"குறி": ஓர்_இருப்பு["குறி"],
+                                 "தொகை": வட்டமிடு(ஓர்_இருப்பு["தொகை"], 2)});
+    }
+    திரும்பு சரி({"உற்பத்திக்கு": விடைப்_பட்டியல்,
+                  "சுற்றுகள்": சுற்றெண்,
+                  "மீதம்": வட்டமிடு(மீதம், 6)});
+}
+
+// =========================================================================
+// படிநிலைப் பகிர்வு — the approximation, and its arbitrariness
+// =========================================================================
+//
+// படிநிலைப்_பகிர்வு(வரிசைப்படுத்திய_நிலையங்கள், உற்பத்திக்_குறிகள்)
+//
+// Take the service centres in the order given. Each one distributes its whole
+// balance — including whatever earlier centres sent it — and is then closed;
+// anything it would have sent to a centre **already closed** is redistributed
+// among the recipients still open, in proportion.
+//
+// It is one pass, it always terminates, and it is wrong by the service it
+// refused to send backwards.
+//
+// The order is a parameter because there is no right one. Convention takes the
+// centre serving the most others first, which is a rule of thumb and not a
+// derivation — and `படிநிலை_வரிசை_வேறுபாடு` exists to show what turns on it.
+செயல் படிநிலைப்_பகிர்வு(வரிசைப்படுத்திய_நிலையங்கள், உற்பத்திக்_குறிகள்) {
+    உற்பத்தி_இருப்புகள் = [];
+    ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
+        உற்பத்தி_இருப்புகள் = இணை(உற்பத்தி_இருப்புகள்,
+                                    {"குறி": ஓர்_உற்பத்தி, "தொகை": 0});
+    }
+
+    சேவை_இருப்புகள் = [];
+    ஒவ்வொரு ஒரு_நிலையம் இல் வரிசைப்படுத்திய_நிலையங்கள் {
+        சேவை_இருப்புகள் = இணை(சேவை_இருப்புகள்,
+                                {"குறி": ஒரு_நிலையம்["குறி"],
+                                 "தொகை": ஒரு_நிலையம்["நேரடிச்_செலவு"]});
+    }
+
+    மூடியவை = [];
+    ஒவ்வொரு ஒரு_நிலையம் இல் வரிசைப்படுத்திய_நிலையங்கள் {
+        கையிருப்பு = நிலையத்_தொகையைப்_பெறு(சேவை_இருப்புகள்,
+                                             ஒரு_நிலையம்["குறி"]);
+
+        // Only recipients still open count, and the percentages are rescaled
+        // over them so the whole balance is distributed.
+        திறந்த_எடை = 0;
+        ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
+            (இல்லை உற்பத்தியா(மூடியவை, ஒரு_பகிர்வு["க்கு"])) எனில் {
+                திறந்த_எடை = திறந்த_எடை + ஒரு_பகிர்வு["விகிதம்"];
+            }
+        }
+
+        (திறந்த_எடை > 0) எனில் {
+            ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
+                (இல்லை உற்பத்தியா(மூடியவை, ஒரு_பகிர்வு["க்கு"])) எனில் {
+                    பங்குத்_தொகை = கையிருப்பு * ஒரு_பகிர்வு["விகிதம்"]
+                                    / திறந்த_எடை;
+                    (உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_பகிர்வு["க்கு"])) எனில் {
+                        உற்பத்தி_இருப்புகள் = நிலையத்_தொகையைக்_கூட்டு(
+                            உற்பத்தி_இருப்புகள், ஒரு_பகிர்வு["க்கு"],
+                            பங்குத்_தொகை);
+                    } இன்றேல் {
+                        சேவை_இருப்புகள் = நிலையத்_தொகையைக்_கூட்டு(
+                            சேவை_இருப்புகள், ஒரு_பகிர்வு["க்கு"], பங்குத்_தொகை);
+                    }
+                }
+            }
+        }
+        மூடியவை = இணை(மூடியவை, ஒரு_நிலையம்["குறி"]);
+    }
+
+    விடைப்_பட்டியல் = [];
+    ஒவ்வொரு ஓர்_இருப்பு இல் உற்பத்தி_இருப்புகள் {
+        விடைப்_பட்டியல் = இணை(விடைப்_பட்டியல்,
+                                {"குறி": ஓர்_இருப்பு["குறி"],
+                                 "தொகை": வட்டமிடு(ஓர்_இருப்பு["தொகை"], 2)});
+    }
+    திரும்பு விடைப்_பட்டியல்;
+}
+
+// =========================================================================
+// சரிபார்ப்பு — what must hold whichever method is used
+// =========================================================================
+//
+// உற்பத்திக்கு_மொத்தம்(விடைப்_பட்டியல்)
+//
+// Everything the service centres held must end up on a production centre. The
+// direct costs in and the apportioned costs out are the same money, and a
+// method that loses some of it has not apportioned, it has evaporated.
+//
+// This is the assertion worth making about all three methods, and it holds for
+// all three even though two of them disagree about *where* the money goes.
+செயல் உற்பத்திக்கு_மொத்தம்(விடைப்_பட்டியல்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஓர்_இருப்பு இல் விடைப்_பட்டியல் {
+        கூட்டல் = கூட்டல் + ஓர்_இருப்பு["தொகை"];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// நேரடிச்_செலவின்_மொத்தம்(சேவை_நிலையங்கள்)
+செயல் நேரடிச்_செலவின்_மொத்தம்(சேவை_நிலையங்கள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_நிலையம் இல் சேவை_நிலையங்கள் {
+        கூட்டல் = கூட்டல் + ஒரு_நிலையம்["நேரடிச்_செலவு"];
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// படிநிலை_வரிசை_வேறுபாடு(முதல்_வரிசை, இரண்டாம்_வரிசை, உற்பத்திக்_குறிகள்,
+//                          ஒரு_குறி)
+//
+// What one production centre is charged under two different step-down orders.
+//
+// The size of the gap is the point. Both orders are defensible, both totals
+// reconcile to the same money, and the product cost differs — so a unit cost
+// arrived at this way depends on a decision nobody records and few would
+// recognise as a decision.
+செயல் படிநிலை_வரிசை_வேறுபாடு(முதல்_வரிசை, இரண்டாம்_வரிசை, உற்பத்திக்_குறிகள்,
+                               ஒரு_குறி) {
+    முதல் = படிநிலைப்_பகிர்வு(முதல்_வரிசை, உற்பத்திக்_குறிகள்);
+    இரண்டாம் = படிநிலைப்_பகிர்வு(இரண்டாம்_வரிசை, உற்பத்திக்_குறிகள்);
+    முதல்_தொகை = நிலையத்_தொகையைப்_பெறு(முதல், ஒரு_குறி);
+    இரண்டாம்_தொகை = நிலையத்_தொகையைப்_பெறு(இரண்டாம், ஒரு_குறி);
+    திரும்பு {"முதல்_வரிசையில்": முதல்_தொகை,
+              "இரண்டாம்_வரிசையில்": இரண்டாம்_தொகை,
+              "வேறுபாடு": வட்டமிடு(முதல்_தொகை - இரண்டாம்_தொகை, 2)};
+}

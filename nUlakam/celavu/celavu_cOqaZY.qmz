@@ -10,6 +10,9 @@
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "pawkaLippu.qmz";
+இறக்கு "mILpakirvu.qmz";
+இறக்கு "ceyalmuRY.qmz";
+இறக்கு "ceyalpAtu.qmz";
 இறக்கு "nilYyam.qmz";
 இறக்கு "celavu_qAL.qmz";
 இறக்கு "mElnilY.qmz";
@@ -320,5 +323,210 @@
               "selling 10 above standard on 1,000 units is 10,000 favourable");
 ஓட்டம் = சமம்(ஓட்டம், விற்பனை_அளவு_வேறுபாடு(100, 1000, 1100), 10000,
               "and 100 extra units at 100 contribution is 10,000 — contribution, not price");
+
+// =========================================================================
+// மீள்பகிர்வு — reciprocal service apportionment
+// =========================================================================
+//
+// S1 costs 900 direct and sends P1 50%, P2 30%, S2 20%.
+// S2 costs 450 direct and sends P1 20%, P2 30%, S1 50%.
+
+சேவை1 = சேவை_நிலையம்_ஆக்கு("S1", 900, [பகிர்வு_ஆக்கு("P1", 50),
+                                          பகிர்வு_ஆக்கு("P2", 30),
+                                          பகிர்வு_ஆக்கு("S2", 20)]);
+சேவை2 = சேவை_நிலையம்_ஆக்கு("S2", 450, [பகிர்வு_ஆக்கு("P1", 20),
+                                          பகிர்வு_ஆக்கு("P2", 30),
+                                          பகிர்வு_ஆக்கு("S1", 50)]);
+உற்பத்தி_மையங்கள் = ["P1", "P2"];
+
+ஓட்டம் = சமம்(ஓட்டம், பகிர்வு_மொத்தம்(சேவை1), 100,
+              "a centre's percentages total a hundred");
+
+ஒரேசமய_விடை = மதிப்பு(இரு_சேவை_ஒரேசமயம்(900, 450, 20, 50));
+ஓட்டம் = சமம்(ஓட்டம், ஒரேசமய_விடை["அ_மொத்தம்"], 1250,
+              "S1 grossed up for the service it receives back is 1,250");
+ஓட்டம் = சமம்(ஓட்டம், ஒரேசமய_விடை["ஆ_மொத்தம்"], 700, "and S2 is 700");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஒரேசமய_விடை["அ_மொத்தம்"] > 900,
+                  "both exceed their direct cost, which is not double "
+                  & "counting — what they send back out is removed again");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இரு_சேவை_ஒரேசமயம்(100, 100, 100, 100)),
+                  "two centres passing each other everything have no solution");
+
+மீள்_விடை = மதிப்பு(மீண்டும்_பகிர்([சேவை1, சேவை2], உற்பத்தி_மையங்கள்,
+                                     100, 0.000001));
+ஓட்டம் = சமம்(ஓட்டம், நிலையத்_தொகையைப்_பெறு(மீள்_விடை["உற்பத்திக்கு"], "P1"),
+              765, "repeated distribution charges P1 765");
+ஓட்டம் = சமம்(ஓட்டம், நிலையத்_தொகையைப்_பெறு(மீள்_விடை["உற்பத்திக்கு"], "P2"),
+              585, "and P2 585");
+
+// The two methods agree to the paisa. Repeated distribution is not an
+// approximation of a different answer; it converges to this one.
+ஓட்டம் = சமம்(ஓட்டம், நிலையத்_தொகையைப்_பெறு(மீள்_விடை["உற்பத்திக்கு"], "P1"),
+              வட்டமிடு(சதவீதம்(ஒரேசமய_விடை["அ_மொத்தம்"], 50)
+                        + சதவீதம்(ஒரேசமய_விடை["ஆ_மொத்தம்"], 20), 2),
+              "which is exactly what the simultaneous equations give");
+
+ஓட்டம் = சமம்(ஓட்டம், உற்பத்திக்கு_மொத்தம்(மீள்_விடை["உற்பத்திக்கு"]),
+              நேரடிச்_செலவின்_மொத்தம்([சேவை1, சேவை2]),
+              "everything the service centres held reaches production — the "
+              & "assertion that found a rounding leak when the shares were "
+              & "rounded inside the iteration");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மீள்_விடை["சுற்றுகள்"] < 100,
+                  "and it converges well inside the round limit");
+
+படிநிலை_விடை = படிநிலைப்_பகிர்வு([சேவை1, சேவை2], உற்பத்தி_மையங்கள்);
+ஓட்டம் = சமம்(ஓட்டம், உற்பத்திக்கு_மொத்தம்(படிநிலை_விடை), 1350,
+              "step-down also accounts for every rupee");
+ஓட்டம் = வேறுபடு(ஓட்டம், நிலையத்_தொகையைப்_பெறு(படிநிலை_விடை, "P1"), 765,
+                 "but puts it somewhere else — 702 against 765, and the 63 is "
+                 & "the reciprocal service it refused to send backwards");
+
+வரிசை_விடை = படிநிலை_வரிசை_வேறுபாடு([சேவை1, சேவை2], [சேவை2, சேவை1],
+                                       உற்பத்தி_மையங்கள், "P1");
+ஓட்டம் = வேறுபடு(ஓட்டம், வரிசை_விடை["முதல்_வரிசையில்"],
+                 வரிசை_விடை["இரண்டாம்_வரிசையில்"],
+                 "**and the step-down answer depends on the order** — two "
+                 & "defensible orders, two different product costs, and "
+                 & "nothing in the accounts records which was used");
+
+// =========================================================================
+// செயல்முறை — process costing
+// =========================================================================
+//
+// 1,000 units in at a cost of 9,500. Normal loss 10%, scrap 5 a unit.
+// Output 850, so 150 were lost and 50 of those should not have been.
+
+செயல்முறை_விடை = மதிப்பு(செயல்முறையைக்_கணக்கிடு(1000, 9500, 10, 850, 5));
+
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["இயல்பு_இழப்பு"], 100,
+              "normal loss is a percentage of input, not of output");
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["அசாதாரண_வேறுபாடு"], 50,
+              "so 50 units were lost that should not have been");
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["கழிவு_வரவு"], 500,
+              "the normal loss fetches 500 of scrap");
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["உறிஞ்ச_வேண்டியது"], 9000,
+              "which reduces what has to be absorbed to 9,000");
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["அலகுச்_செலவு"], 10,
+              "and 9,000 over 900 surviving units is 10 — the normal loss is "
+              & "absorbed by leaving its units out of the denominator");
+
+// The natural-looking mistake, priced.
+ஓட்டம் = சமம்(ஓட்டம், அலகுக்கான_செலவு_தவறாக(9000, 850), 10.5882,
+              "dividing by good output instead gives 10.59 — the abnormal "
+              & "loss buried in every good unit");
+
+இழப்பு_மதிப்பு = அசாதாரண_இழப்பின்_மதிப்பு(50, 10, 5);
+ஓட்டம் = சமம்(ஓட்டம், இழப்பு_மதிப்பு["மொத்த_மதிப்பு"], 500,
+              "abnormal loss is valued at the same rate as good output");
+ஓட்டம் = சமம்(ஓட்டம், இழப்பு_மதிப்பு["எழுதித்_தள்ளுவது"], 250,
+              "and written off net of its own scrap");
+
+ஓட்டம் = சமம்(ஓட்டம், செயல்முறை_விடை["நல்லதன்_மதிப்பு"]
+              + இழப்பு_மதிப்பு["மொத்த_மதிப்பு"],
+              செயல்முறை_விடை["உறிஞ்ச_வேண்டியது"],
+              "good output plus abnormal loss accounts for the whole cost — "
+              & "the process account closes");
+
+// An abnormal gain, and the scrap it forgoes.
+ஆதாய_விடை = மதிப்பு(செயல்முறையைக்_கணக்கிடு(1000, 9500, 10, 920, 5));
+ஓட்டம் = சமம்(ஓட்டம், ஆதாய_விடை["அசாதாரண_வேறுபாடு"], 0 - 20,
+              "losing less than expected is an abnormal gain, signed negative");
+ஆதாயம் = அசாதாரண_ஆதாயத்தின்_மதிப்பு(20, 10, 5);
+ஓட்டம் = சமம்(ஓட்டம், ஆதாயம்["மொத்த_மதிப்பு"], 200, "worth 200 at the unit cost");
+ஓட்டம் = சமம்(ஓட்டம், ஆதாயம்["நிகர_ஆதாயம்"], 100,
+              "but only 100 net — the twenty units that were not lost would "
+              & "have sold as scrap, and that revenue is forgone");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(அலகுக்கான_செலவு(9000, 100, 100)),
+                  "a process whose normal loss consumes the whole input has "
+                  & "nothing to absorb the cost");
+
+// --- equivalent units ----------------------------------------------------
+
+சமமான_விடை = முறைகளின்_வேறுபாடு(200, 40, 900, 300, 60);
+ஓட்டம் = சமம்(ஓட்டம், சமமான_விடை["சராசரி"], 1080,
+              "weighted average counts everything finished, whenever the work "
+              & "was done");
+ஓட்டம் = சமம்(ஓட்டம், சமமான_விடை["fifo"], 1000,
+              "FIFO counts only this period's work");
+ஓட்டம் = சமம்(ஓட்டம், சமமான_விடை["வேறுபாடு"], 80,
+              "and the gap is exactly the opening stock's prior-period work");
+ஓட்டம் = சமம்(ஓட்டம், சமமான_விடை["வேறுபாடு"], சமமான_விடை["முந்தைய_கால_வேலை"],
+              "nothing else");
+ஓட்டம் = சமம்(ஓட்டம், சராசரி_சமமான_அலகுகள்(900, 300, 100), 1200,
+              "material complete in closing stock counts in full");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(சமமான_அலகின்_செலவு(1000, 0)),
+                  "no equivalent units, no unit cost");
+
+// =========================================================================
+// செயல்பாடு — activity-based costing
+// =========================================================================
+//
+// Two pools: 1,10,000 of setup cost over 100 setups, and 50,000 of ordering
+// cost over 50 orders. Product A is high volume and simple, B is low volume
+// and complex, and the blanket base is 16,000 labour hours.
+
+செயல்பாடுகள் = [
+    செயல்பாடு_ஆக்கு("SET", "இயந்திர அமைப்பு", 110000, "அமைப்புகள்", 100),
+    செயல்பாடு_ஆக்கு("ORD", "கொள்முதல் ஆணைகள்", 50000, "ஆணைகள்", 50)
+];
+அ_நுகர்வு = [நுகர்வு_ஆக்கு("SET", 20), நுகர்வு_ஆக்கு("ORD", 10)];
+ஆ_நுகர்வு = [நுகர்வு_ஆக்கு("SET", 80), நுகர்வு_ஆக்கு("ORD", 40)];
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இயக்கி_விகிதம்(செயல்பாடுகள்[0])), 1100,
+              "1,10,000 over 100 setups is 1,100 a setup");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இயக்கி_விகிதம்(
+                      செயல்பாடு_ஆக்கு("X", "", 5000, "எதுவும்", 0))),
+                  "an activity that happened no times has no rate");
+
+அ_ஒப்பீடு = மதிப்பு(குறுக்கு_மானியம்(செயல்பாடுகள், அ_நுகர்வு, 16000, 15000,
+                                        10000));
+ஆ_ஒப்பீடு = மதிப்பு(குறுக்கு_மானியம்(செயல்பாடுகள், ஆ_நுகர்வு, 16000, 1000,
+                                        1000));
+
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["பாரம்பரியம்"], 150000,
+              "the blanket rate charges the high-volume product 1,50,000");
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["செயல்பாட்டு_அடிப்படை"], 32000,
+              "its activities justify 32,000");
+ஓட்டம் = சமம்(ஓட்டம், ஆ_ஒப்பீடு["பாரம்பரியம்"], 10000,
+              "and charge the low-volume product 10,000");
+ஓட்டம் = சமம்(ஓட்டம், ஆ_ஒப்பீடு["செயல்பாட்டு_அடிப்படை"], 128000,
+              "whose activities justify 1,28,000");
+
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["மாற்றம்"], 118000,
+              "so A was subsidising by 1,18,000");
+ஓட்டம் = சமம்(ஓட்டம், ஆ_ஒப்பீடு["மாற்றம்"], 0 - 118000,
+              "and B was subsidised by exactly the same — **it is a transfer, "
+              & "not a saving**");
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["மாற்றம்"] + ஆ_ஒப்பீடு["மாற்றம்"], 0,
+              "the two net to nothing");
+
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["அலகுக்கு_பாரம்பரியம்"], 15,
+              "per unit, A was carrying 15 of overhead");
+ஓட்டம் = சமம்(ஓட்டம், அ_ஒப்பீடு["அலகுக்கு_செயல்பாடு"], 3.2, "and should carry 3.20");
+ஓட்டம் = சமம்(ஓட்டம், ஆ_ஒப்பீடு["அலகுக்கு_பாரம்பரியம்"], 10,
+              "while B was carrying 10");
+ஓட்டம் = சமம்(ஓட்டம், ஆ_ஒப்பீடு["அலகுக்கு_செயல்பாடு"], 128,
+              "and should carry 128 — a pricing decision, and possibly a "
+              & "discontinuation decision, about to be taken on the wrong number");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மொத்தம்_மாறவில்லையா(
+                      [அ_ஒப்பீடு["செயல்பாட்டு_அடிப்படை"],
+                       ஆ_ஒப்பீடு["செயல்பாட்டு_அடிப்படை"]],
+                      தொகுப்புகளின்_கூட்டல்(செயல்பாடுகள்)),
+                  "and the pools are fully assigned — the method redistributes "
+                  & "overhead and never reduces it");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மதிப்பு(பயனளிக்குமா(செயல்பாடுகள், அ_நுகர்வு, 16000,
+                                                  15000, 10)),
+                  "a shift of that size is worth the trouble");
+
+// Where consumption is proportional to the base, it is not.
+விகிதாசார_நுகர்வு = [நுகர்வு_ஆக்கு("SET", 50), நுகர்வு_ஆக்கு("ORD", 25)];
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மதிப்பு(பயனளிக்குமா(செயல்பாடுகள்,
+                                                        விகிதாசார_நுகர்வு,
+                                                        16000, 8000, 10)),
+                  "a product consuming activities in proportion to the base "
+                  & "gets the same answer, at more expense");
 
 சோதனை_முடிவு(ஓட்டம்);
