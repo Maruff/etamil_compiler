@@ -19,7 +19,8 @@ output: a production order counts units, a project counts budget earned.
 | `Ittu_maqippu.qmz` | earned value — `முறை_0_100` `முறை_50_50` `முறை_மைல்கற்கள்` `ஈட்டிய_மதிப்பு` `செலவு_வேறுபாடு` `கால_வேறுபாடு` `செலவுச்_செயல்திறன்` `காலச்_செயல்திறன்` `முடிவில்_மதிப்பீடு_*` `முடிக்கத்_தேவையான_திறன்` `நிலவரம்` |
 | `pAqY.qmz` | the critical path — `செயல்_ஆக்கு` `வலையைக்_கணக்கிடு` `கடுமையானவை` `பெறு_புலம்` `சுழற்சி_உள்ளதா` `உணர்திறன்_வலையா` |
 | `curukkal.qmz` | crashing — `செயல்_நேர_செலவு` `செலவுச்_சரிவு` `அதிகபட்ச_சுருக்கம்` `மலிவான_வேட்பாளர்` `கூட்டுச்_சரிவு` `மொத்தச்_செலவு` `தாமதச்_செலவுடன்` |
-| `qittam_cOqaZY.qmz` | the tests — 95 assertions |
+| `oppanqa_vakY.qmz` | contract types and who carries the cost risk — `விற்பவர்_இடர்` `உறுதி_நிலை_லாபம்` `ஊக்கக்_கட்டணம்` `கட்டணத்தை_வரம்பிடு` `முழுப்_பொறுப்புப்_புள்ளி` `நிலை_விலை_ஊக்கம்` `செலவுடன்_நிலைக்_கட்டணம்` `செலவுடன்_ஊக்கம்` `நேரமும்_பொருளும்` `மிகைச்_செலவின்_விளைவு` |
+| `qittam_cOqaZY.qmz` | the tests — 133 assertions |
 
 ```bash
 etamil --vm nUlakam/qittam/qittam_cOqaZY.qmz
@@ -72,6 +73,38 @@ will not return anything outside it. Shortening an activity with float buys
 nothing at all and is the most expensive mistake available, because it looks
 like progress. The tests assert it: C is cheaper per day than D and is never
 offered, because C has five days of float.
+
+### The point of total assumption is the number nobody writes down
+
+On a fixed price incentive contract the buyer shares an overrun only until the
+price reaches the ceiling. Past that the buyer pays no more, so every further
+rupee is the seller's alone.
+
+    PTA = target cost + (ceiling price − target price) ÷ buyer's share
+
+The tests prove the formula against itself: at the PTA the final price *is* the
+ceiling, exactly. With a target cost of ₹1,00,000, a ₹10,000 fee, a ₹1,25,000
+ceiling and a 75/25 split, the point is ₹1,20,000 — and ₹10,000 of overrun
+below it costs the seller ₹2,500 while the next ₹10,000 costs ₹10,000. **The
+marginal rate quadruples at a point that appears in none of the contract's
+schedules**, and a seller tracking cost against target sees nothing happen
+there.
+
+The ceiling applies to the price, not to the fee, so past the point the fee
+goes negative and the seller is paying to finish. Capping it at zero would hide
+that.
+
+### The same overrun costs four different amounts
+
+A ₹30,000 overrun on the same job: the fixed price seller loses ₹20,000, the
+incentive seller ₹5,000, and the cost plus seller nothing at all — it still
+earns its full fee. `மிகைச்_செலவின்_விளைவு` puts them side by side, because a
+cost variance reported without naming the contract type is half a fact.
+
+A not-to-exceed ceiling on a time-and-materials contract is the one most often
+misread: the buyer treats it as a budget and the seller as an estimate, and
+past it the seller works for nothing exactly as under a fixed price. The switch
+is invisible until it happens.
 
 ## Where it stops
 

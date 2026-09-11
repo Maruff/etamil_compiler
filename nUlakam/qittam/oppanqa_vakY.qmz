@@ -1,0 +1,289 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/qittam/oppanqa_vakY.qmz — ஒப்பந்த வகை, and who carries the cost risk
+//
+// Everything else in this directory costs a project as though the money simply
+// arrives. What arrives depends on the **shape of the contract**, and the
+// shapes differ in one respect that decides everything else: who is worse off
+// when the work costs more than expected.
+//
+//   **Firm fixed price** — the seller. Every rupee of overrun comes out of the
+//     seller's fee, and past a point out of the seller's own pocket.
+//   **Fixed price incentive fee** — the seller, but shared up to a ceiling,
+//     and then wholly the seller's again. The point where that switch happens
+//     is the point of total assumption, and it is the most useful number in
+//     this file.
+//   **Cost plus** — the buyer. The seller recovers cost whatever it is, so the
+//     seller's risk is to its fee and not to its capital.
+//   **Time and materials** — the buyer, unless a not-to-exceed ceiling is
+//     written in, which quietly turns it into a fixed price at the top end.
+//
+// A cost overrun is the same event in all four and the money moves in
+// different directions. A project manager who does not know which contract
+// they are on does not know what an overrun costs them, and the commonest
+// version of that confusion is treating a not-to-exceed time-and-materials
+// contract as though the ceiling were a target.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// வகைகள் — who carries the risk
+// =========================================================================
+//
+// விற்பவர்_இடர்(ஒப்பந்த_வகை)
+//
+// How much of a cost overrun falls on the seller, as a word. It is the one
+// question that distinguishes the types, and a table of it is more use than
+// the names.
+//
+// "முழு" — the seller absorbs all of it.
+// "பகிர்வு" — shared to a ceiling, then all the seller's.
+// "கட்டணம்_மட்டும்" — the seller's fee is at risk, the cost is not.
+// "இல்லை" — the seller recovers whatever it spends.
+செயல் விற்பவர்_இடர்(ஒப்பந்த_வகை) {
+    (ஒப்பந்த_வகை == "உறுதி_நிலை_விலை") எனில் { திரும்பு "முழு"; }
+    (ஒப்பந்த_வகை == "நிலை_விலை_ஊக்கம்") எனில் { திரும்பு "பகிர்வு"; }
+    (ஒப்பந்த_வகை == "செலவுடன்_ஊக்கம்") எனில் { திரும்பு "கட்டணம்_மட்டும்"; }
+    (ஒப்பந்த_வகை == "செலவுடன்_நிலைக்_கட்டணம்") எனில் { திரும்பு "இல்லை"; }
+    (ஒப்பந்த_வகை == "நேரமும்_பொருளும்") எனில் { திரும்பு "இல்லை"; }
+    திரும்பு "";
+}
+
+// =========================================================================
+// உறுதி நிலை விலை — firm fixed price
+// =========================================================================
+//
+// உறுதி_நிலை_லாபம்(ஒப்பந்த_மதிப்பு, உண்மைச்_செலவு)
+//
+// The price is the price. Every rupee saved is the seller's and every rupee
+// overspent is the seller's, and the answer goes negative without comment
+// because that is exactly what happens.
+//
+// The buyer's cost is known on the day of signature, which is what the type is
+// for, and is paid for in the margin the seller prices in for bearing the
+// whole risk. A buyer who believes a fixed price contains no contingency has
+// not thought about who else would carry it.
+செயல் உறுதி_நிலை_லாபம்(ஒப்பந்த_மதிப்பு, உண்மைச்_செலவு) {
+    திரும்பு வட்டமிடு(ஒப்பந்த_மதிப்பு - உண்மைச்_செலவு, 2);
+}
+
+// =========================================================================
+// ஊக்கக் கட்டணம் — the incentive
+// =========================================================================
+//
+// ஊக்கக்_கட்டணம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உண்மைச்_செலவு,
+//                 விற்பவர்_பகிர்வு)
+//
+// The fee moves against the cost: an underrun raises it, an overrun lowers it,
+// in the agreed proportion.
+//
+//     fee = target fee + (target cost − actual cost) × seller's share
+//
+// விற்பவர்_பகிர்வு is the seller's share as a fraction — 0.4 for a 60/40
+// arrangement, where the buyer takes 60. It is a fraction and not a percentage
+// because the two halves must sum to one, and that is easier to see and to
+// check in this form.
+//
+// The sign works itself out. An underrun makes the bracket positive and the
+// fee rises; an overrun makes it negative and the fee falls, which is the
+// whole mechanism.
+செயல் ஊக்கக்_கட்டணம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உண்மைச்_செலவு,
+                      விற்பவர்_பகிர்வு) {
+    திரும்பு வட்டமிடு(இலக்குக்_கட்டணம்
+                       + (இலக்குச்_செலவு - உண்மைச்_செலவு) * விற்பவர்_பகிர்வு, 2);
+}
+
+// கட்டணத்தை_வரம்பிடு(கட்டணத்_தொகை, குறைந்த_கட்டணம், உச்சக்_கட்டணம்)
+//
+// Cost-plus-incentive-fee arrangements bound the fee at both ends: the seller
+// cannot lose its whole fee however badly the work goes, and cannot earn
+// without limit however well.
+//
+// Pass 0 as the maximum for no upper bound. The minimum is taken as given,
+// including zero — a floor of zero is a real term and means the fee can be
+// wiped out but not go negative.
+செயல் கட்டணத்தை_வரம்பிடு(கட்டணத்_தொகை, குறைந்த_கட்டணம், உச்சக்_கட்டணம்) {
+    விடை = கட்டணத்_தொகை;
+    (விடை < குறைந்த_கட்டணம்) எனில் { விடை = குறைந்த_கட்டணம்; }
+    (உச்சக்_கட்டணம் > 0 மற்றும் விடை > உச்சக்_கட்டணம்) எனில் {
+        விடை = உச்சக்_கட்டணம்;
+    }
+    திரும்பு வட்டமிடு(விடை, 2);
+}
+
+// =========================================================================
+// முழுப் பொறுப்புப் புள்ளி — the point of total assumption
+// =========================================================================
+//
+// முழுப்_பொறுப்புப்_புள்ளி(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+//                           வாங்குபவர்_பகிர்வு)
+//
+// On a fixed price incentive contract the buyer shares an overrun **only until
+// the price reaches the ceiling**. Past that the buyer pays no more, so every
+// further rupee of cost is the seller's alone.
+//
+//     PTA = target cost + (ceiling price − target price) ÷ buyer's share
+//
+// where target price is target cost plus target fee.
+//
+// It is the most important number in such a contract and it appears in none of
+// its schedules. Below it an overrun costs the seller its share; above it an
+// overrun costs the seller everything, and the seller's marginal loss rate
+// jumps — in the tests — from 25 paise in the rupee to 100. A seller tracking
+// cost against the target, which is the natural thing to do, sees nothing
+// happen at the point where its exposure quadruples.
+//
+// A buyer share of nothing is a தவறு rather than an infinity: with no sharing
+// there is no incentive arrangement and the contract is a fixed price one,
+// which has no such point.
+செயல் முழுப்_பொறுப்புப்_புள்ளி(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+                                வாங்குபவர்_பகிர்வு) {
+    (வாங்குபவர்_பகிர்வு <= 0) எனில் {
+        திரும்பு தவறு("வாங்குபவர் பகிர்வு இல்லை  "
+                       & "(with no buyer share there is no incentive "
+                       & "arrangement and no point of total assumption)");
+    }
+    இலக்கு_விலை = இலக்குச்_செலவு + இலக்குக்_கட்டணம்;
+    (உச்ச_விலை < இலக்கு_விலை) எனில் {
+        திரும்பு தவறு("உச்ச விலை இலக்கு விலைக்குக் கீழே உள்ளது  "
+                       & "(the ceiling price is below the target price, so the "
+                       & "seller is past total assumption before it starts)");
+    }
+    திரும்பு சரி(வட்டமிடு(இலக்குச்_செலவு
+                           + (உச்ச_விலை - இலக்கு_விலை) / வாங்குபவர்_பகிர்வு, 2));
+}
+
+// புள்ளியைத்_தாண்டியதா(உண்மைச்_செலவு, புள்ளி)
+செயல் புள்ளியைத்_தாண்டியதா(உண்மைச்_செலவு, புள்ளி) {
+    திரும்பு உண்மைச்_செலவு > புள்ளி;
+}
+
+// நிலை_விலை_ஊக்கம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+//                   விற்பவர்_பகிர்வு, உண்மைச்_செலவு)
+//
+// The whole settlement for a fixed price incentive contract: the fee, the
+// final price, and whether the ceiling bit.
+//
+// The ceiling applies to the **price**, not to the fee. Once it bites, the fee
+// is whatever is left of the ceiling after the cost — which is why it can go
+// negative, and why a seller far past the point of total assumption is paying
+// to finish the work. Capping the fee at zero instead would hide that, and a
+// contract that can produce it should say so.
+செயல் நிலை_விலை_ஊக்கம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+                        விற்பவர்_பகிர்வு, உண்மைச்_செலவு) {
+    கச்சாக்_கட்டணம் = ஊக்கக்_கட்டணம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம்,
+                                      உண்மைச்_செலவு, விற்பவர்_பகிர்வு);
+    கச்சா_விலை = உண்மைச்_செலவு + கச்சாக்_கட்டணம்;
+
+    உச்சம்_தொட்டதா = கச்சா_விலை > உச்ச_விலை;
+    இறுதி_விலை = கச்சா_விலை;
+    (உச்சம்_தொட்டதா) எனில் { இறுதி_விலை = உச்ச_விலை; }
+
+    திரும்பு {"கட்டணம்": வட்டமிடு(இறுதி_விலை - உண்மைச்_செலவு, 2),
+              "கட்டணம்_வரம்பின்றி": கச்சாக்_கட்டணம்,
+              "இறுதி_விலை": வட்டமிடு(இறுதி_விலை, 2),
+              "உச்சம்_தொட்டதா": உச்சம்_தொட்டதா,
+              "விற்பவர்_லாபம்": வட்டமிடு(இறுதி_விலை - உண்மைச்_செலவு, 2)};
+}
+
+// =========================================================================
+// செலவுக் கூடு — cost plus
+// =========================================================================
+//
+// செலவுடன்_நிலைக்_கட்டணம்(உண்மைச்_செலவு, நிலையான_கட்டணம்)
+//
+// The fee is fixed in rupees at the outset and does not move with the cost.
+// The seller therefore has **no financial reason to control cost at all** —
+// which is not a criticism of the type but the reason it exists: it is for
+// work whose scope cannot be defined well enough to price, and the control has
+// to come from somewhere other than the contract.
+//
+// The fee not moving is the point. A fee fixed as a *percentage* of cost would
+// rise with the overrun, which is why that arrangement is prohibited in public
+// procurement almost everywhere.
+செயல் செலவுடன்_நிலைக்_கட்டணம்(உண்மைச்_செலவு, நிலையான_கட்டணம்) {
+    திரும்பு {"விற்பவர்_கட்டணம்": வட்டமிடு(நிலையான_கட்டணம், 2),
+              "வாங்குபவர்_செலவு": வட்டமிடு(உண்மைச்_செலவு + நிலையான_கட்டணம், 2)};
+}
+
+// செலவுடன்_ஊக்கம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உண்மைச்_செலவு,
+//                  விற்பவர்_பகிர்வு, குறைந்த_கட்டணம், உச்சக்_கட்டணம்)
+//
+// Cost plus incentive fee: the same sharing formula, bounded at both ends, and
+// with the cost itself reimbursed whatever it turns out to be.
+//
+// There is no ceiling price and therefore no point of total assumption. The
+// seller's exposure is bounded by the fee floor, which is the structural
+// difference from the fixed price incentive form and the reason a buyer pays
+// more for this one.
+செயல் செலவுடன்_ஊக்கம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உண்மைச்_செலவு,
+                       விற்பவர்_பகிர்வு, குறைந்த_கட்டணம், உச்சக்_கட்டணம்) {
+    கச்சாக்_கட்டணம் = ஊக்கக்_கட்டணம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம்,
+                                      உண்மைச்_செலவு, விற்பவர்_பகிர்வு);
+    கட்டணத்_தொகை = கட்டணத்தை_வரம்பிடு(கச்சாக்_கட்டணம், குறைந்த_கட்டணம்,
+                                  உச்சக்_கட்டணம்);
+    திரும்பு {"விற்பவர்_கட்டணம்": கட்டணத்_தொகை,
+              "கட்டணம்_வரம்பின்றி": கச்சாக்_கட்டணம்,
+              "வாங்குபவர்_செலவு": வட்டமிடு(உண்மைச்_செலவு + கட்டணத்_தொகை, 2)};
+}
+
+// =========================================================================
+// நேரமும் பொருளும் — time and materials
+// =========================================================================
+//
+// நேரமும்_பொருளும்(மணிகள், மணி_விகிதம், பொருள்_செலவு, மீற_இயலா_எல்லை)
+//
+// Hours at a rate, plus materials. The rate already contains the seller's
+// profit, so there is no separate fee.
+//
+// மீற_இயலா_எல்லை is a not-to-exceed ceiling; pass 0 for none. **A ceiling
+// turns the top of the contract into a fixed price**, and that is the term
+// most often misread: the buyer treats it as a budget and the seller treats it
+// as an estimate, and both are wrong. Past the ceiling the seller works for
+// nothing, exactly as under a firm fixed price, and the switch is invisible
+// until it happens.
+//
+// The record says whether the ceiling bit and how many hours went unpaid,
+// because that is the number a dispute is actually about.
+செயல் நேரமும்_பொருளும்(மணிகள், மணி_விகிதம், பொருள்_செலவு, மீற_இயலா_எல்லை) {
+    ஈட்டியது = வட்டமிடு(மணிகள் * மணி_விகிதம் + பொருள்_செலவு, 2);
+
+    (மீற_இயலா_எல்லை <= 0 அல்லது ஈட்டியது <= மீற_இயலா_எல்லை) எனில் {
+        திரும்பு {"வசூலிப்பது": ஈட்டியது,
+                  "ஈட்டியது": ஈட்டியது,
+                  "எல்லை_தொட்டதா": பொய்,
+                  "வசூலிக்க_இயலாதது": 0};
+    }
+
+    திரும்பு {"வசூலிப்பது": வட்டமிடு(மீற_இயலா_எல்லை, 2),
+              "ஈட்டியது": ஈட்டியது,
+              "எல்லை_தொட்டதா": மெய்,
+              "வசூலிக்க_இயலாதது": வட்டமிடு(ஈட்டியது - மீற_இயலா_எல்லை, 2)};
+}
+
+// =========================================================================
+// ஒப்பீடு — the same overrun, four ways
+// =========================================================================
+//
+// மிகைச்_செலவின்_விளைவு(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+//                        விற்பவர்_பகிர்வு, உண்மைச்_செலவு)
+//
+// What one overrun does to the seller's profit under each type, side by side.
+//
+// The point is how differently the same event lands. The seller's profit is
+// identical at target cost under all of them and diverges immediately, and a
+// project manager reporting a cost variance without saying which contract it
+// arises under has reported half a fact.
+செயல் மிகைச்_செலவின்_விளைவு(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+                             விற்பவர்_பகிர்வு, உண்மைச்_செலவு) {
+    இலக்கு_விலை = இலக்குச்_செலவு + இலக்குக்_கட்டணம்;
+    ஊக்கம் = நிலை_விலை_ஊக்கம்(இலக்குச்_செலவு, இலக்குக்_கட்டணம், உச்ச_விலை,
+                               விற்பவர்_பகிர்வு, உண்மைச்_செலவு);
+    செலவுக்கூடு = செலவுடன்_நிலைக்_கட்டணம்(உண்மைச்_செலவு, இலக்குக்_கட்டணம்);
+
+    திரும்பு {"உறுதி_நிலை_விலை": உறுதி_நிலை_லாபம்(இலக்கு_விலை, உண்மைச்_செலவு),
+              "நிலை_விலை_ஊக்கம்": ஊக்கம்["விற்பவர்_லாபம்"],
+              "செலவுடன்_நிலைக்_கட்டணம்": செலவுக்கூடு["விற்பவர்_கட்டணம்"],
+              "உண்மைச்_செலவு": வட்டமிடு(உண்மைச்_செலவு, 2)};
+}

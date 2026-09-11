@@ -16,6 +16,7 @@
 இறக்கு "Ittu_maqippu.qmz";
 இறக்கு "pAqY.qmz";
 இறக்கு "curukkal.qmz";
+இறக்கு "oppanqa_vakY.qmz";
 
 ஓட்டம் = சோதனை_தொடக்கம்("திட்டம் — project costing");
 
@@ -217,11 +218,11 @@
                   "a 31-period plan at SPI 0.775 forecasts about 40");
 
 // The whole report in one call, and its parts must agree with the pieces.
-அறிக்கை = நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி);
-ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(அறிக்கை), "the status report computes");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(அறிக்கை).செலவு_வேறுபாடு, -155,
+நிலவரப்_பதிவு = நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(நிலவரப்_பதிவு), "the status report computes");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நிலவரப்_பதிவு).செலவு_வேறுபாடு, -155,
               "and carries the same cost variance");
-ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(அறிக்கை).முடிவில்_மதிப்பீடு, 1937.5,
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நிலவரப்_பதிவு).முடிவில்_மதிப்பீடு, 1937.5,
               "and the same estimate at completion");
 
 // =========================================================================
@@ -371,5 +372,124 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தாமதச்_செலவுடன்(4500, 90, 200, 53)
                           > மொத்தச்_செலவு(4500, 90, 53),
                   "which is why whose money is being optimised must be decided");
+
+// =========================================================================
+// ஒப்பந்த வகை — who carries the cost risk
+// =========================================================================
+//
+// Target cost 1,00,000; target fee 10,000, so a target price of 1,10,000;
+// ceiling price 1,25,000; the buyer takes 75% of a variance and the seller 25%.
+
+ஓட்டம் = சமம்(ஓட்டம், விற்பவர்_இடர்("உறுதி_நிலை_விலை"), "முழு",
+              "a firm fixed price puts the whole overrun on the seller");
+ஓட்டம் = சமம்(ஓட்டம், விற்பவர்_இடர்("செலவுடன்_நிலைக்_கட்டணம்"), "இல்லை",
+              "cost plus puts none of it there");
+ஓட்டம் = சமம்(ஓட்டம், விற்பவர்_இடர்("நிலை_விலை_ஊக்கம்"), "பகிர்வு",
+              "and the incentive form shares it, up to a point");
+ஓட்டம் = சமம்(ஓட்டம், விற்பவர்_இடர்("ஏதோ"), "",
+              "an unknown type answers nothing rather than guessing");
+
+ஓட்டம் = சமம்(ஓட்டம், உறுதி_நிலை_லாபம்(110000, 90000), 20000,
+              "under a fixed price every rupee saved is the seller's");
+ஓட்டம் = சமம்(ஓட்டம், உறுதி_நிலை_லாபம்(110000, 130000), 0 - 20000,
+              "and every rupee overspent, without comment");
+
+ஓட்டம் = சமம்(ஓட்டம், ஊக்கக்_கட்டணம்(100000, 10000, 90000, 0.25), 12500,
+              "an underrun raises the fee by the seller's share of it");
+ஓட்டம் = சமம்(ஓட்டம், ஊக்கக்_கட்டணம்(100000, 10000, 130000, 0.25), 2500,
+              "and an overrun lowers it — the sign works itself out");
+ஓட்டம் = சமம்(ஓட்டம், ஊக்கக்_கட்டணம்(100000, 10000, 100000, 0.25), 10000,
+              "at target cost the fee is the target fee");
+
+// --- the point of total assumption ---------------------------------------
+
+புள்ளி = மதிப்பு(முழுப்_பொறுப்புப்_புள்ளி(100000, 10000, 125000, 0.75));
+ஓட்டம் = சமம்(ஓட்டம், புள்ளி, 120000,
+              "the point of total assumption: target cost plus the room "
+              & "between target and ceiling, divided by the buyer's share");
+
+// The formula proves itself: at the PTA the final price *is* the ceiling.
+புள்ளியில் = நிலை_விலை_ஊக்கம்(100000, 10000, 125000, 0.25, புள்ளி);
+ஓட்டம் = சமம்(ஓட்டம், புள்ளியில்["இறுதி_விலை"], 125000,
+              "at that cost the final price is exactly the ceiling — which is "
+              & "what makes it the point");
+ஓட்டம் = சமம்(ஓட்டம், புள்ளியில்["கட்டணம்"], 5000, "with 5,000 of fee left");
+
+கீழே = நிலை_விலை_ஊக்கம்(100000, 10000, 125000, 0.25, 110000);
+மேலே = நிலை_விலை_ஊக்கம்(100000, 10000, 125000, 0.25, 130000);
+
+ஓட்டம் = சமம்(ஓட்டம், கீழே["கட்டணம்"], 7500, "below the point, fee of 7,500");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை கீழே["உச்சம்_தொட்டதா"],
+                  "and the ceiling has not bitten");
+ஓட்டம் = சமம்(ஓட்டம், மேலே["கட்டணம்"], 0 - 5000,
+              "past it the fee goes negative — the seller is paying to finish");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மேலே["உச்சம்_தொட்டதா"], "because the ceiling bit");
+ஓட்டம் = சமம்(ஓட்டம், மேலே["இறுதி_விலை"], 125000,
+              "and the buyer pays no more than the ceiling, ever");
+
+// The marginal rate quadruples at the point, and nothing in the contract says so.
+ஓட்டம் = சமம்(ஓட்டம், கீழே["கட்டணம்"] - புள்ளியில்["கட்டணம்"], 2500,
+              "10,000 of overrun below the point costs the seller 2,500");
+ஓட்டம் = சமம்(ஓட்டம், புள்ளியில்["கட்டணம்"] - மேலே["கட்டணம்"], 10000,
+              "the next 10,000 costs it 10,000 — four times the rate, at a "
+              & "point that appears in none of the contract's schedules");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், புள்ளியைத்_தாண்டியதா(130000, புள்ளி),
+                  "130,000 is past the point");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை புள்ளியைத்_தாண்டியதா(120000, புள்ளி),
+                  "and exactly at it is not past it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முழுப்_பொறுப்புப்_புள்ளி(100000, 10000,
+                                                            125000, 0)),
+                  "with no buyer share there is no such point");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முழுப்_பொறுப்புப்_புள்ளி(100000, 10000,
+                                                            105000, 0.75)),
+                  "and a ceiling below the target price is refused");
+
+// --- cost plus ------------------------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், செலவுடன்_நிலைக்_கட்டணம்(130000, 10000)["விற்பவர்_கட்டணம்"],
+              10000, "a fixed fee does not move with the cost");
+ஓட்டம் = சமம்(ஓட்டம், செலவுடன்_நிலைக்_கட்டணம்(130000, 10000)["வாங்குபவர்_செலவு"],
+              140000, "so the whole overrun lands on the buyer");
+
+வரம்புடன் = செலவுடன்_ஊக்கம்(100000, 10000, 160000, 0.25, 4000, 15000);
+ஓட்டம் = சமம்(ஓட்டம், வரம்புடன்["கட்டணம்_வரம்பின்றி"], 0 - 5000,
+              "unbounded, a 60,000 overrun would wipe the fee out");
+ஓட்டம் = சமம்(ஓட்டம், வரம்புடன்["விற்பவர்_கட்டணம்"], 4000,
+              "but the floor holds it at 4,000 — the structural difference "
+              & "from the fixed price incentive form, and what a buyer pays "
+              & "more for");
+ஓட்டம் = சமம்(ஓட்டம், செலவுடன்_ஊக்கம்(100000, 10000, 60000, 0.25, 4000,
+                                        15000)["விற்பவர்_கட்டணம்"],
+              15000, "and the cap holds a large underrun at 15,000");
+
+// --- time and materials ---------------------------------------------------
+
+மீறியது = நேரமும்_பொருளும்(500, 1000, 50000, 500000);
+ஓட்டம் = சமம்(ஓட்டம், மீறியது["ஈட்டியது"], 550000, "550,000 of work was done");
+ஓட்டம் = சமம்(ஓட்டம், மீறியது["வசூலிப்பது"], 500000, "500,000 can be billed");
+ஓட்டம் = சமம்(ஓட்டம், மீறியது["வசூலிக்க_இயலாதது"], 50000,
+              "and 50,000 cannot — past a not-to-exceed ceiling the seller "
+              & "works for nothing, exactly as under a fixed price");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மீறியது["எல்லை_தொட்டதா"], "the ceiling bit");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  இல்லை நேரமும்_பொருளும்(400, 1000, 50000, 500000)["எல்லை_தொட்டதா"],
+                  "below it nothing changes");
+ஓட்டம் = சமம்(ஓட்டம், நேரமும்_பொருளும்(500, 1000, 50000, 0)["வசூலிப்பது"],
+              550000, "and with no ceiling the whole amount is billable");
+
+// --- the same overrun, four ways -----------------------------------------
+
+விளைவு = மிகைச்_செலவின்_விளைவு(100000, 10000, 125000, 0.25, 130000);
+ஓட்டம் = சமம்(ஓட்டம், விளைவு["உறுதி_நிலை_விலை"], 0 - 20000,
+              "a 30,000 overrun costs a fixed price seller 20,000");
+ஓட்டம் = சமம்(ஓட்டம், விளைவு["நிலை_விலை_ஊக்கம்"], 0 - 5000,
+              "an incentive seller 5,000");
+ஓட்டம் = சமம்(ஓட்டம், விளைவு["செலவுடன்_நிலைக்_கட்டணம்"], 10000,
+              "and a cost plus seller nothing at all — it still earns its fee");
+ஓட்டம் = வேறுபடு(ஓட்டம், விளைவு["உறுதி_நிலை_விலை"],
+                 விளைவு["செலவுடன்_நிலைக்_கட்டணம்"],
+                 "the identical event, 30,000 apart — which is why a cost "
+                 & "variance reported without naming the contract is half a fact");
 
 சோதனை_முடிவு(ஓட்டம்);
