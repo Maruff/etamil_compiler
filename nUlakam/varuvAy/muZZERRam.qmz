@@ -1,0 +1,264 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/varuvAy/muZZERRam.qmz — முன்னேற்றம், step 5
+//
+// oppanqam.qmz allocates a price to each performance obligation. This module
+// answers the remaining question: how much of it has been earned.
+//
+// The first decision is not how to measure progress but **whether progress is
+// measurable at all** — that is, whether the obligation is satisfied over time
+// or at a point in time. Over time needs one of three criteria to be met, and
+// an obligation that meets none of them recognises nothing until control
+// passes, however long the work took and however much was spent.
+//
+// **Progress here is a fraction**, 0 to 1, not a percentage. This differs from
+// the rates convention everywhere else in nUlakam — 18 means eighteen per cent
+// in celavu/ and nErativari/ — and it matches qittam/Ittu_maqippu.qmz, where
+// முறை_50_50 answers 0.5. A project's percent complete and a tax rate are
+// different kinds of number and they are kept in different shapes on purpose.
+//
+// Revenue for a period is always **revenue to date less revenue already
+// recognised**. A change in estimate is a cumulative catch-up in the period of
+// the change, never a restatement of earlier periods — so a revised cost
+// estimate can produce negative revenue in a period, and that is the answer
+// rather than a fault.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// காலப்போக்கிலா — over time, or at a point in time
+// =========================================================================
+//
+// காலப்போக்கிலா(ஒரே_நேரத்தில்_நுகர்கிறாரா, வாடிக்கையாளர்_கட்டுப்பாட்டிலா,
+//                மாற்று_பயன்_இல்லையா, செலுத்த_உரிமை_உண்டா)
+//
+// Any **one** of three criteria makes an obligation satisfied over time:
+//
+//   the customer simultaneously receives and consumes the benefits — a
+//     recurring service, where another entity would not have to redo the work
+//     done so far;
+//   the work creates or enhances an asset **the customer controls** as it is
+//     created — building on the customer's own land;
+//   the work creates an asset with **no alternative use** to the entity *and*
+//     the entity has an **enforceable right to payment** for performance
+//     completed to date.
+//
+// The third is two conditions and it is routinely applied as one. An asset
+// custom-built to a specification has no alternative use, and that alone is
+// not enough: without an enforceable right to payment for work done — not
+// merely for costs, and enforceable, not customary — revenue waits until
+// delivery. A great many construction contracts turn on this single point, and
+// the answer is in the termination clause rather than in the specification.
+செயல் காலப்போக்கிலா(ஒரே_நேரத்தில்_நுகர்கிறாரா, வாடிக்கையாளர்_கட்டுப்பாட்டிலா,
+                      மாற்று_பயன்_இல்லையா, செலுத்த_உரிமை_உண்டா) {
+    (ஒரே_நேரத்தில்_நுகர்கிறாரா) எனில் { திரும்பு மெய்; }
+    (வாடிக்கையாளர்_கட்டுப்பாட்டிலா) எனில் { திரும்பு மெய்; }
+    திரும்பு மாற்று_பயன்_இல்லையா மற்றும் செலுத்த_உரிமை_உண்டா;
+}
+
+// கட்டுப்பாட்டு_குறியீடுகள்(செலுத்த_உரிமை_உண்டா, உரிமம்_மாறியதா,
+//                            கைவசம்_உள்ளதா, இடர்_பலன்_மாறியதா, ஏற்றுக்கொண்டாரா)
+//
+// Where an obligation is **not** satisfied over time, revenue is recognised
+// when control transfers, and the standard offers five indicators rather than
+// a test. This counts how many point to transfer and stops there.
+//
+// No threshold is imposed, because the standard imposes none: three of five is
+// not an answer. The count is a prompt to look at which three, and a decision
+// that rests on a majority of indicators is a decision that has not been made.
+செயல் கட்டுப்பாட்டு_குறியீடுகள்(செலுத்த_உரிமை_உண்டா, உரிமம்_மாறியதா,
+                                 கைவசம்_உள்ளதா, இடர்_பலன்_மாறியதா,
+                                 ஏற்றுக்கொண்டாரா) {
+    எண்ணிக்கை = 0;
+    (செலுத்த_உரிமை_உண்டா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (உரிமம்_மாறியதா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (கைவசம்_உள்ளதா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (இடர்_பலன்_மாறியதா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (ஏற்றுக்கொண்டாரா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    திரும்பு எண்ணிக்கை;
+}
+
+// =========================================================================
+// முன்னேற்றத்தை அளத்தல் — measuring progress
+// =========================================================================
+
+// முன்னேற்றத்தை_வரம்பிடு(கச்சா_முன்னேற்றம்) — held to 0 and 1
+//
+// An obligation cannot be more than satisfied. Costs overrunning the estimate
+// push a cost-to-cost measure above 1, and a progress of 1.2 would recognise
+// more revenue than the obligation is worth.
+செயல் முன்னேற்றத்தை_வரம்பிடு(கச்சா_முன்னேற்றம்) {
+    (கச்சா_முன்னேற்றம் < 0) எனில் { திரும்பு 0; }
+    (கச்சா_முன்னேற்றம் > 1) எனில் { திரும்பு 1; }
+    திரும்பு கச்சா_முன்னேற்றம்;
+}
+
+// செலவு_முன்னேற்றம்(ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு)
+//
+// The input method, cost-to-cost: costs incurred over total costs expected. It
+// measures **effort**, and it assumes effort and transfer move together, which
+// is an assumption and not a fact.
+//
+// A total expected cost of nothing is a தவறு rather than complete progress: an
+// obligation with no estimate has not been estimated.
+செயல் செலவு_முன்னேற்றம்(ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு) {
+    (மொத்த_எதிர்பார்க்கும்_செலவு <= 0) எனில் {
+        திரும்பு தவறு("மொத்தச் செலவு மதிப்பிடப்படவில்லை  "
+                       & "(no total expected cost, so progress cannot be measured)");
+    }
+    திரும்பு சரி(முன்னேற்றத்தை_வரம்பிடு(ஏற்பட்ட_செலவு
+                                          / மொத்த_எதிர்பார்க்கும்_செலவு));
+}
+
+// வெளியீட்டு_முன்னேற்றம்(முடித்த_அளவு, மொத்த_அளவு)
+//
+// The output method: units delivered, milestones reached, surveys of work
+// performed. It measures what the customer has **received**, which is what the
+// standard actually asks about, and is preferred where a reliable output
+// measure exists.
+//
+// It is used less because outputs are harder to observe than costs, and that
+// is a practical reason rather than a conceptual one.
+செயல் வெளியீட்டு_முன்னேற்றம்(முடித்த_அளவு, மொத்த_அளவு) {
+    (மொத்த_அளவு <= 0) எனில் {
+        திரும்பு தவறு("மொத்த அளவு இல்லை  (no total output to measure against)");
+    }
+    திரும்பு சரி(முன்னேற்றத்தை_வரம்பிடு(முடித்த_அளவு / மொத்த_அளவு));
+}
+
+// =========================================================================
+// நிறுவப்படாத பொருட்கள் — uninstalled materials
+// =========================================================================
+//
+// நிறுவாத_பொருள்_முன்னேற்றம்(ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு,
+//                              நிறுவாத_பொருள்_செலவு)
+//
+// The adjustment cost-to-cost needs, and the one most often left out.
+//
+// A lift delivered to site and not yet installed is a cost incurred that
+// represents no progress at all. Under a plain cost-to-cost measure it
+// advances the percentage and drags a full margin with it — the entity books
+// profit on a machine it bought from somebody else and merely accepted
+// delivery of.
+//
+// The standard's answer: exclude the cost from the measure of progress, and
+// recognise revenue on it **at cost** — a zero margin. The margin arrives when
+// the thing is installed and the work is actually done.
+//
+// It applies where the goods are significant relative to total cost, the
+// entity procures them without being meaningfully involved in designing or
+// manufacturing them, and control passes to the customer before installation.
+// Deciding that is the caller's; the caller passes the cost.
+செயல் நிறுவாத_பொருள்_முன்னேற்றம்(ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு,
+                                    நிறுவாத_பொருள்_செலவு) {
+    சரிசெய்த_ஏற்பட்டது = ஏற்பட்ட_செலவு - நிறுவாத_பொருள்_செலவு;
+    சரிசெய்த_மொத்தம் = மொத்த_எதிர்பார்க்கும்_செலவு - நிறுவாத_பொருள்_செலவு;
+
+    (சரிசெய்த_மொத்தம் <= 0) எனில் {
+        திரும்பு தவறு("பொருட்களை நீக்கியபின் அளக்க ஒன்றுமில்லை  "
+                       & "(nothing left to measure once the materials are "
+                       & "excluded)");
+    }
+    (சரிசெய்த_ஏற்பட்டது < 0) எனில் { சரிசெய்த_ஏற்பட்டது = 0; }
+    திரும்பு சரி(முன்னேற்றத்தை_வரம்பிடு(சரிசெய்த_ஏற்பட்டது / சரிசெய்த_மொத்தம்));
+}
+
+// நிறுவாத_பொருளுடன்_வருவாய்(ஒதுக்கிய_மதிப்பு, ஏற்பட்ட_செலவு,
+//                             மொத்த_எதிர்பார்க்கும்_செலவு,
+//                             நிறுவாத_பொருள்_செலவு)
+//
+// Revenue to date with the adjustment applied, in one call:
+//
+//   progress × (allocated price − material cost)  +  material cost
+//
+// The materials come back in at cost, outside the percentage. The two halves
+// are returned separately as well as the total, because the zero-margin part
+// is exactly what an auditor asks to see.
+செயல் நிறுவாத_பொருளுடன்_வருவாய்(ஒதுக்கிய_மதிப்பு, ஏற்பட்ட_செலவு,
+                                   மொத்த_எதிர்பார்க்கும்_செலவு,
+                                   நிறுவாத_பொருள்_செலவு) {
+    முன்னேற்ற_விடை = நிறுவாத_பொருள்_முன்னேற்றம்(ஏற்பட்ட_செலவு,
+                                                   மொத்த_எதிர்பார்க்கும்_செலவு,
+                                                   நிறுவாத_பொருள்_செலவு);
+    (தவறா(முன்னேற்ற_விடை)) எனில் { திரும்பு முன்னேற்ற_விடை; }
+
+    முன்னேற்றம் = மதிப்பு(முன்னேற்ற_விடை);
+    விளிம்புப்_பகுதி = வட்டமிடு(முன்னேற்றம்
+                                 * (ஒதுக்கிய_மதிப்பு - நிறுவாத_பொருள்_செலவு), 2);
+
+    திரும்பு சரி({"முன்னேற்றம்": முன்னேற்றம்,
+                  "விளிம்புள்ள_வருவாய்": விளிம்புப்_பகுதி,
+                  "விளிம்பற்ற_வருவாய்": வட்டமிடு(நிறுவாத_பொருள்_செலவு, 2),
+                  "மொத்த_வருவாய்": வட்டமிடு(விளிம்புப்_பகுதி
+                                             + நிறுவாத_பொருள்_செலவு, 2)});
+}
+
+// =========================================================================
+// வருவாய் — the amount
+// =========================================================================
+
+// இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்)
+செயல் இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்) {
+    திரும்பு வட்டமிடு(ஒதுக்கிய_மதிப்பு * முன்னேற்றத்தை_வரம்பிடு(முன்னேற்றம்), 2);
+}
+
+// இந்தக்_காலத்து_வருவாய்(இதுவரை_தொகை, முன்பு_அங்கீகரித்தது)
+//
+// What this period recognises: revenue to date less revenue already taken.
+//
+// **It may be negative**, and when it is, that is the answer. A revised
+// estimate of total cost lowers progress, which lowers revenue to date below
+// what has already been recognised, and the shortfall is taken now — a
+// cumulative catch-up in the period of the change. Earlier periods are not
+// restated; the estimate was not wrong when it was made.
+//
+// Clamping this at zero would carry the overstatement forward silently, which
+// is the one thing the cumulative method exists to prevent.
+செயல் இந்தக்_காலத்து_வருவாய்(இதுவரை_தொகை, முன்பு_அங்கீகரித்தது) {
+    திரும்பு வட்டமிடு(இதுவரை_தொகை - முன்பு_அங்கீகரித்தது, 2);
+}
+
+// மீட்பளவு_வருவாய்(ஏற்பட்ட_செலவு, மீட்கக்கூடியதா)
+//
+// The early-stage case: the outcome cannot be reasonably measured, but the
+// costs incurred are expected to be recovered. Revenue is recognised **equal
+// to cost** — zero margin — until progress can be measured.
+//
+// Where recovery is not expected, nothing is recognised and the costs are an
+// expense. There is no third answer: a contract whose costs may not be
+// recovered does not get a reduced margin, it gets none.
+செயல் மீட்பளவு_வருவாய்(ஏற்பட்ட_செலவு, மீட்கக்கூடியதா) {
+    (இல்லை மீட்கக்கூடியதா) எனில் { திரும்பு 0; }
+    (ஏற்பட்ட_செலவு <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(ஏற்பட்ட_செலவு, 2);
+}
+
+// வருவாய்_நிலவரம்(ஒதுக்கிய_மதிப்பு, ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு,
+//          முன்பு_அங்கீகரித்தது)
+//
+// The whole position for one obligation on a cost-to-cost basis: progress,
+// revenue to date, revenue this period, and the margin the contract is now
+// expected to make.
+//
+// The expected margin is included because it is the number that changes first
+// when a contract goes wrong. Progress and revenue both keep moving up while
+// the margin falls, and a report that shows only the first two shows a project
+// going well right up to the point where it does not.
+செயல் வருவாய்_நிலவரம்(ஒதுக்கிய_மதிப்பு, ஏற்பட்ட_செலவு, மொத்த_எதிர்பார்க்கும்_செலவு,
+               முன்பு_அங்கீகரித்தது) {
+    முன்னேற்ற_விடை = செலவு_முன்னேற்றம்(ஏற்பட்ட_செலவு,
+                                         மொத்த_எதிர்பார்க்கும்_செலவு);
+    (தவறா(முன்னேற்ற_விடை)) எனில் { திரும்பு முன்னேற்ற_விடை; }
+
+    முன்னேற்றம் = மதிப்பு(முன்னேற்ற_விடை);
+    இதுவரை = இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்);
+
+    திரும்பு சரி({"முன்னேற்றம்": முன்னேற்றம்,
+                  "இதுவரை_வருவாய்": இதுவரை,
+                  "இந்தக்_காலம்": இந்தக்_காலத்து_வருவாய்(இதுவரை,
+                                                          முன்பு_அங்கீகரித்தது),
+                  "எதிர்பார்க்கும்_விளிம்பு":
+                      வட்டமிடு(ஒதுக்கிய_மதிப்பு - மொத்த_எதிர்பார்க்கும்_செலவு, 2),
+                  "ஏற்பட்ட_செலவு": வட்டமிடு(ஏற்பட்ட_செலவு, 2)});
+}

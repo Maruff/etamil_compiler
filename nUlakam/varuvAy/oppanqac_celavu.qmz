@@ -1,0 +1,242 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/varuvAy/oppanqac_celavu.qmz — ஒப்பந்தச் செலவு, and contracts that lose
+//
+// Two subjects that belong together because both decide whether a cost sits on
+// the balance sheet or goes through the profit and loss now.
+//
+// **Contract costs** are in Ind AS 115: the incremental cost of *obtaining* a
+// contract, and the cost of *fulfilling* one, may be capitalised on stated
+// conditions and are then amortised as the revenue is recognised.
+//
+// **Onerous contracts are not in Ind AS 115 at all.** The standard was written
+// without an onerous-contract model on purpose, and they fall to Ind AS 37.
+// This is missed constantly, and it matters because the two standards behave
+// in opposite directions: 115 spreads a cost forward over the contract, 37
+// takes the whole expected loss now. A contract heading for a loss does not
+// get a reduced margin each period — it gets a provision for the entire loss
+// the moment the loss becomes probable.
+//
+// The order between them is fixed and is easy to get wrong: **impair the
+// assets dedicated to the contract first, then provide for what is left.**
+// Recognising a provision while capitalised costs still sit on the balance
+// sheet counts the same loss twice.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// பெறுதல் செலவு — costs of obtaining a contract
+// =========================================================================
+//
+// பெறுதல்_செலவின்_வகை(கூடுதலானதா, மீட்கக்கூடியதா, கழிப்பு_மாதங்கள்,
+//                      எளிய_வழி_மாதங்கள்)
+//
+// Only the **incremental** costs of obtaining a contract may be capitalised —
+// costs that would not have been incurred had the contract not been won.
+//
+// A commission payable only on signature is incremental. A bid team's salaries
+// and the legal fees of tendering are not: they were incurred whether or not
+// the tender succeeded, and they are an expense however large and however
+// clearly they relate to the contract. This is the line people argue with, and
+// the test is counterfactual rather than causal — not "was it for this
+// contract" but "would it have been spent anyway".
+//
+// The practical expedient: where the amortisation period would be a year or
+// less, expense it immediately. It exists to stop entities capitalising and
+// amortising small commissions on short contracts, which costs more to
+// administer than it improves.
+//
+// Answers the decision and the reason, because "not capitalised" without a
+// reason is an answer nobody can check.
+செயல் பெறுதல்_செலவின்_வகை(கூடுதலானதா, மீட்கக்கூடியதா, கழிப்பு_மாதங்கள்,
+                            எளிய_வழி_மாதங்கள்) {
+    (இல்லை கூடுதலானதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "கூடுதலானதல்ல  (not incremental: it would have "
+                            & "been incurred whether or not the contract was won)"};
+    }
+    (இல்லை மீட்கக்கூடியதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "மீட்க முடியாது  (not expected to be recovered)"};
+    }
+    (கழிப்பு_மாதங்கள் <= எளிய_வழி_மாதங்கள்) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "எளிய வழி  (practical expedient: the amortisation "
+                            & "period is " & சொல்லாக்கு(கழிப்பு_மாதங்கள்)
+                            & " months or less)"};
+    }
+    திரும்பு {"முதலீடா": மெய்,
+              "காரணம்": "கூடுதலானது, மீட்கக்கூடியது  (incremental and "
+                        & "recoverable)"};
+}
+
+// =========================================================================
+// நிறைவேற்றல் செலவு — costs of fulfilling a contract
+// =========================================================================
+//
+// நிறைவேற்றல்_செலவின்_வகை(நேரடியானதா, வளத்தை_உருவாக்குமா, மீட்கக்கூடியதா,
+//                          கடந்த_செயலுக்கானதா, வீணானதா)
+//
+// Three conditions to capitalise, all of them, and two disqualifiers.
+//
+// The conditions: the cost relates directly to a contract, it generates or
+// enhances resources that will be used to satisfy obligations in future, and
+// it is expected to be recovered.
+//
+// The disqualifiers are the useful part. A cost relating to **performance
+// already satisfied** is an expense — mobilisation for work now finished
+// creates nothing future. And **wasted** material or labour not reflected in
+// the contract price is an expense: rework caused by the entity's own error is
+// not an asset, however directly it relates to the contract. Capitalising
+// waste is the single most attractive error available on a contract going
+// badly, because it removes exactly the cost that is causing the problem.
+//
+// General and administrative costs fail the first condition unless the
+// contract explicitly makes them chargeable.
+செயல் நிறைவேற்றல்_செலவின்_வகை(நேரடியானதா, வளத்தை_உருவாக்குமா, மீட்கக்கூடியதா,
+                                கடந்த_செயலுக்கானதா, வீணானதா) {
+    (வீணானதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "வீணானது  (wasted material or labour not "
+                            & "reflected in the price is an expense)"};
+    }
+    (கடந்த_செயலுக்கானதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "கடந்த செயலுக்கானது  (relates to performance "
+                            & "already satisfied, so it creates nothing future)"};
+    }
+    (இல்லை நேரடியானதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "நேரடியானதல்ல  (does not relate directly to a "
+                            & "contract)"};
+    }
+    (இல்லை வளத்தை_உருவாக்குமா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "வளத்தை உருவாக்காது  (generates or enhances no "
+                            & "resource for future performance)"};
+    }
+    (இல்லை மீட்கக்கூடியதா) எனில் {
+        திரும்பு {"முதலீடா": பொய்,
+                  "காரணம்": "மீட்க முடியாது  (not expected to be recovered)"};
+    }
+    திரும்பு {"முதலீடா": மெய்,
+              "காரணம்": "மூன்று நிபந்தனைகளும் நிறைவேறின  (directly related, "
+                        & "creates a future resource, and recoverable)"};
+}
+
+// =========================================================================
+// கழிப்பு — amortising a capitalised contract cost
+// =========================================================================
+//
+// கழிப்புத்_தொகை(முதலீட்டுத்_தொகை, முன்னேற்றம், முன்பு_கழித்தது)
+//
+// Amortised on the **same basis as the revenue** it relates to, so it uses the
+// progress measure from muZZERRam.qmz rather than a life in months. A cost
+// capitalised against a contract and then amortised straight-line has been
+// divorced from the thing that justified capitalising it.
+//
+// முன்னேற்றம் is a fraction, 0 to 1, as it is throughout this directory.
+செயல் கழிப்புத்_தொகை(முதலீட்டுத்_தொகை, முன்னேற்றம், முன்பு_கழித்தது) {
+    (முன்னேற்றம் <= 0) எனில் { திரும்பு 0; }
+    பயன்படும்_முன்னேற்றம் = முன்னேற்றம்;
+    (பயன்படும்_முன்னேற்றம் > 1) எனில் { பயன்படும்_முன்னேற்றம் = 1; }
+
+    இதுவரை = வட்டமிடு(முதலீட்டுத்_தொகை * பயன்படும்_முன்னேற்றம், 2);
+    இந்தக்_காலம் = வட்டமிடு(இதுவரை - முன்பு_கழித்தது, 2);
+    (இந்தக்_காலம் < 0) எனில் { இந்தக்_காலம் = 0; }
+
+    திரும்பு {"இதுவரை_கழித்தது": இதுவரை,
+              "இந்தக்_காலம்": இந்தக்_காலம்,
+              "புத்தக_மதிப்பு": வட்டமிடு(முதலீட்டுத்_தொகை - இதுவரை, 2)};
+}
+
+// முதலீட்டுக்_குறைவு(புத்தக_மதிப்பு, எஞ்சிய_வருவாய், எஞ்சிய_செலவு)
+//
+// Impairment of a capitalised contract cost: the carrying amount may not
+// exceed the consideration still expected, less the costs still to be
+// incurred. What is left over is what the asset can still earn, and anything
+// above that is not recoverable.
+//
+// Note that the comparison uses **remaining** figures on both sides. Comparing
+// the carrying amount against the whole contract value ignores the cost of
+// finishing it, which is the only reason a contract cost ever fails this test.
+செயல் முதலீட்டுக்_குறைவு(புத்தக_மதிப்பு, எஞ்சிய_வருவாய், எஞ்சிய_செலவு) {
+    மீட்கக்கூடியது = எஞ்சிய_வருவாய் - எஞ்சிய_செலவு;
+    (மீட்கக்கூடியது < 0) எனில் { மீட்கக்கூடியது = 0; }
+    (புத்தக_மதிப்பு <= மீட்கக்கூடியது) எனில் {
+        திரும்பு {"குறைவு": 0, "மீட்கக்கூடியது": வட்டமிடு(மீட்கக்கூடியது, 2)};
+    }
+    திரும்பு {"குறைவு": வட்டமிடு(புத்தக_மதிப்பு - மீட்கக்கூடியது, 2),
+              "மீட்கக்கூடியது": வட்டமிடு(மீட்கக்கூடியது, 2)};
+}
+
+// =========================================================================
+// நட்டம் தரும் ஒப்பந்தம் — onerous contracts, under Ind AS 37
+// =========================================================================
+//
+// தவிர்க்க_முடியாத_செலவு(நிறைவேற்றும்_செலவு, வெளியேறும்_அபராதம்)
+//
+// The unavoidable cost of a contract is the **lower** of the cost of
+// fulfilling it and any compensation payable for failing to fulfil it. An
+// entity cannot be worse off than walking away, so a ruinous contract with a
+// small exit penalty is only as ruinous as the penalty.
+//
+// The cost of fulfilling is the *directly related* cost — incremental costs
+// plus an allocation of other costs that relate directly to the contract, such
+// as depreciation of equipment used on it. The 2022 amendment to Ind AS 37
+// settled this: the narrower "incremental only" reading made fewer contracts
+// onerous and was the more common practice before it.
+செயல் தவிர்க்க_முடியாத_செலவு(நிறைவேற்றும்_செலவு, வெளியேறும்_அபராதம்) {
+    திரும்பு வட்டமிடு(சிறியது(நிறைவேற்றும்_செலவு, வெளியேறும்_அபராதம்), 2);
+}
+
+// நட்டம்_தருமா(எஞ்சிய_வருவாய், தவிர்க்க_முடியாத_செலவு)
+//
+// A contract is onerous when the unavoidable costs of meeting it exceed the
+// economic benefits expected from it. Both sides are **remaining** amounts: a
+// contract that has lost money to date but will earn more than it costs from
+// here is not onerous, and one that has been profitable so far but faces a
+// ruinous final phase is.
+செயல் நட்டம்_தருமா(எஞ்சிய_வருவாய், தவிர்க்க_முடியாத_செலவு) {
+    திரும்பு தவிர்க்க_முடியாத_செலவு > எஞ்சிய_வருவாய்;
+}
+
+// நட்டக்_கணக்கு(எஞ்சிய_வருவாய், தவிர்க்க_முடியாத_செலவு,
+//                ஒப்பந்தச்_சொத்தின்_மதிப்பு)
+//
+// The whole treatment, in the order Ind AS 37 requires:
+//
+//   1. impair the assets dedicated to the contract
+//   2. provide for whatever loss remains
+//
+// Doing it the other way round, or doing only the second, counts the same loss
+// twice — the capitalised cost is written off *and* provided for. The order is
+// stated in the standard and it is the part that gets skipped.
+//
+// The provision is recognised **in full, now**. It is not spread over the
+// remaining life of the contract, and this is where Ind AS 37 and the
+// percentage-of-completion pattern part company: revenue and cost are
+// recognised as the work is done, and the loss is recognised as soon as it is
+// foreseen.
+செயல் நட்டக்_கணக்கு(எஞ்சிய_வருவாய், தவிர்க்க_முடியாத_செலவு,
+                     ஒப்பந்தச்_சொத்தின்_மதிப்பு) {
+    (இல்லை நட்டம்_தருமா(எஞ்சிய_வருவாய், தவிர்க்க_முடியாத_செலவு)) எனில் {
+        திரும்பு {"நட்டமா": பொய், "குறைவு": 0, "ஒதுக்கீடு": 0,
+                  "மொத்த_நட்டம்": 0};
+    }
+
+    மொத்த_நட்டம் = வட்டமிடு(தவிர்க்க_முடியாத_செலவு - எஞ்சிய_வருவாய், 2);
+
+    // Step 1: the dedicated asset absorbs the loss first.
+    குறைவு = மொத்த_நட்டம்;
+    (குறைவு > ஒப்பந்தச்_சொத்தின்_மதிப்பு) எனில் {
+        குறைவு = ஒப்பந்தச்_சொத்தின்_மதிப்பு;
+    }
+
+    // Step 2: whatever the asset could not absorb becomes a provision.
+    திரும்பு {"நட்டமா": மெய்,
+              "குறைவு": வட்டமிடு(குறைவு, 2),
+              "ஒதுக்கீடு": வட்டமிடு(மொத்த_நட்டம் - குறைவு, 2),
+              "மொத்த_நட்டம்": மொத்த_நட்டம்};
+}
