@@ -10226,9 +10226,9 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 147
   },
   {
-    "name": "கணக்கு_ஆக்கு",
+    "name": "கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு",
     "forms": [
-      "கணக்கு_ஆக்கு"
+      "கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு"
     ],
     "params": [
       "கணக்குக்_குறி",
@@ -10236,7 +10236,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
       "உரிமையாளர்"
     ],
     "arity": 3,
-    "doc": "கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)",
+    "doc": "கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)",
     "kind": "stdlib",
     "module": "nUlakam/qittam/kattuppAtu.qmz",
     "line": 32

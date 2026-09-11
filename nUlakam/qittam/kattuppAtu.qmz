@@ -23,13 +23,13 @@
 
 // --- The control account -------------------------------------------------
 
-// கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)
+// கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)
 //
 // கணக்குக்_குறி is the code the ledger knows. கணு_குறி is the WBS node it sits
 // on. Keeping them as separate fields rather than one identifier is what lets
 // the accounting structure and the work structure be renamed independently,
 // which they will be.
-செயல் கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்) {
+செயல் கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்) {
     திரும்பு {
         கணக்குக்_குறி: கணக்குக்_குறி,
         கணு_குறி: கணு_குறி,
