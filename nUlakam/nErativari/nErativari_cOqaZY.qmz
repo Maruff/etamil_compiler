@@ -1,0 +1,708 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// நேரடிவரி_சோதனை — tests for the direct tax modules, written in eTamil
+//
+// Run it like any other program:  etamil --vm nUlakam/nErativari/nErativari_cOqaZY.qmz
+// It exits non-zero if anything fails, so it works as a CI step.
+//
+// Every rate and threshold below is a **specimen**, chosen so the arithmetic
+// divides cleanly and can be checked by hand. They are not the law and they
+// are not defaults: the real figures are effective-dated and live in the table
+// vari_vikiqam.sql describes. A test that hard-codes this year's slabs becomes
+// a test that fails every April, which teaches everybody to ignore it.
+//
+// Where a result is not exactly representable in binary floating point it is
+// asserted within a tolerance rather than for equality, and said so.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "varumAZam.qmz";
+இறக்கு "kazivukaL.qmz";
+இறக்கு "varikkaNakku.qmz";
+இறக்கு "mUlavari.qmz";
+இறக்கு "muZvari.qmz";
+இறக்கு "oqqivari.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("நேரடிவரி — direct tax");
+
+// =========================================================================
+// சம்பளம் — salary
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_வருமானம்(1200000, 200000, 50000, 2500), 947500,
+              "salary: 12,00,000 less 2,00,000 exempt, standard deduction and PT");
+
+// The standard deduction cannot exceed the salary, so a month's work does not
+// produce a loss under a head that has no losses.
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_வருமானம்(30000, 0, 50000, 0), 0,
+              "a 30,000 salary with a 50,000 standard deduction is nil, not −20,000");
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_வருமானம்(0, 0, 50000, 0), 0,
+              "and no salary at all is nil");
+
+// =========================================================================
+// வீட்டுச் சொத்து — house property
+// =========================================================================
+
+நிகர_மதிப்பு = நிகர_ஆண்டு_மதிப்பீடு(600000, 40000);
+ஓட்டம் = சமம்(ஓட்டம், நிகர_மதிப்பு, 560000,
+              "net annual value is rent less the municipal tax actually paid");
+
+ஓட்டம் = சமம்(ஓட்டம், வாடகைச்_சொத்து_வருமானம்(நிகர_மதிப்பு, 30, 250000), 142000,
+              "let property: 5,60,000 less 30% of it less 2,50,000 interest");
+
+// The commonest error in this head, priced. Thirty per cent of the *rent*
+// rather than of net annual value overstates the deduction by exactly thirty
+// per cent of the municipal taxes.
+தவறான_வருமானம் = வாடகைச்_சொத்து_வருமானம்(600000, 30, 250000) - 40000;
+ஓட்டம் = சமம்(ஓட்டம், தவறான_வருமானம், 130000,
+              "30% of gross rent instead of net annual value gives 1,30,000");
+ஓட்டம் = சமம்(ஓட்டம், 142000 - தவறான_வருமானம், 12000,
+              "understating the income by 12,000 — exactly 30% of the "
+              & "municipal taxes, deducted twice over");
+
+ஓட்டம் = சமம்(ஓட்டம், சொந்த_வீட்டு_வருமானம்(300000, 200000), 0 - 200000,
+              "a self-occupied house yields only a loss, and the interest is capped");
+ஓட்டம் = சமம்(ஓட்டம், சொந்த_வீட்டு_வருமானம்(150000, 200000), 0 - 150000,
+              "below the cap the whole interest is the loss");
+ஓட்டம் = சமம்(ஓட்டம், சொந்த_வீட்டு_வருமானம்(300000, 0), 0 - 300000,
+              "and a ceiling of 0 means no ceiling");
+
+வீட்டு_ஈடு = வீட்டு_இழப்பை_ஈடுசெய்(350000, 200000);
+ஓட்டம் = சமம்(ஓட்டம், வீட்டு_ஈடு["ஈடுசெய்தது"], 200000,
+              "a 3,50,000 house loss meets other heads only up to 2,00,000");
+ஓட்டம் = சமம்(ஓட்டம், வீட்டு_ஈடு["முன்_கொண்டுசெல்வது"], 150000,
+              "and the rest is carried forward rather than lost");
+ஓட்டம் = சமம்(ஓட்டம், வீட்டு_ஈடு["ஈடுசெய்தது"] + வீட்டு_ஈடு["முன்_கொண்டுசெல்வது"], 350000,
+              "the two halves account for the whole loss — nothing is dropped");
+
+சிறிய_ஈடு = வீட்டு_இழப்பை_ஈடுசெய்(120000, 200000);
+ஓட்டம் = சமம்(ஓட்டம், சிறிய_ஈடு["முன்_கொண்டுசெல்வது"], 0,
+              "a loss inside the ceiling carries nothing forward");
+
+// =========================================================================
+// மூலதன ஆதாயம் — capital gains
+// =========================================================================
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறுகிய_காலமா(300, 365),
+                  "held 300 days against a 365-day threshold is short-term");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை குறுகிய_காலமா(400, 365),
+                  "held 400 days is long-term");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறுகிய_காலமா(365, 365),
+                  "and exactly at the threshold is still short-term");
+
+குறியீட்டு_விடை = குறியீட்டுச்_செலவு(1000000, 100, 348);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(குறியீட்டு_விடை), "indexation applies");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(குறியீட்டு_விடை), 3480000,
+              "10,00,000 indexed from 100 to 348 is 34,80,000");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(குறியீட்டுச்_செலவு(1000000, 0, 348)),
+                  "a missing acquisition index is refused, not treated as unindexed");
+
+ஆதாயம் = மூலதன_ஆதாயம்(5000000, 100000, 3480000, 0);
+ஓட்டம் = சமம்(ஓட்டம், ஆதாயம், 1420000,
+              "gain: 50,00,000 less 1,00,000 transfer cost less indexed cost");
+ஓட்டம் = சமம்(ஓட்டம், விலக்கிய_ஆதாயம்(ஆதாயம், 125000), 1295000,
+              "a threshold exemption charges everything above the line");
+ஓட்டம் = சமம்(ஓட்டம், விலக்கிய_ஆதாயம்(100000, 125000), 0,
+              "and nothing below it");
+
+// A threshold is not a cliff. Compare with தகுதிக்குள்_பங்களிப்பு in
+// Uqiyam.qmz, where crossing the line removes the charge entirely: the two
+// shapes look identical in a rate table and move in opposite directions.
+ஓட்டம் = சமம்(ஓட்டம், விலக்கிய_ஆதாயம்(125001, 125000), 1,
+              "one rupee over the exemption is taxed on one rupee, not on all of it");
+
+// =========================================================================
+// ஈட்டு விதிகள் — what may meet what
+// =========================================================================
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  ஈடுசெய்ய_முடியுமா("குறுகிய_ஆதாயம்", "நீண்ட_ஆதாயம்"),
+                  "a short-term capital loss may meet a long-term gain");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  இல்லை ஈடுசெய்ய_முடியுமா("நீண்ட_ஆதாயம்", "குறுகிய_ஆதாயம்"),
+                  "but a long-term loss may not meet a short-term gain — "
+                  & "loss flows down the rates, never up");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  ஈடுசெய்ய_முடியுமா("தொழில்", "ஊகத்_தொழில்"),
+                  "an ordinary business loss may meet speculative income");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  இல்லை ஈடுசெய்ய_முடியுமா("ஊகத்_தொழில்", "தொழில்"),
+                  "a speculative loss may not meet ordinary business income");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  இல்லை ஈடுசெய்ய_முடியுமா("தொழில்", "சம்பளம்"),
+                  "and no business loss may be set against salary");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  ஈடுசெய்ய_முடியுமா("வீட்டுச்_சொத்து", "சம்பளம்"),
+                  "a house property loss may, subject to its own ceiling");
+
+// =========================================================================
+// ஈட்டைச் செய் — applying a loss
+// =========================================================================
+
+தலைப்புகள் = [தலைப்பு_ஆக்கு("சம்பளம்", 800000),
+               தலைப்பு_ஆக்கு("குறுகிய_ஆதாயம்", 100000),
+               தலைப்பு_ஆக்கு("நீண்ட_ஆதாயம்", 300000)];
+
+நீண்ட_ஈடு = ஈட்டைச்_செய்("நீண்ட_ஆதாயம்", 250000, தலைப்புகள்);
+ஓட்டம் = சமம்(ஓட்டம், நீண்ட_ஈடு["ஈடுசெய்தது"], 250000,
+              "a 2,50,000 long-term loss is absorbed by the long-term gain");
+ஓட்டம் = சமம்(ஓட்டம், நீண்ட_ஈடு["எஞ்சியது"], 0, "leaving nothing to carry forward");
+ஓட்டம் = சமம்(ஓட்டம்,
+              மதிப்பு(தலைப்பைத்_தேடு(நீண்ட_ஈடு["தலைப்புகள்"], "நீண்ட_ஆதாயம்")),
+              50000, "the long-term gain falls to 50,000");
+ஓட்டம் = சமம்(ஓட்டம்,
+              மதிப்பு(தலைப்பைத்_தேடு(நீண்ட_ஈடு["தலைப்புகள்"], "குறுகிய_ஆதாயம்")),
+              100000, "and the short-term gain is untouched — it was not eligible");
+ஓட்டம் = சமம்(ஓட்டம்,
+              மதிப்பு(தலைப்பைத்_தேடு(நீண்ட_ஈடு["தலைப்புகள்"], "சம்பளம்")),
+              800000, "nor is the salary");
+
+// A business loss cannot touch salary however large it is, which is the
+// restriction that keeps a manufactured loss from sheltering employment income.
+தொழில்_ஈடு = ஈட்டைச்_செய்("தொழில்", 900000, தலைப்புகள்);
+ஓட்டம் = சமம்(ஓட்டம், தொழில்_ஈடு["ஈடுசெய்தது"], 400000,
+              "a 9,00,000 business loss reaches only the two capital gains");
+ஓட்டம் = சமம்(ஓட்டம், தொழில்_ஈடு["எஞ்சியது"], 500000,
+              "and 5,00,000 of it is carried forward");
+ஓட்டம் = சமம்(ஓட்டம்,
+              தொழில்_ஈடு["ஈடுசெய்தது"] + தொழில்_ஈடு["எஞ்சியது"], 900000,
+              "set off plus remaining equals the loss — the arithmetic reconciles");
+ஓட்டம் = சமம்(ஓட்டம்,
+              மதிப்பு(தலைப்பைத்_தேடு(தொழில்_ஈடு["தலைப்புகள்"], "சம்பளம்")),
+              800000, "the salary survives intact");
+
+// =========================================================================
+// மொத்த வருமானம் — gross total income
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_வருமானம்(தலைப்புகள்), 1200000,
+              "the heads add to 12,00,000");
+
+இழப்புத்_தலைப்பு = [தலைப்பு_ஆக்கு("சம்பளம்", 300000),
+                     தலைப்பு_ஆக்கு("வீட்டுச்_சொத்து", 0 - 200000)];
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_வருமானம்(இழப்புத்_தலைப்பு), 100000,
+              "a loss still in the list is subtracted, not quietly dropped");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(இழப்புத்_தலைப்புகள்(இழப்புத்_தலைப்பு)), 1,
+              "and it is reported as one head still showing a loss");
+
+முழு_இழப்பு = [தலைப்பு_ஆக்கு("தொழில்", 0 - 500000)];
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_வருமானம்(முழு_இழப்பு), 0,
+              "gross total income cannot be negative");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தலைப்பைத்_தேடு(தலைப்புகள், "வீட்டுச்_சொத்து")),
+                  "a head that was never computed is a தவறு, not a zero");
+
+// =========================================================================
+// கழிவுகள் — Chapter VI-A
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம்,
+              தனி_வரம்பு(கழிவு_ஆக்கு("80C", 200000, 150000, மெய்)), 150000,
+              "a section's own ceiling holds its claim down");
+ஓட்டம் = சமம்(ஓட்டம்,
+              தனி_வரம்பு(கழிவு_ஆக்கு("80C", 80000, 150000, மெய்)), 80000,
+              "and a smaller claim is not raised to the ceiling");
+
+கழிவுப்_பட்டியல் = [கழிவு_ஆக்கு("80C", 200000, 150000, மெய்),
+                     கழிவு_ஆக்கு("80CCC", 100000, 0, மெய்),
+                     கழிவு_ஆக்கு("80CCD1B", 60000, 50000, பொய்),
+                     கழிவு_ஆக்கு("80D", 30000, 25000, பொய்)];
+
+கூட்டியவை = கூட்டுக்_கழிவுகள்(கழிவுப்_பட்டியல், 150000);
+ஓட்டம் = சமம்(ஓட்டம், கூட்டியவை["கூட்டுக்குள்"], 150000,
+              "two sections inside the aggregate are capped together, not separately");
+ஓட்டம் = சமம்(ஓட்டம், கூட்டியவை["கூட்டுக்கு_வெளியே"], 75000,
+              "sections outside it pass through at their own ceilings");
+ஓட்டம் = சமம்(ஓட்டம், கூட்டியவை["மொத்தம்"], 225000, "for 2,25,000 in all");
+
+// The overstatement this prevents: claiming every section to its own limit.
+தனித்தனி_கூட்டல் = தனி_வரம்பு(கழிவுப்_பட்டியல்[0])
+                    + தனி_வரம்பு(கழிவுப்_பட்டியல்[1])
+                    + தனி_வரம்பு(கழிவுப்_பட்டியல்[2])
+                    + தனி_வரம்பு(கழிவுப்_பட்டியல்[3]);
+ஓட்டம் = சமம்(ஓட்டம், தனித்தனி_கூட்டல் - கூட்டியவை["மொத்தம்"], 100000,
+              "claiming each section to its own limit overstates by 1,00,000");
+
+ஓட்டம் = சமம்(ஓட்டம்,
+              மீதமுள்ள_இடம்([கழிவு_ஆக்கு("80C", 80000, 150000, மெய்)], 150000),
+              70000, "70,000 of the aggregate ceiling is still unused");
+ஓட்டம் = சமம்(ஓட்டம், மீதமுள்ள_இடம்(கழிவுப்_பட்டியல், 150000), 0,
+              "and none is, once it is full");
+
+// --- donations: two caps and a percentage, in one order only --------------
+
+ஓட்டம் = சமம்(ஓட்டம், நன்கொடைக்_கழிவு(100000, 50, 500000, 10), 25000,
+              "donation: qualifying is capped at 10% of income first, "
+              & "then halved");
+// Reversing the two steps — halve, then cap — gives twice the answer whenever
+// the income limit bites, which is the only case anyone checks.
+ஓட்டம் = சமம்(ஓட்டம், சிறியது(சதவீதம்(100000, 50), சதவீதம்(500000, 10)), 50000,
+              "halving first and capping second would give 50,000 — twice too much");
+ஓட்டம் = சமம்(ஓட்டம், நன்கொடைக்_கழிவு(100000, 100, 500000, 0), 100000,
+              "a fund with no income limit takes the whole donation");
+
+// --- 80A(2): deductions cannot create a loss ------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், கழிவுக்குரிய_வருமானம்(1000000, 300000), 700000,
+              "income taxed at a special rate is not available for Chapter VI-A");
+ஓட்டம் = சமம்(ஓட்டம், அனுமதிக்கத்தக்க_கழிவு(800000, 700000), 700000,
+              "deductions are held to the income they are deducted from");
+ஓட்டம் = சமம்(ஓட்டம், இழந்த_கழிவு(800000, 700000), 100000,
+              "and the excess is lost — not carried forward, simply gone");
+ஓட்டம் = சமம்(ஓட்டம், இழந்த_கழிவு(600000, 700000), 0,
+              "nothing is lost when there is room");
+
+ஓட்டம் = சமம்(ஓட்டம், வருமானத்தை_வட்டமிடு(657896), 657890,
+              "section 288A rounds total income down to the nearest ten");
+ஓட்டம் = சமம்(ஓட்டம், வருமானத்தை_வட்டமிடு(657899), 657890,
+              "down, not to the nearest — 657,899 becomes 657,890");
+ஓட்டம் = சமம்(ஓட்டம், வருமானத்தை_வட்டமிடு(657890), 657890,
+              "and an exact multiple is unchanged");
+
+முழுக்_கழிவு = மொத்த_வரிக்குரிய_வருமானம்(1000000, 0,
+                  [கழிவு_ஆக்கு("80C", 200000, 150000, மெய்)], 150000, 0);
+ஓட்டம் = சமம்(ஓட்டம், முழுக்_கழிவு["அனுமதித்த_கழிவு"], 150000,
+              "the whole step: 10,00,000 less a capped 1,50,000");
+ஓட்டம் = சமம்(ஓட்டம், முழுக்_கழிவு["வரிக்குரிய_வருமானம்"], 850000,
+              "gives a total income of 8,50,000");
+
+// =========================================================================
+// வரிக் கணக்கு — the ladder
+// =========================================================================
+
+படிகள் = [{"முதல்": 0, "விகிதம்": 0},
+           {"முதல்": 250000, "விகிதம்": 5},
+           {"முதல்": 500000, "விகிதம்": 20},
+           {"முதல்": 1000000, "விகிதம்": 30}];
+
+மேல்வரிப்_படிகள் = [{"முதல்": 0, "விகிதம்": 0},
+                     {"முதல்": 5000000, "விகிதம்": 10},
+                     {"முதல்": 10000000, "விகிதம்": 15}];
+
+ஓட்டம் = சமம்(ஓட்டம், அடிப்படை_வரி(850000, படிகள்), 82500,
+              "banded tax on 8,50,000: 12,500 + 20% of 3,50,000");
+ஓட்டம் = சமம்(ஓட்டம், அடிப்படை_வரி(250000, படிகள்), 0,
+              "and nothing at all inside the first band");
+
+// --- surcharge: strictly above the threshold ------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், மேல்வரி_விகிதம்(5000000, மேல்வரிப்_படிகள்), 0,
+              "income of exactly 50,00,000 bears no surcharge");
+ஓட்டம் = சமம்(ஓட்டம், மேல்வரி_விகிதம்(5000001, மேல்வரிப்_படிகள்), 10,
+              "one rupee more and the 10% band applies");
+ஓட்டம் = சமம்(ஓட்டம், மேல்வரி_விகிதம்(10000000, மேல்வரிப்_படிகள்), 10,
+              "at exactly a crore it is still 10%, not 15%");
+ஓட்டம் = சமம்(ஓட்டம், மேல்வரி_தொகை(1000000, 10), 100000,
+              "surcharge is a percentage of the tax, never of the income");
+
+// --- marginal relief, the case it exists for ------------------------------
+
+வரி_50 = வரியைக்_கணக்கிடு(5000000, படிகள், மேல்வரிப்_படிகள், 700000, 25000, 4);
+வரி_5010 = வரியைக்_கணக்கிடு(5010000, படிகள், மேல்வரிப்_படிகள், 700000, 25000, 4);
+
+ஓட்டம் = சமம்(ஓட்டம், வரி_50["படி_வரி"], 1312500,
+              "tax on 50,00,000 is 13,12,500");
+ஓட்டம் = சமம்(ஓட்டம், வரி_50["மேல்வரி_நிகரம்"], 0, "with no surcharge");
+ஓட்டம் = சமம்(ஓட்டம், வரி_50["வட்டமிட்ட_வரி"], 1365000,
+              "and 13,65,000 after 4% cess");
+
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["படி_வரி"], 1315500,
+              "tax on 50,10,000 is 13,15,500");
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["மேல்வரி"], 131550,
+              "on which a 10% surcharge would be 1,31,550");
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["விளிம்பு_நிவாரணம்"], 124550,
+              "so marginal relief of 1,24,550 is due");
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["மேல்வரி_நிகரம்"], 7000,
+              "leaving a surcharge of 7,000");
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["கழிவுக்கு_முன்"], 1322500,
+              "and tax plus surcharge of 13,22,500");
+
+// The property the relief exists to guarantee: tax and surcharge rise by no
+// more than the extra income. 10,000 more income, 10,000 more tax, exactly.
+ஓட்டம் = சமம்(ஓட்டம்,
+              வரி_5010["கழிவுக்கு_முன்"] - வரி_50["கழிவுக்கு_முன்"], 10000,
+              "10,000 of extra income costs exactly 10,000 of extra "
+              & "tax and surcharge");
+ஓட்டம் = சமம்(ஓட்டம்,
+              5010000 - வரி_5010["கழிவுக்கு_முன்"],
+              5000000 - வரி_50["கழிவுக்கு_முன்"],
+              "so income net of tax and surcharge does not fall across "
+              & "the threshold");
+
+// Without the relief it would, and by a great deal.
+நிவாரணம்_இன்றி = வரி_5010["படி_வரி"] + வரி_5010["மேல்வரி"];
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  (5010000 - நிவாரணம்_இன்றி) < (5000000 - வரி_50["கழிவுக்கு_முன்"]),
+                  "without relief, earning 10,000 more would leave the "
+                  & "assessee 1,24,550 poorer");
+
+// Relief applies at every threshold, not only the first.
+வரி_கோடி = வரியைக்_கணக்கிடு(10100000, படிகள், மேல்வரிப்_படிகள்,
+                              700000, 25000, 4);
+ஓட்டம் = சமம்(ஓட்டம், வரி_கோடி["மேல்வரி_வீதம்"], 15,
+              "above a crore the 15% band applies");
+ஓட்டம் = சமம்(ஓட்டம், வரி_கோடி["விளிம்பு_நிவாரணம்"], 75125,
+              "and relief of 75,125 is due at the second threshold too");
+ஓட்டம் = சமம்(ஓட்டம், வரி_கோடி["கழிவுக்கு_முன்"], 3193750,
+              "capped at the tax on a crore — which itself bears 10% "
+              & "surcharge — plus the excess");
+
+// --- the rebate, and its cliff --------------------------------------------
+
+வரி_7 = வரியைக்_கணக்கிடு(700000, படிகள், மேல்வரிப்_படிகள், 700000, 25000, 4);
+ஓட்டம் = சமம்(ஓட்டம், வரி_7["படி_வரி"], 52500, "tax on 7,00,000 is 52,500");
+ஓட்டம் = சமம்(ஓட்டம், வரி_7["தள்ளுபடி"], 25000,
+              "the rebate is capped at 25,000, not at the tax");
+ஓட்டம் = சமம்(ஓட்டம், வரி_7["வட்டமிட்ட_வரி"], 28600,
+              "leaving 27,500 plus cess");
+
+வரி_7க்கு_மேல் = வரியைக்_கணக்கிடு(700010, படிகள், மேல்வரிப்_படிகள்,
+                                    700000, 25000, 4);
+ஓட்டம் = சமம்(ஓட்டம், வரி_7க்கு_மேல்["தள்ளுபடி"], 0,
+              "ten rupees above the rebate threshold and the whole rebate goes");
+ஓட்டம் = சமம்(ஓட்டம், வரி_7க்கு_மேல்["வட்டமிட்ட_வரி"], 54600,
+              "which costs 26,000 of tax for 10 rupees of income — "
+              & "the module does not invent relief the statute did not give");
+
+ஓட்டம் = சமம்(ஓட்டம், தள்ளுபடியைக்_கணக்கிடு(12000, 400000, 700000, 25000), 12000,
+              "a rebate never exceeds the tax it is set against");
+
+ஓட்டம் = சமம்(ஓட்டம், வரியை_வட்டமிடு(54602.08), 54600,
+              "section 288B rounds the tax to the nearest ten");
+
+// --- the order of operations ----------------------------------------------
+//
+// Cess is charged on the surcharge as well as on the tax. Computing it before
+// the surcharge understates the liability by cess on the surcharge.
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["கழிவு_வரி"], 52900,
+              "cess is 4% of tax *and* surcharge — 52,900, not 52,620");
+ஓட்டம் = சமம்(ஓட்டம், வரி_5010["வட்டமிட்ட_வரி"], 1375400,
+              "for 13,75,400 in all");
+
+// --- regimes ---------------------------------------------------------------
+
+புதிய_படிகள் = [{"முதல்": 0, "விகிதம்": 0},
+                 {"முதல்": 300000, "விகிதம்": 5},
+                 {"முதல்": 700000, "விகிதம்": 10},
+                 {"முதல்": 1000000, "விகிதம்": 15}];
+
+பழையது = முறையை_ஆக்கு("பழையது", படிகள், மேல்வரிப்_படிகள், 700000, 25000, 4,
+                        850000);
+புதியது = முறையை_ஆக்கு("புதியது", புதிய_படிகள், மேல்வரிப்_படிகள், 700000,
+                         25000, 4, 1000000);
+
+ஒப்பீடு = முறைகளை_ஒப்பிடு([பழையது, புதியது]);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(ஒப்பீடு), "two regimes compare");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(ஒப்பீடு)["சிறந்த_முறை"], "புதியது",
+              "the regime with fewer deductions and a higher total income "
+              & "still wins");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(ஒப்பீடு)["சிறந்த_வரி"], 52000,
+              "at 52,000 against 85,800");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(ஒப்பீடு)["மிச்சம்"], 33800,
+              "a saving of 33,800 — which is why the income has to be "
+              & "computed twice, not the rates compared once");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முறைகளை_ஒப்பிடு([])),
+                  "and an empty comparison is refused");
+
+// =========================================================================
+// மூலவரி — tax deducted at source
+// =========================================================================
+
+பிரிவு = பிரிவு_ஆக்கு("194J", "தொழில்முறைக் கட்டணம்", 10, 30000, 100000);
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பிடிக்க_வேண்டுமா(பிரிவு, 20000, 0),
+                  "a 20,000 payment breaches neither threshold");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பிடிக்க_வேண்டுமா(பிரிவு, 50000, 0),
+                  "a 50,000 payment breaches the single-payment limit on its own");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பிடிக்க_வேண்டுமா(பிரிவு, 20000, 100000),
+                  "and a 20,000 payment does once the year's aggregate is past");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பிடிக்க_வேண்டுமா(பிரிவு, 20000, 80000),
+                  "at exactly the annual limit it has not yet been exceeded");
+
+// The year that crosses the aggregate on the sixth payment.
+ஆண்டு = ஆண்டுப்_பிடித்தம்(பிரிவு, [20000, 20000, 20000, 20000, 20000,
+                                     20000, 20000, 20000], 10);
+வரிசைகள் = ஆண்டு["வரிசைகள்"];
+
+ஓட்டம் = சமம்(ஓட்டம், வரிசைகள்[0]["பிடித்தம்"], 0,
+              "nothing is deducted on the first payment");
+ஓட்டம் = சமம்(ஓட்டம், வரிசைகள்[4]["பிடித்தம்"], 0,
+              "nor on the fifth, which lands exactly on the limit");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், வரிசைகள்[5]["முழு_ஆண்டா"],
+                  "the sixth payment crosses it, and the whole year is in charge");
+ஓட்டம் = சமம்(ஓட்டம், வரிசைகள்[5]["அடிப்படை"], 120000,
+              "so the base is the full 1,20,000, not the 20,000 just paid");
+ஓட்டம் = சமம்(ஓட்டம், வரிசைகள்[5]["பிடித்தம்"], 12000,
+              "and a 20,000 invoice carries a 12,000 deduction");
+ஓட்டம் = சமம்(ஓட்டம், வரிசைகள்[6]["பிடித்தம்"], 2000,
+              "thereafter it settles to 10% of each payment");
+ஓட்டம் = சமம்(ஓட்டம், ஆண்டு["மொத்தப்_பிடித்தம்"], 16000,
+              "the year deducts 16,000 in total");
+ஓட்டம் = சமம்(ஓட்டம், ஆண்டு["மொத்தப்_பிடித்தம்"],
+              சதவீதம்(ஆண்டு["மொத்தச்_செலுத்தல்"], 10),
+              "which is exactly 10% of everything paid — the catch-up "
+              & "changes the timing, never the total");
+
+// Deducting only on the excess over the threshold is the classic error, and
+// it is always an under-deduction.
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சதவீதம்(60000, 10) < ஆண்டு["மொத்தப்_பிடித்தம்"],
+                  "deducting only on the 60,000 above the threshold would "
+                  & "under-deduct by 10,000");
+
+// --- the rate that applies -------------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(10, மெய், 20, பொய், 0), 10,
+              "with a PAN and no certificate, the section's own rate");
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(10, பொய், 20, பொய், 0), 20,
+              "without a PAN, the statutory floor");
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(30, பொய், 20, பொய், 0), 30,
+              "the *higher* of the two — a 30% section is not reduced to 20%");
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(10, மெய், 20, மெய், 2), 2,
+              "a certificate under 197 replaces the rate");
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(10, பொய், 20, மெய், 2), 20,
+              "but does not survive a missing PAN");
+ஓட்டம் = சமம்(ஓட்டம், பயன்படும்_வீதம்(10, மெய், 20, மெய், 0), 0,
+              "and a nil certificate really is nil");
+
+ஓட்டம் = சமம்(ஓட்டம், வரி_நீக்கிய_அடிப்படை(118000, 18000, மெய்), 100000,
+              "GST shown separately is excluded from the base");
+ஓட்டம் = சமம்(ஓட்டம், வரி_நீக்கிய_அடிப்படை(118000, 18000, பொய்), 118000,
+              "and included when it is not");
+
+// --- interest for default --------------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், முழு_மாதங்கள்(1), 1, "one day is one month");
+ஓட்டம் = சமம்(ஓட்டம், முழு_மாதங்கள்(30), 1, "thirty days is one month");
+ஓட்டம் = சமம்(ஓட்டம், முழு_மாதங்கள்(31), 2,
+              "and thirty-one days is two — part of a month is a month");
+ஓட்டம் = சமம்(ஓட்டம், முழு_மாதங்கள்(0), 0, "no delay is no months");
+
+ஓட்டம் = சமம்(ஓட்டம், பிடிக்காத_வட்டி(16000, 1, 3), 480,
+              "failing to deduct: 1% a month for three months");
+ஓட்டம் = சமம்(ஓட்டம், செலுத்தாத_வட்டி(16000, 1.5, 3), 720,
+              "failing to deposit what was deducted costs half as much again");
+
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_பிடித்தம்(120000, 12, 0), 10000,
+              "salary TDS spreads the year's estimated tax over the months");
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_பிடித்தம்(120000, 4, 90000), 7500,
+              "a revised estimate changes every remaining month");
+ஓட்டம் = சமம்(ஓட்டம், சம்பள_பிடித்தம்(120000, 12, 130000), 0,
+              "and an over-deduction is not refunded by the employer");
+
+// =========================================================================
+// முன்வரி — advance tax
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பிட்ட_வரி(200000, 50000, 0), 150000,
+              "assessed tax is the year's tax less what was deducted at source");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், கடமை_உள்ளதா(150000, 10000),
+                  "1,50,000 of assessed tax attracts advance tax");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை கடமை_உள்ளதா(8000, 10000),
+                  "8,000 does not, so no interest can arise either");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மூத்தவர்_விலக்கு(65, 60, பொய், மெய்),
+                  "a resident senior citizen with no business income is exempt");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மூத்தவர்_விலக்கு(65, 60, மெய், மெய்),
+                  "consultancy receipts are business income, and the exemption goes");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மூத்தவர்_விலக்கு(65, 60, பொய், பொய்),
+                  "a non-resident senior citizen is not exempt");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மூத்தவர்_விலக்கு(55, 60, பொய், மெய்),
+                  "nor is anyone below the age");
+
+அட்டவணை = முன்வரித்_தவணைகள்();
+திட்டம் = தவணை_அட்டவணையை_ஆக்கு(100000, அட்டவணை);
+ஓட்டம் = சமம்(ஓட்டம், திட்டம்[1]["திரட்டியது"], 45000,
+              "45% is cumulatively due by the second instalment");
+ஓட்டம் = சமம்(ஓட்டம், திட்டம்[1]["இப்போது_செலுத்த"], 30000,
+              "which means paying 30% on the day — the two are different numbers");
+ஓட்டம் = சமம்(ஓட்டம், திட்டம்[3]["திரட்டியது"], 100000,
+              "and the whole liability by the fourth");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(தவணை_வரை_தேவை(100000, அட்டவணை, 3)),
+                  "the third instalment is in the schedule");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தவணை_வரை_தேவை(100000, அட்டவணை, 3)), 75000,
+              "and 75,000 was due by it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தவணை_வரை_தேவை(100000, அட்டவணை, 9)),
+                  "a ninth instalment is refused rather than answered with zero");
+
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(ஒற்றைத்_தவணை_அட்டவணை()), 1,
+              "a presumptive assessee has one instalment, not four");
+
+// --- Rule 119A -------------------------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், வட்டிக்குரிய_அடிப்படை(5099), 5000,
+              "Rule 119A rounds the base down to a multiple of a hundred");
+ஓட்டம் = சமம்(ஓட்டம், வட்டிக்குரிய_அடிப்படை(5100), 5100, "exactly, when it is one");
+ஓட்டம் = சமம்(ஓட்டம், வட்டிக்குரிய_அடிப்படை(99), 0,
+              "and a base below a hundred rounds away to nothing");
+
+// --- 234C ------------------------------------------------------------------
+
+தவணை_சரி = தவணை_வட்டி(100000, [12000, 40000, 75000, 100000], அட்டவணை, 1);
+ஓட்டம் = சமம்(ஓட்டம், தவணை_சரி["மொத்த_வட்டி"], 0,
+              "paying 12% and 36% by the first two dates attracts no interest, "
+              & "though 15% and 45% were due");
+
+தவணை_தவறு = தவணை_வட்டி(100000, [10000, 30000, 60000, 95000], அட்டவணை, 1);
+ஓட்டம் = சமம்(ஓட்டம், தவணை_தவறு["வரிசைகள்"][0]["வட்டி"], 150,
+              "below the band, interest runs on the shortfall against 15%");
+ஓட்டம் = சமம்(ஓட்டம், தவணை_தவறு["வரிசைகள்"][1]["வட்டி"], 450,
+              "and against 45% at the second date");
+ஓட்டம் = சமம்(ஓட்டம், தவணை_தவறு["வரிசைகள்"][3]["வட்டி"], 50,
+              "the last instalment carries one month, not three");
+ஓட்டம் = சமம்(ஓட்டம், தவணை_தவறு["மொத்த_வட்டி"], 1100, "for 1,100 in all");
+
+// The band is a gate, not a reduction: one rupee below it, the shortfall is
+// measured against the full requirement.
+விளிம்பில் = தவணை_வட்டி(100000, [11999, 45000, 75000, 100000], அட்டவணை, 1);
+ஓட்டம் = சமம்(ஓட்டம், விளிம்பில்["மொத்த_வட்டி"], 90,
+              "one rupee short of the 12% band costs 90 — interest on the "
+              & "shortfall against 15%, not against 12%");
+
+// --- 234B ------------------------------------------------------------------
+
+குறைவு = குறைபாட்டு_வட்டி(100000, 85000, 90, 1, 5);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், குறைவு["பொருந்துமா"],
+                  "paying 85% of the assessed tax fails the 90% test");
+ஓட்டம் = சமம்(ஓட்டம், குறைவு["குறை"], 15000,
+              "and interest runs on the whole 15,000 shortfall");
+ஓட்டம் = சமம்(ஓட்டம், குறைவு["வட்டி"], 750, "at 1% for five months");
+
+போதுமானது = குறைபாட்டு_வட்டி(100000, 90000, 90, 1, 5);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை போதுமானது["பொருந்துமா"],
+                  "exactly 90% passes, and nothing is charged");
+ஓட்டம் = சமம்(ஓட்டம், போதுமானது["வட்டி"], 0,
+              "so 5,000 more advance tax saves 750 of interest — "
+              & "there is no proportioning anywhere in this section");
+
+// --- 234A ------------------------------------------------------------------
+
+தாமதம்_சரி = தாமதத்_தாக்கல்_வட்டி(150000, 150000, 1, 4);
+ஓட்டம் = சமம்(ஓட்டம், தாமதம்_சரி["வட்டி"], 0,
+              "a late return with the tax already paid costs nothing under 234A");
+தாமதம்_தவறு = தாமதத்_தாக்கல்_வட்டி(150000, 100000, 1, 4);
+ஓட்டம் = சமம்(ஓட்டம், தாமதம்_தவறு["வட்டி"], 2000,
+              "a late return with 50,000 outstanding costs four months' interest");
+
+// --- the bottom line -------------------------------------------------------
+
+செலுத்தல் = செலுத்த_வேண்டியது(200000, 50000, 100000, 0, 1100);
+ஓட்டம் = சமம்(ஓட்டம், செலுத்தல்["நிகரம்"], 51100,
+              "tax plus interest less everything already paid");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை செலுத்தல்["திரும்பப்_பெறுவதா"],
+                  "which is payable, not refundable");
+
+திரும்பப்பெறல் = செலுத்த_வேண்டியது(200000, 150000, 100000, 0, 0);
+ஓட்டம் = சமம்(ஓட்டம், திரும்பப்பெறல்["நிகரம்"], 0 - 50000,
+              "an over-payment is reported as a negative amount");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், திரும்பப்பெறல்["திரும்பப்_பெறுவதா"],
+                  "and flagged as a refund rather than shown as nil");
+
+// =========================================================================
+// ஒத்திவரி — deferred tax, Ind AS 12
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், வரி_அடிப்படை_சொத்து(100000, 60000, மெய்), 60000,
+              "the tax base of an asset is what is still deductible");
+ஓட்டம் = சமம்(ஓட்டம், வரி_அடிப்படை_சொத்து(100000, 60000, பொய்), 100000,
+              "unless the benefits are not taxable, when it equals the "
+              & "carrying amount and no difference arises");
+ஓட்டம் = சமம்(ஓட்டம், வரி_அடிப்படை_பொறுப்பு(200000, 200000), 0,
+              "a provision disallowed until paid has a tax base of nil");
+
+// --- the sign flip, which is half of all deferred tax errors --------------
+
+ஓட்டம் = சமம்(ஓட்டம், வேறுபாட்டு_வகை(150000, மெய்), "வரிக்குரியது",
+              "an asset carried above its tax base is a taxable difference");
+ஓட்டம் = சமம்(ஓட்டம், வேறுபாட்டு_வகை(150000, பொய்), "கழிக்கத்தக்கது",
+              "the *same* difference on a liability is deductible — "
+              & "the sign means opposite things");
+ஓட்டம் = சமம்(ஓட்டம், வேறுபாட்டு_வகை(0 - 150000, மெய்), "கழிக்கத்தக்கது",
+              "and an asset below its tax base is deductible");
+ஓட்டம் = சமம்(ஓட்டம், வேறுபாட்டு_வகை(0, மெய்), "",
+              "no difference is neither, and says so");
+
+தேய்மானக்_கணக்கு = ஒத்திவரிக்_கணக்கு(700000, 550000, மெய், 25);
+ஓட்டம் = சமம்(ஓட்டம், தேய்மானக்_கணக்கு["வேறுபாடு"], 150000,
+              "book value 7,00,000 against tax written-down value 5,50,000");
+ஓட்டம் = சமம்(ஓட்டம், தேய்மானக்_கணக்கு["ஒத்திவரி_பொறுப்பு"], 37500,
+              "gives a deferred tax liability of 37,500 at 25%");
+ஓட்டம் = சமம்(ஓட்டம், தேய்மானக்_கணக்கு["ஒத்திவரி_சொத்து"], 0,
+              "and no asset");
+
+ஒதுக்கீட்டுக்_கணக்கு = ஒத்திவரிக்_கணக்கு(200000, 0, பொய், 25);
+ஓட்டம் = சமம்(ஓட்டம், ஒதுக்கீட்டுக்_கணக்கு["ஒத்திவரி_சொத்து"], 50000,
+              "a disallowed provision gives a deferred tax asset of 50,000");
+ஓட்டம் = சமம்(ஓட்டம், ஒதுக்கீட்டுக்_கணக்கு["ஒத்திவரி_பொறுப்பு"], 0,
+              "and no liability");
+
+திரட்டல் = ஒத்திவரியைத்_திரட்டு([தேய்மானக்_கணக்கு, ஒதுக்கீட்டுக்_கணக்கு]);
+ஓட்டம் = சமம்(ஓட்டம், திரட்டல்["மொத்தச்_சொத்து"], 50000,
+              "the two are aggregated gross");
+ஓட்டம் = சமம்(ஓட்டம், திரட்டல்["மொத்தப்_பொறுப்பு"], 37500,
+              "not netted, because offsetting has conditions of its own");
+ஓட்டம் = சமம்(ஓட்டம், திரட்டல்["நிகரம்"], 12500, "though the net is available");
+
+// --- recognising an asset --------------------------------------------------
+
+பகுதி = அங்கீகரிக்கத்தக்க_சொத்து(50000, 100000, 25);
+ஓட்டம் = சமம்(ஓட்டம், பகுதி["அங்கீகரித்தது"], 25000,
+              "a forecast profit of 1,00,000 supports only 25,000 of asset");
+ஓட்டம் = சமம்(ஓட்டம், பகுதி["அங்கீகரிக்காதது"], 25000,
+              "and the rest is disclosed, not discarded");
+ஓட்டம் = சமம்(ஓட்டம், பகுதி["அங்கீகரித்தது"] + பகுதி["அங்கீகரிக்காதது"], 50000,
+              "the two account for the whole computed asset");
+
+முழுமை = அங்கீகரிக்கத்தக்க_சொத்து(50000, 400000, 25);
+ஓட்டம் = சமம்(ஓட்டம், முழுமை["அங்கீகரித்தது"], 50000,
+              "ample forecast profit supports all of it");
+ஓட்டம் = சமம்(ஓட்டம், முழுமை["அங்கீகரிக்காதது"], 0, "with nothing unrecognised");
+
+ஒன்றுமில்லை = அங்கீகரிக்கத்தக்க_சொத்து(50000, 0, 25);
+ஓட்டம் = சமம்(ஓட்டம், ஒன்றுமில்லை["அங்கீகரித்தது"], 0,
+              "no forecast profit supports no asset at all");
+
+இழப்புச்_சொத்து = இழப்பின்_ஒத்திவரி(1000000, 400000, 25);
+ஓட்டம் = சமம்(ஓட்டம், இழப்புச்_சொத்து["அங்கீகரித்தது"], 100000,
+              "a carried-forward loss is an asset only so far as profit is "
+              & "expected to arrive");
+ஓட்டம் = சமம்(ஓட்டம், இழப்புச்_சொத்து["அங்கீகரிக்காதது"], 150000,
+              "the remaining 1,50,000 waits for better prospects");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஈடுசெய்யலாமா(மெய், மெய்),
+                  "offsetting needs a legal right and one taxation authority");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை ஈடுசெய்யலாமா(மெய், பொய்),
+                  "two authorities, no offset");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை ஈடுசெய்யலாமா(பொய், மெய்),
+                  "no enforceable right, no offset");
+
+// --- the charge for the year ----------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், ஒத்திவரி_மாற்றம்(60000, 80000), 20000,
+              "the profit and loss takes the movement, not the balance");
+ஓட்டம் = சமம்(ஓட்டம், ஒத்திவரி_மாற்றம்(80000, 60000), 0 - 20000,
+              "a falling balance is a credit");
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_வரிச்_செலவு(500000, 20000), 520000,
+              "tax expense is current plus deferred");
+
+// --- the effective rate reconciliation ------------------------------------
+
+ஒப்புரவு = வீத_ஒப்புரவு(2000000, 25, [200000, 0 - 100000], [15000]);
+ஓட்டம் = சமம்(ஓட்டம், ஒப்புரவு["எதிர்பார்த்த_வரி"], 500000,
+              "accounting profit at the statutory rate");
+ஓட்டம் = சமம்(ஓட்டம், ஒப்புரவு["நிரந்தரத்_தாக்கம்"], 25000,
+              "a disallowance adds and exempt income subtracts, at the rate");
+ஓட்டம் = சமம்(ஓட்டம், ஒப்புரவு["வரிச்_செலவு"], 540000,
+              "reconciling to the reported tax expense");
+ஓட்டம் = சமம்(ஓட்டம், ஒப்புரவு["பயனுள்ள_வீதம்"], 27,
+              "an effective rate of 27% against a statutory 25%");
+ஓட்டம் = வேறுபடு(ஓட்டம், ஒப்புரவு["பயனுள்ள_வீதம்"], ஒப்புரவு["சட்ட_வீதம்"],
+                 "permanent differences are exactly what makes the two differ");
+
+// A permanent difference produces no deferred tax at all — there is no
+// reversal to defer. It belongs here and nowhere else.
+ஓட்டம் = சமம்(ஓட்டம், நிரந்தர_தாக்கம்(200000, 25), 50000,
+              "a permanent difference has a tax effect in the reconciliation");
+ஓட்டம் = சமம்(ஓட்டம், ஒத்திவரிக்_கணக்கு(200000, 200000, மெய், 25)["ஒத்திவரி_பொறுப்பு"],
+              0, "and none in the deferred tax balance");
+
+சோதனை_முடிவு(ஓட்டம்);

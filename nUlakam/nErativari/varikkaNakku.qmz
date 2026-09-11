@@ -1,0 +1,322 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/nErativari/varikkaNakku.qmz — வரிக்கணக்கு, total income to tax payable
+//
+// Total income comes out of kazivukaL.qmz. This turns it into a liability, and
+// the only difficult thing about that is the **order**:
+//
+//   1. slab tax on total income          படிநிலை_வரி, from kaNakkiyal/Uqiyam
+//   2. less rebate                        தள்ளுபடியைக்_கணக்கிடு
+//   3. plus surcharge, on the tax          மேல்வரி_தொகை
+//   4. less marginal relief                விளிம்பு_நிவாரணம்
+//   5. plus cess, on all of the above      கழிவு_வரி
+//   6. rounded to the rupee                வரியை_வட்டமிடு
+//
+// Every one of those steps is a subtraction or a percentage. Put them in a
+// different order and the answer is different, and each wrong order is
+// somebody's published tax calculator:
+//
+//   Cess before surcharge understates the liability, because cess is charged
+//   on the surcharge too.
+//   Rebate after cess overstates it, because the rebate is a rebate of
+//   income-tax and cess is computed on what is left after it.
+//   Surcharge on income rather than on tax overstates it enormously —
+//   surcharge is a tax on a tax.
+//   Marginal relief omitted altogether makes the liability jump by more than
+//   a lakh for ten thousand rupees of extra income, which is the outcome the
+//   relief exists to prevent.
+//
+// No rate, threshold or slab is written here. They arrive as tables in the
+// shape வரி_வகிதம்/படிகளை_ஏற்று produces, effective-dated, so that last year's
+// return is computed on last year's law.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+இறக்கு "../kaNakkiyal/Uqiyam.qmz";
+
+// =========================================================================
+// அடிப்படை வரி — tax on the slabs
+// =========================================================================
+//
+// அடிப்படை_வரி(வரிக்குரிய_வருமானம், படிகள்)
+//
+// A thin name over படிநிலை_வரி in kaNakkiyal/Uqiyam.qmz, which already
+// computes a banded tax correctly — each band's rate on the part of the income
+// inside that band, never the top rate on the whole. Income tax and
+// professional tax are the same arithmetic on different tables, and there is
+// no reason for this directory to hold a second copy of it.
+செயல் அடிப்படை_வரி(வரிக்குரிய_வருமானம், படிகள்) {
+    திரும்பு படிநிலை_வரி(வரிக்குரிய_வருமானம், படிகள்);
+}
+
+// =========================================================================
+// தள்ளுபடி — the rebate
+// =========================================================================
+//
+// தள்ளுபடியைக்_கணக்கிடு(அடிப்படை_வரித்_தொகை, வரிக்குரிய_வருமானம், வருமான_எல்லை,
+//            தள்ளுபடி_உச்சம்)
+//
+// A rebate available only below an income threshold, and then only up to the
+// tax itself. Two cliffs in one provision:
+//
+// The income threshold is absolute. A rupee of total income above it and the
+// whole rebate goes, which is why the tax on income just above the line can
+// exceed the tax on income just below it by the entire rebate. Unlike
+// surcharge, the statute has at times provided no marginal relief here at all
+// — so this function does not invent any. Where relief is provided it is a
+// separate computation and belongs to the caller with the figures in force.
+//
+// The rebate cannot exceed the tax. It reduces a liability to nil and never
+// past it; there is no refund of a rebate.
+செயல் தள்ளுபடியைக்_கணக்கிடு(அடிப்படை_வரித்_தொகை, வரிக்குரிய_வருமானம், வருமான_எல்லை,
+                 தள்ளுபடி_உச்சம்) {
+    (வருமான_எல்லை > 0 மற்றும் வரிக்குரிய_வருமானம் > வருமான_எல்லை) எனில் {
+        திரும்பு 0;
+    }
+    (அடிப்படை_வரித்_தொகை <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(சிறியது(அடிப்படை_வரித்_தொகை, தள்ளுபடி_உச்சம்), 2);
+}
+
+// =========================================================================
+// மேல்வரி — surcharge
+// =========================================================================
+//
+// மேல்வரி_படி(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்)
+//
+// The surcharge band that applies, as a whole record — both its rate and the
+// threshold it starts at, because marginal relief needs the threshold and
+// recovering it afterwards from a rate is guesswork.
+//
+// A band applies when income **exceeds** its threshold, strictly. The statute
+// says "exceeding fifty lakh rupees", and income of exactly fifty lakh bears
+// no surcharge at all. Using >= here would put a surcharge of a lakh and a
+// quarter on the roundest possible number, which is the figure most likely to
+// be tested by hand and least likely to be forgiven.
+//
+// மேல்வரிப்_படிகள் is ordered by threshold: [{"முதல்": 0, "விகிதம்": 0},
+// {"முதல்": 5000000, "விகிதம்": 10}, ...]
+செயல் மேல்வரி_படி(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்) {
+    பொருந்தியது = {"முதல்": 0, "விகிதம்": 0};
+    ஒவ்வொரு ஒரு_படி இல் மேல்வரிப்_படிகள் {
+        (வரிக்குரிய_வருமானம் > ஒரு_படி["முதல்"]
+         மற்றும் ஒரு_படி["முதல்"] >= பொருந்தியது["முதல்"]) எனில் {
+            பொருந்தியது = ஒரு_படி;
+        }
+    }
+    திரும்பு பொருந்தியது;
+}
+
+// மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்)
+செயல் மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்) {
+    திரும்பு மேல்வரி_படி(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்)["விகிதம்"];
+}
+
+// மேல்வரி_தொகை(வரிக்குரிய_வரி, மேல்வரி_வீதம்)
+//
+// Surcharge is a percentage **of the tax**, not of the income. It is the one
+// thing about surcharge that everybody knows and calculators still get wrong,
+// because a rate quoted against an income threshold reads as a rate on income.
+செயல் மேல்வரி_தொகை(வரிக்குரிய_வரி, மேல்வரி_வீதம்) {
+    (மேல்வரி_வீதம் <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(சதவீதம்(வரிக்குரிய_வரி, மேல்வரி_வீதம்), 2);
+}
+
+// =========================================================================
+// விளிம்பு நிவாரணம் — marginal relief
+// =========================================================================
+//
+// விளிம்பு_நிவாரணம்(வரிக்குரிய_வருமானம், படிகள், மேல்வரிப்_படிகள்)
+//
+// Surcharge attaches to the whole tax the moment income crosses a threshold,
+// so ten thousand rupees of extra income can cost more than a lakh of extra
+// tax. Marginal relief is the statute's answer: the tax and surcharge together
+// shall not exceed
+//
+//     (tax and surcharge on income at the threshold) + (income − threshold)
+//
+// Nobody pays more than a rupee of extra tax for a rupee of extra income. The
+// relief is the excess over that cap, and it is not a rate or a formula with
+// constants — it is computed by running the whole tax twice, once at the
+// actual income and once at the threshold, which is what this does.
+//
+// Two things about it are worth knowing.
+//
+// The relief is on **tax plus surcharge, before cess**. Cess is then charged
+// on the relieved figure, which is higher than the cess at the threshold — so
+// income net of everything can still fall very slightly across the line. That
+// is the statute's arithmetic and not a bug here; the guarantee it gives is on
+// tax and surcharge, and it gives it exactly.
+//
+// It applies at **every** surcharge threshold, not just the first. Each band
+// gets its own relief computed against its own threshold.
+செயல் விளிம்பு_நிவாரணம்(வரிக்குரிய_வருமானம், படிகள், மேல்வரிப்_படிகள்) {
+    இந்தப்_படி = மேல்வரி_படி(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்);
+    எல்லை = இந்தப்_படி["முதல்"];
+    பயன்_வீதம் = இந்தப்_படி["விகிதம்"];
+
+    // No surcharge, or no threshold to be relieved against, means no relief.
+    (பயன்_வீதம் <= 0 அல்லது எல்லை <= 0) எனில் { திரும்பு 0; }
+
+    இப்போதைய_வரி = அடிப்படை_வரி(வரிக்குரிய_வருமானம், படிகள்);
+    இப்போதைய_மொத்தம் = இப்போதைய_வரி + மேல்வரி_தொகை(இப்போதைய_வரி, பயன்_வீதம்);
+
+    // At the threshold itself the band below applies, whatever it is — which
+    // is why this re-derives the rate rather than assuming nil.
+    எல்லை_வீதம் = மேல்வரி_விகிதம்(எல்லை, மேல்வரிப்_படிகள்);
+    எல்லை_வரி = அடிப்படை_வரி(எல்லை, படிகள்);
+    எல்லை_மொத்தம் = எல்லை_வரி + மேல்வரி_தொகை(எல்லை_வரி, எல்லை_வீதம்);
+
+    உச்ச_வரி = எல்லை_மொத்தம் + (வரிக்குரிய_வருமானம் - எல்லை);
+    (இப்போதைய_மொத்தம் <= உச்ச_வரி) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(இப்போதைய_மொத்தம் - உச்ச_வரி, 2);
+}
+
+// =========================================================================
+// கழிவு வரி — cess
+// =========================================================================
+//
+// கழிவு_வரி(வரி_மற்றும்_மேல்வரி, கழிவு_வீதம்)
+//
+// Health and education cess, charged on income-tax plus surcharge less rebate
+// — the whole of what is owed at that point, surcharge included. It is the
+// last step and it is on tax, never on income.
+செயல் கழிவு_வரி(வரி_மற்றும்_மேல்வரி, கழிவு_வீதம்) {
+    (வரி_மற்றும்_மேல்வரி <= 0 அல்லது கழிவு_வீதம் <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(சதவீதம்(வரி_மற்றும்_மேல்வரி, கழிவு_வீதம்), 2);
+}
+
+// வரியை_வட்டமிடு(வரித்_தொகை)
+//
+// Section 288B: the tax payable is rounded to the nearest ten rupees. Income
+// is rounded down under 288A; tax is rounded to the nearest, and the two rules
+// are genuinely different — which is why they are two functions and not one
+// with a flag.
+செயல் வரியை_வட்டமிடு(வரித்_தொகை) {
+    (வரித்_தொகை <= 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(வரித்_தொகை / 10, 0) * 10;
+}
+
+// =========================================================================
+// முழுக் கணக்கு — the whole ladder
+// =========================================================================
+//
+// வரியைக்_கணக்கிடு(வரிக்குரிய_வருமானம், படிகள், மேல்வரிப்_படிகள்,
+//                    தள்ளுபடி_எல்லை, தள்ளுபடி_உச்சம், கழிவு_வீதம்)
+//
+// Every step in order, and every intermediate figure kept. The intermediates
+// are not decoration: a tax computation that answers only with a total cannot
+// be reconciled to a notice, and reconciling to a notice is what the figure is
+// for. A single number that disagrees with the department by four hundred
+// rupees tells you nothing about which of six steps to look at.
+செயல் வரியைக்_கணக்கிடு(வரிக்குரிய_வருமானம், படிகள், மேல்வரிப்_படிகள்,
+                          தள்ளுபடி_எல்லை, தள்ளுபடி_உச்சம், கழிவு_வீதம்) {
+    படி_வரி = அடிப்படை_வரி(வரிக்குரிய_வருமானம், படிகள்);
+    தள்ளுபடித்_தொகை = தள்ளுபடியைக்_கணக்கிடு(படி_வரி, வரிக்குரிய_வருமானம்,
+                                 தள்ளுபடி_எல்லை, தள்ளுபடி_உச்சம்);
+    தள்ளுபடிக்குப்_பின் = வட்டமிடு(படி_வரி - தள்ளுபடித்_தொகை, 2);
+
+    பயன்_வீதம் = மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்);
+    மேல்வரித்_தொகை = மேல்வரி_தொகை(தள்ளுபடிக்குப்_பின், பயன்_வீதம்);
+    நிவாரணம் = விளிம்பு_நிவாரணம்(வரிக்குரிய_வருமானம், படிகள், மேல்வரிப்_படிகள்);
+
+    மேல்வரி_நிகரம் = வட்டமிடு(மேல்வரித்_தொகை - நிவாரணம், 2);
+    (மேல்வரி_நிகரம் < 0) எனில் { மேல்வரி_நிகரம் = 0; }
+
+    கழிவுக்கு_முன் = வட்டமிடு(தள்ளுபடிக்குப்_பின் + மேல்வரி_நிகரம், 2);
+    கழிவுத்_தொகை = கழிவு_வரி(கழிவுக்கு_முன், கழிவு_வீதம்);
+    மொத்தம் = வட்டமிடு(கழிவுக்கு_முன் + கழிவுத்_தொகை, 2);
+
+    திரும்பு {"வரிக்குரிய_வருமானம்": வரிக்குரிய_வருமானம்,
+              "படி_வரி": படி_வரி,
+              "தள்ளுபடி": தள்ளுபடித்_தொகை,
+              "மேல்வரி_வீதம்": பயன்_வீதம்,
+              "மேல்வரி": மேல்வரித்_தொகை,
+              "விளிம்பு_நிவாரணம்": நிவாரணம்,
+              "மேல்வரி_நிகரம்": மேல்வரி_நிகரம்,
+              "கழிவுக்கு_முன்": கழிவுக்கு_முன்,
+              "கழிவு_வரி": கழிவுத்_தொகை,
+              "மொத்த_வரி": மொத்தம்,
+              "வட்டமிட்ட_வரி": வரியை_வட்டமிடு(மொத்தம்)};
+}
+
+// =========================================================================
+// முறைகளை ஒப்பிடு — which regime
+// =========================================================================
+//
+// முறையை_ஆக்கு(முறைப்_பெயர், படிகள், மேல்வரிப்_படிகள், தள்ளுபடி_எல்லை,
+//                தள்ளுபடி_உச்சம், கழிவு_வீதம், வரிக்குரிய_வருமானம்)
+//
+// A regime is a slab table, a surcharge table, a rebate and a cess — *and its
+// own taxable income*, which is the part that makes the comparison real.
+//
+// The two regimes do not differ only in rates. One allows Chapter VI-A and a
+// house property interest deduction and the other largely does not, so the
+// same person has a different total income under each. Comparing two rate
+// tables against one income answers a question nobody asked; the income has to
+// be computed twice, under each regime's own rules, and that is why it is
+// carried inside the regime here rather than passed alongside.
+செயல் முறையை_ஆக்கு(முறைப்_பெயர், படிகள், மேல்வரிப்_படிகள், தள்ளுபடி_எல்லை,
+                      தள்ளுபடி_உச்சம், கழிவு_வீதம், வரிக்குரிய_வருமானம்) {
+    திரும்பு {"பெயர்": முறைப்_பெயர்,
+              "படிகள்": படிகள்,
+              "மேல்வரிப்_படிகள்": மேல்வரிப்_படிகள்,
+              "தள்ளுபடி_எல்லை": தள்ளுபடி_எல்லை,
+              "தள்ளுபடி_உச்சம்": தள்ளுபடி_உச்சம்,
+              "கழிவு_வீதம்": கழிவு_வீதம்,
+              "வரிக்குரிய_வருமானம்": வரிக்குரிய_வருமானம்};
+}
+
+// முறையின்_வரி(ஒரு_முறை) — the full computation for one regime
+செயல் முறையின்_வரி(ஒரு_முறை) {
+    திரும்பு வரியைக்_கணக்கிடு(ஒரு_முறை["வரிக்குரிய_வருமானம்"],
+                                ஒரு_முறை["படிகள்"],
+                                ஒரு_முறை["மேல்வரிப்_படிகள்"],
+                                ஒரு_முறை["தள்ளுபடி_எல்லை"],
+                                ஒரு_முறை["தள்ளுபடி_உச்சம்"],
+                                ஒரு_முறை["கழிவு_வீதம்"]);
+}
+
+// முறைகளை_ஒப்பிடு(முறைப்_பட்டியல்)
+//
+// The cheaper regime, and by how much. Answers a தவறு for an empty list
+// rather than a nil winner, because "no regime" is a caller's bug and not a
+// tax outcome.
+//
+// Ties go to the first in the list. There is no arithmetic reason to prefer
+// either when the tax is identical, and the choice then belongs to whoever
+// ordered the list — a regime with fewer records to keep is worth something
+// that this function cannot measure.
+செயல் முறைகளை_ஒப்பிடு(முறைப்_பட்டியல்) {
+    (நீளம்(முறைப்_பட்டியல்) == 0) எனில் {
+        திரும்பு தவறு("ஒப்பிட முறைகள் இல்லை  (no regimes to compare)");
+    }
+
+    விளைவுகள் = [];
+    சிறந்த_பெயர் = "";
+    சிறந்த_வரி = 0;
+    அதிக_வரி = 0;
+
+    ஒவ்வொரு ஒரு_முறை இல் முறைப்_பட்டியல் {
+        இந்த_விளைவு = முறையின்_வரி(ஒரு_முறை);
+        இந்த_வரி = இந்த_விளைவு["வட்டமிட்ட_வரி"];
+        விளைவுகள் = இணை(விளைவுகள், {"பெயர்": ஒரு_முறை["பெயர்"],
+                                      "விளைவு": இந்த_விளைவு});
+
+        (சிறந்த_பெயர் == "") எனில் {
+            சிறந்த_பெயர் = ஒரு_முறை["பெயர்"];
+            சிறந்த_வரி = இந்த_வரி;
+            அதிக_வரி = இந்த_வரி;
+        } இன்றேல் {
+            (இந்த_வரி < சிறந்த_வரி) எனில் {
+                சிறந்த_பெயர் = ஒரு_முறை["பெயர்"];
+                சிறந்த_வரி = இந்த_வரி;
+            }
+            (இந்த_வரி > அதிக_வரி) எனில் { அதிக_வரி = இந்த_வரி; }
+        }
+    }
+
+    திரும்பு சரி({"சிறந்த_முறை": சிறந்த_பெயர்,
+                  "சிறந்த_வரி": சிறந்த_வரி,
+                  "மிச்சம்": வட்டமிடு(அதிக_வரி - சிறந்த_வரி, 2),
+                  "விளைவுகள்": விளைவுகள்});
+}
