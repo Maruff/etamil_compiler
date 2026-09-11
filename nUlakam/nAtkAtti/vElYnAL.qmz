@@ -1,0 +1,303 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/nAtkAtti/vElYnAL.qmz — வேலைநாள் (working days)
+//
+// nAL.qmz counts every day. This one counts only the days work happens on,
+// which is the difference between a duration and a date.
+//
+// An activity of ten days starting on a Monday does not finish on the
+// following Wednesday, and a payment due in thirty days does not fall due on
+// a Sunday. Both answers need the same two facts: which weekdays are not
+// worked, and which individual dates are holidays. Together those are a
+// **calendar**, and every function here takes one, because there is no such
+// thing as the calendar — a factory works Saturdays, a bank does not, and a
+// project spanning two states has two holiday lists.
+//
+// Nothing is written in. There is no default weekend and no built-in holiday
+// list, because both vary by country, by state, by industry and by year, and
+// a library that guesses will be wrong somewhere and silently.
+//
+// **A calendar with no working weekday is refused rather than searched.**
+// Every function that walks forward looking for a working day would otherwise
+// run for ever on a calendar where all seven weekdays are off. That is a
+// configuration error, and it fails loudly here instead of hanging.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "nAL.qmz";
+
+// How far forward or back a search will go before giving up. A run of
+// holidays longer than this is not a calendar, it is a mistake in one.
+செயல் தேடல்_எல்லை() { திரும்பு 400; }
+
+// =========================================================================
+// நாட்காட்டி — the calendar
+// =========================================================================
+//
+// நாட்காட்டி_ஆக்கு(வார_ஓய்வு_நாட்கள், விடுமுறை_நாட்கள்)
+//
+// வார_ஓய்வு_நாட்கள் is a list of weekday numbers that are not worked, in
+// nAL.qmz's numbering — 0 is Sunday, 6 is Saturday. A five-day week is [0, 6];
+// a six-day week with Sunday off is [0]; a bank with alternate Saturdays is
+// neither, and belongs in the holiday list.
+//
+// விடுமுறை_நாட்கள் is a list of ISO dates. Holidays that fall on a weekend
+// need not be removed — a day that is off twice is off once.
+செயல் நாட்காட்டி_ஆக்கு(வார_ஓய்வு_நாட்கள், விடுமுறை_நாட்கள்) {
+    திரும்பு {"வார_ஓய்வு": வார_ஓய்வு_நாட்கள்,
+              "விடுமுறைகள்": விடுமுறை_நாட்கள்};
+}
+
+// பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி)
+செயல் பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி) {
+    ஒவ்வொரு ஓர்_உருப்படி இல் ஒரு_பட்டியல் {
+        (ஓர்_உருப்படி == தேடும்_உருப்படி) எனில் { திரும்பு மெய்; }
+    }
+    திரும்பு பொய்;
+}
+
+செயல் வார_ஓய்வா(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    திரும்பு பட்டியலில்_உள்ளதா(ஒரு_நாட்காட்டி["வார_ஓய்வு"], வாரநாள்(ஒரு_நாள்));
+}
+
+செயல் விடுமுறையா(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    திரும்பு பட்டியலில்_உள்ளதா(ஒரு_நாட்காட்டி["விடுமுறைகள்"], ஒரு_நாள்);
+}
+
+// வேலை_நாளா(ஒரு_நாள், ஒரு_நாட்காட்டி) — neither a weekly off nor a holiday
+செயல் வேலை_நாளா(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    (வார_ஓய்வா(ஒரு_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு பொய்; }
+    (விடுமுறையா(ஒரு_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு பொய்; }
+    திரும்பு மெய்;
+}
+
+// வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி) — is any weekday worked at all
+//
+// The guard every search depends on. A calendar whose weekly offs cover all
+// seven days has no working day anywhere, ever, and walking forward to look
+// for one does not terminate.
+செயல் வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி) {
+    வாரநாள்_எண் = 0;
+    (வாரநாள்_எண் < 7) சுற்று {
+        (இல்லை பட்டியலில்_உள்ளதா(ஒரு_நாட்காட்டி["வார_ஓய்வு"], வாரநாள்_எண்)) எனில் {
+            திரும்பு மெய்;
+        }
+        வாரநாள்_எண் = வாரநாள்_எண் + 1;
+    }
+    திரும்பு பொய்;
+}
+
+// =========================================================================
+// அடுத்ததும் முந்தையதும் — finding a working day
+// =========================================================================
+//
+// அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி)
+//
+// The next working day strictly **after** the one given, so calling it on a
+// Monday answers Tuesday rather than Monday. Use நகர்த்தி_வேலை_நாள் for "this
+// day, or the next working one" — the two are different questions and using
+// one for the other shifts every date in a schedule by a day.
+செயல் அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    (இல்லை வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி)) எனில் {
+        திரும்பு தவறு("நாட்காட்டியில் வேலை நாள் எதுவும் இல்லை  "
+                       & "(this calendar has no working weekday at all)");
+    }
+    நகரும்_நாள் = நாள்_கூட்டு(ஒரு_நாள், 1);
+    எண்ணி = 0;
+    (எண்ணி < தேடல்_எல்லை()) சுற்று {
+        (வேலை_நாளா(நகரும்_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு சரி(நகரும்_நாள்); }
+        நகரும்_நாள் = நாள்_கூட்டு(நகரும்_நாள், 1);
+        எண்ணி = எண்ணி + 1;
+    }
+    திரும்பு தவறு("தொடர் விடுமுறைகள் தேடல் எல்லையை மீறின  "
+                   & "(no working day within the search limit of "
+                   & சொல்லாக்கு(தேடல்_எல்லை()) & " days)");
+}
+
+செயல் முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    (இல்லை வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி)) எனில் {
+        திரும்பு தவறு("நாட்காட்டியில் வேலை நாள் எதுவும் இல்லை  "
+                       & "(this calendar has no working weekday at all)");
+    }
+    நகரும்_நாள் = நாள்_கூட்டு(ஒரு_நாள், 0 - 1);
+    எண்ணி = 0;
+    (எண்ணி < தேடல்_எல்லை()) சுற்று {
+        (வேலை_நாளா(நகரும்_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு சரி(நகரும்_நாள்); }
+        நகரும்_நாள் = நாள்_கூட்டு(நகரும்_நாள், 0 - 1);
+        எண்ணி = எண்ணி + 1;
+    }
+    திரும்பு தவறு("தொடர் விடுமுறைகள் தேடல் எல்லையை மீறின  "
+                   & "(no working day within the search limit of "
+                   & சொல்லாக்கு(தேடல்_எல்லை()) & " days)");
+}
+
+// நகர்த்தி_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி)
+//
+// This day if it is worked, otherwise the next one that is. The form a start
+// date wants: an activity told to start on a Sunday starts on the Monday, and
+// one told to start on a Monday starts that Monday.
+செயல் நகர்த்தி_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி) {
+    (வேலை_நாளா(ஒரு_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு சரி(ஒரு_நாள்); }
+    திரும்பு அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+}
+
+// =========================================================================
+// எண்ணுதலும் கூட்டுதலும் — counting and adding
+// =========================================================================
+//
+// வேலை_நாட்களைக்_கூட்டு(ஒரு_நாள், எண்ணிக்கை, ஒரு_நாட்காட்டி)
+//
+// Move forward or back by a number of **working** days. Zero answers the day
+// itself unchanged, worked or not — shifting by nothing should not move a
+// date, and a caller who wants it rolled onto a working day should say so with
+// நகர்த்தி_வேலை_நாள்.
+//
+// A negative count walks backwards, which is how a "must be ready five working
+// days before delivery" date is found.
+செயல் வேலை_நாட்களைக்_கூட்டு(ஒரு_நாள், எண்ணிக்கை, ஒரு_நாட்காட்டி) {
+    (எண்ணிக்கை == 0) எனில் { திரும்பு சரி(ஒரு_நாள்); }
+
+    நகரும்_நாள் = ஒரு_நாள்;
+    மீதி_எண்ணிக்கை = முழுமதிப்பு(எண்ணிக்கை);
+    முன்னோக்கியா = எண்ணிக்கை > 0;
+
+    (மீதி_எண்ணிக்கை > 0) சுற்று {
+        (முன்னோக்கியா) எனில் {
+            அடுத்தது = அடுத்த_வேலை_நாள்(நகரும்_நாள், ஒரு_நாட்காட்டி);
+        } இன்றேல் {
+            அடுத்தது = முந்தைய_வேலை_நாள்(நகரும்_நாள், ஒரு_நாட்காட்டி);
+        }
+        (தவறா(அடுத்தது)) எனில் { திரும்பு அடுத்தது; }
+        நகரும்_நாள் = மதிப்பு(அடுத்தது);
+        மீதி_எண்ணிக்கை = மீதி_எண்ணிக்கை - 1;
+    }
+    திரும்பு சரி(நகரும்_நாள்);
+}
+
+// வேலை_நாட்களை_எண்ணு(தொடக்கம், முடிவு, ஒரு_நாட்காட்டி)
+//
+// How many working days fall in a range, **both ends included**. Inclusive
+// because that is what a duration means: an activity that starts and finishes
+// on the same working day took one day, not none.
+//
+// A range whose end precedes its start is zero rather than negative. A
+// backwards range is a caller's error and a negative count of days would
+// propagate silently into a cost.
+செயல் வேலை_நாட்களை_எண்ணு(தொடக்கம், முடிவு, ஒரு_நாட்காட்டி) {
+    (நாள்_வேறுபாடு(தொடக்கம், முடிவு) < 0) எனில் { திரும்பு 0; }
+
+    எண்ணிக்கை = 0;
+    நகரும்_நாள் = தொடக்கம்;
+    (நாள்_வேறுபாடு(நகரும்_நாள், முடிவு) >= 0) சுற்று {
+        (வேலை_நாளா(நகரும்_நாள், ஒரு_நாட்காட்டி)) எனில் {
+            எண்ணிக்கை = எண்ணிக்கை + 1;
+        }
+        நகரும்_நாள் = நாள்_கூட்டு(நகரும்_நாள், 1);
+    }
+    திரும்பு எண்ணிக்கை;
+}
+
+// =========================================================================
+// அட்டவணை — turning a duration into dates
+// =========================================================================
+//
+// முடிவு_நாள்(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி)
+//
+// The bridge from qittam/pAqY.qmz to a calendar. The critical path computes in
+// abstract time units; this turns one into a finish date.
+//
+// The duration is **inclusive of the start day**, so an activity of one day
+// starting Monday finishes Monday, and the arithmetic is start plus
+// (duration − 1) working days. Adding the full duration is the commonest error
+// in scheduling code and it makes every activity a day too long — which
+// compounds along a path of twenty activities into most of a month.
+//
+// The start is rolled onto a working day first, because an activity cannot
+// begin on a Sunday.
+செயல் முடிவு_நாள்(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி) {
+    (கால_அளவு <= 0) எனில் {
+        திரும்பு தவறு("கால அளவு ஒரு நாளாவது இருக்க வேண்டும்  "
+                       & "(a duration must be at least one day)");
+    }
+    உண்மைத்_தொடக்கம் = நகர்த்தி_வேலை_நாள்(தொடக்கம், ஒரு_நாட்காட்டி);
+    (தவறா(உண்மைத்_தொடக்கம்)) எனில் { திரும்பு உண்மைத்_தொடக்கம்; }
+    திரும்பு வேலை_நாட்களைக்_கூட்டு(மதிப்பு(உண்மைத்_தொடக்கம்), கால_அளவு - 1,
+                                     ஒரு_நாட்காட்டி);
+}
+
+// பணி_அட்டவணை(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி)
+//
+// Start and finish together, with the working days between them, so a Gantt
+// row can be drawn from one call. The count is returned because the elapsed
+// days and the worked days differ by exactly the weekends and holidays, and
+// showing both is what makes a schedule arguable.
+செயல் பணி_அட்டவணை(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி) {
+    உண்மைத்_தொடக்கம் = நகர்த்தி_வேலை_நாள்(தொடக்கம், ஒரு_நாட்காட்டி);
+    (தவறா(உண்மைத்_தொடக்கம்)) எனில் { திரும்பு உண்மைத்_தொடக்கம்; }
+
+    முடிவு = முடிவு_நாள்(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி);
+    (தவறா(முடிவு)) எனில் { திரும்பு முடிவு; }
+
+    தொடக்க_நாள் = மதிப்பு(உண்மைத்_தொடக்கம்);
+    முடிவு_மதிப்பு = மதிப்பு(முடிவு);
+    திரும்பு சரி({"தொடக்கம்": தொடக்க_நாள்,
+                  "முடிவு": முடிவு_மதிப்பு,
+                  "வேலை_நாட்கள்": வேலை_நாட்களை_எண்ணு(தொடக்க_நாள்,
+                                                        முடிவு_மதிப்பு,
+                                                        ஒரு_நாட்காட்டி),
+                  "மொத்த_நாட்கள்": நாள்_வேறுபாடு(தொடக்க_நாள்,
+                                                   முடிவு_மதிப்பு) + 1});
+}
+
+// =========================================================================
+// உருட்டல் மரபுகள் — business day conventions
+// =========================================================================
+//
+// உருட்டு(ஒரு_நாள், ஒரு_நாட்காட்டி, மரபுப்_பெயர்)
+//
+// A due date that lands on a holiday has to move, and which way it moves is a
+// term of the contract rather than a matter of taste. The four conventions:
+//
+//   "அடுத்தது"            forward to the next working day
+//   "திருத்திய_அடுத்தது"  forward, unless that crosses into the next month,
+//                          in which case backward
+//   "முந்தையது"           back to the previous working day
+//   "திருத்திய_முந்தையது" back, unless that crosses into the previous month,
+//                          in which case forward
+//
+// The modified forms exist so that a monthly obligation stays in its month. A
+// payment due on the 31st of May that rolls to the 1st of June has moved into
+// the next accounting period, the next quarter, and sometimes the next
+// financial year — which changes the accounts, the interest and the tax.
+// Modified following is the usual convention in lending for exactly that
+// reason, and it is why this cannot be a flag for "roll forward".
+செயல் உருட்டு(ஒரு_நாள், ஒரு_நாட்காட்டி, மரபுப்_பெயர்) {
+    (வேலை_நாளா(ஒரு_நாள், ஒரு_நாட்காட்டி)) எனில் { திரும்பு சரி(ஒரு_நாள்); }
+
+    (மரபுப்_பெயர் == "அடுத்தது") எனில் {
+        திரும்பு அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+    }
+    (மரபுப்_பெயர் == "முந்தையது") எனில் {
+        திரும்பு முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+    }
+
+    (மரபுப்_பெயர் == "திருத்திய_அடுத்தது") எனில் {
+        முன்னோக்கு = அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+        (தவறா(முன்னோக்கு)) எனில் { திரும்பு முன்னோக்கு; }
+        (மாதத்தைப்_பெறு(மதிப்பு(முன்னோக்கு)) == மாதத்தைப்_பெறு(ஒரு_நாள்)) எனில் {
+            திரும்பு முன்னோக்கு;
+        }
+        திரும்பு முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+    }
+
+    (மரபுப்_பெயர் == "திருத்திய_முந்தையது") எனில் {
+        பின்னோக்கு = முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+        (தவறா(பின்னோக்கு)) எனில் { திரும்பு பின்னோக்கு; }
+        (மாதத்தைப்_பெறு(மதிப்பு(பின்னோக்கு)) == மாதத்தைப்_பெறு(ஒரு_நாள்)) எனில் {
+            திரும்பு பின்னோக்கு;
+        }
+        திரும்பு அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி);
+    }
+
+    திரும்பு தவறு("அறியப்படாத உருட்டல் மரபு  "
+                   & "(unknown rolling convention): " & சொல்லாக்கு(மரபுப்_பெயர்));
+}

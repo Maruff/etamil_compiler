@@ -7725,6 +7725,594 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 134
   },
   {
+    "name": "காலத்_தொடக்கம்",
+    "forms": [
+      "காலத்_தொடக்கம்"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "The epoch the host counts from, and the weekday it fell on. 1 January 1970",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 47
+  },
+  {
+    "name": "நாள்_வடிவமா",
+    "forms": [
+      "நாள்_வடிவமா"
+    ],
+    "params": [
+      "நாள்_உரை"
+    ],
+    "arity": 1,
+    "doc": "நாள்_வடிவமா(நாள்_உரை) — the shape, checked without touching the host",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 60
+  },
+  {
+    "name": "நாள்_செல்லுபடியா",
+    "forms": [
+      "நாள்_செல்லுபடியா"
+    ],
+    "params": [
+      "நாள்_உரை"
+    ],
+    "arity": 1,
+    "doc": "நாள்_செல்லுபடியா(நாள்_உரை) — and is it a day that exists",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 87
+  },
+  {
+    "name": "நாள்_சரிபார்",
+    "forms": [
+      "நாள்_சரிபார்"
+    ],
+    "params": [
+      "நாள்_உரை"
+    ],
+    "arity": 1,
+    "doc": "நாள்_சரிபார்(நாள்_உரை) — the same question, answered as a Result",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 104
+  },
+  {
+    "name": "நாளாக_வடிவமை",
+    "forms": [
+      "நாளாக_வடிவமை"
+    ],
+    "params": [
+      "ஆண்டு_மதிப்பு",
+      "மாத_மதிப்பு",
+      "நாள்_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "நாளாக_வடிவமை(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 119
+  },
+  {
+    "name": "நாள்_ஆக்கு",
+    "forms": [
+      "நாள்_ஆக்கு"
+    ],
+    "params": [
+      "ஆண்டு_மதிப்பு",
+      "மாத_மதிப்பு",
+      "நாள்_மதிப்பு"
+    ],
+    "arity": 3,
+    "doc": "நாள்_ஆக்கு(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு) — the constructor",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 126
+  },
+  {
+    "name": "ஆண்டைப்_பெறு",
+    "forms": [
+      "ஆண்டைப்_பெறு"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 131
+  },
+  {
+    "name": "மாதத்தைப்_பெறு",
+    "forms": [
+      "மாதத்தைப்_பெறு"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 135
+  },
+  {
+    "name": "நாளைப்_பெறு",
+    "forms": [
+      "நாளைப்_பெறு"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 139
+  },
+  {
+    "name": "நெட்டாண்டா",
+    "forms": [
+      "நெட்டாண்டா"
+    ],
+    "params": [
+      "ஆண்டு_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "நெட்டாண்டா(ஆண்டு_மதிப்பு) — a leap year",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 152
+  },
+  {
+    "name": "மாத_நாட்கள்",
+    "forms": [
+      "மாத_நாட்கள்"
+    ],
+    "params": [
+      "ஆண்டு_மதிப்பு",
+      "மாத_மதிப்பு"
+    ],
+    "arity": 2,
+    "doc": "மாத_நாட்கள்(ஆண்டு_மதிப்பு, மாத_மதிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 159
+  },
+  {
+    "name": "மாத_முதல்",
+    "forms": [
+      "மாத_முதல்"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "மாத_முதல்(ஒரு_நாள்) / மாத_இறுதி(ஒரு_நாள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 170
+  },
+  {
+    "name": "மாத_இறுதி",
+    "forms": [
+      "மாத_இறுதி"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 175
+  },
+  {
+    "name": "மாத_இறுதியா",
+    "forms": [
+      "மாத_இறுதியா"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 182
+  },
+  {
+    "name": "மாதங்களைக்_கூட்டு",
+    "forms": [
+      "மாதங்களைக்_கூட்டு"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "மாத_எண்ணிக்கை"
+    ],
+    "arity": 2,
+    "doc": "மாதங்களைக்_கூட்டு(ஒரு_நாள், மாத_எண்ணிக்கை)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 201
+  },
+  {
+    "name": "ஆண்டுகளைக்_கூட்டு",
+    "forms": [
+      "ஆண்டுகளைக்_கூட்டு"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஆண்டு_எண்ணிக்கை"
+    ],
+    "arity": 2,
+    "doc": "ஆண்டுகளைக்_கூட்டு(ஒரு_நாள், ஆண்டு_எண்ணிக்கை)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 221
+  },
+  {
+    "name": "முடிந்த_மாதங்கள்",
+    "forms": [
+      "முடிந்த_மாதங்கள்"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "முடிவு"
+    ],
+    "arity": 2,
+    "doc": "முடிந்த_மாதங்கள்(தொடக்கம், முடிவு) — whole months completed",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 240
+  },
+  {
+    "name": "முடிந்த_ஆண்டுகள்",
+    "forms": [
+      "முடிந்த_ஆண்டுகள்"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "முடிவு"
+    ],
+    "arity": 2,
+    "doc": "முடிந்த_ஆண்டுகள்(தொடக்கம், முடிவு) — whole years completed",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 260
+  },
+  {
+    "name": "பகுதி_மாதங்கள்",
+    "forms": [
+      "பகுதி_மாதங்கள்"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "முடிவு"
+    ],
+    "arity": 2,
+    "doc": "பகுதி_மாதங்கள்(தொடக்கம், முடிவு) — months, counting a part month as whole",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 278
+  },
+  {
+    "name": "முந்தையது",
+    "forms": [
+      "முந்தையது"
+    ],
+    "params": [
+      "அ",
+      "ஆ"
+    ],
+    "arity": 2,
+    "doc": "முந்தையது(அ, ஆ) / பிந்தையது(அ, ஆ) — the earlier and the later",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 290
+  },
+  {
+    "name": "பிந்தையது",
+    "forms": [
+      "பிந்தையது"
+    ],
+    "params": [
+      "அ",
+      "ஆ"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 295
+  },
+  {
+    "name": "வாரநாள்",
+    "forms": [
+      "வாரநாள்"
+    ],
+    "params": [
+      "ஒரு_நாள்"
+    ],
+    "arity": 1,
+    "doc": "வாரநாள் — the day of the week",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 309
+  },
+  {
+    "name": "வாரநாள்_பெயர்",
+    "forms": [
+      "வாரநாள்_பெயர்"
+    ],
+    "params": [
+      "வாரநாள்_எண்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 313
+  },
+  {
+    "name": "நிதியாண்டின்_தொடக்க_ஆண்டு",
+    "forms": [
+      "நிதியாண்டின்_தொடக்க_ஆண்டு"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "தொடக்க_மாதம்"
+    ],
+    "arity": 2,
+    "doc": "நிதியாண்டின்_தொடக்க_ஆண்டு(ஒரு_நாள், தொடக்க_மாதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 338
+  },
+  {
+    "name": "கால்_ஆண்டு_எண்",
+    "forms": [
+      "கால்_ஆண்டு_எண்"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "தொடக்க_மாதம்"
+    ],
+    "arity": 2,
+    "doc": "கால்_ஆண்டு_எண்(ஒரு_நாள், தொடக்க_மாதம்) — which quarter, 1 to 4",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/nAL.qmz",
+    "line": 351
+  },
+  {
+    "name": "தேடல்_எல்லை",
+    "forms": [
+      "தேடல்_எல்லை"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "How far forward or back a search will go before giving up. A run of",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 30
+  },
+  {
+    "name": "நாட்காட்டி_ஆக்கு",
+    "forms": [
+      "நாட்காட்டி_ஆக்கு"
+    ],
+    "params": [
+      "வார_ஓய்வு_நாட்கள்",
+      "விடுமுறை_நாட்கள்"
+    ],
+    "arity": 2,
+    "doc": "நாட்காட்டி_ஆக்கு(வார_ஓய்வு_நாட்கள், விடுமுறை_நாட்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 45
+  },
+  {
+    "name": "பட்டியலில்_உள்ளதா",
+    "forms": [
+      "பட்டியலில்_உள்ளதா"
+    ],
+    "params": [
+      "ஒரு_பட்டியல்",
+      "தேடும்_உருப்படி"
+    ],
+    "arity": 2,
+    "doc": "பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 51
+  },
+  {
+    "name": "வார_ஓய்வா",
+    "forms": [
+      "வார_ஓய்வா"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 58
+  },
+  {
+    "name": "விடுமுறையா",
+    "forms": [
+      "விடுமுறையா"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 62
+  },
+  {
+    "name": "வேலை_நாளா",
+    "forms": [
+      "வேலை_நாளா"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "வேலை_நாளா(ஒரு_நாள், ஒரு_நாட்காட்டி) — neither a weekly off nor a holiday",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 67
+  },
+  {
+    "name": "வேலை_வாரம்_உள்ளதா",
+    "forms": [
+      "வேலை_வாரம்_உள்ளதா"
+    ],
+    "params": [
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 1,
+    "doc": "வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி) — is any weekday worked at all",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 78
+  },
+  {
+    "name": "அடுத்த_வேலை_நாள்",
+    "forms": [
+      "அடுத்த_வேலை_நாள்"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "அடுத்த_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 99
+  },
+  {
+    "name": "முந்தைய_வேலை_நாள்",
+    "forms": [
+      "முந்தைய_வேலை_நாள்"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 116
+  },
+  {
+    "name": "நகர்த்தி_வேலை_நாள்",
+    "forms": [
+      "நகர்த்தி_வேலை_நாள்"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 2,
+    "doc": "நகர்த்தி_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 138
+  },
+  {
+    "name": "வேலை_நாட்களைக்_கூட்டு",
+    "forms": [
+      "வேலை_நாட்களைக்_கூட்டு"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "எண்ணிக்கை",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 3,
+    "doc": "வேலை_நாட்களைக்_கூட்டு(ஒரு_நாள், எண்ணிக்கை, ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 156
+  },
+  {
+    "name": "வேலை_நாட்களை_எண்ணு",
+    "forms": [
+      "வேலை_நாட்களை_எண்ணு"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "முடிவு",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 3,
+    "doc": "வேலை_நாட்களை_எண்ணு(தொடக்கம், முடிவு, ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 185
+  },
+  {
+    "name": "முடிவு_நாள்",
+    "forms": [
+      "முடிவு_நாள்"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "கால_அளவு",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 3,
+    "doc": "முடிவு_நாள்(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 216
+  },
+  {
+    "name": "பணி_அட்டவணை",
+    "forms": [
+      "பணி_அட்டவணை"
+    ],
+    "params": [
+      "தொடக்கம்",
+      "கால_அளவு",
+      "ஒரு_நாட்காட்டி"
+    ],
+    "arity": 3,
+    "doc": "பணி_அட்டவணை(தொடக்கம், கால_அளவு, ஒரு_நாட்காட்டி)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 233
+  },
+  {
+    "name": "உருட்டு",
+    "forms": [
+      "உருட்டு"
+    ],
+    "params": [
+      "ஒரு_நாள்",
+      "ஒரு_நாட்காட்டி",
+      "மரபுப்_பெயர்"
+    ],
+    "arity": 3,
+    "doc": "உருட்டு(ஒரு_நாள், ஒரு_நாட்காட்டி, மரபுப்_பெயர்)",
+    "kind": "stdlib",
+    "module": "nUlakam/nAtkAtti/vElYnAL.qmz",
+    "line": 273
+  },
+  {
     "name": "கழிவு_ஆக்கு",
     "forms": [
       "கழிவு_ஆக்கு"
