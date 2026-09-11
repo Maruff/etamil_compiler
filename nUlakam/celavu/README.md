@@ -22,7 +22,7 @@ product at all. That reallocation is what these five modules do.
 | `mILpakirvu.qmz` | reciprocal service apportionment — `சேவை_நிலையம்_ஆக்கு` `இரு_சேவை_ஒரேசமயம்` `மீண்டும்_பகிர்` `படிநிலைப்_பகிர்வு` `படிநிலை_வரிசை_வேறுபாடு` `உற்பத்திக்கு_மொத்தம்` |
 | `ceyalmuRY.qmz` | process costing — `இயல்பு_இழப்பு_அலகுகள்` `அசாதாரண_வேறுபாடு` `அலகுக்கான_செலவு` `அசாதாரண_இழப்பின்_மதிப்பு` `அசாதாரண_ஆதாயத்தின்_மதிப்பு` `செயல்முறையைக்_கணக்கிடு` `சராசரி_சமமான_அலகுகள்` `fifo_சமமான_அலகுகள்` `முறைகளின்_வேறுபாடு` |
 | `ceyalpAtu.qmz` | activity-based costing — `செயல்பாடு_ஆக்கு` `இயக்கி_விகிதம்` `தயாரிப்பின்_மேல்நிலை` `பாரம்பரிய_மேல்நிலை` `குறுக்கு_மானியம்` `பயனளிக்குமா` `மொத்தம்_மாறவில்லையா` |
-| `celavu_cOqaZY.qmz` | the tests — 80 assertions, run it to check the arithmetic |
+| `celavu_cOqaZY.qmz` | the tests — 128 assertions, run it to check the arithmetic |
 
 ```bash
 etamil --vm nUlakam/celavu/celavu_cOqaZY.qmz

@@ -23,7 +23,9 @@ control, the ledger and the financial statements without being re-keyed.
 | revenue under Ind AS 115 | `varuvAy/muZZERRam` |
 | the contract's position, and its loss | `varuvAy/iruppukaL`, `varuvAy/oppanqac_celavu` |
 
-Thirteen modules across six directories, in one program.
+Thirteen modules across five directories, in one program — and further
+still through what they import: `paqivu.qmz` reaches `kaNakkiyal` for the
+ledger, and almost everything reaches `kaNiqam` and `poruL`.
 
 ## What the run shows
 
