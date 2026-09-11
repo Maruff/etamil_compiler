@@ -1,0 +1,151 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/qittam/curukkal.qmz — சுருக்கல் (crashing, the time-cost trade-off)
+//
+// Shortening a project costs money, and the question is which activity to buy
+// time from. Two facts decide it.
+//
+// Only a **critical** activity is worth crashing. Shortening anything with
+// float buys nothing at all, and it is the most expensive mistake available
+// because it looks like progress.
+//
+// Among critical activities, buy from the **cheapest slope**: the cost of one
+// unit of time. Crashing changes the critical path, so the choice has to be
+// remade after every step — which is why this module gives the pieces and the
+// caller loops, rather than pretending one call can do it.
+//
+// Where several paths are critical at once, one activity per path must be
+// crashed, or the paths that were not touched hold the duration exactly where
+// it was. An activity common to several paths is often cheaper than one on
+// each, and கூட்டுச்_சரிவு exists to price that comparison.
+//
+// The optimum is the minimum of **total** cost, direct plus indirect, not of
+// either alone: direct cost rises as the schedule shortens and indirect falls
+// with it. Always compute one step past the apparent minimum, because a
+// minimum you have not stepped over is only the last point you calculated.
+
+// செயல்_நேர_செலவு(செயல்_குறி, இயல்பு_காலம், இயல்பு_செலவு, சுருக்க_காலம்,
+//                  சுருக்கச்_செலவு)
+//
+// Normal time is the low-cost, efficient way of doing the work; crash time is
+// a **threshold**, the shortest the activity can go however much is spent.
+செயல் செயல்_நேர_செலவு(செயல்_குறி, இயல்பு_காலம், இயல்பு_செலவு,
+                        சுருக்க_காலம், சுருக்கச்_செலவு) {
+    திரும்பு {
+        செயல்_குறி: செயல்_குறி,
+        இயல்பு_காலம்: இயல்பு_காலம்,
+        இயல்பு_செலவு: இயல்பு_செலவு,
+        சுருக்க_காலம்: சுருக்க_காலம்,
+        சுருக்கச்_செலவு: சுருக்கச்_செலவு
+    };
+}
+
+// அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) — how many units of time are for sale
+//
+// The parameter is compound because தரவு on its own is a keyword in this
+// language; see celavu/README.md.
+செயல் அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) {
+    திரும்பு நேரத்_தரவு.இயல்பு_காலம் - நேரத்_தரவு.சுருக்க_காலம்;
+}
+
+// செலவுச்_சரிவு(தரவு) — the cost of buying one unit of time
+//
+//     (crash cost − normal cost) / (normal time − crash time)
+//
+// An activity that cannot be shortened has no slope rather than an infinite
+// one, so it is a தவறு and can never be selected as cheapest by accident.
+செயல் செலவுச்_சரிவு(நேரத்_தரவு) {
+    சுருக்கம் = அதிகபட்ச_சுருக்கம்(நேரத்_தரவு);
+    (சுருக்கம் <= 0) எனில் {
+        திரும்பு தவறு(நேரத்_தரவு.செயல்_குறி
+                      & ": சுருக்க முடியாது, சரிவு இல்லை");
+    }
+    திரும்பு சரி((நேரத்_தரவு.சுருக்கச்_செலவு - நேரத்_தரவு.இயல்பு_செலவு)
+                 / சுருக்கம்);
+}
+
+// மலிவான_வேட்பாளர்(தரவுகள், கடுமையான_குறிகள்)
+//
+// The cheapest crashable activity that is also critical. Both conditions
+// matter and the second is the one that gets forgotten.
+செயல் மலிவான_வேட்பாளர்(தரவுகள், கடுமையான_குறிகள்) {
+    சிறந்த_குறி = "";
+    சிறந்த_சரிவு = 0;
+    ஒவ்வொரு ஒரு_தரவு இல் தரவுகள் {
+        (கடுமையானதா(கடுமையான_குறிகள், ஒரு_தரவு.செயல்_குறி)) எனில் {
+            சரிவு = செலவுச்_சரிவு(ஒரு_தரவு);
+            (சரியா(சரிவு)) எனில் {
+                (சிறந்த_குறி == "") எனில் {
+                    சிறந்த_குறி = ஒரு_தரவு.செயல்_குறி;
+                    சிறந்த_சரிவு = மதிப்பு(சரிவு);
+                } இன்றேல் {
+                    (மதிப்பு(சரிவு) < சிறந்த_சரிவு) எனில் {
+                        சிறந்த_குறி = ஒரு_தரவு.செயல்_குறி;
+                        சிறந்த_சரிவு = மதிப்பு(சரிவு);
+                    }
+                }
+            }
+        }
+    }
+    (சிறந்த_குறி == "") எனில் {
+        திரும்பு தவறு("சுருக்கக்கூடிய கடுமையான செயல் இல்லை");
+    }
+    திரும்பு சரி({ செயல்_குறி: சிறந்த_குறி, சரிவு: சிறந்த_சரிவு });
+}
+
+செயல் கடுமையானதா(கடுமையான_குறிகள், செயல்_குறி) {
+    ஒவ்வொரு ஒரு_குறி இல் கடுமையான_குறிகள் {
+        (ஒரு_குறி == செயல்_குறி) எனில் { திரும்பு மெய்; }
+    }
+    திரும்பு பொய்;
+}
+
+// கூட்டுச்_சரிவு(தரவுகள், குறிகள்) — the cost of crashing a whole set together
+//
+// When several paths are critical, compare the sum of one activity per path
+// against a single shared activity that shortens all of them. The shared one
+// frequently wins, and only this comparison shows it.
+செயல் கூட்டுச்_சரிவு(தரவுகள், குறிகள்) {
+    ஓடும்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_குறி இல் குறிகள் {
+        ஒவ்வொரு ஒரு_தரவு இல் தரவுகள் {
+            (ஒரு_தரவு.செயல்_குறி == ஒரு_குறி) எனில் {
+                சரிவு = செலவுச்_சரிவு(ஒரு_தரவு);
+                (தவறா(சரிவு)) எனில் { திரும்பு சரிவு; }
+                ஓடும்_கூட்டல் = ஓடும்_கூட்டல் + மதிப்பு(சரிவு);
+            }
+        }
+    }
+    திரும்பு சரி(ஓடும்_கூட்டல்);
+}
+
+// --- Totals --------------------------------------------------------------
+
+செயல் இயல்பு_நேரடிச்_செலவு(தரவுகள்) {
+    ஓடும்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_தரவு இல் தரவுகள் {
+        ஓடும்_கூட்டல் = ஓடும்_கூட்டல் + ஒரு_தரவு.இயல்பு_செலவு;
+    }
+    திரும்பு ஓடும்_கூட்டல்;
+}
+
+// மொத்தச்_செலவு(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, காலம்)
+//
+// Direct plus indirect. Indirect runs with the calendar, so shortening the
+// project reduces it — which is why the optimum is not simply the cheapest
+// direct cost.
+செயல் மொத்தச்_செலவு(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, காலம்) {
+    திரும்பு நேரடிச்_செலவு + நாள்_மறைமுகச்_செலவு * காலம்;
+}
+
+// தாமதச்_செலவுடன்(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, நாள்_தாமதச்_செலவு, காலம்)
+//
+// The honest total. Project overhead is rarely the real cost of a day: a
+// delayed benefit, a penalty clause or a lost season usually dwarfs it, and
+// including it moves the optimum substantially earlier. Whose money is being
+// optimised is a decision to take consciously rather than by omission.
+செயல் தாமதச்_செலவுடன்(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு,
+                        நாள்_தாமதச்_செலவு, காலம்) {
+    திரும்பு நேரடிச்_செலவு
+             + (நாள்_மறைமுகச்_செலவு + நாள்_தாமதச்_செலவு) * காலம்;
+}

@@ -8042,6 +8042,928 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 119
   },
   {
+    "name": "முறை_0_100",
+    "forms": [
+      "முறை_0_100"
+    ],
+    "params": [
+      "முடிந்ததா"
+    ],
+    "arity": 1,
+    "doc": "முறை_0_100(முடிந்ததா) — nothing until complete, then everything",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 41
+  },
+  {
+    "name": "முறை_50_50",
+    "forms": [
+      "முறை_50_50"
+    ],
+    "params": [
+      "தொடங்கியதா",
+      "முடிந்ததா"
+    ],
+    "arity": 2,
+    "doc": "முறை_50_50(தொடங்கியதா, முடிந்ததா) — half on starting, half on finishing",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 47
+  },
+  {
+    "name": "முறை_மைல்கற்கள்",
+    "forms": [
+      "முறை_மைல்கற்கள்"
+    ],
+    "params": [
+      "அடைந்த_எடைகள்"
+    ],
+    "arity": 1,
+    "doc": "முறை_மைல்கற்கள்(அடைந்த_எடைகள்) — weighted milestones",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 58
+  },
+  {
+    "name": "ஈட்டிய_மதிப்பு",
+    "forms": [
+      "ஈட்டிய_மதிப்பு"
+    ],
+    "params": [
+      "கணு_நிதி",
+      "நிறைவுப்_பங்கு"
+    ],
+    "arity": 2,
+    "doc": "ஈட்டிய_மதிப்பு(கணு_நிதி, நிறைவுப்_பங்கு) — EV for one package",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 71
+  },
+  {
+    "name": "செலவு_வேறுபாடு",
+    "forms": [
+      "செலவு_வேறுபாடு"
+    ],
+    "params": [
+      "ஈட்டியது",
+      "உண்மைச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 77
+  },
+  {
+    "name": "கால_வேறுபாடு",
+    "forms": [
+      "கால_வேறுபாடு"
+    ],
+    "params": [
+      "ஈட்டியது",
+      "திட்டமிட்டது"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 81
+  },
+  {
+    "name": "கணக்கியல்_வேறுபாடு",
+    "forms": [
+      "கணக்கியல்_வேறுபாடு"
+    ],
+    "params": [
+      "திட்டமிட்டது",
+      "உண்மைச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "கணக்கியல்_வேறுபாடு(திட்டமிட்டது, உண்மைச்_செலவு)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 90
+  },
+  {
+    "name": "செலவுச்_செயல்திறன்",
+    "forms": [
+      "செலவுச்_செயல்திறன்"
+    ],
+    "params": [
+      "ஈட்டியது",
+      "உண்மைச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "செலவுச்_செயல்திறன்(ஈட்டியது, உண்மைச்_செலவு) — CPI",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 101
+  },
+  {
+    "name": "காலச்_செயல்திறன்",
+    "forms": [
+      "காலச்_செயல்திறன்"
+    ],
+    "params": [
+      "ஈட்டியது",
+      "திட்டமிட்டது"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 108
+  },
+  {
+    "name": "நிறைவுப்_பங்கு_நிதியால்",
+    "forms": [
+      "நிறைவுப்_பங்கு_நிதியால்"
+    ],
+    "params": [
+      "ஈட்டியது",
+      "மொத்த_நிதி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 115
+  },
+  {
+    "name": "முடிவில்_மதிப்பீடு_மீதியால்",
+    "forms": [
+      "முடிவில்_மதிப்பீடு_மீதியால்"
+    ],
+    "params": [
+      "உண்மைச்_செலவு",
+      "மொத்த_நிதி",
+      "ஈட்டியது"
+    ],
+    "arity": 3,
+    "doc": "முடிவில்_மதிப்பீடு_மீதியால்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 130
+  },
+  {
+    "name": "முடிவில்_மதிப்பீடு_திறனால்",
+    "forms": [
+      "முடிவில்_மதிப்பீடு_திறனால்"
+    ],
+    "params": [
+      "மொத்த_நிதி",
+      "செலவுத்_திறன்"
+    ],
+    "arity": 2,
+    "doc": "முடிவில்_மதிப்பீடு_திறனால்(மொத்த_நிதி, செலவுத்_திறன்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 136
+  },
+  {
+    "name": "முடிவில்_மதிப்பீடு_இரண்டாலும்",
+    "forms": [
+      "முடிவில்_மதிப்பீடு_இரண்டாலும்"
+    ],
+    "params": [
+      "உண்மைச்_செலவு",
+      "மொத்த_நிதி",
+      "ஈட்டியது",
+      "செலவுத்_திறன்",
+      "காலத்_திறன்"
+    ],
+    "arity": 5,
+    "doc": "முடிவில்_மதிப்பீடு_இரண்டாலும்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது,",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 145
+  },
+  {
+    "name": "முடிக்க_மீதி",
+    "forms": [
+      "முடிக்க_மீதி"
+    ],
+    "params": [
+      "முடிவில்_மதிப்பீடு",
+      "உண்மைச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 152
+  },
+  {
+    "name": "முடிவில்_வேறுபாடு",
+    "forms": [
+      "முடிவில்_வேறுபாடு"
+    ],
+    "params": [
+      "மொத்த_நிதி",
+      "முடிவில்_மதிப்பீடு"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 156
+  },
+  {
+    "name": "முடிக்கத்_தேவையான_திறன்",
+    "forms": [
+      "முடிக்கத்_தேவையான_திறன்"
+    ],
+    "params": [
+      "மொத்த_நிதி",
+      "ஈட்டியது",
+      "உண்மைச்_செலவு"
+    ],
+    "arity": 3,
+    "doc": "முடிக்கத்_தேவையான_திறன்(மொத்த_நிதி, ஈட்டியது, உண்மைச்_செலவு) — TCPI",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 167
+  },
+  {
+    "name": "எதிர்பார்க்கும்_காலம்",
+    "forms": [
+      "எதிர்பார்க்கும்_காலம்"
+    ],
+    "params": [
+      "அசல்_காலம்",
+      "காலத்_திறன்"
+    ],
+    "arity": 2,
+    "doc": "எதிர்பார்க்கும்_காலம்(அசல்_காலம், காலத்_திறன்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 176
+  },
+  {
+    "name": "நிலவரம்",
+    "forms": [
+      "நிலவரம்"
+    ],
+    "params": [
+      "திட்டமிட்டது",
+      "ஈட்டியது",
+      "உண்மைச்_செலவு",
+      "மொத்த_நிதி"
+    ],
+    "arity": 4,
+    "doc": "நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 187
+  },
+  {
+    "name": "நிலவரத்தை_அச்சிடு",
+    "forms": [
+      "நிலவரத்தை_அச்சிடு"
+    ],
+    "params": [
+      "அறிக்கை"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/Ittu_maqippu.qmz",
+    "line": 210
+  },
+  {
+    "name": "செயல்_நேர_செலவு",
+    "forms": [
+      "செயல்_நேர_செலவு"
+    ],
+    "params": [
+      "செயல்_குறி",
+      "இயல்பு_காலம்",
+      "இயல்பு_செலவு",
+      "சுருக்க_காலம்",
+      "சுருக்கச்_செலவு"
+    ],
+    "arity": 5,
+    "doc": "செயல்_நேர_செலவு(செயல்_குறி, இயல்பு_காலம், இயல்பு_செலவு, சுருக்க_காலம்,",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 32
+  },
+  {
+    "name": "அதிகபட்ச_சுருக்கம்",
+    "forms": [
+      "அதிகபட்ச_சுருக்கம்"
+    ],
+    "params": [
+      "நேரத்_தரவு"
+    ],
+    "arity": 1,
+    "doc": "அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) — how many units of time are for sale",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 47
+  },
+  {
+    "name": "செலவுச்_சரிவு",
+    "forms": [
+      "செலவுச்_சரிவு"
+    ],
+    "params": [
+      "நேரத்_தரவு"
+    ],
+    "arity": 1,
+    "doc": "செலவுச்_சரிவு(தரவு) — the cost of buying one unit of time",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 57
+  },
+  {
+    "name": "மலிவான_வேட்பாளர்",
+    "forms": [
+      "மலிவான_வேட்பாளர்"
+    ],
+    "params": [
+      "தரவுகள்",
+      "கடுமையான_குறிகள்"
+    ],
+    "arity": 2,
+    "doc": "மலிவான_வேட்பாளர்(தரவுகள், கடுமையான_குறிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 71
+  },
+  {
+    "name": "கடுமையானதா",
+    "forms": [
+      "கடுமையானதா"
+    ],
+    "params": [
+      "கடுமையான_குறிகள்",
+      "செயல்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 96
+  },
+  {
+    "name": "கூட்டுச்_சரிவு",
+    "forms": [
+      "கூட்டுச்_சரிவு"
+    ],
+    "params": [
+      "தரவுகள்",
+      "குறிகள்"
+    ],
+    "arity": 2,
+    "doc": "கூட்டுச்_சரிவு(தரவுகள், குறிகள்) — the cost of crashing a whole set together",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 108
+  },
+  {
+    "name": "இயல்பு_நேரடிச்_செலவு",
+    "forms": [
+      "இயல்பு_நேரடிச்_செலவு"
+    ],
+    "params": [
+      "தரவுகள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 124
+  },
+  {
+    "name": "மொத்தச்_செலவு",
+    "forms": [
+      "மொத்தச்_செலவு"
+    ],
+    "params": [
+      "நேரடிச்_செலவு",
+      "நாள்_மறைமுகச்_செலவு",
+      "காலம்"
+    ],
+    "arity": 3,
+    "doc": "மொத்தச்_செலவு(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, காலம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 137
+  },
+  {
+    "name": "தாமதச்_செலவுடன்",
+    "forms": [
+      "தாமதச்_செலவுடன்"
+    ],
+    "params": [
+      "நேரடிச்_செலவு",
+      "நாள்_மறைமுகச்_செலவு",
+      "நாள்_தாமதச்_செலவு",
+      "காலம்"
+    ],
+    "arity": 4,
+    "doc": "தாமதச்_செலவுடன்(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, நாள்_தாமதச்_செலவு, காலம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/curukkal.qmz",
+    "line": 147
+  },
+  {
+    "name": "கணக்கு_ஆக்கு",
+    "forms": [
+      "கணக்கு_ஆக்கு"
+    ],
+    "params": [
+      "கணக்குக்_குறி",
+      "கணு_குறி",
+      "உரிமையாளர்"
+    ],
+    "arity": 3,
+    "doc": "கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 32
+  },
+  {
+    "name": "ஒரே_கணக்கா",
+    "forms": [
+      "ஒரே_கணக்கா"
+    ],
+    "params": [
+      "கணக்குகள்",
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 3,
+    "doc": "ஒரே_கணக்கா(கணக்குகள், கணுக்கள், கணு_குறி)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 46
+  },
+  {
+    "name": "பாதையில்_கணக்குகள்",
+    "forms": [
+      "பாதையில்_கணக்குகள்"
+    ],
+    "params": [
+      "கணக்குகள்",
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 3,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 50
+  },
+  {
+    "name": "கட்டமைப்பை_சரிபார்",
+    "forms": [
+      "கட்டமைப்பை_சரிபார்"
+    ],
+    "params": [
+      "கணக்குகள்",
+      "கணுக்கள்"
+    ],
+    "arity": 2,
+    "doc": "கட்டமைப்பை_சரிபார்(கணக்குகள், கணுக்கள்) — every work package, checked",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 64
+  },
+  {
+    "name": "காலப்_பகிர்வு",
+    "forms": [
+      "காலப்_பகிர்வு"
+    ],
+    "params": [
+      "காலம்_எண்",
+      "காலத்_தொகை"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 77
+  },
+  {
+    "name": "திரட்டிய_நிதி",
+    "forms": [
+      "திரட்டிய_நிதி"
+    ],
+    "params": [
+      "பகிர்வுகள்",
+      "காலம்_வரை"
+    ],
+    "arity": 2,
+    "doc": "திரட்டிய_நிதி(பகிர்வுகள், காலம்_வரை) — the S-curve read at one period",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 85
+  },
+  {
+    "name": "மொத்த_நிதி",
+    "forms": [
+      "மொத்த_நிதி"
+    ],
+    "params": [
+      "பகிர்வுகள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 95
+  },
+  {
+    "name": "நிதித்_தொகுதி_ஆக்கு",
+    "forms": [
+      "நிதித்_தொகுதி_ஆக்கு"
+    ],
+    "params": [
+      "அடிப்படை_நிதி",
+      "தற்செயல்_இருப்பு",
+      "மேலாண்மை_இருப்பு"
+    ],
+    "arity": 3,
+    "doc": "நிதித்_தொகுதி_ஆக்கு(அடிப்படை_நிதி, தற்செயல்_இருப்பு, மேலாண்மை_இருப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 116
+  },
+  {
+    "name": "அளவீட்டு_அடிப்படை",
+    "forms": [
+      "அளவீட்டு_அடிப்படை"
+    ],
+    "params": [
+      "தொகுதி"
+    ],
+    "arity": 1,
+    "doc": "அளவீட்டு_அடிப்படை(தொகுதி) — the performance measurement baseline",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 125
+  },
+  {
+    "name": "அனுமதித்த_நிதி",
+    "forms": [
+      "அனுமதித்த_நிதி"
+    ],
+    "params": [
+      "தொகுதி"
+    ],
+    "arity": 1,
+    "doc": "அனுமதித்த_நிதி(தொகுதி) — baseline plus management reserve",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 130
+  },
+  {
+    "name": "இருப்பை_விடுவி",
+    "forms": [
+      "இருப்பை_விடுவி"
+    ],
+    "params": [
+      "தொகுதி",
+      "விடுவிக்கும்_தொகை"
+    ],
+    "arity": 2,
+    "doc": "இருப்பை_விடுவி(தொகுதி, விடுவிக்கும்_தொகை)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/kattuppAtu.qmz",
+    "line": 140
+  },
+  {
+    "name": "செயல்_ஆக்கு",
+    "forms": [
+      "செயல்_ஆக்கு"
+    ],
+    "params": [
+      "செயல்_குறி",
+      "செயல்_காலம்",
+      "முன்னோடிகள்"
+    ],
+    "arity": 3,
+    "doc": "செயல்_ஆக்கு(செயல்_குறி, செயல்_காலம், முன்னோடிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 34
+  },
+  {
+    "name": "செயலைத்_தேடு",
+    "forms": [
+      "செயலைத்_தேடு"
+    ],
+    "params": [
+      "செயல்கள்",
+      "செயல்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 42
+  },
+  {
+    "name": "வழித்தோன்றல்கள்",
+    "forms": [
+      "வழித்தோன்றல்கள்"
+    ],
+    "params": [
+      "செயல்கள்",
+      "செயல்_குறி"
+    ],
+    "arity": 2,
+    "doc": "வழித்தோன்றல்கள்(செயல்கள், செயல்_குறி) — the successors of an activity",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 50
+  },
+  {
+    "name": "முன்னோடிகள்_உள்ளனவா",
+    "forms": [
+      "முன்னோடிகள்_உள்ளனவா"
+    ],
+    "params": [
+      "செயல்கள்"
+    ],
+    "arity": 1,
+    "doc": "முன்னோடிகள்_உள்ளனவா(செயல்கள்) — every named predecessor must exist",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 65
+  },
+  {
+    "name": "சுழற்சி_உள்ளதா",
+    "forms": [
+      "சுழற்சி_உள்ளதா"
+    ],
+    "params": [
+      "செயல்கள்"
+    ],
+    "arity": 1,
+    "doc": "சுழற்சி_உள்ளதா(செயல்கள்) — is there a cycle?",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 82
+  },
+  {
+    "name": "வலையைக்_கணக்கிடு",
+    "forms": [
+      "வலையைக்_கணக்கிடு"
+    ],
+    "params": [
+      "செயல்கள்"
+    ],
+    "arity": 1,
+    "doc": "வலையைக்_கணக்கிடு(செயல்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 112
+  },
+  {
+    "name": "கடுமையானவை",
+    "forms": [
+      "கடுமையானவை"
+    ],
+    "params": [
+      "கணக்கிட்டவை"
+    ],
+    "arity": 1,
+    "doc": "கடுமையானவை(கணக்கிட்டவை) — the zero-float activities",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 210
+  },
+  {
+    "name": "உணர்திறன்_வலையா",
+    "forms": [
+      "உணர்திறன்_வலையா"
+    ],
+    "params": [
+      "கணக்கிட்டவை"
+    ],
+    "arity": 1,
+    "doc": "உணர்திறன்_வலையா(கணக்கிட்டவை) — is the network sensitive?",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 226
+  },
+  {
+    "name": "பெறு_புலம்",
+    "forms": [
+      "பெறு_புலம்"
+    ],
+    "params": [
+      "கணக்கிட்ட_செயல்கள்",
+      "செயல்_குறி",
+      "புலப்_பெயர்"
+    ],
+    "arity": 3,
+    "doc": "பெறு_புலம்(கணக்கிட்ட_செயல்கள், செயல்_குறி, புலப்_பெயர்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 239
+  },
+  {
+    "name": "குறி_உள்ளதா",
+    "forms": [
+      "குறி_உள்ளதா"
+    ],
+    "params": [
+      "பட்டியல்",
+      "தேடும்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 265
+  },
+  {
+    "name": "பதிவைத்_தேடு",
+    "forms": [
+      "பதிவைத்_தேடு"
+    ],
+    "params": [
+      "பதிவுகள்",
+      "செயல்_குறி",
+      "புலப்_பெயர்"
+    ],
+    "arity": 3,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 272
+  },
+  {
+    "name": "பதிவை_மாற்று",
+    "forms": [
+      "பதிவை_மாற்று"
+    ],
+    "params": [
+      "பதிவுகள்",
+      "செயல்_குறி",
+      "புது_தொடக்கம்",
+      "புது_முடிவு"
+    ],
+    "arity": 4,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pAqY.qmz",
+    "line": 282
+  },
+  {
+    "name": "கணு_ஆக்கு",
+    "forms": [
+      "கணு_ஆக்கு"
+    ],
+    "params": [
+      "கணு_குறி",
+      "பெற்றோர்_குறி",
+      "கணு_பெயர்",
+      "கணு_நிதி"
+    ],
+    "arity": 4,
+    "doc": "கணு_ஆக்கு(கணு_குறி, பெற்றோர்_குறி, கணு_பெயர், கணு_நிதி)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 28
+  },
+  {
+    "name": "கணு_தேடு",
+    "forms": [
+      "கணு_தேடு"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 37
+  },
+  {
+    "name": "சேய்கள்",
+    "forms": [
+      "சேய்கள்"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "பெற்றோர்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 44
+  },
+  {
+    "name": "மூலங்கள்",
+    "forms": [
+      "மூலங்கள்"
+    ],
+    "params": [
+      "கணுக்கள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 54
+  },
+  {
+    "name": "இலைக்_கணுவா",
+    "forms": [
+      "இலைக்_கணுவா"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 2,
+    "doc": "இலைக்_கணுவா(கணுக்கள், கணு_குறி) — a leaf is a work package",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 62
+  },
+  {
+    "name": "வேலைத்_தொகுப்புகள்",
+    "forms": [
+      "வேலைத்_தொகுப்புகள்"
+    ],
+    "params": [
+      "கணுக்கள்"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 66
+  },
+  {
+    "name": "உள்_கூட்டல்",
+    "forms": [
+      "உள்_கூட்டல்"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 2,
+    "doc": "உள்_கூட்டல்(கணுக்கள், கணு_குறி) — the subtree's budget, from its leaves",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 83
+  },
+  {
+    "name": "ஆழம்",
+    "forms": [
+      "ஆழம்"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 2,
+    "doc": "ஆழம்(கணுக்கள், கணு_குறி) — a root is at depth 0",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 97
+  },
+  {
+    "name": "நூறு_விதி_சரியா",
+    "forms": [
+      "நூறு_விதி_சரியா"
+    ],
+    "params": [
+      "கணுக்கள்",
+      "கணு_குறி"
+    ],
+    "arity": 2,
+    "doc": "நூறு_விதி_சரியா(கணுக்கள், கணு_குறி)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 116
+  },
+  {
+    "name": "விதியை_சரிபார்",
+    "forms": [
+      "விதியை_சரிபார்"
+    ],
+    "params": [
+      "கணுக்கள்"
+    ],
+    "arity": 1,
+    "doc": "விதியை_சரிபார்(கணுக்கள்) — the first violation, or சரி",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/pakuppu.qmz",
+    "line": 132
+  },
+  {
     "name": "நிலைமைகள்",
     "forms": [
       "நிலைமைகள்"

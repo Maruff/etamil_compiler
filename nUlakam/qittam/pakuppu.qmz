@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/qittam/pakuppu.qmz — வேலைப் பகுப்பு (the work breakdown structure)
+//
+// The WBS is the one artefact everything else on a project hangs off: the
+// schedule, the budget, the responsibility assignment and the risk register
+// are all indexed by it. Get its shape wrong and every derived number is
+// wrong in the same way.
+//
+// It is stored flat — a list of nodes, each naming its parent — rather than as
+// nested records. Three reasons, and they are the reasons a database would do
+// the same. A nested record cannot be indexed by code without walking it; a
+// flat list can. Re-parenting a node is a field assignment rather than a
+// structural rebuild. And the roll-up, which is the operation that actually
+// matters, is a fold over a filtered list either way.
+//
+// The root's parent code is the empty string.
+//
+// Field names are compound because அளவு, நிலை, மதிப்பு and பொருள் are keywords
+// in this language; see celavu/README.md for why that matters for records.
+
+// கணு_ஆக்கு(கணு_குறி, பெற்றோர்_குறி, கணு_பெயர், கணு_நிதி)
+//
+// கணு_நிதி is the budget *entered at this node*. For a parent it is the figure
+// the planner wrote down; for a leaf it is the work package estimate. The two
+// are reconciled by நூறு_விதி_சரியா, not by construction — a WBS that cannot
+// be built in a violating state cannot be checked, and the check is the point.
+செயல் கணு_ஆக்கு(கணு_குறி, பெற்றோர்_குறி, கணு_பெயர், கணு_நிதி) {
+    திரும்பு {
+        கணு_குறி: கணு_குறி,
+        பெற்றோர்_குறி: பெற்றோர்_குறி,
+        கணு_பெயர்: கணு_பெயர்,
+        கணு_நிதி: கணு_நிதி
+    };
+}
+
+செயல் கணு_தேடு(கணுக்கள், கணு_குறி) {
+    ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
+        (ஒரு_கணு.கணு_குறி == கணு_குறி) எனில் { திரும்பு சரி(ஒரு_கணு); }
+    }
+    திரும்பு தவறு("கணு காணவில்லை: " & கணு_குறி);
+}
+
+செயல் சேய்கள்(கணுக்கள், பெற்றோர்_குறி) {
+    விடை_பட்டி = [];
+    ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
+        (ஒரு_கணு.பெற்றோர்_குறி == பெற்றோர்_குறி) எனில் {
+            விடை_பட்டி = இணை(விடை_பட்டி, ஒரு_கணு);
+        }
+    }
+    திரும்பு விடை_பட்டி;
+}
+
+செயல் மூலங்கள்(கணுக்கள்) { திரும்பு சேய்கள்(கணுக்கள், ""); }
+
+// இலைக்_கணுவா(கணுக்கள், கணு_குறி) — a leaf is a work package
+//
+// The WBS decomposes deliverables, and it stops at the level where a single
+// owner can be held to a cost and a duration. That level is defined by having
+// no children, not by depth: one branch may reach it at level three and
+// another at level five.
+செயல் இலைக்_கணுவா(கணுக்கள், கணு_குறி) {
+    திரும்பு நீளம்(சேய்கள்(கணுக்கள், கணு_குறி)) == 0;
+}
+
+செயல் வேலைத்_தொகுப்புகள்(கணுக்கள்) {
+    விடை_பட்டி = [];
+    ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
+        (இலைக்_கணுவா(கணுக்கள், ஒரு_கணு.கணு_குறி)) எனில் {
+            விடை_பட்டி = இணை(விடை_பட்டி, ஒரு_கணு);
+        }
+    }
+    திரும்பு விடை_பட்டி;
+}
+
+// --- Rolling up ---------------------------------------------------------
+
+// உள்_கூட்டல்(கணுக்கள், கணு_குறி) — the subtree's budget, from its leaves
+//
+// Deliberately sums *leaves* rather than the node's own figure, so that it
+// answers what the work actually adds up to. Comparing it with the entered
+// figure is how a 100% rule violation is found.
+செயல் உள்_கூட்டல்(கணுக்கள், கணு_குறி) {
+    (இலைக்_கணுவா(கணுக்கள், கணு_குறி)) எனில் {
+        விடை = கணு_தேடு(கணுக்கள், கணு_குறி);
+        (தவறா(விடை)) எனில் { திரும்பு 0; }
+        திரும்பு மதிப்பு(விடை).கணு_நிதி;
+    }
+    ஓடும்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_சேய் இல் சேய்கள்(கணுக்கள், கணு_குறி) {
+        ஓடும்_கூட்டல் = ஓடும்_கூட்டல் + உள்_கூட்டல்(கணுக்கள், ஒரு_சேய்.கணு_குறி);
+    }
+    திரும்பு ஓடும்_கூட்டல்;
+}
+
+// ஆழம்(கணுக்கள், கணு_குறி) — a root is at depth 0
+செயல் ஆழம்(கணுக்கள், கணு_குறி) {
+    விடை = கணு_தேடு(கணுக்கள், கணு_குறி);
+    (தவறா(விடை)) எனில் { திரும்பு 0; }
+    பெற்றோர் = மதிப்பு(விடை).பெற்றோர்_குறி;
+    (பெற்றோர் == "") எனில் { திரும்பு 0; }
+    திரும்பு 1 + ஆழம்(கணுக்கள், பெற்றோர்);
+}
+
+// --- The 100% rule ------------------------------------------------------
+
+// நூறு_விதி_சரியா(கணுக்கள், கணு_குறி)
+//
+// The rule: the work at any level of decomposition is 100% of the work of its
+// parent — no more and no less. A parent whose entered budget exceeds its
+// children's has work nobody has been assigned; one whose children exceed it
+// has work counted twice. Both are invisible in a tree view and both are found
+// by this comparison.
+//
+// A leaf satisfies it trivially, having nothing below it to disagree with.
+செயல் நூறு_விதி_சரியா(கணுக்கள், கணு_குறி) {
+    (இலைக்_கணுவா(கணுக்கள், கணு_குறி)) எனில் { திரும்பு மெய்; }
+    விடை = கணு_தேடு(கணுக்கள், கணு_குறி);
+    (தவறா(விடை)) எனில் { திரும்பு பொய்; }
+    சேய்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_சேய் இல் சேய்கள்(கணுக்கள், கணு_குறி) {
+        சேய்_கூட்டல் = சேய்_கூட்டல் + ஒரு_சேய்.கணு_நிதி;
+    }
+    திரும்பு மதிப்பு(விடை).கணு_நிதி == சேய்_கூட்டல்;
+}
+
+// விதியை_சரிபார்(கணுக்கள்) — the first violation, or சரி
+//
+// Returns the offending node rather than a boolean, because "the WBS does not
+// balance" is not actionable and "ப2 is entered at 400 but its children total
+// 350" is.
+செயல் விதியை_சரிபார்(கணுக்கள்) {
+    ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
+        (இல்லை நூறு_விதி_சரியா(கணுக்கள், ஒரு_கணு.கணு_குறி)) எனில் {
+            சேய்_கூட்டல் = 0;
+            ஒவ்வொரு ஒரு_சேய் இல் சேய்கள்(கணுக்கள், ஒரு_கணு.கணு_குறி) {
+                சேய்_கூட்டல் = சேய்_கூட்டல் + ஒரு_சேய்.கணு_நிதி;
+            }
+            திரும்பு தவறு(ஒரு_கணு.கணு_குறி & ": உள்ளிட்டது "
+                          & ஒரு_கணு.கணு_நிதி & ", சேய்கள் " & சேய்_கூட்டல்);
+        }
+    }
+    திரும்பு சரி(மெய்);
+}
