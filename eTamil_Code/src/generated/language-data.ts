@@ -5458,6 +5458,445 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 197
   },
   {
+    "name": "இடர்_ஆக்கு",
+    "forms": [
+      "இடர்_ஆக்கு"
+    ],
+    "params": [
+      "இடர்க்_குறி",
+      "விவரம்",
+      "நிகழ்தகவு",
+      "தாக்கத்_தொகை",
+      "இடர்_வகை",
+      "உரிமையாளர்"
+    ],
+    "arity": 6,
+    "doc": "இடர்_ஆக்கு(இடர்க்_குறி, விவரம், நிகழ்தகவு, தாக்கத்_தொகை, இடர்_வகை,",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 38
+  },
+  {
+    "name": "இடர்_செல்லுபடியா",
+    "forms": [
+      "இடர்_செல்லுபடியா"
+    ],
+    "params": [
+      "ஒரு_இடர்"
+    ],
+    "arity": 1,
+    "doc": "இடர்_செல்லுபடியா(ஒரு_இடர்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 53
+  },
+  {
+    "name": "எதிர்பார்ப்பு",
+    "forms": [
+      "எதிர்பார்ப்பு"
+    ],
+    "params": [
+      "ஒரு_இடர்"
+    ],
+    "arity": 1,
+    "doc": "எதிர்பார்ப்பு(ஒரு_இடர்) — probability times impact, signed by kind",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 86
+  },
+  {
+    "name": "மொத்த_எதிர்பார்ப்பு",
+    "forms": [
+      "மொத்த_எதிர்பார்ப்பு"
+    ],
+    "params": [
+      "இடர்கள்"
+    ],
+    "arity": 1,
+    "doc": "மொத்த_எதிர்பார்ப்பு(இடர்கள்) — the register's net exposure",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 98
+  },
+  {
+    "name": "வகையால்_எதிர்பார்ப்பு",
+    "forms": [
+      "வகையால்_எதிர்பார்ப்பு"
+    ],
+    "params": [
+      "இடர்கள்",
+      "இடர்_வகை"
+    ],
+    "arity": 2,
+    "doc": "வகையால்_எதிர்பார்ப்பு(இடர்கள், இடர்_வகை)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 111
+  },
+  {
+    "name": "இடர்_மதிப்பெண்",
+    "forms": [
+      "இடர்_மதிப்பெண்"
+    ],
+    "params": [
+      "நிகழ்தகவுத்_தரம்",
+      "தாக்கத்_தரம்"
+    ],
+    "arity": 2,
+    "doc": "இடர்_மதிப்பெண்(நிகழ்தகவுத்_தரம், தாக்கத்_தரம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 140
+  },
+  {
+    "name": "மதிப்பெண்_நிலைமை",
+    "forms": [
+      "மதிப்பெண்_நிலைமை"
+    ],
+    "params": [
+      "மதிப்பெண்",
+      "உயர்_எல்லை",
+      "நடுத்தர_எல்லை"
+    ],
+    "arity": 3,
+    "doc": "மதிப்பெண்_நிலைமை(மதிப்பெண், உயர்_எல்லை, நடுத்தர_எல்லை)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 152
+  },
+  {
+    "name": "பதிலளிப்பு_சரியா",
+    "forms": [
+      "பதிலளிப்பு_சரியா"
+    ],
+    "params": [
+      "இடர்_வகை",
+      "பதிலளிப்பு"
+    ],
+    "arity": 2,
+    "doc": "பதிலளிப்பு_சரியா(இடர்_வகை, பதிலளிப்பு)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 174
+  },
+  {
+    "name": "எஞ்சிய_இடர்",
+    "forms": [
+      "எஞ்சிய_இடர்"
+    ],
+    "params": [
+      "ஒரு_இடர்",
+      "புதிய_நிகழ்தகவு",
+      "புதிய_தாக்கம்"
+    ],
+    "arity": 3,
+    "doc": "எஞ்சிய_இடர்(ஒரு_இடர், புதிய_நிகழ்தகவு, புதிய_தாக்கம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 197
+  },
+  {
+    "name": "பதிலளிப்பு_பயனுள்ளதா",
+    "forms": [
+      "பதிலளிப்பு_பயனுள்ளதா"
+    ],
+    "params": [
+      "நன்மை",
+      "பதிலளிப்புச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "பதிலளிப்பு_பயனுள்ளதா(நன்மை, பதிலளிப்புச்_செலவு)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 220
+  },
+  {
+    "name": "பதிலளிப்பு_நிகரம்",
+    "forms": [
+      "பதிலளிப்பு_நிகரம்"
+    ],
+    "params": [
+      "நன்மை",
+      "பதிலளிப்புச்_செலவு"
+    ],
+    "arity": 2,
+    "doc": "பதிலளிப்பு_நிகரம்(நன்மை, பதிலளிப்புச்_செலவு)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 225
+  },
+  {
+    "name": "தற்செயல்_இருப்பைக்_கணக்கிடு",
+    "forms": [
+      "தற்செயல்_இருப்பைக்_கணக்கிடு"
+    ],
+    "params": [
+      "இடர்கள்"
+    ],
+    "arity": 1,
+    "doc": "தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 245
+  },
+  {
+    "name": "மேலாண்மை_இருப்பைக்_கணக்கிடு",
+    "forms": [
+      "மேலாண்மை_இருப்பைக்_கணக்கிடு"
+    ],
+    "params": [
+      "அடிப்படை_நிதி",
+      "கொள்கை_விகிதம்"
+    ],
+    "arity": 2,
+    "doc": "மேலாண்மை_இருப்பைக்_கணக்கிடு(அடிப்படை_நிதி, கொள்கை_விகிதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 259
+  },
+  {
+    "name": "கிளை_ஆக்கு",
+    "forms": [
+      "கிளை_ஆக்கு"
+    ],
+    "params": [
+      "விவரம்",
+      "நிகழ்தகவு",
+      "விளைவுத்_தொகை"
+    ],
+    "arity": 3,
+    "doc": "கிளை_ஆக்கு(விவரம், நிகழ்தகவு, விளைவுத்_தொகை)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 270
+  },
+  {
+    "name": "கிளைகளின்_எதிர்பார்ப்பு",
+    "forms": [
+      "கிளைகளின்_எதிர்பார்ப்பு"
+    ],
+    "params": [
+      "கிளைகள்"
+    ],
+    "arity": 1,
+    "doc": "கிளைகளின்_எதிர்பார்ப்பு(கிளைகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 282
+  },
+  {
+    "name": "சிறந்த_முடிவு",
+    "forms": [
+      "சிறந்த_முடிவு"
+    ],
+    "params": [
+      "வாய்ப்புகள்"
+    ],
+    "arity": 1,
+    "doc": "சிறந்த_முடிவு(வாய்ப்புகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/itar.qmz",
+    "line": 312
+  },
+  {
+    "name": "முப்புள்ளி_ஆக்கு",
+    "forms": [
+      "முப்புள்ளி_ஆக்கு"
+    ],
+    "params": [
+      "நம்பிக்கை",
+      "வாய்ப்பானது",
+      "அவநம்பிக்கை"
+    ],
+    "arity": 3,
+    "doc": "முப்புள்ளி_ஆக்கு(நம்பிக்கை, வாய்ப்பானது, அவநம்பிக்கை)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 41
+  },
+  {
+    "name": "பீட்டா_சராசரி",
+    "forms": [
+      "பீட்டா_சராசரி"
+    ],
+    "params": [
+      "ஒரு_மதிப்பீடு"
+    ],
+    "arity": 1,
+    "doc": "பீட்டா_சராசரி(ஒரு_மதிப்பீடு) — the PERT expected value",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 63
+  },
+  {
+    "name": "முக்கோண_சராசரி",
+    "forms": [
+      "முக்கோண_சராசரி"
+    ],
+    "params": [
+      "ஒரு_மதிப்பீடு"
+    ],
+    "arity": 1,
+    "doc": "முக்கோண_சராசரி(ஒரு_மதிப்பீடு) — the simple average of the three",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 76
+  },
+  {
+    "name": "நியம_விலகல்",
+    "forms": [
+      "நியம_விலகல்"
+    ],
+    "params": [
+      "ஒரு_மதிப்பீடு"
+    ],
+    "arity": 1,
+    "doc": "நியம_விலகல்(ஒரு_மதிப்பீடு) — (pessimistic − optimistic) ÷ 6",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 89
+  },
+  {
+    "name": "பரவல்",
+    "forms": [
+      "பரவல்"
+    ],
+    "params": [
+      "ஒரு_மதிப்பீடு"
+    ],
+    "arity": 1,
+    "doc": "பரவல்(ஒரு_மதிப்பீடு) — the variance, the deviation squared",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 99
+  },
+  {
+    "name": "பாதை_சராசரி",
+    "forms": [
+      "பாதை_சராசரி"
+    ],
+    "params": [
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 1,
+    "doc": "பாதை_சராசரி(மதிப்பீடுகள்) — expected durations add",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 109
+  },
+  {
+    "name": "பாதை_பரவல்",
+    "forms": [
+      "பாதை_பரவல்"
+    ],
+    "params": [
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 1,
+    "doc": "பாதை_பரவல்(மதிப்பீடுகள்) — **variances** add",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 121
+  },
+  {
+    "name": "பாதை_விலகல்",
+    "forms": [
+      "பாதை_விலகல்"
+    ],
+    "params": [
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 1,
+    "doc": "பாதை_விலகல்(மதிப்பீடுகள்) — the root of the sum of the variances",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 130
+  },
+  {
+    "name": "தவறாக_விலகல்களைக்_கூட்டினால்",
+    "forms": [
+      "தவறாக_விலகல்களைக்_கூட்டினால்"
+    ],
+    "params": [
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 1,
+    "doc": "தவறாக_விலகல்களைக்_கூட்டினால்(மதிப்பீடுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 145
+  },
+  {
+    "name": "வளைவு_அட்டவணை",
+    "forms": [
+      "வளைவு_அட்டவணை"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "=========================================================================",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 167
+  },
+  {
+    "name": "நிகழ்தகவு_Z",
+    "forms": [
+      "நிகழ்தகவு_Z"
+    ],
+    "params": [
+      "z_மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "நிகழ்தகவு_Z(z_மதிப்பு) — Φ(z), as a percentage out of a hundred",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 196
+  },
+  {
+    "name": "நம்பிக்கைக்கான_Z",
+    "forms": [
+      "நம்பிக்கைக்கான_Z"
+    ],
+    "params": [
+      "நிகழ்தகவு_சதவீதம்"
+    ],
+    "arity": 1,
+    "doc": "நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்) — the z for a wanted confidence",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 225
+  },
+  {
+    "name": "இலக்கு_நிகழ்தகவு",
+    "forms": [
+      "இலக்கு_நிகழ்தகவு"
+    ],
+    "params": [
+      "இலக்கு_காலம்",
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 2,
+    "doc": "இலக்கு_நிகழ்தகவு(இலக்கு_காலம், மதிப்பீடுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 266
+  },
+  {
+    "name": "நம்பிக்கை_காலம்",
+    "forms": [
+      "நம்பிக்கை_காலம்"
+    ],
+    "params": [
+      "நிகழ்தகவு_சதவீதம்",
+      "மதிப்பீடுகள்"
+    ],
+    "arity": 2,
+    "doc": "நம்பிக்கை_காலம்(நிகழ்தகவு_சதவீதம், மதிப்பீடுகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/itar/mUZRuppuLLi.qmz",
+    "line": 289
+  },
+  {
     "name": "எழுத்து_மறை",
     "forms": [
       "எழுத்து_மறை"
@@ -7643,6 +8082,20 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "kind": "stdlib",
     "module": "nUlakam/kaNiqam.qmz",
     "line": 80
+  },
+  {
+    "name": "வர்க்கமூலம்",
+    "forms": [
+      "வர்க்கமூலம்"
+    ],
+    "params": [
+      "மதிப்பு"
+    ],
+    "arity": 1,
+    "doc": "வர்க்கமூலம்(மதிப்பு) — the square root, by Newton's method",
+    "kind": "stdlib",
+    "module": "nUlakam/kaNiqam.qmz",
+    "line": 100
   },
   {
     "name": "அறுபத்துநான்கு_எழுத்துகள்",

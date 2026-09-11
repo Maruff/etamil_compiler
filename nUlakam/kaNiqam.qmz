@@ -81,3 +81,40 @@
     (வகுப்பான் == 0) எனில் { திரும்பு 0; }
     திரும்பு எண்_மதிப்பு - தரை(எண்_மதிப்பு / வகுப்பான்) * வகுப்பான்;
 }
+
+// வர்க்கமூலம்(மதிப்பு) — the square root, by Newton's method
+//
+// The host has no square root, no power and no exponential, so this is built
+// from the arithmetic the language has — the same reason மீதி is written here
+// rather than asked of Layer 0.
+//
+// Newton's method doubles the correct digits each pass, so a dozen iterations
+// is far more than a Decimal can hold; the loop stops when the estimate stops
+// moving and the bound of forty is only there so that a pathological input
+// cannot spin for ever.
+//
+// A negative input is a தவறு rather than nil or zero. Taking the root of a
+// negative variance is not a rounding problem, it is a sign error upstream,
+// and answering zero would hide it inside a confidence figure that looks
+// perfectly reasonable.
+செயல் வர்க்கமூலம்(மதிப்பு) {
+    (மதிப்பு < 0) எனில் {
+        திரும்பு தவறு("எதிர்மறை எண்ணின் வர்க்கமூலம் இல்லை  "
+                       & "(no square root of a negative number)");
+    }
+    (மதிப்பு == 0) எனில் { திரும்பு சரி(0); }
+
+    கணிப்பு = மதிப்பு;
+    (கணிப்பு < 1) எனில் { கணிப்பு = 1; }
+
+    சுற்றெண் = 0;
+    (சுற்றெண் < 40) சுற்று {
+        அடுத்த_கணிப்பு = (கணிப்பு + மதிப்பு / கணிப்பு) / 2;
+        (முழுமதிப்பு(அடுத்த_கணிப்பு - கணிப்பு) < 0.0000000001) எனில் {
+            திரும்பு சரி(அடுத்த_கணிப்பு);
+        }
+        கணிப்பு = அடுத்த_கணிப்பு;
+        சுற்றெண் = சுற்றெண் + 1;
+    }
+    திரும்பு சரி(கணிப்பு);
+}

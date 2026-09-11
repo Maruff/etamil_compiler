@@ -1,0 +1,283 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// இடர்_சோதனை — tests for risk and three-point estimation
+//
+// Run it like any other program:  etamil --vm nUlakam/itar/itar_cOqaZY.qmz
+// It exits non-zero if anything fails, so it works as a CI step.
+//
+// The estimation figures are chosen so the variances are exact: ranges of 4,
+// 10 and 8 give variances of 16/36, 100/36 and 64/36, which sum to 180/36 — a
+// path variance of exactly 5. The standard deviation is then √5, asserted to
+// four places because it is irrational.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "itar.qmz";
+இறக்கு "mUZRuppuLLi.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("இடர் — risk and estimation");
+
+// =========================================================================
+// வர்க்கமூலம் — the root added to kaNiqam.qmz
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வர்க்கமூலம்(144)), 12, "an exact root is exact");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வர்க்கமூலம்(0.25)), 0.5, "and so is a fractional one");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வர்க்கமூலம்(0)), 0, "the root of nothing is nothing");
+ஓட்டம் = சமம்(ஓட்டம், வட்டமிடு(மதிப்பு(வர்க்கமூலம்(2)), 6), 1.414214,
+              "√2 to six places");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(வர்க்கமூலம்(0 - 4)),
+                  "a negative input is refused — a negative variance is a "
+                  & "sign error upstream, not a rounding problem");
+
+இருமடங்கு = மதிப்பு(வர்க்கமூலம்(7));
+ஓட்டம் = சமம்(ஓட்டம், வட்டமிடு(இருமடங்கு * இருமடங்கு, 8), 7,
+              "and the root squared comes back to what went in");
+
+// =========================================================================
+// ஒரு இடர் — the register
+// =========================================================================
+
+இடர்கள் = [
+    இடர்_ஆக்கு("R1", "விற்பனையாளர் தாமதம்", 30, 500000, "அச்சுறுத்தல்", "பாலமுரளி"),
+    இடர்_ஆக்கு("R2", "அளவு மாற்றம்", 20, 300000, "அச்சுறுத்தல்", "நிரஞ்சனா"),
+    இடர்_ஆக்கு("R3", "முன்கூட்டிய முடிவு", 25, 200000, "வாய்ப்பு", "ஸ்வேதா")
+];
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(இடர்_செல்லுபடியா(இடர்கள்[0])),
+                  "a well-formed risk passes");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இடர்_செல்லுபடியா(
+                      இடர்_ஆக்கு("X", "", 130, 1000, "அச்சுறுத்தல்", ""))),
+                  "a probability above 100 is refused");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இடர்_செல்லுபடியா(
+                      இடர்_ஆக்கு("X", "", 30, 0 - 1000, "அச்சுறுத்தல்", ""))),
+                  "and so is a negative impact — the direction is carried by "
+                  & "the kind, and a threat entered negative would be added "
+                  & "to the reserve instead of subtracted");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(இடர்_செல்லுபடியா(
+                      இடர்_ஆக்கு("X", "", 30, 1000, "ஏதோ", ""))),
+                  "an unknown kind is refused rather than treated as a threat");
+
+// --- expected monetary value ---------------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், எதிர்பார்ப்பு(இடர்கள்[0]), 0 - 150000,
+              "a threat's expected value is negative: 30% of 5,00,000");
+ஓட்டம் = சமம்(ஓட்டம், எதிர்பார்ப்பு(இடர்கள்[2]), 50000,
+              "an opportunity's is positive — an opportunity is a risk, and a "
+              & "register of nothing but threats is half filled in");
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_எதிர்பார்ப்பு(இடர்கள்), 0 - 160000,
+              "the register nets to −1,60,000");
+ஓட்டம் = சமம்(ஓட்டம், வகையால்_எதிர்பார்ப்பு(இடர்கள், "அச்சுறுத்தல்"), 0 - 210000,
+              "the threats alone are −2,10,000");
+ஓட்டம் = சமம்(ஓட்டம், வகையால்_எதிர்பார்ப்பு(இடர்கள், "வாய்ப்பு"), 50000,
+              "and the opportunities +50,000");
+ஓட்டம் = சமம்(ஓட்டம், மொத்த_எதிர்பார்ப்பு([]), 0,
+              "an empty register has no exposure");
+
+// A certainty is still a risk: probability 100 makes the expected value the
+// whole impact, which is the case where a reserve is not a reserve at all.
+ஓட்டம் = சமம்(ஓட்டம், எதிர்பார்ப்பு(
+                  இடர்_ஆக்கு("R9", "நிச்சயம்", 100, 400000, "அச்சுறுத்தல்", "")),
+              0 - 400000, "a certainty carries its whole impact");
+
+// =========================================================================
+// தரவரிசை — and why the score is not a quantity
+// =========================================================================
+
+உயர்_நிகழ்வு = இடர்_மதிப்பெண்(5, 1);
+பெரும்_தாக்கம் = இடர்_மதிப்பெண்(1, 5);
+ஓட்டம் = சமம்(ஓட்டம், உயர்_நிகழ்வு["மதிப்பெண்"], 5, "5 × 1 scores 5");
+ஓட்டம் = சமம்(ஓட்டம், பெரும்_தாக்கம்["மதிப்பெண்"], 5, "and so does 1 × 5");
+ஓட்டம் = சமம்(ஓட்டம், உயர்_நிகழ்வு["மதிப்பெண்"], பெரும்_தாக்கம்["மதிப்பெண்"],
+              "the two are indistinguishable by score — one happens constantly "
+              & "and costs nothing, the other would end the project");
+ஓட்டம் = வேறுபடு(ஓட்டம், உயர்_நிகழ்வு["தாக்கத்_தரம்"],
+                 பெரும்_தாக்கம்["தாக்கத்_தரம்"],
+                 "which is why the components are returned beside the score");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பெண்_நிலைமை(20, 15, 8), "உயர்", "20 bands high");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பெண்_நிலைமை(10, 15, 8), "நடுத்தரம்", "10 medium");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பெண்_நிலைமை(4, 15, 8), "தாழ்", "and 4 low");
+
+// =========================================================================
+// பதிலளிப்பு — responses
+// =========================================================================
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("அச்சுறுத்தல்", "தணிப்பு"),
+                  "a threat may be mitigated");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("அச்சுறுத்தல்", "மாற்றல்"),
+                  "or transferred");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பதிலளிப்பு_சரியா("வாய்ப்பு", "தணிப்பு"),
+                  "but mitigating an opportunity is a contradiction — "
+                  & "mitigation reduces it, which is the opposite of what is "
+                  & "wanted");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("வாய்ப்பு", "மேம்படுத்தல்"),
+                  "an opportunity is enhanced instead");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("வாய்ப்பு", "பயன்படுத்தல்"),
+                  "or exploited");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பதிலளிப்பு_சரியா("அச்சுறுத்தல்", "பயன்படுத்தல்"),
+                  "and exploiting a threat is the same mistake the other way");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("அச்சுறுத்தல்", "ஏற்பு"),
+                  "acceptance is the one response that fits both");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("வாய்ப்பு", "ஏற்பு"),
+                  "in both directions");
+
+// A response that halves the probability, leaving the impact alone.
+மீதி = எஞ்சிய_இடர்(இடர்கள்[0], 10, 500000);
+ஓட்டம் = சமம்(ஓட்டம், மீதி["முன்பு"], 0 - 150000, "exposure before the response");
+ஓட்டம் = சமம்(ஓட்டம், மீதி["பின்பு"], 0 - 50000, "and after");
+ஓட்டம் = சமம்(ஓட்டம், மீதி["நன்மை"], 100000, "a benefit of 1,00,000");
+ஓட்டம் = சமம்(ஓட்டம், மீதி["எஞ்சிய_இடர்"]["நிகழ்தகவு"], 10,
+              "the residual stays on the register as a risk in its own right");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_பயனுள்ளதா(மீதி["நன்மை"], 50000),
+                  "spending 50,000 to remove 1,00,000 of exposure is worth it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பதிலளிப்பு_பயனுள்ளதா(மீதி["நன்மை"], 150000),
+                  "spending 1,50,000 to remove 1,00,000 makes the project "
+                  & "worse by 50,000 — and is done constantly, because the "
+                  & "spending is visible and the exposure is a probability");
+ஓட்டம் = சமம்(ஓட்டம், பதிலளிப்பு_நிகரம்(மீதி["நன்மை"], 150000), 0 - 50000,
+              "priced exactly");
+
+// Avoidance takes the probability to nothing, and the risk leaves the register.
+முற்றிலும் = எஞ்சிய_இடர்(இடர்கள்[1], 0, 300000);
+ஓட்டம் = சமம்(ஓட்டம், முற்றிலும்["பின்பு"], 0, "avoidance removes the exposure");
+ஓட்டம் = சமம்(ஓட்டம், முற்றிலும்["நன்மை"], 60000, "worth the whole 60,000");
+
+// =========================================================================
+// இருப்புகள் — sizing them
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்), 210000,
+              "the contingency reserve is the expected value of the threats");
+ஓட்டம் = வேறுபடு(ஓட்டம், தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்),
+                 முழுமதிப்பு(மொத்த_எதிர்பார்ப்பு(இடர்கள்)),
+                 "and not the net of the register — netting an opportunity "
+                 & "against a threat funds a certain cost with a possible "
+                 & "benefit, and the two will not oblige by happening together");
+
+ஓட்டம் = சமம்(ஓட்டம், மேலாண்மை_இருப்பைக்_கணக்கிடு(10000000, 5), 500000,
+              "the management reserve is a policy percentage of the baseline");
+ஓட்டம் = சமம்(ஓட்டம், தற்செயல்_இருப்பைக்_கணக்கிடு([]), 0,
+              "a register with nothing on it needs no contingency — which is "
+              & "exactly why the management reserve cannot be derived from it");
+
+// =========================================================================
+// முடிவு மரம் — decision trees
+// =========================================================================
+
+கிளைகள் = [கிளை_ஆக்கு("வெற்றி", 60, 1000000),
+             கிளை_ஆக்கு("தோல்வி", 40, 0 - 200000)];
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கிளைகளின்_எதிர்பார்ப்பு(கிளைகள்)), 520000,
+              "60% of 10,00,000 less 40% of 2,00,000");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(கிளைகளின்_எதிர்பார்ப்பு(
+                      [கிளை_ஆக்கு("ஒன்று", 70, 100)])),
+                  "probabilities that do not total 100 are refused");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(கிளைகளின்_எதிர்பார்ப்பு([])),
+                  "and an empty tree has no value");
+
+தேர்வு = மதிப்பு(சிறந்த_முடிவு([
+    {"பெயர்": "கட்டு", "எதிர்பார்ப்பு": 520000, "செலவு": 300000},
+    {"பெயர்": "வாங்கு", "எதிர்பார்ப்பு": 400000, "செலவு": 100000}
+]));
+ஓட்டம் = சமம்(ஓட்டம், தேர்வு["சிறந்தது"], "வாங்கு",
+              "the option with the lower expected value wins once the price "
+              & "of entry is counted");
+ஓட்டம் = சமம்(ஓட்டம், தேர்வு["நிகரம்"], 300000, "at a net of 3,00,000");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(தேர்வு["தரவரிசை"]), 2,
+              "and the whole ranking comes back, so a close call is visible");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(சிறந்த_முடிவு([])),
+                  "with no options there is no decision");
+
+// =========================================================================
+// மூன்றுப் புள்ளி — three-point estimation
+// =========================================================================
+
+அ = மதிப்பு(முப்புள்ளி_ஆக்கு(2, 4, 6));
+ஆ = மதிப்பு(முப்புள்ளி_ஆக்கு(3, 5, 13));
+இ = மதிப்பு(முப்புள்ளி_ஆக்கு(1, 2, 9));
+பாதை = [அ, ஆ, இ];
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முப்புள்ளி_ஆக்கு(6, 4, 2)),
+                  "points out of order are refused — a reversed range gives a "
+                  & "negative variance that only fails at the square root, "
+                  & "far from the mistake");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(முப்புள்ளி_ஆக்கு(4, 4, 4)),
+                  "but an estimate with no spread is allowed");
+
+ஓட்டம் = சமம்(ஓட்டம், பீட்டா_சராசரி(அ), 4,
+              "a symmetric estimate's expected value is its middle");
+ஓட்டம் = சமம்(ஓட்டம், பீட்டா_சராசரி(ஆ), 6,
+              "and a skewed one is pulled out by the tail: (3 + 20 + 13) ÷ 6");
+ஓட்டம் = சமம்(ஓட்டம், முக்கோண_சராசரி(ஆ), 7,
+              "the triangular mean gives 7 for the same estimate");
+ஓட்டம் = வேறுபடு(ஓட்டம், பீட்டா_சராசரி(ஆ), முக்கோண_சராசரி(ஆ),
+                 "and where the two disagree the estimate is skewed, which is "
+                 & "worth a conversation");
+
+ஓட்டம் = சமம்(ஓட்டம், நியம_விலகல்(ஆ), 1.6667, "the deviation is the range over six");
+ஓட்டம் = சமம்(ஓட்டம், பரவல்(அ), 0.444444, "and the variance its square");
+
+// --- the rule: variances add, deviations do not ---------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், பாதை_சராசரி(பாதை), 13, "expected durations add to 13");
+ஓட்டம் = சமம்(ஓட்டம், பாதை_பரவல்(பாதை), 5,
+              "and the variances to exactly 5 — (16 + 100 + 64) ÷ 36");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பாதை_விலகல்(பாதை)), 2.2361,
+              "so the path's deviation is √5");
+
+ஓட்டம் = சமம்(ஓட்டம், தவறாக_விலகல்களைக்_கூட்டினால்(பாதை), 3.6667,
+              "adding the deviations instead gives 3.67");
+ஓட்டம் = உறுதிசெய்(ஓட்டம்,
+                  தவறாக_விலகல்களைக்_கூட்டினால்(பாதை) > மதிப்பு(பாதை_விலகல்(பாதை)),
+                  "which is larger, as it always is — a schedule made to look "
+                  & "less certain than it is, and nobody queries that");
+
+// =========================================================================
+// நிகழ்தகவு — the normal curve
+// =========================================================================
+
+ஓட்டம் = சமம்(ஓட்டம், நிகழ்தகவு_Z(0), 50, "half the curve lies below the mean");
+ஓட்டம் = சமம்(ஓட்டம், நிகழ்தகவு_Z(1), 84.13, "one deviation above is 84.13%");
+ஓட்டம் = சமம்(ஓட்டம், நிகழ்தகவு_Z(0 - 1), 15.87,
+              "and one below is its complement, by symmetry");
+ஓட்டம் = சமம்(ஓட்டம், வட்டமிடு(நிகழ்தகவு_Z(1) + நிகழ்தகவு_Z(0 - 1), 2), 100,
+              "the two account for the whole curve");
+ஓட்டம் = சமம்(ஓட்டம், நிகழ்தகவு_Z(4), 99.98,
+              "far out in the tail it stops at 99.98 rather than 100 — no "
+              & "schedule has ever been certain");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(13, பாதை)), 50,
+              "**committing to the expected duration is committing to a coin "
+              & "toss** — the most useful thing this module says");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(16, பாதை)), 90.99,
+              "three days more buys 91% confidence");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(10, பாதை)), 9.01,
+              "and three days less leaves 9% — symmetric about the mean");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நம்பிக்கைக்கான_Z(90)), 1.2825,
+              "the z for 90% confidence, from the table read backwards");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நம்பிக்கைக்கான_Z(50)), 0, "and 0 for a half");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மதிப்பு(நம்பிக்கைக்கான_Z(10)) < 0,
+                  "a confidence below a half needs a duration below the mean");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(நம்பிக்கைக்கான_Z(100)),
+                  "and certainty is not available at any duration");
+
+தொண்ணூறு = மதிப்பு(நம்பிக்கை_காலம்(90, பாதை));
+ஓட்டம் = சமம்(ஓட்டம், தொண்ணூறு["சராசரி"], 13, "the expected duration is 13");
+ஓட்டம் = சமம்(ஓட்டம், தொண்ணூறு["கால_இருப்பு"], 2.8678,
+              "and 2.87 more carries it to 90% confidence");
+ஓட்டம் = சமம்(ஓட்டம், தொண்ணூறு["காலம்"], 15.8678,
+              "so 15.87 is the date that can be committed to — the gap is "
+              & "schedule contingency, the same idea as a contingency reserve "
+              & "applied to time");
+
+// A path with no spread at all is certain, and the curve degenerates.
+உறுதியானது = [மதிப்பு(முப்புள்ளி_ஆக்கு(5, 5, 5))];
+ஓட்டம் = சமம்(ஓட்டம், பாதை_பரவல்(உறுதியானது), 0, "no range, no variance");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(5, உறுதியானது)), 100,
+              "meeting a certain duration is certain");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(4, உறுதியானது)), 0,
+              "and beating it is impossible");
+
+சோதனை_முடிவு(ஓட்டம்);

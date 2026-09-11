@@ -1,0 +1,301 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/itar/mUZRuppuLLi.qmz — மூன்றுப்புள்ளி, three-point estimation
+//
+// qittam/pAqY.qmz computes a critical path from single-point durations, and a
+// single-point duration is a guess wearing a suit. Three-point estimation asks
+// for the optimistic, the most likely and the pessimistic case, and gets from
+// them both an expected duration and a **measure of how uncertain it is** —
+// which is the part a single number cannot carry and the part that decides
+// what can be committed to.
+//
+// Two rules, and the second is the one that goes wrong.
+//
+// **Variances add along a path; standard deviations do not.** The spread of a
+// sequence of activities is the root of the sum of their variances, not the
+// sum of their standard deviations. Adding the deviations overstates the
+// spread badly — in the tests, 3.67 against a true 2.24 — and always in the
+// direction of making a schedule look less certain than it is.
+//
+// **The critical path is not always the riskiest path.** A path one day
+// shorter with twice the variance will overrun the critical path often. Nothing
+// here picks a path; பாதை_பரவல் is offered so that every path can be measured
+// and compared, which is the only way that comparison ever gets made.
+//
+// There is no Monte Carlo here. It needs a random source the standard library
+// does not have, and everything below is closed-form arithmetic.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// ஒரு மதிப்பீடு — one three-point estimate
+// =========================================================================
+//
+// முப்புள்ளி_ஆக்கு(நம்பிக்கை, வாய்ப்பானது, அவநம்பிக்கை)
+//
+// Optimistic, most likely, pessimistic. The order is checked, because an
+// estimate with the pessimistic case below the most likely produces a negative
+// standard deviation, and a negative variance propagates into a square root
+// that refuses — a long way from where the mistake was made.
+செயல் முப்புள்ளி_ஆக்கு(நம்பிக்கை, வாய்ப்பானது, அவநம்பிக்கை) {
+    (நம்பிக்கை > வாய்ப்பானது அல்லது வாய்ப்பானது > அவநம்பிக்கை) எனில் {
+        திரும்பு தவறு("மூன்று புள்ளிகள் வரிசையில் இல்லை  "
+                       & "(the three points must be ordered optimistic ≤ most "
+                       & "likely ≤ pessimistic): "
+                       & சொல்லாக்கு(நம்பிக்கை) & ", "
+                       & சொல்லாக்கு(வாய்ப்பானது) & ", "
+                       & சொல்லாக்கு(அவநம்பிக்கை));
+    }
+    திரும்பு சரி({"நம்பிக்கை": நம்பிக்கை,
+                  "வாய்ப்பானது": வாய்ப்பானது,
+                  "அவநம்பிக்கை": அவநம்பிக்கை});
+}
+
+// பீட்டா_சராசரி(ஒரு_மதிப்பீடு) — the PERT expected value
+//
+//     (optimistic + 4 × most likely + pessimistic) ÷ 6
+//
+// The beta distribution's mean, and it is **not** the average of the three.
+// The weight of four on the most likely case is what makes it useful: it
+// respects the estimator's judgement while letting a long tail pull the answer
+// out, which is what actually happens to projects.
+செயல் பீட்டா_சராசரி(ஒரு_மதிப்பீடு) {
+    திரும்பு வட்டமிடு((ஒரு_மதிப்பீடு["நம்பிக்கை"]
+                        + 4 * ஒரு_மதிப்பீடு["வாய்ப்பானது"]
+                        + ஒரு_மதிப்பீடு["அவநம்பிக்கை"]) / 6, 4);
+}
+
+// முக்கோண_சராசரி(ஒரு_மதிப்பீடு) — the simple average of the three
+//
+// The triangular distribution's mean. It is offered because it is defensible
+// where the most likely case is itself a guess — weighting a guess by four
+// gives it an authority it has not earned — and because the difference between
+// the two is a useful thing to look at. Where they disagree sharply, the
+// estimate is skewed, and a skewed estimate is worth a conversation.
+செயல் முக்கோண_சராசரி(ஒரு_மதிப்பீடு) {
+    திரும்பு வட்டமிடு((ஒரு_மதிப்பீடு["நம்பிக்கை"]
+                        + ஒரு_மதிப்பீடு["வாய்ப்பானது"]
+                        + ஒரு_மதிப்பீடு["அவநம்பிக்கை"]) / 3, 4);
+}
+
+// நியம_விலகல்(ஒரு_மதிப்பீடு) — (pessimistic − optimistic) ÷ 6
+//
+// Six standard deviations span the range, on the assumption that the two
+// extremes are roughly three deviations either side of the mean. The
+// assumption is doing real work and it is worth knowing it is there: an
+// estimator who gives a pessimistic case they are genuinely certain of, rather
+// than a bad-but-plausible one, produces a deviation that is far too wide.
+செயல் நியம_விலகல்(ஒரு_மதிப்பீடு) {
+    திரும்பு வட்டமிடு((ஒரு_மதிப்பீடு["அவநம்பிக்கை"]
+                        - ஒரு_மதிப்பீடு["நம்பிக்கை"]) / 6, 4);
+}
+
+// பரவல்(ஒரு_மதிப்பீடு) — the variance, the deviation squared
+//
+// Computed from the raw range rather than from the rounded deviation, so that
+// a path of many activities does not accumulate rounding in the one figure
+// that gets square-rooted.
+செயல் பரவல்(ஒரு_மதிப்பீடு) {
+    வீச்சு = (ஒரு_மதிப்பீடு["அவநம்பிக்கை"] - ஒரு_மதிப்பீடு["நம்பிக்கை"]) / 6;
+    திரும்பு வட்டமிடு(வீச்சு * வீச்சு, 6);
+}
+
+// =========================================================================
+// பாதை — a sequence of activities
+// =========================================================================
+
+// பாதை_சராசரி(மதிப்பீடுகள்) — expected durations add
+செயல் பாதை_சராசரி(மதிப்பீடுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_மதிப்பீடு இல் மதிப்பீடுகள் {
+        கூட்டல் = கூட்டல் + பீட்டா_சராசரி(ஒரு_மதிப்பீடு);
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 4);
+}
+
+// பாதை_பரவல்(மதிப்பீடுகள்) — **variances** add
+//
+// This is the rule, and it is the whole reason variance is worth carrying
+// about rather than just the deviation.
+செயல் பாதை_பரவல்(மதிப்பீடுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_மதிப்பீடு இல் மதிப்பீடுகள் {
+        கூட்டல் = கூட்டல் + பரவல்(ஒரு_மதிப்பீடு);
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 6);
+}
+
+// பாதை_விலகல்(மதிப்பீடுகள்) — the root of the sum of the variances
+செயல் பாதை_விலகல்(மதிப்பீடுகள்) {
+    விடை = வர்க்கமூலம்(பாதை_பரவல்(மதிப்பீடுகள்));
+    (தவறா(விடை)) எனில் { திரும்பு விடை; }
+    திரும்பு சரி(வட்டமிடு(மதிப்பு(விடை), 4));
+}
+
+// தவறாக_விலகல்களைக்_கூட்டினால்(மதிப்பீடுகள்)
+//
+// What adding the standard deviations would give, so the error can be measured
+// rather than asserted.
+//
+// It is not an alternative and is not offered as one. It is here because the
+// size of the overstatement is what makes the rule worth remembering, and
+// because the wrong answer is always larger — a schedule made to look less
+// certain than it is, which nobody queries.
+செயல் தவறாக_விலகல்களைக்_கூட்டினால்(மதிப்பீடுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_மதிப்பீடு இல் மதிப்பீடுகள் {
+        கூட்டல் = கூட்டல் + நியம_விலகல்(ஒரு_மதிப்பீடு);
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 4);
+}
+
+// =========================================================================
+// நிகழ்தகவு — the normal curve
+// =========================================================================
+//
+// The host has no exponential, so the standard normal distribution is a table
+// with linear interpolation between its points. Φ is tabulated from 0 to 3.5
+// at intervals of a tenth, and interpolating a curve this smooth over an
+// interval that short is accurate to about four decimal places — far finer
+// than an estimate built on somebody's pessimistic guess deserves.
+//
+// Stating the method matters more than the accuracy. A confidence figure
+// carried to two decimals looks like a measurement, and it rests on a beta
+// assumption, a six-sigma range assumption and a normal approximation, any of
+// which is a larger source of error than this table.
+செயல் வளைவு_அட்டவணை() {
+    திரும்பு [
+        {"z": 0.0, "p": 0.5000}, {"z": 0.1, "p": 0.5398},
+        {"z": 0.2, "p": 0.5793}, {"z": 0.3, "p": 0.6179},
+        {"z": 0.4, "p": 0.6554}, {"z": 0.5, "p": 0.6915},
+        {"z": 0.6, "p": 0.7257}, {"z": 0.7, "p": 0.7580},
+        {"z": 0.8, "p": 0.7881}, {"z": 0.9, "p": 0.8159},
+        {"z": 1.0, "p": 0.8413}, {"z": 1.1, "p": 0.8643},
+        {"z": 1.2, "p": 0.8849}, {"z": 1.3, "p": 0.9032},
+        {"z": 1.4, "p": 0.9192}, {"z": 1.5, "p": 0.9332},
+        {"z": 1.6, "p": 0.9452}, {"z": 1.7, "p": 0.9554},
+        {"z": 1.8, "p": 0.9641}, {"z": 1.9, "p": 0.9713},
+        {"z": 2.0, "p": 0.9772}, {"z": 2.1, "p": 0.9821},
+        {"z": 2.2, "p": 0.9861}, {"z": 2.3, "p": 0.9893},
+        {"z": 2.4, "p": 0.9918}, {"z": 2.5, "p": 0.9938},
+        {"z": 2.6, "p": 0.9953}, {"z": 2.7, "p": 0.9965},
+        {"z": 2.8, "p": 0.9974}, {"z": 2.9, "p": 0.9981},
+        {"z": 3.0, "p": 0.9987}, {"z": 3.1, "p": 0.9990},
+        {"z": 3.2, "p": 0.9993}, {"z": 3.3, "p": 0.9995},
+        {"z": 3.4, "p": 0.9997}, {"z": 3.5, "p": 0.9998}
+    ];
+}
+
+// நிகழ்தகவு_Z(z_மதிப்பு) — Φ(z), as a percentage out of a hundred
+//
+// Negative z is handled by symmetry: Φ(−z) = 1 − Φ(z). Beyond the table the
+// answer is effectively certain, and saying 99.98 rather than 100 keeps a
+// caller from reading a confidence of exactly one hundred per cent off a
+// schedule, which no schedule has ever had.
+செயல் நிகழ்தகவு_Z(z_மதிப்பு) {
+    (z_மதிப்பு < 0) எனில் {
+        திரும்பு வட்டமிடு(100 - நிகழ்தகவு_Z(0 - z_மதிப்பு), 2);
+    }
+
+    அட்டவணை = வளைவு_அட்டவணை();
+    கடைசி = நீளம்(அட்டவணை) - 1;
+    (z_மதிப்பு >= அட்டவணை[கடைசி]["z"]) எனில் {
+        திரும்பு வட்டமிடு(அட்டவணை[கடைசி]["p"] * 100, 2);
+    }
+
+    குறியீட்டெண் = 0;
+    (குறியீட்டெண் < கடைசி) சுற்று {
+        கீழ் = அட்டவணை[குறியீட்டெண்];
+        மேலே = அட்டவணை[குறியீட்டெண் + 1];
+        (z_மதிப்பு >= கீழ்["z"] மற்றும் z_மதிப்பு <= மேலே["z"]) எனில் {
+            இடைப்_பங்கு = (z_மதிப்பு - கீழ்["z"]) / (மேலே["z"] - கீழ்["z"]);
+            இடைமதிப்பு = கீழ்["p"] + இடைப்_பங்கு * (மேலே["p"] - கீழ்["p"]);
+            திரும்பு வட்டமிடு(இடைமதிப்பு * 100, 2);
+        }
+        குறியீட்டெண் = குறியீட்டெண் + 1;
+    }
+    திரும்பு 50;
+}
+
+// நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்) — the z for a wanted confidence
+//
+// The table read backwards, for the question a sponsor actually asks: not
+// "how likely is this date" but "what date can I commit to".
+செயல் நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்) {
+    (நிகழ்தகவு_சதவீதம் <= 0 அல்லது நிகழ்தகவு_சதவீதம் >= 100) எனில் {
+        திரும்பு தவறு("நம்பிக்கை 0 முதல் 100 வரை இருக்க வேண்டும்  "
+                       & "(a confidence must lie strictly between 0 and 100)");
+    }
+    (நிகழ்தகவு_சதவீதம் < 50) எனில் {
+        மறுபக்கம் = நம்பிக்கைக்கான_Z(100 - நிகழ்தகவு_சதவீதம்);
+        (தவறா(மறுபக்கம்)) எனில் { திரும்பு மறுபக்கம்; }
+        திரும்பு சரி(0 - மதிப்பு(மறுபக்கம்));
+    }
+
+    இலக்கு = நிகழ்தகவு_சதவீதம் / 100;
+    அட்டவணை = வளைவு_அட்டவணை();
+    கடைசி = நீளம்(அட்டவணை) - 1;
+    (இலக்கு >= அட்டவணை[கடைசி]["p"]) எனில் {
+        திரும்பு சரி(அட்டவணை[கடைசி]["z"]);
+    }
+
+    குறியீட்டெண் = 0;
+    (குறியீட்டெண் < கடைசி) சுற்று {
+        கீழ் = அட்டவணை[குறியீட்டெண்];
+        மேலே = அட்டவணை[குறியீட்டெண் + 1];
+        (இலக்கு >= கீழ்["p"] மற்றும் இலக்கு <= மேலே["p"]) எனில் {
+            இடைப்_பங்கு = (இலக்கு - கீழ்["p"]) / (மேலே["p"] - கீழ்["p"]);
+            திரும்பு சரி(வட்டமிடு(கீழ்["z"] + இடைப்_பங்கு * (மேலே["z"] - கீழ்["z"]), 4));
+        }
+        குறியீட்டெண் = குறியீட்டெண் + 1;
+    }
+    திரும்பு சரி(0);
+}
+
+// =========================================================================
+// கேள்விகள் — the two questions worth asking
+// =========================================================================
+//
+// இலக்கு_நிகழ்தகவு(இலக்கு_காலம், மதிப்பீடுகள்)
+//
+// How likely the path is to finish by a target. A path whose expected duration
+// **is** the target has a fifty per cent chance, which surprises people every
+// time and is the single most useful thing this module says: committing to the
+// expected duration is committing to a coin toss.
+செயல் இலக்கு_நிகழ்தகவு(இலக்கு_காலம், மதிப்பீடுகள்) {
+    விலகல்_விடை = பாதை_விலகல்(மதிப்பீடுகள்);
+    (தவறா(விலகல்_விடை)) எனில் { திரும்பு விலகல்_விடை; }
+
+    விலகல் = மதிப்பு(விலகல்_விடை);
+    சராசரி_காலம் = பாதை_சராசரி(மதிப்பீடுகள்);
+
+    // No spread at all: the duration is certain, so the answer is a step.
+    (விலகல் == 0) எனில் {
+        (இலக்கு_காலம் >= சராசரி_காலம்) எனில் { திரும்பு சரி(100); }
+        திரும்பு சரி(0);
+    }
+
+    z_மதிப்பு = (இலக்கு_காலம் - சராசரி_காலம்) / விலகல்;
+    திரும்பு சரி(நிகழ்தகவு_Z(z_மதிப்பு));
+}
+
+// நம்பிக்கை_காலம்(நிகழ்தகவு_சதவீதம், மதிப்பீடுகள்)
+//
+// The duration that carries a wanted confidence — the date that can be
+// committed to. The gap between this and the expected duration is the
+// schedule contingency, and it is the same idea as a contingency reserve in
+// itar.qmz applied to time instead of money.
+செயல் நம்பிக்கை_காலம்(நிகழ்தகவு_சதவீதம், மதிப்பீடுகள்) {
+    z_விடை = நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்);
+    (தவறா(z_விடை)) எனில் { திரும்பு z_விடை; }
+
+    விலகல்_விடை = பாதை_விலகல்(மதிப்பீடுகள்);
+    (தவறா(விலகல்_விடை)) எனில் { திரும்பு விலகல்_விடை; }
+
+    சராசரி_காலம் = பாதை_சராசரி(மதிப்பீடுகள்);
+    கூடுதல் = வட்டமிடு(மதிப்பு(z_விடை) * மதிப்பு(விலகல்_விடை), 4);
+    திரும்பு சரி({"காலம்": வட்டமிடு(சராசரி_காலம் + கூடுதல், 4),
+                  "சராசரி": சராசரி_காலம்,
+                  "கால_இருப்பு": கூடுதல்});
+}
