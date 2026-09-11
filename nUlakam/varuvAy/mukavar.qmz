@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/varuvAy/mukavar.qmz — முகவர், principal or agent
+//
+// One question, and it changes reported revenue by the entire cost of what was
+// bought in — while changing profit by **nothing at all**.
+//
+// An entity that controls a good or service before it transfers to the
+// customer is a **principal** and reports the gross amount as revenue, with
+// the third party's charge as cost of sales. One that merely arranges for
+// another party to provide it is an **agent** and reports only its fee or
+// commission.
+//
+// A contractor who subcontracts ₹80 lakh of a ₹1 crore job reports either ₹1
+// crore of revenue and ₹80 lakh of cost, or ₹20 lakh of revenue and nothing —
+// and earns ₹20 lakh either way. The gross figure is five times the net and
+// every margin percentage computed from them differs by a factor of five. It
+// is the single largest presentational difference available in a set of
+// accounts, it costs nothing to get wrong in the profit line, and it is
+// therefore the one most often argued for rather than assessed.
+//
+// **Control is the test.** The three indicators support that judgement and do
+// not replace it, and counting them is not the answer — which is why
+// குறியீட்டு_எண்ணிக்கை returns a count and முதன்மையாளரா takes the conclusion
+// as an argument rather than pretending to reach it.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// =========================================================================
+// குறியீடுகள் — the three indicators
+// =========================================================================
+//
+// குறியீட்டு_எண்ணிக்கை(நிறைவேற்ற_பொறுப்பா, சரக்கு_இடர்_உண்டா,
+//                       விலை_விருப்பம்_உண்டா)
+//
+// The three the standard offers that an entity controls the good or service
+// before transfer:
+//
+//   **primary responsibility** for fulfilling the promise — the customer looks
+//     to this entity when the work is wrong, not to the party that did it;
+//   **inventory risk** before or after transfer — the entity is out of pocket
+//     if the goods are not sold, damaged or returned;
+//   **discretion in establishing the price** — the entity sets what the
+//     customer pays, rather than passing through a price set by another.
+//
+// They are indicators and not a checklist. Two of three is not an answer, and a
+// conclusion reached by counting is a conclusion nobody has taken
+// responsibility for.
+//
+// The one that carries most weight in practice is the first. A customer who
+// complains to the contractor about a subcontractor's work has told you
+// something about who controls the service.
+செயல் குறியீட்டு_எண்ணிக்கை(நிறைவேற்ற_பொறுப்பா, சரக்கு_இடர்_உண்டா,
+                            விலை_விருப்பம்_உண்டா) {
+    எண்ணிக்கை = 0;
+    (நிறைவேற்ற_பொறுப்பா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (சரக்கு_இடர்_உண்டா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    (விலை_விருப்பம்_உண்டா) எனில் { எண்ணிக்கை = எண்ணிக்கை + 1; }
+    திரும்பு எண்ணிக்கை;
+}
+
+// குறியீட்டு_விவரம்(நிறைவேற்ற_பொறுப்பா, சரக்கு_இடர்_உண்டா,
+//                    விலை_விருப்பம்_உண்டா)
+//
+// The three answers kept separate as well as counted, so a file note can say
+// which indicators were present rather than how many. "Two of three" is not a
+// reason and does not survive being asked about.
+செயல் குறியீட்டு_விவரம்(நிறைவேற்ற_பொறுப்பா, சரக்கு_இடர்_உண்டா,
+                         விலை_விருப்பம்_உண்டா) {
+    திரும்பு {"நிறைவேற்ற_பொறுப்பு": நிறைவேற்ற_பொறுப்பா,
+              "சரக்கு_இடர்": சரக்கு_இடர்_உண்டா,
+              "விலை_விருப்பம்": விலை_விருப்பம்_உண்டா,
+              "எண்ணிக்கை": குறியீட்டு_எண்ணிக்கை(நிறைவேற்ற_பொறுப்பா,
+                                                 சரக்கு_இடர்_உண்டா,
+                                                 விலை_விருப்பம்_உண்டா)};
+}
+
+// =========================================================================
+// அளவீடு — measuring the revenue
+// =========================================================================
+//
+// முதன்மை_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு)
+//
+// The principal's presentation: the whole amount the customer pays is revenue,
+// and what the third party charges is cost of sales.
+செயல் முதன்மை_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு) {
+    திரும்பு {"வகை": "முதன்மையாளர்",
+              "வருவாய்": வட்டமிடு(வாடிக்கையாளர்_மதிப்பு, 2),
+              "விற்பனைச்_செலவு": வட்டமிடு(மூன்றாம்_தரப்பு_செலவு, 2),
+              "லாபம்": வட்டமிடு(வாடிக்கையாளர்_மதிப்பு
+                                 - மூன்றாம்_தரப்பு_செலவு, 2)};
+}
+
+// முகவர்_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு)
+//
+// The agent's: only the fee is revenue, and there is no cost of sales at all —
+// the third party's charge never belonged to the entity, so it is not a cost
+// it incurred.
+//
+// Showing the gross amount as revenue *and* the third party's charge as cost
+// is the agent's presentation done as a principal's, and it is the specific
+// error this pair exists to make visible.
+செயல் முகவர்_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு) {
+    கட்டணத்_தொகை = வட்டமிடு(வாடிக்கையாளர்_மதிப்பு - மூன்றாம்_தரப்பு_செலவு, 2);
+    திரும்பு {"வகை": "முகவர்",
+              "வருவாய்": கட்டணத்_தொகை,
+              "விற்பனைச்_செலவு": 0,
+              "லாபம்": கட்டணத்_தொகை};
+}
+
+// வருவாயை_அளவிடு(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு,
+//                  முதன்மையாளரா)
+//
+// Whichever applies. முதன்மையாளரா is the caller's conclusion about control —
+// this function does not reach it, because the standard does not let a count
+// of indicators reach it either.
+செயல் வருவாயை_அளவிடு(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு,
+                       முதன்மையாளரா) {
+    (மூன்றாம்_தரப்பு_செலவு > வாடிக்கையாளர்_மதிப்பு) எனில் {
+        திரும்பு தவறு("மூன்றாம் தரப்புச் செலவு வாடிக்கையாளர் தொகையை மீறுகிறது  "
+                       & "(the third party's charge exceeds what the customer "
+                       & "pays; an agent cannot earn a negative fee, and a "
+                       & "principal making a loss on a pass-through should say "
+                       & "so deliberately)");
+    }
+    (முதன்மையாளரா) எனில் {
+        திரும்பு சரி(முதன்மை_வருவாய்(வாடிக்கையாளர்_மதிப்பு,
+                                       மூன்றாம்_தரப்பு_செலவு));
+    }
+    திரும்பு சரி(முகவர்_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு));
+}
+
+// =========================================================================
+// வேறுபாடு — what turns on the answer
+// =========================================================================
+//
+// இரு_வழியும்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு)
+//
+// Both presentations side by side, with the difference in revenue and the
+// difference in profit.
+//
+// The profit difference is **always zero**, and that is the whole point. The
+// classification moves a large number between two lines and changes nothing
+// anybody earns, which is why it attracts argument and why an entity arguing
+// for the gross presentation is arguing about how large it looks.
+//
+// The margin percentages are included because they are what the two
+// presentations are actually being compared on, and they differ enormously: a
+// principal on these figures reports a twenty per cent margin and an agent a
+// hundred per cent one, on identical cash.
+செயல் இரு_வழியும்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு) {
+    முதன்மை = முதன்மை_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு);
+    முகவர் = முகவர்_வருவாய்(வாடிக்கையாளர்_மதிப்பு, மூன்றாம்_தரப்பு_செலவு);
+
+    முதன்மை_விளிம்பு = 0;
+    (முதன்மை["வருவாய்"] != 0) எனில் {
+        முதன்மை_விளிம்பு = வட்டமிடு(முதன்மை["லாபம்"] * 100
+                                      / முதன்மை["வருவாய்"], 2);
+    }
+    முகவர்_விளிம்பு = 0;
+    (முகவர்["வருவாய்"] != 0) எனில் {
+        முகவர்_விளிம்பு = வட்டமிடு(முகவர்["லாபம்"] * 100 / முகவர்["வருவாய்"], 2);
+    }
+
+    திரும்பு {"முதன்மை": முதன்மை,
+              "முகவர்": முகவர்,
+              "வருவாய்_வேறுபாடு": வட்டமிடு(முதன்மை["வருவாய்"]
+                                            - முகவர்["வருவாய்"], 2),
+              "லாப_வேறுபாடு": வட்டமிடு(முதன்மை["லாபம்"] - முகவர்["லாபம்"], 2),
+              "முதன்மை_விளிம்பு": முதன்மை_விளிம்பு,
+              "முகவர்_விளிம்பு": முகவர்_விளிம்பு};
+}

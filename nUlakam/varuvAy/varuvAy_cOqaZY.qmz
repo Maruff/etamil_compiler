@@ -17,6 +17,8 @@
 இறக்கு "muZZERRam.qmz";
 இறக்கு "iruppukaL.qmz";
 இறக்கு "oppanqac_celavu.qmz";
+இறக்கு "mARRam.qmz";
+இறக்கு "mukavar.qmz";
 
 ஓட்டம் = சோதனை_தொடக்கம்("வருவாய் — Ind AS 115");
 
@@ -357,5 +359,127 @@
               "and an ample asset absorbs it entirely, leaving none");
 ஓட்டம் = சமம்(ஓட்டம், நட்டக்_கணக்கு(9000, 8000, 2000)["மொத்த_நட்டம்"], 0,
               "a profitable contract needs neither");
+
+// =========================================================================
+// மாற்றம் — contract modifications
+// =========================================================================
+//
+// A contract for 80 units at ₹1,000 each, 60 delivered and ₹60,000 recognised.
+// The variation adds 20 units for ₹4,000, nowhere near their ₹20,000
+// standalone value.
+
+தள்ளுபடி_மாற்றம் = மாற்றம்_ஆக்கு("V1", 4000, 20000, மெய், மெய்);
+சந்தை_மாற்றம் = மாற்றம்_ஆக்கு("V2", 20000, 20000, மெய், மெய்);
+ஒப்பாத_மாற்றம் = மாற்றம்_ஆக்கு("V3", 4000, 20000, மெய், பொய்);
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தனி_ஒப்பந்தமா(சந்தை_மாற்றம்),
+                  "added goods that are distinct and priced at standalone "
+                  & "value make a separate contract");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை தனி_ஒப்பந்தமா(தள்ளுபடி_மாற்றம்),
+                  "a variation priced off the original contract's rates is "
+                  & "not at standalone value, however separately it could be "
+                  & "invoiced");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை தனி_ஒப்பந்தமா(
+                      மாற்றம்_ஆக்கு("V4", 20000, 20000, பொய், மெய்)),
+                  "and goods that are not distinct never make one, whatever "
+                  & "the price");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாற்ற_வகை(சந்தை_மாற்றம், பொய்)), "தனி_ஒப்பந்தம்",
+              "the first question is asked first");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாற்ற_வகை(தள்ளுபடி_மாற்றம், மெய்)),
+              "முடித்து_புதியது",
+              "remaining goods distinct from those transferred — prospective");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(மாற்ற_வகை(தள்ளுபடி_மாற்றம், பொய்)),
+              "கூட்டுப்_பிடிப்பு",
+              "not distinct, so the modification lands inside one partly "
+              & "satisfied obligation");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(மாற்ற_வகை(ஒப்பாத_மாற்றம், மெய்)),
+                  "an unapproved variation is not a modification at all — "
+                  & "with an enforceable right it is a claim, and a claim is "
+                  & "variable consideration in the original contract");
+
+// The same variation, three ways.
+மூன்று = மூன்று_வழியும்(80000, 60000, தள்ளுபடி_மாற்றம், 0.6);
+
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["தனி_ஒப்பந்தம்"]["இப்போதைய_வருவாய்"], 0,
+              "a separate contract changes nothing in the period");
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["தனி_ஒப்பந்தம்"]["எஞ்சிய_மதிப்பு"], 20000,
+              "and leaves the original's remaining 20,000 alone");
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["முடித்து_புதியது"]["இப்போதைய_வருவாய்"], 0,
+              "a prospective modification also changes nothing now");
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["முடித்து_புதியது"]["எஞ்சிய_மதிப்பு"], 24000,
+              "but spreads 24,000 over what is left instead of 20,000");
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["கூட்டுப்_பிடிப்பு"]["இப்போதைய_வருவாய்"], 0 - 9600,
+              "while a cumulative catch-up takes 9,600 *out* of this period");
+ஓட்டம் = சமம்(ஓட்டம், மூன்று["கூட்டுப்_பிடிப்பு"]["இதுவரை_வருவாய்"], 50400,
+              "because 60 units are now 60% of a larger job, not 75% of the "
+              & "old one");
+
+ஓட்டம் = வேறுபடு(ஓட்டம், மூன்று["கூட்டுப்_பிடிப்பு"]["இப்போதைய_வருவாய்"],
+                 மூன்று["முடித்து_புதியது"]["இப்போதைய_வருவாய்"],
+                 "9,600 turns on two questions of fact about the goods, and "
+                 & "nothing else");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(எஞ்சிய_அலகு_மதிப்பு(24000, 40)), 600,
+              "every remaining unit now earns 600, including the 20 that were "
+              & "never part of the variation");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(எஞ்சிய_அலகு_மதிப்பு(24000, 0)),
+                  "with nothing remaining there is nothing to spread over");
+
+ஓட்டம் = சமம்(ஓட்டம், எஞ்சிய_மதிப்பு(80000, 60000, 4000), 24000,
+              "unrecognised original plus the modification");
+ஓட்டம் = சமம்(ஓட்டம், எஞ்சிய_மதிப்பு(80000, 90000, 4000), 0,
+              "and over-recognition does not make it negative");
+
+பயன்பாடு = மதிப்பு(மாற்றத்தைப்_பயன்படுத்து(80000, 60000, தள்ளுபடி_மாற்றம்,
+                                             பொய், 0.6));
+ஓட்டம் = சமம்(ஓட்டம், பயன்பாடு["வகை"], "கூட்டுப்_பிடிப்பு",
+              "the entry point decides and then reports only that treatment");
+ஓட்டம் = சமம்(ஓட்டம், பயன்பாடு["விளைவு"]["இப்போதைய_வருவாய்"], 0 - 9600,
+              "with the same answer");
+
+// =========================================================================
+// முகவர் — principal or agent
+// =========================================================================
+//
+// The customer pays ₹10,00,000 and a subcontractor charges ₹8,00,000.
+
+இரண்டு = இரு_வழியும்(1000000, 800000);
+
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முதன்மை"]["வருவாய்"], 1000000,
+              "a principal reports the whole amount as revenue");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முதன்மை"]["விற்பனைச்_செலவு"], 800000,
+              "with the third party's charge as cost of sales");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முகவர்"]["வருவாய்"], 200000,
+              "an agent reports only the fee");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முகவர்"]["விற்பனைச்_செலவு"], 0,
+              "and no cost of sales at all — the charge was never its cost");
+
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["வருவாய்_வேறுபாடு"], 800000,
+              "so reported revenue differs by the entire subcontract");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["லாப_வேறுபாடு"], 0,
+              "**and profit differs by nothing at all** — which is why the "
+              & "classification attracts argument rather than assessment");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முதன்மை"]["லாபம்"], இரண்டு["முகவர்"]["லாபம்"],
+              "the entity earns 2,00,000 either way");
+
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முதன்மை_விளிம்பு"], 20,
+              "a principal reports a 20% margin");
+ஓட்டம் = சமம்(ஓட்டம், இரண்டு["முகவர்_விளிம்பு"], 100,
+              "and an agent 100%, on identical cash");
+
+ஓட்டம் = சமம்(ஓட்டம், குறியீட்டு_எண்ணிக்கை(மெய், பொய், மெய்), 2,
+              "the indicators are counted");
+ஓட்டம் = சமம்(ஓட்டம், குறியீட்டு_விவரம்(மெய், பொய், மெய்)["சரக்கு_இடர்"], பொய்,
+              "and kept separately, because \"two of three\" is not a reason "
+              & "and does not survive being asked about");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வருவாயை_அளவிடு(1000000, 800000, மெய்))["வகை"],
+              "முதன்மையாளர்", "the conclusion about control is the caller's");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வருவாயை_அளவிடு(1000000, 800000, பொய்))["வருவாய்"],
+              200000, "and the measurement follows from it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(வருவாயை_அளவிடு(100, 200, மெய்)),
+                  "a third-party charge above what the customer pays is "
+                  & "refused — an agent cannot earn a negative fee");
 
 சோதனை_முடிவு(ஓட்டம்);

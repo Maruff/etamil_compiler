@@ -18,7 +18,9 @@ handover.
 | `muZZERRam.qmz` | step 5 — `காலப்போக்கிலா` `கட்டுப்பாட்டு_குறியீடுகள்` `செலவு_முன்னேற்றம்` `வெளியீட்டு_முன்னேற்றம்` `நிறுவாத_பொருள்_முன்னேற்றம்` `நிறுவாத_பொருளுடன்_வருவாய்` `இதுவரை_வருவாய்` `இந்தக்_காலத்து_வருவாய்` `மீட்பளவு_வருவாய்` `வருவாய்_நிலவரம்` |
 | `iruppukaL.qmz` | the balance sheet — `ஒப்பந்த_நிலை` `உரிமை_வகை` `தேக்கத்_தொகை` `தேக்கத்தை_வகைப்படுத்து` `விலைப்பட்டியல்_நிகரம்` `ஒப்பந்தங்களைத்_தொகு` `தவறாக_நிகரமிட்டால்` |
 | `oppanqac_celavu.qmz` | contract costs and losses — `பெறுதல்_செலவின்_வகை` `நிறைவேற்றல்_செலவின்_வகை` `கழிப்புத்_தொகை` `முதலீட்டுக்_குறைவு` `தவிர்க்க_முடியாத_செலவு` `நட்டம்_தருமா` `நட்டக்_கணக்கு` |
-| `varuvAy_cOqaZY.qmz` | the tests — 99 assertions |
+| `mARRam.qmz` | contract modifications — `மாற்றம்_ஆக்கு` `மாற்றம்_ஏற்கப்பட்டதா` `தனி_ஒப்பந்தமா` `மாற்ற_வகை` `எஞ்சிய_மதிப்பு` `எஞ்சிய_அலகு_மதிப்பு` `பிடிப்புத்_தொகை` `மூன்று_வழியும்` `மாற்றத்தைப்_பயன்படுத்து` |
+| `mukavar.qmz` | principal or agent — `குறியீட்டு_எண்ணிக்கை` `குறியீட்டு_விவரம்` `முதன்மை_வருவாய்` `முகவர்_வருவாய்` `வருவாயை_அளவிடு` `இரு_வழியும்` |
+| `varuvAy_cOqaZY.qmz` | the tests — 133 assertions |
 
 ```bash
 etamil --vm nUlakam/varuvAy/varuvAy_cOqaZY.qmz
@@ -150,22 +152,68 @@ exiting — nobody is worse off than walking away. The cost of fulfilling is the
 *directly related* cost, not incremental only; the 2022 amendment to Ind AS 37
 settled that, and the narrower reading made fewer contracts onerous.
 
+## A modification has three treatments and no discretion
+
+A variation order is the commonest event in a project and the least
+consistently accounted for. Ind AS 115 gives it three treatments decided by two
+questions of fact:
+
+- **A separate contract** — the added goods are distinct *and* priced at their
+  standalone selling price. The original is untouched.
+- **A termination and a new contract** — what remains is distinct from what has
+  gone, but the price is not at standalone value. Revenue already recognised is
+  not adjusted; the unrecognised original plus the modification is spread over
+  what is left. Prospective.
+- **A cumulative catch-up** — what remains is not distinct, so the modification
+  lands inside a single partly satisfied obligation. The whole contract is
+  remeasured and the difference taken now.
+
+The tests run **one** variation through all three: a contract for 80 units at
+₹1,000, 60 delivered and ₹60,000 recognised, with 20 more units added for
+₹4,000 against a ₹20,000 standalone value. A separate contract and a
+prospective modification both recognise **nothing** in the period; the
+cumulative catch-up takes **−₹9,600** out of it, because 60 units are now 60%
+of a larger job rather than 75% of the old one.
+
+₹9,600 turns on two questions about the goods and nothing else.
+`மூன்று_வழியும்` computes all three so that difference is visible — it is not a
+menu, and `மாற்றத்தைப்_பயன்படுத்து` is what a caller should use.
+
+Two details that get lost. An **unapproved** variation is not a modification at
+all: where there is an enforceable right it is a claim, and a claim is variable
+consideration in the original contract, subject to the constraint — a much more
+cautious treatment. And under the prospective treatment every remaining unit
+earns the blended rate, **₹600 here, including the 20 units that were never
+part of the variation**.
+
+## Principal or agent changes revenue by everything and profit by nothing
+
+An entity that controls a good before it transfers is a principal and reports
+gross, with the third party's charge as cost of sales. One that arranges for
+another to provide it is an agent and reports only its fee.
+
+On a ₹10,00,000 job subcontracted for ₹8,00,000: a principal reports
+₹10,00,000 of revenue and a **20% margin**; an agent reports ₹2,00,000 and a
+**100% margin**. Revenue differs by ₹8,00,000. **Profit differs by nothing.**
+
+That is why the classification attracts argument rather than assessment — it
+moves a large number between two lines and changes nothing anybody earns.
+
+Control is the test; the three indicators support it and do not replace it.
+`குறியீட்டு_எண்ணிக்கை` counts them and `வருவாயை_அளவிடு` takes the conclusion as
+an argument rather than pretending to reach it, because two of three is not an
+answer and a conclusion reached by counting is one nobody has taken
+responsibility for.
+
 ## Where it stops
 
 - **No journal entries.** Nothing here posts to `kaNakkiyal/pErEtu.qmz`. The
   amounts are computed; turning them into debits and credits needs a mapping
   from contract to account that belongs to an application.
-- **No principal-versus-agent.** Whether to report gross or net turns on who
-  controls the good before transfer, and it changes revenue by the whole cost
-  of sales without changing profit by a rupee. It deserves its own treatment.
 - **No licences, no warranties as a category.** A licence of intellectual
   property has its own right-to-use versus right-to-access test; a warranty is
   a performance obligation only if it provides a service beyond assurance.
   Both are classification questions rather than arithmetic.
-- **No modifications.** A contract modification is either a separate contract,
-  a termination and replacement, or a cumulative catch-up, depending on whether
-  the added goods are distinct and priced at standalone value. The three give
-  materially different numbers and the test is a judgement.
 - **No financing component measurement.** `பரிமாற்ற_மதிப்பு` takes the
   financing component as an amount; computing it needs a discount rate and the
   timing of payments.
