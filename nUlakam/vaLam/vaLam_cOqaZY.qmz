@@ -1,0 +1,249 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// வளம்_சோதனை — tests for resources, timesheets and posting
+//
+// Run it like any other program:  etamil --vm nUlakam/vaLam/vaLam_cOqaZY.qmz
+// It exits non-zero if anything fails, so it works as a CI step.
+//
+// The file follows one engineer through a rate change: ₹500 an hour to the end
+// of March 2026 and ₹600 from April. The point of the exercise is that a sheet
+// spanning the change is costed at both rates, entry by entry, and the total
+// is neither 500 nor 600 times the hours.
+//
+// 2 March 2026 is a Monday and 5 March is treated as a holiday, the same
+// specimen calendar the nAtkAtti tests use.
+
+இறக்கு "../cOqaZY.qmz";
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "vaLam.qmz";
+இறக்கு "nEraqqAL.qmz";
+இறக்கு "paqivu.qmz";
+
+ஓட்டம் = சோதனை_தொடக்கம்("வளம் — resources, time and posting");
+
+// =========================================================================
+// விகிதம் — the rate in force on a day
+// =========================================================================
+
+விகிதங்கள் = [விகிதப்_பதிவு("E1", 500, "2025-04-01", "2026-03-31"),
+               விகிதப்_பதிவு("E1", 600, "2026-04-01", ""),
+               விகிதப்_பதிவு("E2", 400, "2025-04-01", "")];
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(விகிதத்தைத்_தேடு(விகிதங்கள், "E1", "2026-03-31")),
+              500, "the old rate applies to the last day it was in force");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(விகிதத்தைத்_தேடு(விகிதங்கள், "E1", "2026-04-01")),
+              600, "and the new one from the day it starts");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(விகிதத்தைத்_தேடு(விகிதங்கள், "E2", "2026-09-11")),
+              400, "an open-ended rate has no end date to compare");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(விகிதத்தைத்_தேடு(விகிதங்கள், "E1", "2025-01-01")),
+                  "a day before any rate was in force is a தவறு, not zero — "
+                  & "charging time at nothing understates a project by exactly "
+                  & "the amount worth knowing");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(விகிதத்தைத்_தேடு(விகிதங்கள், "E9", "2026-04-01")),
+                  "and an unknown resource has no rate either");
+
+ஓட்டம் = சமம்(ஓட்டம், மேலதிக_விகிதம்(500, 2), 1000,
+              "overtime is a multiple of the base rate");
+
+// =========================================================================
+// திறன் — capacity against a calendar
+// =========================================================================
+
+நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 6], ["2026-03-05"]);
+
+ஓட்டம் = சமம்(ஓட்டம், காலத்_திறன்(8, "2026-03-02", "2026-03-08", நாட்காட்டி), 32,
+              "a week with one holiday holds four working days, so 32 hours "
+              & "— not 56, which is what elapsed days would give");
+ஓட்டம் = சமம்(ஓட்டம், காலத்_திறன்(8, "2026-03-02", "2026-03-06", நாட்காட்டி), 32,
+              "and the weekend adds nothing to it");
+ஓட்டம் = சமம்(ஓட்டம், கிடைக்கும்_மணிகள்(32, 8), 24,
+              "a day's leave comes out of capacity — somebody on leave has "
+              & "not failed to be utilised");
+ஓட்டம் = சமம்(ஓட்டம், கிடைக்கும்_மணிகள்(32, 40), 0,
+              "and availability does not go negative");
+
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பயன்பாட்டு_விகிதம்(24, 32)), 75,
+              "24 hours booked of 32 available is 75% utilisation");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பயன்பாட்டு_விகிதம்(24, 0)),
+                  "with no available hours there is nothing to measure against");
+
+// Utilisation and chargeability are different questions, and a business that
+// reports only the first reports the flattering one.
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கட்டண_விகிதம்(0, 24)), 0,
+              "a resource can be fully utilised and nothing chargeable");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கட்டண_விகிதம்(18, 24)), 75, "or three quarters so");
+
+// =========================================================================
+// உள்ளீடு — validating one entry
+// =========================================================================
+
+நல்ல_உள்ளீடு = நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 8, மெய்);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(உள்ளீட்டைச்_சரிபார்(நல்ல_உள்ளீடு, 12)),
+                  "eight hours on a real date passes");
+ஓட்டம் = சமம்(ஓட்டம், நல்ல_உள்ளீடு["நிலைமை"], "வரைவு",
+              "and a new entry starts as a draft");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(உள்ளீட்டைச்_சரிபார்(
+                      நேர_உள்ளீடு("E1", "2026-02-31", "S2a", 8, மெய்), 12)),
+                  "31 February is refused — the date check that catches a "
+                  & "sheet filled in from memory");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(உள்ளீட்டைச்_சரிபார்(
+                      நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 0, மெய்), 12)),
+                  "zero hours is not an entry");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(உள்ளீட்டைச்_சரிபார்(
+                      நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 0 - 4, மெய்), 12)),
+                  "and neither is negative time");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(உள்ளீட்டைச்_சரிபார்(
+                      நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 30, மெய்), 12)),
+                  "thirty hours does not fit in a day");
+
+// --- the check that only works across entries ----------------------------
+
+இரட்டைப்_பதிவு = [நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 6, மெய்),
+                   நேர_உள்ளீடு("E1", "2026-03-02", "S2b", 6, மெய்)];
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(உள்ளீட்டைச்_சரிபார்(இரட்டைப்_பதிவு[0], 8)),
+                  "six hours on one task is unremarkable");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(உள்ளீட்டைச்_சரிபார்(இரட்டைப்_பதிவு[1], 8)),
+                  "and so is six on another");
+ஓட்டம் = சமம்(ஓட்டம், நாள்_மொத்த_மணிகள்(இரட்டைப்_பதிவு, "E1", "2026-03-02"), 12,
+              "but the day holds twelve");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், மிகைப்_பதிவா(இரட்டைப்_பதிவு, "E1", "2026-03-02", 8),
+                  "which is a double booking — no amount of checking one "
+                  & "entry finds it");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மிகைப்_பதிவா(இரட்டைப்_பதிவு, "E1",
+                                                "2026-03-03", 8),
+                  "a different day is unaffected");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மிகைப்_பதிவா(இரட்டைப்_பதிவு, "E2",
+                                                "2026-03-02", 8),
+                  "and so is a different person");
+
+// =========================================================================
+// நிலைமை — approval
+// =========================================================================
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நிலை_மாற்றம்_சரியா("வரைவு", "சமர்ப்பித்தது"),
+                  "a draft may be submitted");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நிலை_மாற்றம்_சரியா("சமர்ப்பித்தது", "ஏற்றது"),
+                  "and a submitted sheet approved");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், நிலை_மாற்றம்_சரியா("சமர்ப்பித்தது", "நிராகரித்தது"),
+                  "or rejected");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நிலை_மாற்றம்_சரியா("ஏற்றது", "வரைவு"),
+                  "but nothing comes back from approved — it has been costed "
+                  & "and posted, and is corrected by a further entry");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நிலை_மாற்றம்_சரியா("வரைவு", "ஏற்றது"),
+                  "and nothing skips submission");
+
+சமர்ப்பித்தது = மதிப்பு(நிலையை_மாற்று(நல்ல_உள்ளீடு, "சமர்ப்பித்தது"));
+ஏற்றது = மதிப்பு(நிலையை_மாற்று(சமர்ப்பித்தது, "ஏற்றது"));
+ஓட்டம் = சமம்(ஓட்டம், ஏற்றது["நிலைமை"], "ஏற்றது", "the state moves");
+ஓட்டம் = சமம்(ஓட்டம், ஏற்றது["மணிகள்"], 8, "and the hours survive the move");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(நிலையை_மாற்று(ஏற்றது, "வரைவு")),
+                  "an illegal transition is refused");
+
+கலவை = [நல்ல_உள்ளீடு, ஏற்றது];
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(ஏற்றவை_மட்டும்(கலவை)), 1,
+              "only approved time is cost; the rest is somebody's intention");
+
+// =========================================================================
+// கணக்கிடல் — costing across a rate change
+// =========================================================================
+//
+// Four days in March at ₹500 and four in April at ₹600.
+
+தாள் = [நேர_உள்ளீடு("E1", "2026-03-30", "S2a", 8, மெய்),
+         நேர_உள்ளீடு("E1", "2026-03-31", "S2a", 8, மெய்),
+         நேர_உள்ளீடு("E1", "2026-04-01", "S2a", 8, மெய்),
+         நேர_உள்ளீடு("E1", "2026-04-02", "S2b", 8, பொய்)];
+
+கணக்கிட்டது = மதிப்பு(தாளைக்_கணக்கிடு(தாள், விகிதங்கள்));
+ஓட்டம் = சமம்(ஓட்டம், கணக்கிட்டது["மொத்த_மணிகள்"], 32, "thirty-two hours");
+ஓட்டம் = சமம்(ஓட்டம், கணக்கிட்டது["உள்ளீடுகள்"][0]["மணி_விகிதம்"], 500,
+              "the March entries cost at the March rate");
+ஓட்டம் = சமம்(ஓட்டம், கணக்கிட்டது["உள்ளீடுகள்"][2]["மணி_விகிதம்"], 600,
+              "and the April ones at April's");
+ஓட்டம் = சமம்(ஓட்டம், கணக்கிட்டது["மொத்தத்_தொகை"], 17600,
+              "for 17,600 — which is 8,000 plus 9,600");
+
+// The two ways of getting it wrong, priced.
+ஓட்டம் = வேறுபடு(ஓட்டம், கணக்கிட்டது["மொத்தத்_தொகை"], 32 * 600,
+                 "costing the whole sheet at the current rate would give "
+                 & "19,200 and reconcile perfectly to the wrong number");
+ஓட்டம் = வேறுபடு(ஓட்டம், கணக்கிட்டது["மொத்தத்_தொகை"], 32 * 500,
+                 "and at the old rate, 16,000");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தாளைக்_கணக்கிடு(
+                      [நேர_உள்ளீடு("E9", "2026-04-01", "S2a", 8, மெய்)],
+                      விகிதங்கள்)),
+                  "a sheet with one uncostable entry fails whole, rather than "
+                  & "returning a plausible total that is short by one line");
+
+// --- totals by activity: this is AC --------------------------------------
+
+வரிசைகள் = கணக்கிட்டது["உள்ளீடுகள்"];
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கு_மொத்தம்(வரிசைகள், "S2a")["தொகை"], 12800,
+              "actual cost of S2a — the AC that Ittu_maqippu.qmz takes as given");
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கு_மொத்தம்(வரிசைகள், "S2a")["மணிகள்"], 24,
+              "over twenty-four hours");
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கு_மொத்தம்(வரிசைகள், "S2b")["தொகை"], 4800,
+              "and of S2b");
+ஓட்டம் = சமம்(ஓட்டம், பணிக்கு_மொத்தம்(வரிசைகள், "S2a")["தொகை"]
+              + பணிக்கு_மொத்தம்(வரிசைகள், "S2b")["தொகை"],
+              கணக்கிட்டது["மொத்தத்_தொகை"],
+              "and the activities account for the whole sheet");
+
+ஓட்டம் = சமம்(ஓட்டம், கட்டண_மணிகள்(வரிசைகள்), 24,
+              "twenty-four of the thirty-two hours are chargeable");
+ஓட்டம் = சமம்(ஓட்டம், வளத்துக்கு_மொத்தம்(வரிசைகள், "E1")["தொகை"], 17600,
+              "one engineer accounts for all of it");
+
+// =========================================================================
+// பதிவு — into the ledger, and back out
+// =========================================================================
+
+நடப்புக்_கணக்கு = நடப்புக்_கணக்குக்_குறி("SNG", "S2");
+ஓட்டம் = சமம்(ஓட்டம், நடப்புக்_கணக்கு, "WIP-SNG-S2",
+              "work in progress is one account per control account");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சமநிலையா(உழைப்புப்_பதிவு(1, "2026-03-02", "உழைப்பு",
+                                                      நடப்புக்_கணக்கு,
+                                                      "PAYROLL", 12000)),
+                  "every posting balances");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், சமநிலையா(விலைப்பட்டியல்_பதிவு(2, "2026-03-31", "பில்",
+                                                          "DEBTORS", "CA-SNG",
+                                                          50000)),
+                  "including the billing entry");
+
+ஏடு = [];
+ஏடு = மதிப்பு(பதிவிடு(ஏடு, உழைப்புப்_பதிவு(1, "2026-03-02", "உழைப்பு",
+                                             நடப்புக்_கணக்கு, "PAYROLL", 12000)));
+ஏடு = மதிப்பு(பதிவிடு(ஏடு, பொருள்_பதிவு(2, "2026-03-05", "பொருள்",
+                                           நடப்புக்_கணக்கு, "STORES", 8000)));
+ஏடு = மதிப்பு(பதிவிடு(ஏடு, மேல்நிலைப்_பதிவு(3, "2026-04-02", "மேல்நிலை",
+                                               நடப்புக்_கணக்கு, "OH-ABS", 5000)));
+
+ஓட்டம் = சமம்(ஓட்டம், ஈட்டிய_செலவு(ஏடு, நடப்புக்_கணக்கு), 25000,
+              "actual cost read back out of the general ledger, not out of "
+              & "a spreadsheet");
+ஓட்டம் = சமம்(ஓட்டம், காலம்_வரை_செலவு(ஏடு, நடப்புக்_கணக்கு, "2026-03-31"), 20000,
+              "and as at 31 March it is 20,000 — a variance reported at a "
+              & "month end must be computed on the ledger as it stood then");
+
+ஓட்டம் = சமம்(ஓட்டம், ஈட்டிய_செலவு(ஏடு, "WIP-SNG-S1"), 0,
+              "a control account nothing was posted to has no cost");
+
+ஒத்தது = செலவை_ஒப்பிடு(ஏடு, நடப்புக்_கணக்கு, 25000);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், ஒத்தது["ஒத்துப்போகிறதா"],
+                  "ledger and timesheets agree");
+ஓட்டம் = சமம்(ஓட்டம், ஒத்தது["வேறுபாடு"], 0, "with nothing between them");
+
+பிரிந்தது = செலவை_ஒப்பிடு(ஏடு, நடப்புக்_கணக்கு, 17600);
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை பிரிந்தது["ஒத்துப்போகிறதா"],
+                  "and when they do not, the control says so");
+ஓட்டம் = சமம்(ஓட்டம், பிரிந்தது["வேறுபாடு"], 7400,
+              "7,400 posted that no timesheet supports — a project whose "
+              & "books and timesheets disagree has an actual cost that "
+              & "depends on who you ask");
+
+சோதனை_முடிவு(ஓட்டம்);

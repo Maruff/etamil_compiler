@@ -1,0 +1,190 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/vaLam/vaLam.qmz — வளம், resources and what they cost
+//
+// qittam/Ittu_maqippu.qmz computes cost variance from actual cost, and takes
+// actual cost as a number somebody types in. This directory is where that
+// number comes from.
+//
+// A resource costs money at a **rate**, and the rate is effective-dated. The
+// same person is charged at one rate in March and another in April, and a
+// timesheet for March costed at April's rate is wrong in a way that reconciles
+// perfectly and is invisible in every total.
+//
+// So விகிதத்தைத்_தேடு takes the day it is being asked about and **never
+// defaults it to today**. kaNakkiyal/vari_vikiqam.qmz refuses the same default
+// for the same reason: a rate looked up "as of now" quietly rewrites history
+// the first time one changes.
+//
+// Capacity is computed against a **calendar**, from nAtkAtti/, because a
+// month's capacity is its working days and not thirty times a day's hours.
+// February and March differ by three working days in most years, and a
+// utilisation percentage computed on elapsed days moves every month for
+// reasons that have nothing to do with anybody's work.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+இறக்கு "../nAtkAtti/vElYnAL.qmz";
+
+// =========================================================================
+// வளம் — the resource
+// =========================================================================
+//
+// வளம்_ஆக்கு(வளக்_குறி, பெயர், வள_வகை, நாள்_மணிகள்)
+//
+// வள_வகை is "ஊழியர்", "இயந்திரம்", "துணை_ஒப்பந்தம்" or whatever else the
+// entity distinguishes. It is a string and not an enumeration, because the
+// categories that matter differ by industry and none of them changes the
+// arithmetic — only the account the cost lands in, which is paqivu.qmz's
+// business.
+//
+// நாள்_மணிகள் is the standard hours in a working day for this resource. A
+// machine may run sixteen and a person eight, and capacity is meaningless
+// without it.
+செயல் வளம்_ஆக்கு(வளக்_குறி, பெயர், வள_வகை, நாள்_மணிகள்) {
+    திரும்பு {"குறி": வளக்_குறி,
+              "பெயர்": பெயர்,
+              "வகை": வள_வகை,
+              "நாள்_மணிகள்": நாள்_மணிகள்};
+}
+
+// =========================================================================
+// விகிதம் — the rate, effective-dated
+// =========================================================================
+//
+// விகிதப்_பதிவு(வளக்_குறி, மணி_விகிதம், அமல்_தொடக்கம், அமல்_முடிவு)
+//
+// A rate that applied from one day to another. Pass "" as அமல்_முடிவு for a
+// rate still in force — ISO dates sort, and the empty string sorts before
+// every date, so an open end is tested for rather than compared.
+செயல் விகிதப்_பதிவு(வளக்_குறி, மணி_விகிதம், அமல்_தொடக்கம், அமல்_முடிவு) {
+    திரும்பு {"வளக்_குறி": வளக்_குறி,
+              "மணி_விகிதம்": மணி_விகிதம்,
+              "அமல்_தொடக்கம்": அமல்_தொடக்கம்,
+              "அமல்_முடிவு": அமல்_முடிவு};
+}
+
+// விகிதத்தைத்_தேடு(விகிதங்கள், வளக்_குறி, ஒரு_நாள்)
+//
+// The rate for one resource on one day. **The day is required**, and there is
+// no form of this function that omits it.
+//
+// Where several rates match — which should not happen and does — the one with
+// the latest start wins, because that is the most recent revision. Overlapping
+// effective dates are a data error and this does not hide it, but it does have
+// to answer something.
+//
+// Nothing found is a தவறு rather than zero. A resource with no rate is a
+// resource nobody has costed, and charging its time at nothing understates a
+// project by exactly the amount most worth knowing.
+செயல் விகிதத்தைத்_தேடு(விகிதங்கள், வளக்_குறி, ஒரு_நாள்) {
+    சிறந்த_விகிதம் = 0;
+    சிறந்த_தொடக்கம் = "";
+    கிடைத்ததா = பொய்;
+
+    ஒவ்வொரு ஒரு_விகிதம் இல் விகிதங்கள் {
+        (ஒரு_விகிதம்["வளக்_குறி"] == வளக்_குறி
+         மற்றும் ஒரு_விகிதம்["அமல்_தொடக்கம்"] <= ஒரு_நாள்) எனில் {
+            முடிவு_நாள் = ஒரு_விகிதம்["அமல்_முடிவு"];
+            (முடிவு_நாள் == "" அல்லது முடிவு_நாள் >= ஒரு_நாள்) எனில் {
+                (இல்லை கிடைத்ததா
+                 அல்லது ஒரு_விகிதம்["அமல்_தொடக்கம்"] > சிறந்த_தொடக்கம்) எனில் {
+                    சிறந்த_விகிதம் = ஒரு_விகிதம்["மணி_விகிதம்"];
+                    சிறந்த_தொடக்கம் = ஒரு_விகிதம்["அமல்_தொடக்கம்"];
+                    கிடைத்ததா = மெய்;
+                }
+            }
+        }
+    }
+
+    (இல்லை கிடைத்ததா) எனில் {
+        திரும்பு தவறு("விகிதம் இல்லை  (no rate in force for " & வளக்_குறி
+                       & " on " & ஒரு_நாள் & ")");
+    }
+    திரும்பு சரி(சிறந்த_விகிதம்);
+}
+
+// மேலதிக_விகிதம்(அடிப்படை_விகிதம், மடங்கு)
+//
+// Overtime as a multiple of the base rate. The multiple is a parameter because
+// it is set by statute, by contract or by custom and differs in all three.
+//
+// Overtime is a **premium on the same hour**, not a different kind of work, so
+// the hour still counts once towards progress and costs more. Booking overtime
+// hours as extra hours inflates progress on a cost-to-cost measure at the same
+// time as it inflates cost, and the two errors hide each other.
+செயல் மேலதிக_விகிதம்(அடிப்படை_விகிதம், மடங்கு) {
+    திரும்பு வட்டமிடு(அடிப்படை_விகிதம் * மடங்கு, 2);
+}
+
+// =========================================================================
+// திறன் — capacity
+// =========================================================================
+//
+// காலத்_திறன்(நாள்_மணிகள், தொடக்கம், முடிவு, ஒரு_நாட்காட்டி)
+//
+// The hours a resource could work in a period: working days in the period
+// times hours in a day.
+//
+// Against a calendar, not against elapsed days. A month is not thirty days of
+// capacity and February is not twenty-eight; the answer is the working days,
+// which differ between two months of the same length whenever a holiday falls.
+// A utilisation percentage computed on elapsed days moves every month for
+// reasons that have nothing to do with anybody's work, and it is always the
+// denominator that is wrong.
+செயல் காலத்_திறன்(நாள்_மணிகள், தொடக்கம், முடிவு, ஒரு_நாட்காட்டி) {
+    வேலை_நாட்கள் = வேலை_நாட்களை_எண்ணு(தொடக்கம், முடிவு, ஒரு_நாட்காட்டி);
+    திரும்பு வட்டமிடு(வேலை_நாட்கள் * நாள்_மணிகள், 2);
+}
+
+// கிடைக்கும்_மணிகள்(மொத்தத்_திறன், விடுப்பு_மணிகள்)
+//
+// Capacity less leave. What was actually available, which is the honest
+// denominator for utilisation: a person on leave for a fortnight has not
+// failed to be utilised.
+செயல் கிடைக்கும்_மணிகள்(மொத்தத்_திறன், விடுப்பு_மணிகள்) {
+    விடை = மொத்தத்_திறன் - விடுப்பு_மணிகள்;
+    (விடை < 0) எனில் { திரும்பு 0; }
+    திரும்பு வட்டமிடு(விடை, 2);
+}
+
+// =========================================================================
+// பயன்பாடு — utilisation, and the distinction that matters
+// =========================================================================
+//
+// பயன்பாட்டு_விகிதம்(பணிபுரிந்த_மணிகள், கிடைத்த_மணிகள்)
+//
+// How much of the available time was booked to something. Answered as a
+// percentage out of a hundred, following the rates convention.
+செயல் பயன்பாட்டு_விகிதம்(பணிபுரிந்த_மணிகள், கிடைத்த_மணிகள்) {
+    (கிடைத்த_மணிகள் <= 0) எனில் {
+        திரும்பு தவறு("கிடைத்த மணிகள் இல்லை  "
+                       & "(no available hours to measure utilisation against)");
+    }
+    திரும்பு சரி(வட்டமிடு(பணிபுரிந்த_மணிகள் * 100 / கிடைத்த_மணிகள், 2));
+}
+
+// கட்டண_விகிதம்(கட்டண_மணிகள், பணிபுரிந்த_மணிகள்)
+//
+// How much of the time booked was **chargeable**. A different question from
+// utilisation and the one that pays for anything.
+//
+// A resource can be a hundred per cent utilised and nothing per cent
+// chargeable — every hour booked, all of it to rework, internal meetings or a
+// fixed-price job already past its budget. A business that reports only
+// utilisation cannot see that happening, and utilisation is the figure that
+// gets reported because it is the flattering one.
+செயல் கட்டண_விகிதம்(கட்டண_மணிகள், பணிபுரிந்த_மணிகள்) {
+    (பணிபுரிந்த_மணிகள் <= 0) எனில் {
+        திரும்பு தவறு("பணிபுரிந்த மணிகள் இல்லை  (no hours worked)");
+    }
+    திரும்பு சரி(வட்டமிடு(கட்டண_மணிகள் * 100 / பணிபுரிந்த_மணிகள், 2));
+}
+
+// வளத்தைத்_தேடு(வளங்கள், வளக்_குறி)
+செயல் வளத்தைத்_தேடு(வளங்கள், வளக்_குறி) {
+    ஒவ்வொரு ஒரு_வளம் இல் வளங்கள் {
+        (ஒரு_வளம்["குறி"] == வளக்_குறி) எனில் { திரும்பு சரி(ஒரு_வளம்); }
+    }
+    திரும்பு தவறு("வளம் இல்லை  (no such resource): " & வளக்_குறி);
+}

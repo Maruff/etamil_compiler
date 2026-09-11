@@ -1,0 +1,263 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/vaLam/nEraqqAL.qmz — நேரத்தாள், the timesheet
+//
+// This is where actual cost is born. Everything downstream — the cost variance
+// in qittam/Ittu_maqippu.qmz, the progress in varuvAy/muZZERRam.qmz, the margin
+// on a job — rests on hours somebody wrote down, and on the rate in force the
+// day they worked.
+//
+// Two rules do most of the work.
+//
+// **A timesheet is costed entry by entry, at the rate in force on each entry's
+// own date.** Costing a month's sheet at the rate current when it is processed
+// is wrong for every entry before the last rate change, and it reconciles
+// perfectly to the wrong number.
+//
+// **A day is validated as a whole, not entry by entry.** Six hours on one task
+// and six on another are each unremarkable and together are twelve, and no
+// amount of checking one entry finds it. Double-booking across activities is
+// the commonest fault in a timesheet and the only way to see it is to sum the
+// day.
+//
+// Unapproved time is not cost. A sheet still in draft has not been agreed by
+// anybody, and posting it to a project makes the actual cost move backwards
+// when it is corrected.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+இறக்கு "../nAtkAtti/nAL.qmz";
+இறக்கு "vaLam.qmz";
+
+// =========================================================================
+// உள்ளீடு — one line of a timesheet
+// =========================================================================
+//
+// நேர_உள்ளீடு(வளக்_குறி, ஒரு_நாள், பணிக்_குறி, மணிகள், கட்டணத்துக்குரியதா)
+//
+// பணிக்_குறி is whatever the cost is being collected against — an activity
+// code from qittam/pAqY.qmz, a work package from pakuppu.qmz, or a control
+// account. This module does not care which, and deliberately does not check
+// it: the structure of the breakdown is qittam's business and a timesheet that
+// refuses unknown codes cannot be entered before the plan is finished.
+செயல் நேர_உள்ளீடு(வளக்_குறி, ஒரு_நாள், பணிக்_குறி, மணிகள்,
+                    கட்டணத்துக்குரியதா) {
+    திரும்பு {"வளக்_குறி": வளக்_குறி,
+              "நாள்": ஒரு_நாள்,
+              "பணிக்_குறி": பணிக்_குறி,
+              "மணிகள்": மணிகள்,
+              "கட்டணத்துக்குரியதா": கட்டணத்துக்குரியதா,
+              "நிலைமை": "வரைவு"};
+}
+
+// =========================================================================
+// சரிபார்ப்பு — validation
+// =========================================================================
+//
+// உள்ளீட்டைச்_சரிபார்(ஒரு_உள்ளீடு, நாள்_உச்ச_மணிகள்)
+//
+// What one entry can be checked for on its own: a real date, positive hours,
+// and not more hours than a day holds.
+//
+// The date check matters more than it looks. A timesheet is the one document
+// in a business that is filled in from memory, and a typed month gets the year
+// wrong every January — an entry dated a year earlier is costed at a rate from
+// a year earlier and lands in a closed period.
+செயல் உள்ளீட்டைச்_சரிபார்(ஒரு_உள்ளீடு, நாள்_உச்ச_மணிகள்) {
+    (இல்லை நாள்_செல்லுபடியா(ஒரு_உள்ளீடு["நாள்"])) எனில் {
+        திரும்பு தவறு("செல்லாத நாள்  (not a valid date): "
+                       & சொல்லாக்கு(ஒரு_உள்ளீடு["நாள்"]));
+    }
+    (ஒரு_உள்ளீடு["மணிகள்"] <= 0) எனில் {
+        திரும்பு தவறு("மணிகள் நேர்மறையாக இருக்க வேண்டும்  "
+                       & "(hours must be positive)");
+    }
+    (ஒரு_உள்ளீடு["மணிகள்"] > நாள்_உச்ச_மணிகள்) எனில் {
+        திரும்பு தவறு("ஒரு நாளில் இத்தனை மணிகள் இல்லை  "
+                       & "(a single entry of " & சொல்லாக்கு(ஒரு_உள்ளீடு["மணிகள்"])
+                       & " hours exceeds the " & சொல்லாக்கு(நாள்_உச்ச_மணிகள்)
+                       & " a day holds)");
+    }
+    திரும்பு சரி(ஒரு_உள்ளீடு);
+}
+
+// நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்)
+செயல் நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் உள்ளீடுகள் {
+        (ஒரு_உள்ளீடு["வளக்_குறி"] == வளக்_குறி
+         மற்றும் ஒரு_உள்ளீடு["நாள்"] == ஒரு_நாள்) எனில் {
+            கூட்டல் = கூட்டல் + ஒரு_உள்ளீடு["மணிகள்"];
+        }
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// மிகைப்_பதிவா(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள், நாள்_உச்ச_மணிகள்)
+//
+// **The check that only works across entries.** Six hours on one task and six
+// on another are each perfectly reasonable; together they are twelve, and one
+// person did not work twelve hours on a day that holds eight.
+//
+// Every entry can pass உள்ளீட்டைச்_சரிபார் and the day still be impossible,
+// which is why both exist. This is the error that inflates actual cost on
+// whichever project is easiest to book to, and it is invisible in any report
+// that groups by project rather than by person.
+செயல் மிகைப்_பதிவா(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள், நாள்_உச்ச_மணிகள்) {
+    திரும்பு நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்)
+             > நாள்_உச்ச_மணிகள்;
+}
+
+// =========================================================================
+// நிலைமை — approval
+// =========================================================================
+//
+// நிலை_மாற்றம்_சரியா(இருந்து, க்கு)
+//
+// A timesheet moves வரைவு → சமர்ப்பித்தது → ஏற்றது, and a submitted sheet may
+// be sent back to draft as நிராகரித்தது. Nothing goes backwards from ஏற்றது:
+// an approved sheet is corrected by a further entry, not by editing the
+// original, because the original has already been costed and posted.
+செயல் நிலை_மாற்றம்_சரியா(இருந்து, க்கு) {
+    (இருந்து == "வரைவு" மற்றும் க்கு == "சமர்ப்பித்தது") எனில் { திரும்பு மெய்; }
+    (இருந்து == "சமர்ப்பித்தது" மற்றும் க்கு == "ஏற்றது") எனில் { திரும்பு மெய்; }
+    (இருந்து == "சமர்ப்பித்தது" மற்றும் க்கு == "நிராகரித்தது") எனில் {
+        திரும்பு மெய்;
+    }
+    (இருந்து == "நிராகரித்தது" மற்றும் க்கு == "வரைவு") எனில் { திரும்பு மெய்; }
+    திரும்பு பொய்;
+}
+
+// நிலையை_மாற்று(ஒரு_உள்ளீடு, புதிய_நிலைமை)
+செயல் நிலையை_மாற்று(ஒரு_உள்ளீடு, புதிய_நிலைமை) {
+    (இல்லை நிலை_மாற்றம்_சரியா(ஒரு_உள்ளீடு["நிலைமை"], புதிய_நிலைமை)) எனில் {
+        திரும்பு தவறு("இந்த நிலை மாற்றம் அனுமதிக்கப்படவில்லை  "
+                       & "(cannot move from " & ஒரு_உள்ளீடு["நிலைமை"]
+                       & " to " & புதிய_நிலைமை & ")");
+    }
+    திரும்பு சரி({"வளக்_குறி": ஒரு_உள்ளீடு["வளக்_குறி"],
+                  "நாள்": ஒரு_உள்ளீடு["நாள்"],
+                  "பணிக்_குறி": ஒரு_உள்ளீடு["பணிக்_குறி"],
+                  "மணிகள்": ஒரு_உள்ளீடு["மணிகள்"],
+                  "கட்டணத்துக்குரியதா": ஒரு_உள்ளீடு["கட்டணத்துக்குரியதா"],
+                  "நிலைமை": புதிய_நிலைமை});
+}
+
+// ஏற்றவை_மட்டும்(உள்ளீடுகள்)
+//
+// Only approved time is cost. Everything else is somebody's intention.
+செயல் ஏற்றவை_மட்டும்(உள்ளீடுகள்) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் உள்ளீடுகள் {
+        (ஒரு_உள்ளீடு["நிலைமை"] == "ஏற்றது") எனில் {
+            விடை = இணை(விடை, ஒரு_உள்ளீடு);
+        }
+    }
+    திரும்பு விடை;
+}
+
+// =========================================================================
+// கணக்கிடல் — costing the sheet
+// =========================================================================
+//
+// உள்ளீட்டைக்_கணக்கிடு(ஒரு_உள்ளீடு, விகிதங்கள்)
+//
+// Costs one entry at the rate in force **on that entry's own date**. The date
+// comes from the entry and not from the caller, which is the only way the rule
+// can be got right by default.
+செயல் உள்ளீட்டைக்_கணக்கிடு(ஒரு_உள்ளீடு, விகிதங்கள்) {
+    விகித_விடை = விகிதத்தைத்_தேடு(விகிதங்கள், ஒரு_உள்ளீடு["வளக்_குறி"],
+                                    ஒரு_உள்ளீடு["நாள்"]);
+    (தவறா(விகித_விடை)) எனில் { திரும்பு விகித_விடை; }
+
+    மணி_விகிதம் = மதிப்பு(விகித_விடை);
+    திரும்பு சரி({"வளக்_குறி": ஒரு_உள்ளீடு["வளக்_குறி"],
+                  "நாள்": ஒரு_உள்ளீடு["நாள்"],
+                  "பணிக்_குறி": ஒரு_உள்ளீடு["பணிக்_குறி"],
+                  "மணிகள்": ஒரு_உள்ளீடு["மணிகள்"],
+                  "கட்டணத்துக்குரியதா": ஒரு_உள்ளீடு["கட்டணத்துக்குரியதா"],
+                  "மணி_விகிதம்": மணி_விகிதம்,
+                  "தொகை": வட்டமிடு(ஒரு_உள்ளீடு["மணிகள்"] * மணி_விகிதம், 2)});
+}
+
+// தாளைக்_கணக்கிடு(உள்ளீடுகள், விகிதங்கள்)
+//
+// A whole sheet. Answers the costed lines and the total, and **stops at the
+// first entry it cannot cost** rather than costing what it can and reporting a
+// total that is silently short.
+//
+// A partial total is the worst possible answer here: it is plausible, it
+// reconciles to the lines shown, and it is wrong by exactly the entries nobody
+// looked at.
+செயல் தாளைக்_கணக்கிடு(உள்ளீடுகள், விகிதங்கள்) {
+    கணக்கிட்டவை = [];
+    மொத்தத்_தொகை = 0;
+    மொத்த_மணிகள் = 0;
+
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் உள்ளீடுகள் {
+        விடை = உள்ளீட்டைக்_கணக்கிடு(ஒரு_உள்ளீடு, விகிதங்கள்);
+        (தவறா(விடை)) எனில் { திரும்பு விடை; }
+        கணக்கிட்ட_உள்ளீடு = மதிப்பு(விடை);
+        கணக்கிட்டவை = இணை(கணக்கிட்டவை, கணக்கிட்ட_உள்ளீடு);
+        மொத்தத்_தொகை = மொத்தத்_தொகை + கணக்கிட்ட_உள்ளீடு["தொகை"];
+        மொத்த_மணிகள் = மொத்த_மணிகள் + கணக்கிட்ட_உள்ளீடு["மணிகள்"];
+    }
+
+    திரும்பு சரி({"உள்ளீடுகள்": கணக்கிட்டவை,
+                  "மொத்த_மணிகள்": வட்டமிடு(மொத்த_மணிகள், 2),
+                  "மொத்தத்_தொகை": வட்டமிடு(மொத்தத்_தொகை, 2)});
+}
+
+// =========================================================================
+// திரட்டல் — actual cost by activity
+// =========================================================================
+//
+// பணிக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், பணிக்_குறி)
+//
+// The actual cost of one activity — **this is AC**, the figure
+// qittam/Ittu_maqippu.qmz takes as given. Computing it from timesheets rather
+// than accepting it as an input is the difference between an earned value
+// report and an earned value calculator.
+செயல் பணிக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், பணிக்_குறி) {
+    தொகைக்_கூட்டல் = 0;
+    மணிக்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் கணக்கிட்ட_உள்ளீடுகள் {
+        (ஒரு_உள்ளீடு["பணிக்_குறி"] == பணிக்_குறி) எனில் {
+            தொகைக்_கூட்டல் = தொகைக்_கூட்டல் + ஒரு_உள்ளீடு["தொகை"];
+            மணிக்_கூட்டல் = மணிக்_கூட்டல் + ஒரு_உள்ளீடு["மணிகள்"];
+        }
+    }
+    திரும்பு {"பணிக்_குறி": பணிக்_குறி,
+              "மணிகள்": வட்டமிடு(மணிக்_கூட்டல், 2),
+              "தொகை": வட்டமிடு(தொகைக்_கூட்டல், 2)};
+}
+
+// கட்டண_மணிகள்(கணக்கிட்ட_உள்ளீடுகள்)
+//
+// Hours booked to something chargeable, for vaLam.qmz's கட்டண_விகிதம். Counted
+// separately from the total because the two answer different questions and a
+// business that tracks only one of them tracks the wrong one.
+செயல் கட்டண_மணிகள்(கணக்கிட்ட_உள்ளீடுகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் கணக்கிட்ட_உள்ளீடுகள் {
+        (ஒரு_உள்ளீடு["கட்டணத்துக்குரியதா"]) எனில் {
+            கூட்டல் = கூட்டல் + ஒரு_உள்ளீடு["மணிகள்"];
+        }
+    }
+    திரும்பு வட்டமிடு(கூட்டல், 2);
+}
+
+// வளத்துக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், வளக்_குறி)
+செயல் வளத்துக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், வளக்_குறி) {
+    தொகைக்_கூட்டல் = 0;
+    மணிக்_கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_உள்ளீடு இல் கணக்கிட்ட_உள்ளீடுகள் {
+        (ஒரு_உள்ளீடு["வளக்_குறி"] == வளக்_குறி) எனில் {
+            தொகைக்_கூட்டல் = தொகைக்_கூட்டல் + ஒரு_உள்ளீடு["தொகை"];
+            மணிக்_கூட்டல் = மணிக்_கூட்டல் + ஒரு_உள்ளீடு["மணிகள்"];
+        }
+    }
+    திரும்பு {"வளக்_குறி": வளக்_குறி,
+              "மணிகள்": வட்டமிடு(மணிக்_கூட்டல், 2),
+              "தொகை": வட்டமிடு(தொகைக்_கூட்டல், 2)};
+}
