@@ -3661,9 +3661,9 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": null
   },
   {
-    "name": "உள்ளதா",
+    "name": "ஆவணத்தில்_உள்ளதா",
     "forms": [
-      "உள்ளதா"
+      "ஆவணத்தில்_உள்ளதா"
     ],
     "params": [
       "பாடம்",

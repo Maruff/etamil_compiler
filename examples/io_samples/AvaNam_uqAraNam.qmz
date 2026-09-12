@@ -47,7 +47,7 @@
 // and so is everything they carried — but not the tags that followed them:
 // </table:table> is still there, which is the bug this convention invites.
 அச்சு "வரிசைகள்: " & (நீளம்(பிரி(ஆவணம், "<table:table-row")) - 1);
-அச்சு "அட்டவணை முடிகிறதா: " & உள்ளதா(ஆவணம், "</table:table>");
+அச்சு "அட்டவணை முடிகிறதா: " & ஆவணத்தில்_உள்ளதா(ஆவணம், "</table:table>");
 
 
 // A value that looks like markup is escaped, or the document stops being
