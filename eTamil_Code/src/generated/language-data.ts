@@ -11905,6 +11905,312 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 132
   },
   {
+    "name": "காலத்தைப்_பெறு",
+    "forms": [
+      "காலத்தைப்_பெறு"
+    ],
+    "params": [
+      "முனைகள்",
+      "தொடர்புகள்"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qittam_cOqaZY.qmz",
+    "line": 505
+  },
+  {
+    "name": "தொடர்பு_சுற்று_எல்லை",
+    "forms": [
+      "தொடர்பு_சுற்று_எல்லை"
+    ],
+    "params": [],
+    "arity": 0,
+    "doc": "How many passes before a network is called circular. A pass propagates at",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 54
+  },
+  {
+    "name": "முனை_ஆக்கு",
+    "forms": [
+      "முனை_ஆக்கு"
+    ],
+    "params": [
+      "முனைக்_குறி",
+      "விவரம்",
+      "கால_அளவு"
+    ],
+    "arity": 3,
+    "doc": "முனை_ஆக்கு(முனைக்_குறி, விவரம், கால_அளவு)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 65
+  },
+  {
+    "name": "தொடர்பு_ஆக்கு",
+    "forms": [
+      "தொடர்பு_ஆக்கு"
+    ],
+    "params": [
+      "முன்னோடிக்_குறி",
+      "பின்தொடர்க்_குறி",
+      "தொடர்பு_வகை",
+      "தாமதம்"
+    ],
+    "arity": 4,
+    "doc": "தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 72
+  },
+  {
+    "name": "தொடர்பு_வகை_சரியா",
+    "forms": [
+      "தொடர்பு_வகை_சரியா"
+    ],
+    "params": [
+      "தொடர்பு_வகை"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 79
+  },
+  {
+    "name": "முன்னோட்டமா",
+    "forms": [
+      "முன்னோட்டமா"
+    ],
+    "params": [
+      "ஒரு_தொடர்பு"
+    ],
+    "arity": 1,
+    "doc": "முன்னோட்டமா(ஒரு_தொடர்பு) — a lead rather than a lag",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 97
+  },
+  {
+    "name": "முனையைப்_பெறு",
+    "forms": [
+      "முனையைப்_பெறு"
+    ],
+    "params": [
+      "முனைகள்",
+      "முனைக்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 103
+  },
+  {
+    "name": "கால_அளவைப்_பெறு",
+    "forms": [
+      "கால_அளவைப்_பெறு"
+    ],
+    "params": [
+      "முனைகள்",
+      "முனைக்_குறி"
+    ],
+    "arity": 2,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 110
+  },
+  {
+    "name": "முந்தியைப்_பெறு",
+    "forms": [
+      "முந்தியைப்_பெறு"
+    ],
+    "params": [
+      "முந்திகள்",
+      "முனைக்_குறி",
+      "புலப்_பெயர்"
+    ],
+    "arity": 3,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 116
+  },
+  {
+    "name": "முந்தியை_அமை",
+    "forms": [
+      "முந்தியை_அமை"
+    ],
+    "params": [
+      "முந்திகள்",
+      "முனைக்_குறி",
+      "புது_தொடக்கம்",
+      "கால_அளவு"
+    ],
+    "arity": 4,
+    "doc": "முந்தியை_அமை(முந்திகள், முனைக்_குறி, புது_தொடக்கம், கால_அளவு)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 128
+  },
+  {
+    "name": "தாழ்த்தியை_அமை",
+    "forms": [
+      "தாழ்த்தியை_அமை"
+    ],
+    "params": [
+      "தாழ்த்திகள்",
+      "முனைக்_குறி",
+      "புது_முடிவு",
+      "கால_அளவு"
+    ],
+    "arity": 4,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 142
+  },
+  {
+    "name": "தேவையான_தொடக்கம்",
+    "forms": [
+      "தேவையான_தொடக்கம்"
+    ],
+    "params": [
+      "ஒரு_தொடர்பு",
+      "முன்னோடி_தொடக்கம்",
+      "முன்னோடி_முடிவு",
+      "பின்தொடர்_கால_அளவு"
+    ],
+    "arity": 4,
+    "doc": "தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்னோடி_தொடக்கம், முன்னோடி_முடிவு,",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 165
+  },
+  {
+    "name": "அனுமதித்த_முடிவு",
+    "forms": [
+      "அனுமதித்த_முடிவு"
+    ],
+    "params": [
+      "ஒரு_தொடர்பு",
+      "பின்தொடர்_தொடக்கம்",
+      "பின்தொடர்_முடிவு",
+      "முன்னோடி_கால_அளவு"
+    ],
+    "arity": 4,
+    "doc": "அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்தொடர்_தொடக்கம், பின்தொடர்_முடிவு,",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 189
+  },
+  {
+    "name": "தொடர்பு_வலையைக்_கணக்கிடு",
+    "forms": [
+      "தொடர்பு_வலையைக்_கணக்கிடு"
+    ],
+    "params": [
+      "முனைகள்",
+      "தொடர்புகள்"
+    ],
+    "arity": 2,
+    "doc": "தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 220
+  },
+  {
+    "name": "தொடர்பு_கடுமையானவை",
+    "forms": [
+      "தொடர்பு_கடுமையானவை"
+    ],
+    "params": [
+      "வலை_விடை"
+    ],
+    "arity": 1,
+    "doc": "தொடர்பு_கடுமையானவை(வலை_விடை) — the codes with no float",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 349
+  },
+  {
+    "name": "தொடர்பு_முனையின்_புலம்",
+    "forms": [
+      "தொடர்பு_முனையின்_புலம்"
+    ],
+    "params": [
+      "வலை_விடை",
+      "முனைக்_குறி",
+      "புலப்_பெயர்"
+    ],
+    "arity": 3,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 359
+  },
+  {
+    "name": "மொத்தத்_தாமதம்",
+    "forms": [
+      "மொத்தத்_தாமதம்"
+    ],
+    "params": [
+      "தொடர்புகள்"
+    ],
+    "arity": 1,
+    "doc": "மொத்தத்_தாமதம்(தொடர்புகள்) — every positive lag in the network, added up",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 378
+  },
+  {
+    "name": "முன்னோட்டங்கள்",
+    "forms": [
+      "முன்னோட்டங்கள்"
+    ],
+    "params": [
+      "தொடர்புகள்"
+    ],
+    "arity": 1,
+    "doc": "முன்னோட்டங்கள்(தொடர்புகள்) — the relationships carrying a lead",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 393
+  },
+  {
+    "name": "தாமதப்_பங்கு",
+    "forms": [
+      "தாமதப்_பங்கு"
+    ],
+    "params": [
+      "தொடர்புகள்",
+      "திட்ட_காலம்"
+    ],
+    "arity": 2,
+    "doc": "தாமதப்_பங்கு(தொடர்புகள், திட்ட_காலம்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 411
+  },
+  {
+    "name": "சுருக்கக்கூடிய_காலம்",
+    "forms": [
+      "சுருக்கக்கூடிய_காலம்"
+    ],
+    "params": [
+      "முனைகள்",
+      "தொடர்புகள்",
+      "பாதைக்_குறிகள்"
+    ],
+    "arity": 3,
+    "doc": "சுருக்கக்கூடிய_காலம்(முனைகள், தொடர்புகள், பாதைக்_குறிகள்)",
+    "kind": "stdlib",
+    "module": "nUlakam/qittam/qotarpu.qmz",
+    "line": 442
+  },
+  {
     "name": "நிலைமைகள்",
     "forms": [
       "நிலைமைகள்"

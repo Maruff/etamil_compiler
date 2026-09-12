@@ -1,0 +1,490 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+// nUlakam/qittam/qotarpu.qmz — தொடர்பு, the four dependency types and lag
+//
+// pAqY.qmz schedules finish-to-start with no lag, says so at the top, and is
+// right to: that is the network a textbook draws and a hand calculation can
+// check. Real schedules are not that, and this module is the other four
+// fifths.
+//
+//   **முடிவு_தொடக்கம்** (FS) — the successor starts after the predecessor
+//     finishes. The default, and the only one pAqY.qmz knows.
+//   **தொடக்கம்_தொடக்கம்** (SS) — the successor starts after the predecessor
+//     *starts*. Two activities running together, offset.
+//   **முடிவு_முடிவு** (FF) — the successor finishes after the predecessor
+//     finishes. Constrains the end rather than the beginning.
+//   **தொடக்கம்_முடிவு** (SF) — the successor finishes after the predecessor
+//     starts. Rare, and nearly always a mistake where it appears.
+//
+// A **lag** delays the relationship; a negative lag is a **lead**.
+//
+// Every constraint becomes a lower bound on the successor's early start, which
+// is what lets all four run in one pass:
+//
+//     FS   ES(s) ≥ EF(p) + lag
+//     SS   ES(s) ≥ ES(p) + lag
+//     FF   ES(s) ≥ EF(p) + lag − duration(s)
+//     SF   ES(s) ≥ ES(p) + lag − duration(s)
+//
+// and each becomes an upper bound on the predecessor's late finish going back.
+// Both passes run to a fixed point rather than over a topological sort, for
+// the reason pAqY.qmz gives: a cycle then produces a தவறு instead of a stack
+// overflow, and a cycle is the commonest structural error in a network.
+//
+// **Two things a lag does that nothing else in the schedule records.**
+//
+// It is elapsed time with no activity, no cost and no owner — the commonest
+// way a schedule conceals a dependency on somebody outside the project:
+// concrete curing, a permit, a supplier's lead time. It appears in no resource
+// plan and no budget, and தாமதப்_பங்கு exists to say how much of a project is
+// spent waiting.
+//
+// And **a lag cannot be crashed**. curukkal.qmz says only critical activities
+// are worth shortening; the companion rule is that only the *work* on them
+// can be. A critical path that is half lag compresses by half of what its
+// duration suggests, and சுருக்கக்கூடிய_காலம் says so before the money is
+// spent finding out.
+
+இறக்கு "../kaNiqam.qmz";
+இறக்கு "../poruL.qmz";
+
+// How many passes before a network is called circular. A pass propagates at
+// least one activity's worth of constraint, so a sound network settles well
+// within its own size; anything past that is not converging.
+செயல் தொடர்பு_சுற்று_எல்லை() { திரும்பு 200; }
+
+// =========================================================================
+// கட்டமைப்பு — activities and relationships
+// =========================================================================
+//
+// முனை_ஆக்கு(முனைக்_குறி, விவரம், கால_அளவு)
+//
+// An activity. Unlike pAqY.qmz's செயல்_ஆக்கு it carries **no predecessors** —
+// a relationship now has a type and a lag of its own and no longer fits inside
+// a list of codes.
+செயல் முனை_ஆக்கு(முனைக்_குறி, விவரம், கால_அளவு) {
+    திரும்பு {"குறி": முனைக்_குறி,
+              "விவரம்": விவரம்,
+              "கால_அளவு": கால_அளவு};
+}
+
+// தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்)
+செயல் தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்) {
+    திரும்பு {"முன்னோடி": முன்னோடிக்_குறி,
+              "பின்தொடர்": பின்தொடர்க்_குறி,
+              "வகை": தொடர்பு_வகை,
+              "தாமதம்": தாமதம்};
+}
+
+செயல் தொடர்பு_வகை_சரியா(தொடர்பு_வகை) {
+    (தொடர்பு_வகை == "முடிவு_தொடக்கம்") எனில் { திரும்பு மெய்; }
+    (தொடர்பு_வகை == "தொடக்கம்_தொடக்கம்") எனில் { திரும்பு மெய்; }
+    (தொடர்பு_வகை == "முடிவு_முடிவு") எனில் { திரும்பு மெய்; }
+    (தொடர்பு_வகை == "தொடக்கம்_முடிவு") எனில் { திரும்பு மெய்; }
+    திரும்பு பொய்;
+}
+
+// முன்னோட்டமா(ஒரு_தொடர்பு) — a lead rather than a lag
+//
+// A negative lag asserts the successor may begin before the predecessor ends.
+// If that is true the two overlap, and **overlapping work is two activities,
+// not one with a lead**. The lead hides the decomposition: nobody can say
+// which part of the predecessor must finish first, so nobody can check the
+// claim or resource it.
+//
+// The same overlap written as a start-to-start with a positive lag, closed by
+// a finish-to-finish, says what is actually true and survives being questioned.
+செயல் முன்னோட்டமா(ஒரு_தொடர்பு) {
+    திரும்பு ஒரு_தொடர்பு["தாமதம்"] < 0;
+}
+
+// --- helpers, named apart from pAqY.qmz's --------------------------------
+
+செயல் முனையைப்_பெறு(முனைகள், முனைக்_குறி) {
+    ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
+        (ஒரு_முனை["குறி"] == முனைக்_குறி) எனில் { திரும்பு சரி(ஒரு_முனை); }
+    }
+    திரும்பு தவறு("முனை இல்லை  (no such activity): " & சொல்லாக்கு(முனைக்_குறி));
+}
+
+செயல் கால_அளவைப்_பெறு(முனைகள், முனைக்_குறி) {
+    விடை = முனையைப்_பெறு(முனைகள், முனைக்_குறி);
+    (தவறா(விடை)) எனில் { திரும்பு 0; }
+    திரும்பு மதிப்பு(விடை)["கால_அளவு"];
+}
+
+செயல் முந்தியைப்_பெறு(முந்திகள், முனைக்_குறி, புலப்_பெயர்) {
+    ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
+        (ஒரு_நிலை["குறி"] == முனைக்_குறி) எனில் { திரும்பு ஒரு_நிலை[புலப்_பெயர்]; }
+    }
+    திரும்பு 0;
+}
+
+// முந்தியை_அமை(முந்திகள், முனைக்_குறி, புது_தொடக்கம், கால_அளவு)
+//
+// Writes the early start and the early finish together, because the second
+// follows from the first and letting them drift apart is how a scheduler ends
+// up with an activity whose finish is not its start plus its duration.
+செயல் முந்தியை_அமை(முந்திகள், முனைக்_குறி, புது_தொடக்கம், கால_அளவு) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
+        (ஒரு_நிலை["குறி"] == முனைக்_குறி) எனில் {
+            விடை = இணை(விடை, {"குறி": முனைக்_குறி,
+                                "தொடக்கம்": புது_தொடக்கம்,
+                                "முடிவு": புது_தொடக்கம் + கால_அளவு});
+        } இன்றேல் {
+            விடை = இணை(விடை, ஒரு_நிலை);
+        }
+    }
+    திரும்பு விடை;
+}
+
+செயல் தாழ்த்தியை_அமை(தாழ்த்திகள், முனைக்_குறி, புது_முடிவு, கால_அளவு) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_நிலை இல் தாழ்த்திகள் {
+        (ஒரு_நிலை["குறி"] == முனைக்_குறி) எனில் {
+            விடை = இணை(விடை, {"குறி": முனைக்_குறி,
+                                "தொடக்கம்": புது_முடிவு - கால_அளவு,
+                                "முடிவு": புது_முடிவு});
+        } இன்றேல் {
+            விடை = இணை(விடை, ஒரு_நிலை);
+        }
+    }
+    திரும்பு விடை;
+}
+
+// =========================================================================
+// கட்டுப்பாடுகள் — one relationship, as a bound
+// =========================================================================
+//
+// தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்னோடி_தொடக்கம், முன்னோடி_முடிவு,
+//                    பின்தொடர்_கால_அளவு)
+//
+// The earliest the successor may start, given this one relationship. The four
+// types differ only here, which is why the passes below need no cases.
+செயல் தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்னோடி_தொடக்கம், முன்னோடி_முடிவு,
+                        பின்தொடர்_கால_அளவு) {
+    தாமதம் = ஒரு_தொடர்பு["தாமதம்"];
+    வகைப்_பெயர் = ஒரு_தொடர்பு["வகை"];
+
+    (வகைப்_பெயர் == "முடிவு_தொடக்கம்") எனில் {
+        திரும்பு முன்னோடி_முடிவு + தாமதம்;
+    }
+    (வகைப்_பெயர் == "தொடக்கம்_தொடக்கம்") எனில் {
+        திரும்பு முன்னோடி_தொடக்கம் + தாமதம்;
+    }
+    (வகைப்_பெயர் == "முடிவு_முடிவு") எனில் {
+        திரும்பு முன்னோடி_முடிவு + தாமதம் - பின்தொடர்_கால_அளவு;
+    }
+    // தொடக்கம்_முடிவு
+    திரும்பு முன்னோடி_தொடக்கம் + தாமதம் - பின்தொடர்_கால_அளவு;
+}
+
+// அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்தொடர்_தொடக்கம், பின்தொடர்_முடிவு,
+//                   முன்னோடி_கால_அளவு)
+//
+// The latest the predecessor may finish, given this one relationship. The
+// mirror of the above, and the reason the backward pass is the same shape as
+// the forward one.
+செயல் அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்தொடர்_தொடக்கம், பின்தொடர்_முடிவு,
+                        முன்னோடி_கால_அளவு) {
+    தாமதம் = ஒரு_தொடர்பு["தாமதம்"];
+    வகைப்_பெயர் = ஒரு_தொடர்பு["வகை"];
+
+    (வகைப்_பெயர் == "முடிவு_தொடக்கம்") எனில் {
+        திரும்பு பின்தொடர்_தொடக்கம் - தாமதம்;
+    }
+    (வகைப்_பெயர் == "தொடக்கம்_தொடக்கம்") எனில் {
+        திரும்பு பின்தொடர்_தொடக்கம் - தாமதம் + முன்னோடி_கால_அளவு;
+    }
+    (வகைப்_பெயர் == "முடிவு_முடிவு") எனில் {
+        திரும்பு பின்தொடர்_முடிவு - தாமதம்;
+    }
+    // தொடக்கம்_முடிவு
+    திரும்பு பின்தொடர்_முடிவு - தாமதம் + முன்னோடி_கால_அளவு;
+}
+
+// =========================================================================
+// வலையைக் கணக்கிடுதல் — both passes
+// =========================================================================
+//
+// தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்)
+//
+// Answers one record per activity — early start and finish, late start and
+// finish, total float — and the project duration.
+//
+// An unknown relationship type, or one naming an activity that does not exist,
+// is a தவறு before any arithmetic happens. A schedule with a typo in a code
+// silently loses the constraint otherwise, and a lost constraint makes a
+// project look shorter, which is the direction nobody questions.
+செயல் தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்) {
+    (நீளம்(முனைகள்) == 0) எனில் {
+        திரும்பு தவறு("முனைகள் இல்லை  (the network has no activities)");
+    }
+
+    ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+        (இல்லை தொடர்பு_வகை_சரியா(ஒரு_தொடர்பு["வகை"])) எனில் {
+            திரும்பு தவறு("அறியப்படாத தொடர்பு வகை  "
+                           & "(unknown relationship type): "
+                           & சொல்லாக்கு(ஒரு_தொடர்பு["வகை"]));
+        }
+        (தவறா(முனையைப்_பெறு(முனைகள், ஒரு_தொடர்பு["முன்னோடி"]))) எனில் {
+            திரும்பு தவறு("தொடர்பு அறியாத முன்னோடியைக் குறிக்கிறது  "
+                           & "(a relationship names a predecessor that does "
+                           & "not exist): " & சொல்லாக்கு(ஒரு_தொடர்பு["முன்னோடி"]));
+        }
+        (தவறா(முனையைப்_பெறு(முனைகள், ஒரு_தொடர்பு["பின்தொடர்"]))) எனில் {
+            திரும்பு தவறு("தொடர்பு அறியாத பின்தொடரைக் குறிக்கிறது  "
+                           & "(a relationship names a successor that does not "
+                           & "exist): " & சொல்லாக்கு(ஒரு_தொடர்பு["பின்தொடர்"]));
+        }
+    }
+
+    // --- forward pass -----------------------------------------------------
+    முந்திகள் = [];
+    ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
+        முந்திகள் = இணை(முந்திகள், {"குறி": ஒரு_முனை["குறி"],
+                                      "தொடக்கம்": 0,
+                                      "முடிவு": ஒரு_முனை["கால_அளவு"]});
+    }
+
+    மாறியதா = மெய்;
+    சுற்றெண் = 0;
+    (மாறியதா மற்றும் சுற்றெண் < தொடர்பு_சுற்று_எல்லை()) சுற்று {
+        மாறியதா = பொய்;
+        ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+            முன்_தொடக்கம் = முந்தியைப்_பெறு(முந்திகள், ஒரு_தொடர்பு["முன்னோடி"],
+                                             "தொடக்கம்");
+            முன்_முடிவு = முந்தியைப்_பெறு(முந்திகள், ஒரு_தொடர்பு["முன்னோடி"],
+                                           "முடிவு");
+            பின்_கால_அளவு = கால_அளவைப்_பெறு(முனைகள், ஒரு_தொடர்பு["பின்தொடர்"]);
+
+            தேவை = தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்_தொடக்கம், முன்_முடிவு,
+                                      பின்_கால_அளவு);
+            இப்போது = முந்தியைப்_பெறு(முந்திகள், ஒரு_தொடர்பு["பின்தொடர்"],
+                                       "தொடக்கம்");
+            (தேவை > இப்போது) எனில் {
+                முந்திகள் = முந்தியை_அமை(முந்திகள், ஒரு_தொடர்பு["பின்தொடர்"],
+                                          தேவை, பின்_கால_அளவு);
+                மாறியதா = மெய்;
+            }
+        }
+        சுற்றெண் = சுற்றெண் + 1;
+    }
+
+    (மாறியதா) எனில் {
+        திரும்பு தவறு("வலை ஒன்றுசேரவில்லை — சுழற்சி இருக்கலாம்  "
+                       & "(the forward pass did not settle; the network "
+                       & "probably contains a cycle)");
+    }
+
+    // The project ends when the last activity does.
+    திட்ட_முடிவு = 0;
+    ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
+        (ஒரு_நிலை["முடிவு"] > திட்ட_முடிவு) எனில் {
+            திட்ட_முடிவு = ஒரு_நிலை["முடிவு"];
+        }
+    }
+
+    // --- backward pass ----------------------------------------------------
+    தாழ்த்திகள் = [];
+    ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
+        தாழ்த்திகள் = இணை(தாழ்த்திகள்,
+                            {"குறி": ஒரு_முனை["குறி"],
+                             "தொடக்கம்": திட்ட_முடிவு - ஒரு_முனை["கால_அளவு"],
+                             "முடிவு": திட்ட_முடிவு});
+    }
+
+    மாறியதா = மெய்;
+    சுற்றெண் = 0;
+    (மாறியதா மற்றும் சுற்றெண் < தொடர்பு_சுற்று_எல்லை()) சுற்று {
+        மாறியதா = பொய்;
+        ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+            பின்_தொடக்கம் = முந்தியைப்_பெறு(தாழ்த்திகள்,
+                                             ஒரு_தொடர்பு["பின்தொடர்"], "தொடக்கம்");
+            பின்_முடிவு = முந்தியைப்_பெறு(தாழ்த்திகள், ஒரு_தொடர்பு["பின்தொடர்"],
+                                           "முடிவு");
+            முன்_கால_அளவு = கால_அளவைப்_பெறு(முனைகள், ஒரு_தொடர்பு["முன்னோடி"]);
+
+            அனுமதி = அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்_தொடக்கம், பின்_முடிவு,
+                                       முன்_கால_அளவு);
+            இப்போது = முந்தியைப்_பெறு(தாழ்த்திகள், ஒரு_தொடர்பு["முன்னோடி"],
+                                       "முடிவு");
+            (அனுமதி < இப்போது) எனில் {
+                தாழ்த்திகள் = தாழ்த்தியை_அமை(தாழ்த்திகள்,
+                                              ஒரு_தொடர்பு["முன்னோடி"],
+                                              அனுமதி, முன்_கால_அளவு);
+                மாறியதா = மெய்;
+            }
+        }
+        சுற்றெண் = சுற்றெண் + 1;
+    }
+
+    (மாறியதா) எனில் {
+        திரும்பு தவறு("பின்னோக்கு ஒன்றுசேரவில்லை — சுழற்சி இருக்கலாம்  "
+                       & "(the backward pass did not settle; the network "
+                       & "probably contains a cycle)");
+    }
+
+    // --- combine ----------------------------------------------------------
+    விடைகள் = [];
+    ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
+        முன்_தொ = முந்தியைப்_பெறு(முந்திகள், ஒரு_முனை["குறி"], "தொடக்கம்");
+        முன்_மு = முந்தியைப்_பெறு(முந்திகள், ஒரு_முனை["குறி"], "முடிவு");
+        தாழ்_தொ = முந்தியைப்_பெறு(தாழ்த்திகள், ஒரு_முனை["குறி"], "தொடக்கம்");
+        தாழ்_மு = முந்தியைப்_பெறு(தாழ்த்திகள், ஒரு_முனை["குறி"], "முடிவு");
+        விடைகள் = இணை(விடைகள், {"குறி": ஒரு_முனை["குறி"],
+                                  "கால_அளவு": ஒரு_முனை["கால_அளவு"],
+                                  "முந்தி_தொடக்கம்": முன்_தொ,
+                                  "முந்தி_முடிவு": முன்_மு,
+                                  "தாழ்_தொடக்கம்": தாழ்_தொ,
+                                  "தாழ்_முடிவு": தாழ்_மு,
+                                  "மிதவை": தாழ்_தொ - முன்_தொ});
+    }
+
+    திரும்பு சரி({"முனைகள்": விடைகள், "திட்ட_காலம்": திட்ட_முடிவு});
+}
+
+// தொடர்பு_கடுமையானவை(வலை_விடை) — the codes with no float
+செயல் தொடர்பு_கடுமையானவை(வலை_விடை) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_முனை இல் வலை_விடை["முனைகள்"] {
+        (ஒரு_முனை["மிதவை"] <= 0) எனில் {
+            விடை = இணை(விடை, ஒரு_முனை["குறி"]);
+        }
+    }
+    திரும்பு விடை;
+}
+
+செயல் தொடர்பு_முனையின்_புலம்(வலை_விடை, முனைக்_குறி, புலப்_பெயர்) {
+    ஒவ்வொரு ஒரு_முனை இல் வலை_விடை["முனைகள்"] {
+        (ஒரு_முனை["குறி"] == முனைக்_குறி) எனில் {
+            திரும்பு சரி(ஒரு_முனை[புலப்_பெயர்]);
+        }
+    }
+    திரும்பு தவறு("முனை இல்லை  (no such activity in the result): "
+                   & சொல்லாக்கு(முனைக்_குறி));
+}
+
+// =========================================================================
+// தாமதம் — what the waiting costs
+// =========================================================================
+//
+// மொத்தத்_தாமதம்(தொடர்புகள்) — every positive lag in the network, added up
+//
+// Leads are excluded deliberately: a negative lag is an overlap, not waiting,
+// and adding the two together would net a genuine delay against a claimed
+// compression and report neither.
+செயல் மொத்தத்_தாமதம்(தொடர்புகள்) {
+    கூட்டல் = 0;
+    ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+        (ஒரு_தொடர்பு["தாமதம்"] > 0) எனில் {
+            கூட்டல் = கூட்டல் + ஒரு_தொடர்பு["தாமதம்"];
+        }
+    }
+    திரும்பு கூட்டல்;
+}
+
+// முன்னோட்டங்கள்(தொடர்புகள்) — the relationships carrying a lead
+//
+// Worth listing rather than counting. Each one is a claim that work can
+// overlap, and each should be either evidenced or rewritten as the two
+// activities it actually describes.
+செயல் முன்னோட்டங்கள்(தொடர்புகள்) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+        (முன்னோட்டமா(ஒரு_தொடர்பு)) எனில் { விடை = இணை(விடை, ஒரு_தொடர்பு); }
+    }
+    திரும்பு விடை;
+}
+
+// தாமதப்_பங்கு(தொடர்புகள், திட்ட_காலம்)
+//
+// Total lag as a percentage of the project's duration.
+//
+// It is not a precise share — lags on parallel paths overlap, so the figure
+// can exceed a hundred — and it is not meant to be. It answers a blunter
+// question: how much of this plan is somebody waiting? A schedule where the
+// answer is large is a schedule whose critical path runs mostly through other
+// people's organisations, and no amount of managing this project's resources
+// will shorten it.
+செயல் தாமதப்_பங்கு(தொடர்புகள், திட்ட_காலம்) {
+    (திட்ட_காலம் <= 0) எனில் {
+        திரும்பு தவறு("திட்டக் காலம் இல்லை  (the project has no duration)");
+    }
+    திரும்பு சரி(வட்டமிடு(மொத்தத்_தாமதம்(தொடர்புகள்) * 100 / திட்ட_காலம், 2));
+}
+
+// =========================================================================
+// சுருக்கம் — what can actually be compressed
+// =========================================================================
+//
+// சுருக்கக்கூடிய_காலம்(முனைகள், தொடர்புகள், பாதைக்_குறிகள்)
+//
+// Splits a path into the work on it, the lag between its activities, and —
+// the figure that matters — **the work that shortening would actually move**.
+//
+// curukkal.qmz will price a day off any critical activity. Two things stop
+// that day reaching the project's end date.
+//
+// A **lag** cannot be bought. The concrete cures at its own speed and the
+// permit office keeps its own calendar.
+//
+// And an activity's duration reaches its successor **only through a
+// relationship that depends on its finish** — finish-to-start or
+// finish-to-finish. Through a start-to-start the successor is tied to the
+// predecessor's *start*, so shortening the predecessor moves nothing. An
+// activity can sit squarely on the critical path, have zero float, and be
+// entirely unworth crashing.
+//
+// The last activity on the path always counts: it reaches the project's end
+// through its own finish.
+செயல் சுருக்கக்கூடிய_காலம்(முனைகள், தொடர்புகள், பாதைக்_குறிகள்) {
+    (நீளம்(பாதைக்_குறிகள்) == 0) எனில் {
+        திரும்பு {"வேலை": 0, "தாமதம்": 0, "சுருக்கக்கூடியது": 0};
+    }
+
+    வேலை = 0;
+    ஒவ்வொரு ஒரு_குறி இல் பாதைக்_குறிகள் {
+        வேலை = வேலை + கால_அளவைப்_பெறு(முனைகள், ஒரு_குறி);
+    }
+
+    தாமதம் = 0;
+    சுருக்கக்கூடியது = 0;
+    எண்ணி = 0;
+    கடைசி = நீளம்(பாதைக்_குறிகள்) - 1;
+
+    (எண்ணி < கடைசி) சுற்று {
+        இருந்து = பாதைக்_குறிகள்[எண்ணி];
+        க்கு = பாதைக்_குறிகள்[எண்ணி + 1];
+        முடிவைச்_சார்ந்ததா = பொய்;
+
+        ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
+            (ஒரு_தொடர்பு["முன்னோடி"] == இருந்து
+             மற்றும் ஒரு_தொடர்பு["பின்தொடர்"] == க்கு) எனில் {
+                (ஒரு_தொடர்பு["தாமதம்"] > 0) எனில் {
+                    தாமதம் = தாமதம் + ஒரு_தொடர்பு["தாமதம்"];
+                }
+                (ஒரு_தொடர்பு["வகை"] == "முடிவு_தொடக்கம்"
+                 அல்லது ஒரு_தொடர்பு["வகை"] == "முடிவு_முடிவு") எனில் {
+                    முடிவைச்_சார்ந்ததா = மெய்;
+                }
+            }
+        }
+
+        (முடிவைச்_சார்ந்ததா) எனில் {
+            சுருக்கக்கூடியது = சுருக்கக்கூடியது
+                                + கால_அளவைப்_பெறு(முனைகள், இருந்து);
+        }
+        எண்ணி = எண்ணி + 1;
+    }
+
+    // The path's last activity drives the end through its own finish.
+    சுருக்கக்கூடியது = சுருக்கக்கூடியது
+                        + கால_அளவைப்_பெறு(முனைகள், பாதைக்_குறிகள்[கடைசி]);
+
+    திரும்பு {"வேலை": வேலை,
+              "தாமதம்": தாமதம்,
+              "சுருக்கக்கூடியது": சுருக்கக்கூடியது,
+              "சுருக்க_இயலாதது": வேலை - சுருக்கக்கூடியது};
+}

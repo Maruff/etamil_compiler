@@ -20,7 +20,8 @@ output: a production order counts units, a project counts budget earned.
 | `pAqY.qmz` | the critical path — `செயல்_ஆக்கு` `வலையைக்_கணக்கிடு` `கடுமையானவை` `பெறு_புலம்` `சுழற்சி_உள்ளதா` `உணர்திறன்_வலையா` |
 | `curukkal.qmz` | crashing — `செயல்_நேர_செலவு` `செலவுச்_சரிவு` `அதிகபட்ச_சுருக்கம்` `மலிவான_வேட்பாளர்` `கூட்டுச்_சரிவு` `மொத்தச்_செலவு` `தாமதச்_செலவுடன்` |
 | `oppanqa_vakY.qmz` | contract types and who carries the cost risk — `விற்பவர்_இடர்` `உறுதி_நிலை_லாபம்` `ஊக்கக்_கட்டணம்` `கட்டணத்தை_வரம்பிடு` `முழுப்_பொறுப்புப்_புள்ளி` `நிலை_விலை_ஊக்கம்` `செலவுடன்_நிலைக்_கட்டணம்` `செலவுடன்_ஊக்கம்` `நேரமும்_பொருளும்` `மிகைச்_செலவின்_விளைவு` |
-| `qittam_cOqaZY.qmz` | the tests — 133 assertions |
+| `qotarpu.qmz` | the four dependency types and lag — `முனை_ஆக்கு` `தொடர்பு_ஆக்கு` `தொடர்பு_வகை_சரியா` `முன்னோட்டமா` `தொடர்பு_வலையைக்_கணக்கிடு` `தொடர்பு_கடுமையானவை` `தொடர்பு_முனையின்_புலம்` `மொத்தத்_தாமதம்` `முன்னோட்டங்கள்` `தாமதப்_பங்கு` `சுருக்கக்கூடிய_காலம்` |
+| `qittam_cOqaZY.qmz` | the tests — 166 assertions |
 
 ```bash
 etamil --vm nUlakam/qittam/qittam_cOqaZY.qmz
@@ -106,10 +107,47 @@ misread: the buyer treats it as a budget and the seller as an estimate, and
 past it the seller works for nothing exactly as under a fixed price. The switch
 is invisible until it happens.
 
+### A lag is time nobody owns
+
+`qotarpu.qmz` adds the other three dependency types and lag. Each constraint
+becomes a lower bound on the successor's early start, which is what lets all
+four run in one pass, and both passes settle to a fixed point so a cycle fails
+loudly rather than looping.
+
+A **lag** is elapsed time with no activity, no cost and no owner — the
+commonest way a schedule conceals a dependency on somebody outside the project:
+concrete curing, a permit, a supplier's lead time. It appears in no resource
+plan and no budget. In the tests, six of the eleven days are lag —
+`தாமதப்_பங்கு` reports **54.55%** — and a project whose critical path runs
+mostly through other people's organisations will not be shortened by managing
+this one's resources.
+
+A **lead** — a negative lag — asserts that the work can overlap. If that is
+true then it is two activities, not one with a lead, and the lead hides the
+decomposition so nobody can check the claim or resource it. `முன்னோட்டங்கள்`
+lists them rather than counting them, because each is a claim that should be
+evidenced or rewritten.
+
+### An activity can have zero float and still be pointless to crash
+
+This is the sharpest consequence of the richer relationships, and it qualifies
+`curukkal.qmz` directly.
+
+An activity's duration reaches its successor **only through a relationship that
+depends on its finish**. Through a start-to-start the successor is tied to the
+predecessor's *start*, so shortening the predecessor moves nothing at all.
+
+In the tests the critical path A–C–D carries eleven days of work and five of
+lag, and only **six days are crashable**: A is critical, has zero float, and
+drives C by start-to-start, so buying a day of A buys nothing.
+`curukkal.qmz`, which looks only at float, would happily price it.
+
 ## Where it stops
 
-- **Finish-to-start only.** Lags and the other three dependency types belong to
-  a richer scheduler and would change every signature in `pAqY.qmz`.
+- **`pAqY.qmz` is still finish-to-start only**, deliberately. The richer
+  scheduler is `qotarpu.qmz` alongside it rather than a rewrite of it: a
+  network a hand calculation can check is worth keeping, and the two agree on
+  the case they share.
 - **No resource levelling.** It is an optimisation problem with no efficient
   exact solution, and a heuristic that cannot explain what it did will not be
   trusted.

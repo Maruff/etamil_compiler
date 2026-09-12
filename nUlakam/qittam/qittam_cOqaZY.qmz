@@ -17,6 +17,7 @@
 இறக்கு "pAqY.qmz";
 இறக்கு "curukkal.qmz";
 இறக்கு "oppanqa_vakY.qmz";
+இறக்கு "qotarpu.qmz";
 
 ஓட்டம் = சோதனை_தொடக்கம்("திட்டம் — project costing");
 
@@ -491,5 +492,154 @@
                  விளைவு["செலவுடன்_நிலைக்_கட்டணம்"],
                  "the identical event, 30,000 apart — which is why a cost "
                  & "variance reported without naming the contract is half a fact");
+
+// =========================================================================
+// தொடர்பு — the four dependency types, and lag
+// =========================================================================
+//
+// Two activities, P of four days and Q of six, related four different ways.
+
+இரண்டு_நீளம் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 6)];
+இரண்டு_குறுகல் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 2)];
+
+செயல் காலத்தைப்_பெறு(முனைகள், தொடர்புகள்) {
+    திரும்பு மதிப்பு(தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்))["திட்ட_காலம்"];
+}
+
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_நீளம்,
+              [தொடர்பு_ஆக்கு("P", "Q", "முடிவு_தொடக்கம்", 0)]), 10,
+              "finish-to-start puts the six after the four");
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_நீளம்,
+              [தொடர்பு_ஆக்கு("P", "Q", "முடிவு_தொடக்கம்", 2)]), 12,
+              "and a lag of two adds two days of nothing");
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_நீளம்,
+              [தொடர்பு_ஆக்கு("P", "Q", "தொடக்கம்_தொடக்கம்", 0)]), 6,
+              "start-to-start runs them together, so the project is the longer "
+              & "of the two");
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_நீளம்,
+              [தொடர்பு_ஆக்கு("P", "Q", "தொடக்கம்_தொடக்கம்", 2)]), 8,
+              "offset by two");
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_குறுகல்,
+              [தொடர்பு_ஆக்கு("P", "Q", "முடிவு_முடிவு", 3)]), 7,
+              "finish-to-finish pushes the successor's *end* three past the "
+              & "predecessor's");
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(இரண்டு_குறுகல்,
+              [தொடர்பு_ஆக்கு("P", "Q", "தொடக்கம்_முடிவு", 5)]), 5,
+              "start-to-finish ties the successor's end to the predecessor's "
+              & "start — rare, and nearly always a mistake where it appears");
+
+// A relationship can bind backwards instead of forwards, which is the case
+// people do not expect: the successor is long enough already, so the
+// constraint gives the *predecessor* float.
+ஒட்டுதல் = மதிப்பு(தொடர்பு_வலையைக்_கணக்கிடு(இரண்டு_நீளம்,
+              [தொடர்பு_ஆக்கு("P", "Q", "முடிவு_முடிவு", 0)]));
+ஓட்டம் = சமம்(ஓட்டம், ஒட்டுதல்["திட்ட_காலம்"], 6,
+              "finish-to-finish with a longer successor does not delay it");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தொடர்பு_முனையின்_புலம்(ஒட்டுதல், "P", "மிதவை")), 2,
+              "but it gives the predecessor two days of float, because P must "
+              & "now finish by 6");
+
+// --- a mixed network ------------------------------------------------------
+//
+// A(5) --FS+0--> B(3) ;  A --SS+2--> C(4) ;  B --FF+1--> D(2) ;  C --FS+3--> D
+
+கலவை_முனைகள் = [முனை_ஆக்கு("A", "அடித்தளம்", 5),
+                  முனை_ஆக்கு("B", "சுவர்", 3),
+                  முனை_ஆக்கு("C", "கம்பி", 4),
+                  முனை_ஆக்கு("D", "பூச்சு", 2)];
+கலவை_தொடர்புகள் = [தொடர்பு_ஆக்கு("A", "B", "முடிவு_தொடக்கம்", 0),
+                     தொடர்பு_ஆக்கு("A", "C", "தொடக்கம்_தொடக்கம்", 2),
+                     தொடர்பு_ஆக்கு("B", "D", "முடிவு_முடிவு", 1),
+                     தொடர்பு_ஆக்கு("C", "D", "முடிவு_தொடக்கம்", 3)];
+
+கலவை = மதிப்பு(தொடர்பு_வலையைக்_கணக்கிடு(கலவை_முனைகள், கலவை_தொடர்புகள்));
+
+ஓட்டம் = சமம்(ஓட்டம், கலவை["திட்ட_காலம்"], 11, "the network runs eleven days");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தொடர்பு_முனையின்_புலம்(கலவை, "C", "முந்தி_தொடக்கம்")),
+              2, "C starts on day 2, two after A, by start-to-start");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தொடர்பு_முனையின்_புலம்(கலவை, "D", "முந்தி_தொடக்கம்")),
+              9, "D waits until 9 — C ends at 6 and the lag is three");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தொடர்பு_முனையின்_புலம்(கலவை, "B", "மிதவை")), 2,
+              "B has two days of float");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தொடர்பு_முனையின்_புலம்(கலவை, "A", "மிதவை")), 0,
+              "A has none");
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(தொடர்பு_கடுமையானவை(கலவை)), 3,
+              "so three of the four are critical");
+
+// --- what a lag is, and what it costs -------------------------------------
+
+ஓட்டம் = சமம்(ஓட்டம், மொத்தத்_தாமதம்(கலவை_தொடர்புகள்), 6,
+              "six days of the plan are lag");
+ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(தாமதப்_பங்கு(கலவை_தொடர்புகள்,
+                                             கலவை["திட்ட_காலம்"])), 54.55,
+              "which is more than half the project — a schedule whose critical "
+              & "path runs mostly through other people's organisations");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தாமதப்_பங்கு(கலவை_தொடர்புகள், 0)),
+                  "and a project with no duration has no share to report");
+
+ஓட்டம் = சமம்(ஓட்டம், நீளம்(முன்னோட்டங்கள்(கலவை_தொடர்புகள்)), 0,
+              "this network has no leads");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், முன்னோட்டமா(
+                      தொடர்பு_ஆக்கு("A", "B", "முடிவு_தொடக்கம்", 0 - 2)),
+                  "a negative lag is a lead — an assertion that the work can "
+                  & "overlap, which if true means two activities rather than "
+                  & "one with a lead");
+ஓட்டம் = சமம்(ஓட்டம், மொத்தத்_தாமதம்(
+                  [தொடர்பு_ஆக்கு("A", "B", "முடிவு_தொடக்கம்", 0 - 2)]), 0,
+              "and a lead is not counted as lag — netting the two would report "
+              & "neither");
+
+// --- what can actually be crashed -----------------------------------------
+
+சுருக்கம் = சுருக்கக்கூடிய_காலம்(கலவை_முனைகள், கலவை_தொடர்புகள், ["A", "C", "D"]);
+ஓட்டம் = சமம்(ஓட்டம், சுருக்கம்["வேலை"], 11,
+              "the critical path carries eleven days of work");
+ஓட்டம் = சமம்(ஓட்டம், சுருக்கம்["தாமதம்"], 5,
+              "and five days of lag between its activities");
+ஓட்டம் = சமம்(ஓட்டம், சுருக்கம்["சுருக்கக்கூடியது"], 6,
+              "but only six days of it can be crashed — A drives C by "
+              & "start-to-start, so shortening A moves nothing at all");
+ஓட்டம் = சமம்(ஓட்டம், சுருக்கம்["சுருக்க_இயலாதது"], 5,
+              "leaving five days of work that is critical and not worth buying");
+ஓட்டம் = வேறுபடு(ஓட்டம், சுருக்கம்["சுருக்கக்கூடியது"], சுருக்கம்["வேலை"],
+                 "**an activity can have zero float and still be pointless to "
+                 & "crash** — which curukkal.qmz, looking only at float, would "
+                 & "happily price");
+
+// --- a plain finish-to-start chain agrees with the simple scheduler --------
+
+சங்கிலி_முனைகள் = [முனை_ஆக்கு("X", "", 4), முனை_ஆக்கு("Y", "", 6),
+                    முனை_ஆக்கு("Z", "", 3)];
+சங்கிலி_தொடர்புகள் = [தொடர்பு_ஆக்கு("X", "Y", "முடிவு_தொடக்கம்", 0),
+                       தொடர்பு_ஆக்கு("Y", "Z", "முடிவு_தொடக்கம்", 0)];
+ஓட்டம் = சமம்(ஓட்டம், காலத்தைப்_பெறு(சங்கிலி_முனைகள், சங்கிலி_தொடர்புகள்), 13,
+              "with only finish-to-start and no lag this reduces to what "
+              & "pAqY.qmz computes: the durations add");
+
+// --- refusals --------------------------------------------------------------
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_வலையைக்_கணக்கிடு(கலவை_முனைகள்,
+                      [தொடர்பு_ஆக்கு("A", "B", "ஏதோ", 0)])),
+                  "an unknown relationship type is refused before any "
+                  & "arithmetic");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_வலையைக்_கணக்கிடு(கலவை_முனைகள்,
+                      [தொடர்பு_ஆக்கு("A", "Z", "முடிவு_தொடக்கம்", 0)])),
+                  "and so is a relationship naming an activity that does not "
+                  & "exist — a lost constraint makes a project look shorter, "
+                  & "which is the direction nobody questions");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_வலையைக்_கணக்கிடு([], [])),
+                  "a network with no activities is refused");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_வலையைக்_கணக்கிடு(கலவை_முனைகள்,
+                      [தொடர்பு_ஆக்கு("A", "B", "முடிவு_தொடக்கம்", 0),
+                       தொடர்பு_ஆக்கு("B", "A", "முடிவு_தொடக்கம்", 0)])),
+                  "and a cycle fails loudly rather than looping, which is why "
+                  & "both passes run to a fixed point");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_முனையின்_புலம்(கலவை, "Z", "மிதவை")),
+                  "asking about an activity the result does not hold is a தவறு");
+
+ஓட்டம் = உறுதிசெய்(ஓட்டம், தொடர்பு_வகை_சரியா("முடிவு_தொடக்கம்"),
+                  "the four type names are the four the module accepts");
+ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை தொடர்பு_வகை_சரியா("FS"),
+                  "and an abbreviation is not one of them");
 
 சோதனை_முடிவு(ஓட்டம்);
