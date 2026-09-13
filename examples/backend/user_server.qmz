@@ -2,17 +2,17 @@
 // Demonstrates calculation and variable management
 // Run: ./etamil_compiler --server --port 8080 user_server.qmz
 
-எண் total_users;
-எண் active_users;
-எண் inactive_users;
-எண் premium_users;
+எண் _total_users;
+எண் _active_users;
+எண் _inactive_users;
+எண் _premium_users;
 
-total_users = 1000;
-active_users = 750;
-inactive_users = 200;
-premium_users = 50;
+_total_users = 1000;
+_active_users = 750;
+_inactive_users = 200;
+_premium_users = 50;
 
 அச்சு "User Management Server";
-அச்சு "Total: " & total_users;
-அச்சு "Active: " & active_users;
-அச்சு "Premium: " & premium_users;
+அச்சு "Total: " & _total_users;
+அச்சு "Active: " & _active_users;
+அச்சு "Premium: " & _premium_users;

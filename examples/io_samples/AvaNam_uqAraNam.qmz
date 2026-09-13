@@ -4,7 +4,7 @@
 // fills it and writes the new package out. That needs a file to point at, so
 // this example does the half that stands alone: the XML inside the package.
 //
-//   பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+//   பொதியை_நிரப்பு("charter.odt", "out.odt", _ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
 //
 // is the whole of the difference for a real one.
 
@@ -37,7 +37,7 @@
      ]}
 ];
 
-ஆவணம் = ஆவணம்_நிரப்பு(படிவம், ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+ஆவணம் = ஆவணம்_நிரப்பு(படிவம், _ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
 
 அச்சு "=== நிரப்பப்பட்ட ஆவணம் ===";
 அச்சு ஆவணம்;
@@ -52,6 +52,6 @@
 
 // A value that looks like markup is escaped, or the document stops being
 // well-formed XML and LibreOffice calls the file corrupt.
-அபாயம் = ஆவணம்_நிரப்பு("<text:p>{{ x }}</text:p>", ODT_வடிவம்,
+அபாயம் = ஆவணம்_நிரப்பு("<text:p>{{ x }}</text:p>", _ODT_வடிவம்,
                         [{"குறி": "x", "மதிப்பு": "5 < 10 & rising"}], []);
 அச்சு "தப்பிக்கப்பட்டது: " & அபாயம்;

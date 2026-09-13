@@ -75,7 +75,7 @@ This directory contains comprehensive examples demonstrating the eTamil compiler
 இறக்கு "../../nUlakam/AvaNam.qmz";
 
 மதிப்புகள் = [{"குறி": "project.name", "மதிப்பு": "பீக் PMO"}];
-ஆவணம் = ஆவணம்_நிரப்பு(படிவம், ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+ஆவணம் = ஆவணம்_நிரப்பு(படிவம், _ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
 ```
 
 **Working on real files** — this example renders XML inline so that it needs
@@ -84,8 +84,8 @@ package, fills `content.xml` (or `word/document.xml`) and writes a new one,
 carrying the pictures and styles across untouched:
 
 ```tamil
-பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
-pdf_ஆக்கு("soffice", "out.odt", ".");   // needs ETAMIL_EXEC_ALLOW
+பொதியை_நிரப்பு("charter.odt", "out.odt", _ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+_pdf_ஆக்கு("soffice", "out.odt", ".");   // needs ETAMIL_EXEC_ALLOW
 ```
 
 **Data Files:**

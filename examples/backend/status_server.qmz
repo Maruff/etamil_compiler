@@ -2,36 +2,36 @@
 // Demonstrates conditional logic
 // Run: ./etamil_compiler --server --port 8080 status_server.qmz
 
-எண் cpu_usage;
-எண் memory_usage;
-எண் disk_usage;
-எண் status_code;
+எண் _cpu_usage;
+எண் _memory_usage;
+எண் _disk_usage;
+எண் _status_code;
 
-cpu_usage = 45;
-memory_usage = 62;
-disk_usage = 78;
+_cpu_usage = 45;
+_memory_usage = 62;
+_disk_usage = 78;
 
-(cpu_usage > 80) எனில் {
+(_cpu_usage > 80) எனில் {
     அச்சு "High CPU";
 }
 இன்றேல் {
     அச்சு "Normal CPU";
 }
 
-(memory_usage > 80) எனில் {
+(_memory_usage > 80) எனில் {
     அச்சு "High Memory";
 }
 இன்றேல் {
     அச்சு "Normal Memory";
 }
 
-(disk_usage > 90) எனில் {
+(_disk_usage > 90) எனில் {
     அச்சு "Critical Disk";
-    status_code = 500;
+    _status_code = 500;
 }
 இன்றேல் {
     அச்சு "Disk OK";
-    status_code = 200;
+    _status_code = 200;
 }
 
-அச்சு "Status: " & status_code;
+அச்சு "Status: " & _status_code;

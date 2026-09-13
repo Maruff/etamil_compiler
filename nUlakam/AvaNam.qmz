@@ -10,19 +10,19 @@
 // row is called there. Three are given below — an .odt, an .ods, and a .docx.
 // Nothing after them names a format.
 
-ODT_வடிவம் = {
+_ODT_வடிவம் = {
     "உறுப்பு":      "content.xml",
     "வரிசை":        "<table:table-row",
     "வரிசை_முடிவு": "</table:table-row>"
 };
 
-ODS_வடிவம் = {
+_ODS_வடிவம் = {
     "உறுப்பு":      "content.xml",
     "வரிசை":        "<table:table-row",
     "வரிசை_முடிவு": "</table:table-row>"
 };
 
-DOCX_வடிவம் = {
+_DOCX_வடிவம் = {
     "உறுப்பு":      "word/document.xml",
     "வரிசை":        "<w:tr",
     "வரிசை_முடிவு": "</w:tr>"
@@ -31,7 +31,7 @@ DOCX_வடிவம் = {
 // An .xlsx keeps its text in a shared table and its rows in the sheet, so a
 // repeating row would have to renumber shared-string indexes. Scalars work;
 // தொகுதிகள் must be empty. Say so rather than half-do it.
-XLSX_வடிவம் = {
+_XLSX_வடிவம் = {
     "உறுப்பு":      "xl/sharedStrings.xml",
     "வரிசை":        "<si>",
     "வரிசை_முடிவு": "</si>"
@@ -45,7 +45,7 @@ XLSX_வடிவம் = {
 }
 
 // XML escaping. & goes first, or it would escape the escapes.
-செயல் xml_ஆக்கு(உள்ளீடு) {
+செயல் _xml_ஆக்கு(உள்ளீடு) {
     வெளியே = மாற்று(உள்ளீடு, "&", "&amp;");
     வெளியே = மாற்று(வெளியே, "<", "&lt;");
     வெளியே = மாற்று(வெளியே, ">", "&gt;");
@@ -89,7 +89,7 @@ XLSX_வடிவம் = {
     வெளியே = படிவம்;
     ஒவ்வொரு புலம் இல் புலங்கள் {
         குறி = "{{ " & மாற்றுப்_பெயர் & "." & புலம் & " }}";
-        வெளியே = மாற்று(வெளியே, குறி, xml_ஆக்கு(உறுப்பு[புலம்]));
+        வெளியே = மாற்று(வெளியே, குறி, _xml_ஆக்கு(உறுப்பு[புலம்]));
     }
     திரும்பு வெளியே;
 }
@@ -161,7 +161,7 @@ XLSX_வடிவம் = {
     ஆவணம் = ஒன்றிணை(வெளியீடு, "");
     ஒவ்வொரு மதிப்புக்_குறிப்பு இல் மதிப்புகள் {
         ஆவணம் = மாற்று(ஆவணம், "{{ " & மதிப்புக்_குறிப்பு["குறி"] & " }}",
-                        xml_ஆக்கு(மதிப்புக்_குறிப்பு["மதிப்பு"]));
+                        _xml_ஆக்கு(மதிப்புக்_குறிப்பு["மதிப்பு"]));
     }
     திரும்பு ஆவணம்;
 }
@@ -183,7 +183,7 @@ XLSX_வடிவம் = {
 
 // The PDF of a rendered package. LibreOffice does the conversion, so
 // ETAMIL_EXEC_ALLOW has to name it.
-செயல் pdf_ஆக்கு(நிரல், ஆவணக்_கோப்பு, சேமிப்பிடம்) {
+செயல் _pdf_ஆக்கு(நிரல், ஆவணக்_கோப்பு, சேமிப்பிடம்) {
     திரும்பு கட்டளை_ஓட்டு(நிரல், [
         "--headless",
         "--convert-to", "pdf",

@@ -2,11 +2,11 @@
 // Demonstrates basic HTTP server capabilities
 // Run: ./etamil_compiler --server --port 8080 simple_api.qmz
 
-எண் api_version;
-எண் uptime_seconds;
+எண் _api_version;
+எண் _uptime_seconds;
 
-api_version = 1;
-uptime_seconds = 3600;
+_api_version = 1;
+_uptime_seconds = 3600;
 
-அச்சு "API Server v" & api_version & " started";
-அச்சு "Uptime: " & uptime_seconds & " seconds";
+அச்சு "API Server v" & _api_version & " started";
+அச்சு "Uptime: " & _uptime_seconds & " seconds";

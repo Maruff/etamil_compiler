@@ -3354,7 +3354,7 @@ fn render(values: &str, groups: &str) -> Result<VM, String> {
     run_with_stdlib(&format!(
         r#"இறக்கு "AvaNam.qmz";
            மூலம் = "{}";
-           விளைவு = ஆவணம்_நிரப்பு(மூலம், ODT_வடிவம், {}, {});"#,
+           விளைவு = ஆவணம்_நிரப்பு(மூலம், _ODT_வடிவம், {}, {});"#,
         TEMPLATE.replace('"', "\\\""),
         values,
         groups

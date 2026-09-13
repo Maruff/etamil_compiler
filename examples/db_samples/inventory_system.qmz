@@ -10,7 +10,7 @@
 எண் product_id = 0;
 எண் stock_quantity = 0;
 எண் sale_amount = 0;
-எண் revenue = 0;
+எண் _revenue = 0;
 
 // Initialize inventory
 கோப்பு_திற "inventory.csv", "write";
@@ -31,7 +31,7 @@
 தரவுரை_எழுது "sales.csv", "5004,2004,3,24000";
 
 // Calculate total revenue
-revenue = 80000 + 5000 + 6000 + 24000;
+_revenue = 80000 + 5000 + 6000 + 24000;
 
 // Display inventory report
 அச்சு "Inventory Management System";
@@ -42,7 +42,7 @@ revenue = 80000 + 5000 + 6000 + 24000;
 தரவுரை_படி "sales.csv", sale_amount;
 
 அச்சு "Total Revenue: ";
-அச்சு revenue;
+அச்சு _revenue;
 
 // Close files
 கோப்பு_மூடு "inventory.csv";

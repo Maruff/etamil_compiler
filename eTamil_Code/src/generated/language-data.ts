@@ -3676,9 +3676,9 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 43
   },
   {
-    "name": "xml_ஆக்கு",
+    "name": "_xml_ஆக்கு",
     "forms": [
-      "xml_ஆக்கு"
+      "_xml_ஆக்கு"
     ],
     "params": [
       "உள்ளீடு"
@@ -3801,9 +3801,9 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 172
   },
   {
-    "name": "pdf_ஆக்கு",
+    "name": "_pdf_ஆக்கு",
     "forms": [
-      "pdf_ஆக்கு"
+      "_pdf_ஆக்கு"
     ],
     "params": [
       "நிரல்",
@@ -6389,29 +6389,29 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "line": 167
   },
   {
-    "name": "நிகழ்தகவு_Z",
+    "name": "_நிகழ்தகவு_Z",
     "forms": [
-      "நிகழ்தகவு_Z"
+      "_நிகழ்தகவு_Z"
     ],
     "params": [
-      "z_மதிப்பு"
+      "_z_மதிப்பு"
     ],
     "arity": 1,
-    "doc": "நிகழ்தகவு_Z(z_மதிப்பு) — Φ(z), as a percentage out of a hundred",
+    "doc": "_நிகழ்தகவு_Z(_z_மதிப்பு) — Φ(z), as a percentage out of a hundred",
     "kind": "stdlib",
     "module": "nUlakam/itar/mUZRuppuLLi.qmz",
     "line": 196
   },
   {
-    "name": "நம்பிக்கைக்கான_Z",
+    "name": "_நம்பிக்கைக்கான_Z",
     "forms": [
-      "நம்பிக்கைக்கான_Z"
+      "_நம்பிக்கைக்கான_Z"
     ],
     "params": [
       "நிகழ்தகவு_சதவீதம்"
     ],
     "arity": 1,
-    "doc": "நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்) — the z for a wanted confidence",
+    "doc": "_நம்பிக்கைக்கான_Z(நிகழ்தகவு_சதவீதம்) — the z for a wanted confidence",
     "kind": "stdlib",
     "module": "nUlakam/itar/mUZRuppuLLi.qmz",
     "line": 225

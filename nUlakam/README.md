@@ -52,7 +52,7 @@ frameworks built on top of it.
 | `qittam/pAqY.qmz` | the critical path — `செயல்_ஆக்கு` `வலையைக்_கணக்கிடு` `கடுமையானவை` `பெறு_புலம்` `சுழற்சி_உள்ளதா` `உணர்திறன்_வலையா` |
 | `qittam/curukkal.qmz` | crashing — `செயல்_நேர_செலவு` `செலவுச்_சரிவு` `அதிகபட்ச_சுருக்கம்` `மலிவான_வேட்பாளர்` `கூட்டுச்_சரிவு` `மொத்தச்_செலவு` `தாமதச்_செலவுடன்` |
 | `itar/itar.qmz` | the risk register — `இடர்_ஆக்கு` `எதிர்பார்ப்பு` `மொத்த_எதிர்பார்ப்பு` `இடர்_மதிப்பெண்` `பதிலளிப்பு_சரியா` `எஞ்சிய_இடர்` `பதிலளிப்பு_பயனுள்ளதா` `தற்செயல்_இருப்பைக்_கணக்கிடு` `மேலாண்மை_இருப்பைக்_கணக்கிடு` `கிளைகளின்_எதிர்பார்ப்பு` `சிறந்த_முடிவு` |
-| `itar/mUZRuppuLLi.qmz` | three-point estimation — `முப்புள்ளி_ஆக்கு` `பீட்டா_சராசரி` `முக்கோண_சராசரி` `நியம_விலகல்` `பரவல்` `பாதை_சராசரி` `பாதை_பரவல்` `பாதை_விலகல்` `நிகழ்தகவு_Z` `இலக்கு_நிகழ்தகவு` `நம்பிக்கை_காலம்` |
+| `itar/mUZRuppuLLi.qmz` | three-point estimation — `முப்புள்ளி_ஆக்கு` `பீட்டா_சராசரி` `முக்கோண_சராசரி` `நியம_விலகல்` `பரவல்` `பாதை_சராசரி` `பாதை_பரவல்` `பாதை_விலகல்` `_நிகழ்தகவு_Z` `இலக்கு_நிகழ்தகவு` `நம்பிக்கை_காலம்` |
 | `vaLam/vaLam.qmz` | resources and effective-dated rates — `வளம்_ஆக்கு` `விகிதப்_பதிவு` `விகிதத்தைத்_தேடு` `மேலதிக_விகிதம்` `காலத்_திறன்` `கிடைக்கும்_மணிகள்` `பயன்பாட்டு_விகிதம்` `கட்டண_விகிதம்` |
 | `vaLam/nEraqqAL.qmz` | timesheets — `நேர_உள்ளீடு` `உள்ளீட்டைச்_சரிபார்` `மிகைப்_பதிவா` `நிலை_மாற்றம்_சரியா` `ஏற்றவை_மட்டும்` `தாளைக்_கணக்கிடு` `பணிக்கு_மொத்தம்` `கட்டண_மணிகள்` |
 | `vaLam/paqivu.qmz` | project cost into the ledger — `நடப்புக்_கணக்குக்_குறி` `உழைப்புப்_பதிவு` `பொருள்_பதிவு` `மேல்நிலைப்_பதிவு` `வருவாய்ப்_பதிவு` `விலைப்பட்டியல்_பதிவு` `ஈட்டிய_செலவு` `காலம்_வரை_செலவு` `செலவை_ஒப்பிடு` |
@@ -77,7 +77,7 @@ frameworks built on top of it.
 | `kAcu.qmz` | paise-exact money — `ரூபாயும்_பைசாவும்` `ரூபாயாக` `காசு_உரை` `காசு_கூட்டு` `விழுக்காடு_காசு` `சமமாகப்_பிரி` `விகிதத்தில்_பிரி` |
 | `jEcAZ.qmz` | JSON — `ஜேசான்_ஆக்கு` `ஜேசான்_படி` |
 | `kuRiyAkkam.qmz` | encoding — `அறுபத்துநான்கு_ஆக்கு` `அறுபத்துநான்கு_படி` `பதினாறு_ஆக்கு` `பதினாறு_படி` |
-| `AvaNam.qmz` | documents — `ஆவணம்_நிரப்பு` `பொதியை_நிரப்பு` `pdf_ஆக்கு`, and the `ODT_வடிவம்` / `ODS_வடிவம்` / `DOCX_வடிவம்` / `XLSX_வடிவம்` shapes |
+| `AvaNam.qmz` | documents — `ஆவணம்_நிரப்பு` `பொதியை_நிரப்பு` `_pdf_ஆக்கு`, and the `_ODT_வடிவம்` / `_ODS_வடிவம்` / `_DOCX_வடிவம்` / `_XLSX_வடிவம்` shapes |
 
 ## JSON is written here, not in the host
 
@@ -183,7 +183,7 @@ value, which rows repeat, what has to be escaped.
               "புலங்கள்": ["no", "objective"],
               "வரிசைகள்": [{"no": "1", "objective": "One source of truth"}]}];
 
-பொதியை_நிரப்பு("charter.odt", "out.odt", ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
+பொதியை_நிரப்பு("charter.odt", "out.odt", _ODT_வடிவம், மதிப்புகள், தொகுதிகள்);
 ```
 
 A `வடிவம்` is the whole of the difference between the formats: which entry
@@ -193,7 +193,7 @@ which is the convention the templates already used.
 
 An `.xlsx` keeps its text in a shared table and its rows in the sheet, so a
 repeating row there would have to renumber shared-string indexes. Scalars
-work; row groups do not, and `XLSX_வடிவம்` says so rather than half-doing it.
+work; row groups do not, and `_XLSX_வடிவம்` says so rather than half-doing it.
 
 ## Tests are written here too
 

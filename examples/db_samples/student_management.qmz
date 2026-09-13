@@ -10,7 +10,7 @@
 
 எண் student_id = 0;
 எண் total_students = 0;
-எண் total_score = 0;
+எண் _total_score = 0;
 
 // Create students database
 கோப்பு_திற "students.csv", "write";
@@ -30,14 +30,14 @@
 தரவுரை_படி "students.csv", total_students;
 
 // Calculate total
-total_score = 95 + 88 + 92;
+_total_score = 95 + 88 + 92;
 
 // Display results
 அச்சு "Total Students: ";
 அச்சு total_students;
 
 அச்சு "Total Score: ";
-அச்சு total_score;
+அச்சு _total_score;
 
 // Close file
 கோப்பு_மூடு "students.csv";

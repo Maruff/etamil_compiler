@@ -69,6 +69,13 @@ A single leading mark is used rather than one per segment because `_` doubled
 mid-name would collide with Rule 2's `__`, and because the Tamil parts of a
 mixed name need no mark: Unicode Tamil draws as Tamil under either font.
 
+**Marked names share a namespace with the English keywords**, which is the
+point of the mark and also its one cost. `_port` is how you write துறை in
+English, so `_port` is reserved and a variable cannot be called that — exactly
+as a variable cannot be called `வரி`. The keyword list is in
+[KEYWORDS.md](KEYWORDS.md); a clash reads as `expected a statement, found
+'_port'` and the fix is a longer name, `_server_port`.
+
 ## Rule 2 — an English comment is wrapped in `__`
 
 > Any comment written in English starts and ends with `__`.
