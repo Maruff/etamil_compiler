@@ -4163,10 +4163,21 @@ fn the_refusal_list_names_what_the_llvm_backend_cannot_build() {
     // தளம்_வினா was the cheapest thing on the burn-down — the only blocker for
     // two programs — and is built now. The other database statements are not,
     // so a query on its own compiles and a query beside a connect does not.
-    let query = parse("தளம்_வினா \"SELECT 1\", [], கிடைத்தவை;");
+    let database = parse(
+        "தளம்_இணை சீகுலைட், \":memory:\"; \
+         தளம்_செய் \"CREATE TABLE t (x INTEGER)\", []; \
+         தளம்_வினா \"SELECT x FROM t\", [], கிடைத்தவை;",
+    );
     assert!(
-        etamil_compiler::codegen::refusals(&query).is_empty(),
-        "தளம்_வினா is no longer refused"
+        etamil_compiler::codegen::refusals(&database).is_empty(),
+        "connecting, executing and querying are all built"
+    );
+
+    // Disconnecting is not, so the cluster is not finished.
+    let closing = parse("தளம்_பிரி சீகுலைட்;");
+    assert_eq!(
+        etamil_compiler::codegen::refusals(&closing),
+        vec!["தரவுசேமி_பிரி (disconnect)"]
     );
 
     // Every refusal, in source order, duplicates kept — the report counts them.

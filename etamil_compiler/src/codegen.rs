@@ -35,8 +35,8 @@
 //!
 //! ## What is still refused
 //!
-//! Statements, not expressions: files, HTTP, routes, scheduling, and every
-//! database statement except `தளம்_வினா`.
+//! Statements, not expressions: files, HTTP, routes, scheduling, and the
+//! database statements beyond connecting, executing and querying.
 //! Those need the VM's own machinery rather than a value representation, and
 //! `stmt_label` names each one so `run_parity.sh` can rank them. Refusing is
 //! the whole discipline here — IR that drops a statement or evaluates an
@@ -531,6 +531,56 @@ impl Compiler {
                     body,
                 } => {
                     self.compile_for_each(&var, &collection, &body);
+                }
+                // `தளம்_இணை சீகுலைட், "file.db";` — borrow a connection.
+                //
+                // The driver is a compile-time word and the connection string
+                // is an expression, which is why one crosses as a C string and
+                // the other as a handle. An unnamed connection takes the
+                // driver's name here, the same default the bytecode compiler
+                // applies — so the two backends file it under the same key and
+                // a later query with no name finds it either way.
+                Stmt::DBConnect {
+                    db_type,
+                    connection_string,
+                    handle,
+                } => {
+                    let target = self.compile_expr(&connection_string);
+                    let name = handle.clone().unwrap_or_else(|| db_type.clone());
+                    let driver = self.constant_text(&db_type, "driver");
+                    let named = self.constant_text(&name, "connection");
+                    if let (Some(driver), Some(named)) = (driver, named) {
+                        self.invoke(
+                            "etamil_db_connect",
+                            vec![self.text(), self.value(), self.text()],
+                            self.nothing(),
+                            &mut [driver, target, named],
+                        );
+                    }
+                }
+                // `தளம்_செய் "sql", [params];` — a statement with no rows.
+                //
+                // The same shape as a query without the store: the row count
+                // goes nowhere, which is what the VM does with it too.
+                Stmt::DBExecute {
+                    command,
+                    params,
+                    handle,
+                } => {
+                    let sql = self.compile_expr(&command);
+                    let bound = self.compile_expr(&params);
+                    let named = match &handle {
+                        Some(name) => self.constant_text(name, "connection"),
+                        None => Some(unsafe { LLVMConstNull(self.text()) }),
+                    };
+                    if let Some(named) = named {
+                        self.invoke(
+                            "etamil_db_execute",
+                            vec![self.value(), self.value(), self.text()],
+                            self.nothing(),
+                            &mut [sql, bound, named],
+                        );
+                    }
                 }
                 // `தளம்_வினா "sql", [params], பெயர்;` — the rows, into a name.
                 //
@@ -1237,6 +1287,8 @@ pub fn builds(statement: &Stmt) -> bool {
             | Stmt::Loop { .. }
             | Stmt::ForEach { .. }
             | Stmt::DBQuery { .. }
+            | Stmt::DBConnect { .. }
+            | Stmt::DBExecute { .. }
     )
 }
 

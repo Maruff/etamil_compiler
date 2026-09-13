@@ -513,6 +513,94 @@ pub extern "C" fn etamil_read_line() -> i64 {
     }
 }
 
+/// `தளம்_இணை`. Borrow a connection and file it under `handle`.
+///
+/// `handle` is never null: an unnamed connection takes the driver's name, and
+/// `codegen.rs` applies that default at compile time exactly as the bytecode
+/// compiler does — so both backends key the registry the same way and
+/// `தளம்_வினா` with no name finds the same connection under either.
+///
+/// Borrowed rather than opened, through the same pool the VM uses. Under
+/// `--server` every request runs on a fresh VM, so this statement is reached
+/// once per request and opening each time would cost a connect, a handshake
+/// and an authentication round trip per request.
+///
+/// Pointing one handle at a **second** database is refused, and that refusal is
+/// the VM's, word for word. The map is keyed by handle, so a second insert used
+/// to overwrite the first silently: the count stayed at one, nothing looked
+/// wrong, and every query after it went to the second database while the
+/// program still believed it was talking to the first.
+#[cfg(not(target_family = "wasm"))]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_db_connect(
+    db_type: *const c_char,
+    connection: i64,
+    handle: *const c_char,
+) {
+    let db_type = unsafe { borrow_str(db_type) };
+    let handle = unsafe { borrow_str(handle) };
+    let connection = get(connection).to_string();
+
+    let already = HOST.with(|host| {
+        host.borrow()
+            .connections
+            .connection_of(&handle)
+            .map(str::to_string)
+    });
+    if let Some(already) = already {
+        if already != connection {
+            fail(&format!(
+                "'{}' ஏற்கனவே '{}' உடன் இணைக்கப்பட்டுள்ளது  \
+                 ('{}' is already connected to '{}'): \
+                 தளம்_பிரி it first, or give this one its own name",
+                handle, already, handle, already
+            ));
+        }
+        // The same database again: already connected, nothing to do, and no
+        // second lease to take.
+        return;
+    }
+
+    let lease = match crate::db::pool::checkout(&db_type, &connection) {
+        Ok(lease) => lease,
+        Err(why) => fail(&why),
+    };
+    HOST.with(|host| {
+        host.borrow_mut()
+            .connections
+            .insert(handle, connection, lease)
+    });
+}
+
+/// `தளம்_செய்`. A statement that returns no rows.
+///
+/// The row count goes nowhere, which is the VM's behaviour and not an
+/// oversight here: `தளம்_செய்` is the statement form and the count is reachable
+/// through `தளம்_செய்_முயற்சி`, which returns a result.
+#[cfg(not(target_family = "wasm"))]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_db_execute(sql: i64, params: i64, handle: *const c_char) {
+    let named = if handle.is_null() {
+        None
+    } else {
+        Some(unsafe { borrow_str(handle) })
+    };
+
+    let bound = match crate::db::params_from(&get(params)) {
+        Ok(bound) => bound,
+        Err(why) => fail(&why),
+    };
+    let sql = get(sql).to_string();
+
+    let done = HOST.with(|host| -> Result<i64, String> {
+        let mut host = host.borrow_mut();
+        host.connection_for(named.as_deref())?.execute(&sql, &bound)
+    });
+    if let Err(why) = done {
+        fail(&why);
+    }
+}
+
 /// `தளம்_வினா`. One record per row, so a result set is an array of records —
 /// a table in the language's own terms, and the same `Value::Array` the VM's
 /// `DBQuery` leaves on its stack.
@@ -599,6 +687,92 @@ mod tests {
             db.execute("INSERT INTO t VALUES (1, 'a')", &[]).unwrap();
             db.execute("INSERT INTO t VALUES (2, 'b')", &[]).unwrap();
         });
+    }
+
+    /// A C string that outlives the call, which is what the emitted IR hands
+    /// these functions.
+    #[cfg(feature = "sqlite")]
+    fn c(text: &str) -> std::ffi::CString {
+        std::ffi::CString::new(text).unwrap()
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn connect_execute_and_query_are_one_conversation() {
+        // Everything a compiled program does with a database, through the C
+        // entry points and nothing else. Until தரவுசேமி_இணை was built there
+        // was no way to reach this from here at all: the query could only ever
+        // report that no connection was open.
+        let driver = c("SQLite");
+        let named = c("ledger");
+        unsafe { etamil_db_connect(driver.as_ptr(), text(":memory:"), named.as_ptr()) };
+
+        unsafe {
+            etamil_db_execute(
+                text("CREATE TABLE kaNakku (kuRi INTEGER, peyar TEXT)"),
+                etamil_array(),
+                named.as_ptr(),
+            );
+            let row = etamil_array();
+            etamil_array_push(row, number("1"));
+            etamil_array_push(row, text("வரவு"));
+            etamil_db_execute(
+                text("INSERT INTO kaNakku VALUES (?, ?)"),
+                row,
+                named.as_ptr(),
+            );
+        }
+
+        let rows = unsafe {
+            etamil_db_query(
+                text("SELECT kuRi, peyar FROM kaNakku"),
+                etamil_array(),
+                named.as_ptr(),
+            )
+        };
+        assert_eq!(shown(rows), "[{kuRi: 1, peyar: வரவு}]");
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn an_unnamed_connection_is_known_by_its_driver() {
+        // `தளம்_இணை சீகுலைட், ":memory:"` names nothing, so the backend files it
+        // under the driver's name — the default the bytecode compiler applies
+        // too. A later statement that names nothing passes a null handle and
+        // has to find it anyway.
+        let driver = c("SQLite");
+        unsafe { etamil_db_connect(driver.as_ptr(), text(":memory:"), driver.as_ptr()) };
+
+        unsafe {
+            etamil_db_execute(text("CREATE TABLE t (x INTEGER)"), etamil_array(), std::ptr::null());
+            etamil_db_execute(text("INSERT INTO t VALUES (7)"), etamil_array(), std::ptr::null());
+        }
+
+        let rows = unsafe {
+            etamil_db_query(text("SELECT x FROM t"), etamil_array(), std::ptr::null())
+        };
+        assert_eq!(shown(rows), "[{x: 7}]");
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn connecting_to_the_same_database_twice_keeps_the_first_connection() {
+        // Under --server this statement is reached once per request, so the
+        // second connect must be a no-op rather than a second lease. The table
+        // created before it is the assertion: a fresh :memory: database would
+        // not have one.
+        let driver = c("SQLite");
+        let named = c("again");
+        unsafe {
+            etamil_db_connect(driver.as_ptr(), text(":memory:"), named.as_ptr());
+            etamil_db_execute(text("CREATE TABLE t (x INTEGER)"), etamil_array(), named.as_ptr());
+            etamil_db_execute(text("INSERT INTO t VALUES (3)"), etamil_array(), named.as_ptr());
+            etamil_db_connect(driver.as_ptr(), text(":memory:"), named.as_ptr());
+        }
+
+        let rows =
+            unsafe { etamil_db_query(text("SELECT x FROM t"), etamil_array(), named.as_ptr()) };
+        assert_eq!(shown(rows), "[{x: 3}]");
     }
 
     #[cfg(feature = "sqlite")]
