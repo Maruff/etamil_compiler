@@ -49,6 +49,65 @@ at all. Installing this one is the whole setup.
   it on the same line shifts. A monospaced build of the face would make it
   exact with no change here.
 
+- **eTamil: Open an example.** The extension carries the repository's
+  twenty-nine example programs beside the standard library, and this opens a
+  copy of one — a copy, because the extension directory is replaced on every
+  update and an example is for editing. The accounting framework, the HTTP
+  server, the GST invoice and the project-costing worked example are all in
+  there.
+
+- **eTamil: Documentation…** opens the manual, the browser playground, the
+  language tour, the keyword reference, the finance and server guides, the
+  status page or the source, on [etamil.in](https://etamil.in). Every keyword
+  hover now links the reference for that word as well.
+
+  This is a gap that had been open since the extension was written. It could
+  complete 681 standard library functions and never once say that a manual
+  existed, which is a good part of why people do not find one. `src/links.ts`
+  is the single table all of it reads from, and `test/links.test.js` holds the
+  README to the same table so the two cannot drift apart.
+
+### Fixed
+
+- **Counts in the documentation that had drifted a long way.** The extension's
+  own README offered "23 host builtins and all 122 `செயல்` functions"; it is 62
+  and 681. The repository README said the VS Code extension completed 254
+  `nUlakam` functions and that the lexer had 524 spellings; 681 and 541.
+  `docs/ARCHITECTURE.md` said 201 keywords; 202. Every figure now comes from
+  the generated language data, which is derived from `lexer.rs`, `parser.rs`,
+  `interpreter.rs` and `nUlakam` itself.
+
+  Not touched: `docs/ROADMAP.md` recording "524 spellings, up from 505". That
+  is the account of one completed change, and moving it to 541 would credit it
+  with seventeen spellings it did not add.
+
+  **The website is further behind and is not in this repository.**
+  `etamil.in/language/manual/` states 254 `nUlakam` functions and
+  `etamil.in/language/keywords/` says "202 tokens across 505 spellings"; both
+  are 681 and 541 now. Worth a pass before this release goes out.
+
+### Changed
+
+- The carried font is the corrected build: **version 2.1.0**, designer Esan
+  Maruff, manufacturer eTamil India, `eTamil.in`. The earlier file credited Ek
+  Type's designers in its name table while its copyright named only eTamil.in,
+  which is the mismatch OFL 1.1 asks a derivative to avoid; that is settled.
+
+  Its glyph coverage is unchanged, and worth stating plainly because it was
+  expected to change: **there is still no Tamil in the font.** All three cmap
+  subtables were read — (0,3) and (3,1) format 4, (1,0) format 0 — and between
+  them they map 143 codepoints, every one ASCII or Latin-1, with nothing in
+  U+0B80–U+0BFF.
+
+  The glyphs exist in the design. `ican_qmz.sfd` holds 201 glyphs of which some
+  seventy are encoded at Tamil codepoints; the exported `.ttf` has 132 and maps
+  none of them. It is an export that needs redoing, not a design that needs
+  drawing, and nothing in this repository can fix it. It is also not blocking,
+  for the reason in `fonts/README.md`: the extension paints the eTamil face
+  over eTamil-script ASCII only, so Unicode Tamil is drawn by the editor's own
+  font and always was.
+
+
 - **The extension carries the compiler.** The `etamil` binary for your platform
   and the whole nUlakam standard library now travel inside the VSIX, so error
   checking, **eTamil: Run this file** and Go to Definition into the library all

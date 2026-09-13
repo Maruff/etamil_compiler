@@ -79,6 +79,17 @@ export function bundledLibrary(): string | undefined {
   return carriedLibrary ?? undefined;
 }
 
+let carriedExamples: string | null | undefined;
+
+/** The carried `runtime/examples` directory, if it is there. */
+export function bundledExamples(): string | undefined {
+  if (carriedExamples === undefined) {
+    const candidate = layout().examples;
+    carriedExamples = existsSync(candidate) ? candidate : null;
+  }
+  return carriedExamples ?? undefined;
+}
+
 /**
  * The compiler command.
  *

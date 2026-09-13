@@ -1,7 +1,7 @@
 {
   "name": "etamil-support",
   "displayName": "eTamil",
-  "description": "Language support for eTamil, the Tamil-vocabulary FinTech DSL: syntax, completions, hover, and errors from the compiler itself.",
+  "description": "eTamil, the Tamil-vocabulary FinTech DSL — with the compiler, the nUlakam standard library and the eTamil font included. Syntax, completions, hover, Go to Definition and errors as you type.",
   "version": "2.0.0",
   "publisher": "etamil",
   "author": {
@@ -100,6 +100,16 @@
         "category": "eTamil"
       },
       {
+        "command": "etamil.documentation",
+        "title": "Documentation\u2026",
+        "category": "eTamil"
+      },
+      {
+        "command": "etamil.openExample",
+        "title": "Open an example",
+        "category": "eTamil"
+      },
+      {
         "command": "etamil.showOutput",
         "title": "Show the log",
         "category": "eTamil"
@@ -169,7 +179,7 @@
     "build": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext .ts",
-    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js",
+    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js test/links.test.js",
     "verify": "npm run check:generated && npm run build && npm run lint && npm run test",
     "stage": "python ../scripts/package_extension.py --stage",
     "package": "vsce package",

@@ -54,7 +54,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 
 | Area | Status | Notes |
 |---|---|---|
-| Lexer (Tamil / romanized / English keywords) | ✅ Working | 202 tokens across 524 spellings; errors carry line and column |
+| Lexer (Tamil / romanized / English keywords) | ✅ Working | 202 tokens across 541 spellings; errors carry line and column |
 | Variables, arithmetic, percentages, strings | ✅ Working | |
 | Comparisons, `எனில்` / `இன்றேல்`, `சுற்று` loops | ✅ Working | |
 | Logical `மற்றும்` / `அல்லது` / `இல்லை` | ✅ Working | both sides always evaluated — no short-circuiting |
@@ -105,7 +105,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 | Tests in eTamil (`nUlakam/cOqaZY.qmz`) | ✅ Working | assertions, a summary, and a non-zero exit when anything fails, so a suite gates CI. `kaNakkiyal/vari_cOqaZY.qmz` is fifteen of them about GST arithmetic. `வெளியேறு(நிலை)` is what ends the process with a status |
 | Interactive shell (`--repl`) | ✅ Working | variables persist between lines, a செயல் can be typed across several, `இறக்கு` works, and a bare expression is answered rather than refused — `0.1 + 0.2` prints `0.3`. `:vars` shows what the session holds |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 202 keywords in every spelling, completions for 62 builtins and 254 `nUlakam` functions, and errors from `--check` as you type. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 202 keywords in every spelling, completions for 62 builtins and 681 `nUlakam` functions, and errors from `--check` as you type. Carries the compiler, the standard library, the examples and the eTamil font, so installing it is the whole installation. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 

@@ -107,6 +107,14 @@ has no API that registers a font, so it has to reach the operating system's
 font list before anything can name it. That is the whole reason for the
 command.
 
+### Finding your way around
+**eTamil: Documentation…** opens the manual, the playground, the language tour
+or the keyword reference on [etamil.in](https://etamil.in), and every keyword
+hover links the reference for that word.
+
+**eTamil: Open an example** opens a copy of one of the twenty-nine example
+programs the extension carries — quicker than reading about the language.
+
 ### A compiler of your own
 Point `etamil.compilerPath` at it. An
 explicit path always wins over the carried one. Building that compiler needs

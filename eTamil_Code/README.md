@@ -26,17 +26,44 @@ vocabulary is Tamil, aimed at Indian FinTech.
 
 | | |
 |---|---|
-| **Syntax highlighting** | All 202 keywords, in every spelling the compiler accepts — Tamil script, romanized, and the English aliases |
+| **Syntax highlighting** | All 202 keywords across 541 spellings — Tamil script, romanized, and the English aliases |
 | **Errors as you type** | From the compiler's own front end, so they are the errors you will actually get |
-| **Completions** | Keywords with correct statement templates, 23 host builtins, and all 122 `செயல்` functions in the `nUlakam` standard library |
+| **Completions** | Keywords with correct statement templates, 62 host builtins, and all 681 `செயல்` functions in the `nUlakam` standard library |
 | **Hover** | Every spelling of a word, whether it is reserved, and the doc comment from its definition |
 | **Signature help** | Parameter names, read from the library's own source |
 | **Go to Definition** | Jumps into `nUlakam`, and to functions in the current file |
 | **Outline** | Every `செயல்` in the file |
 | **Run** | Run or serve the current file in a terminal |
+| **Examples** | **eTamil: Open an example** — twenty-nine working programs, carried in the extension |
+| **Documentation** | **eTamil: Documentation…** — the manual, the playground and the reference on [etamil.in](https://etamil.in) |
 
 Both spellings are first-class. Type `eZil` and you get a romanized template;
 type `எனில்` and you get a Tamil one.
+
+## Learning eTamil
+
+The extension knows the language. It does not teach it, and everything that
+does is on **[etamil.in](https://etamil.in)**:
+
+| | |
+|---|---|
+| [User manual](https://etamil.in/language/manual/) | Installation through to database-backed HTTP services, in order |
+| [Playground](https://etamil.in/start/) | Run eTamil in the browser — the compiler, built to WebAssembly |
+| [Language tour](https://etamil.in/language/) | The language in editable, runnable examples |
+| [Keyword reference](https://etamil.in/language/keywords/) | Every keyword in all three spellings |
+| [Finance and accounting](https://etamil.in/finance/) | Ledgers, GST, tax |
+| [Databases and HTTP](https://etamil.in/server/) | Building services |
+| [Status and roadmap](https://etamil.in/status/) | What works today, and what does not yet |
+| [Source](https://github.com/Maruff/etamil_compiler) | The compiler, the library and this extension |
+
+**eTamil: Documentation…** in the Command Palette opens any of them, and every
+keyword hover links the reference for that word.
+
+**eTamil: Open an example** is the shorter route. The extension carries the
+repository's twenty-nine example programs — the accounting framework, the HTTP
+server, the GST invoice, the project-costing worked example — and opens a copy
+you can edit and run. A copy, not the original: the extension directory is
+replaced on every update.
 
 ## Errors never run your program
 

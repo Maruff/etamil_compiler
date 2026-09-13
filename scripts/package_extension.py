@@ -18,6 +18,7 @@ name says their platform.
 
     eTamil_Code/bin/<platform>-<arch>/etamil[.exe]     one per target
     eTamil_Code/runtime/nUlakam/**                     shared
+    eTamil_Code/runtime/examples/**                    shared
 
 `src/bundle.ts` computes those paths and `src/toolchain.ts` reads them, keyed
 on `process.platform` and `process.arch` — the same pair VS Code's own target
@@ -141,6 +142,21 @@ def stage_library() -> None:
     print(f"  runtime/nUlakam  {count} modules")
 
 
+def stage_examples() -> None:
+    """Copy the repository's examples in.
+
+    They are what **eTamil: Open an example** offers. Somebody who has just
+    installed the extension has a language they have never seen and an empty
+    buffer; twenty-nine programs that run is a better first minute than a blank
+    file and a link.
+    """
+    target = RUNTIME / "examples"
+    remove_tree(target)
+    shutil.copytree(ROOT / "examples", target)
+    count = sum(1 for _ in target.rglob("*.qmz"))
+    print(f"  runtime/examples  {count} programs")
+
+
 def stage_binary(key: str, source: Path) -> None:
     """Put one built compiler under `bin/<key>/`."""
     name = "etamil.exe" if key.startswith("win32") else "etamil"
@@ -241,6 +257,7 @@ def main() -> int:
 
     print("Staging the toolchain into the extension")
     stage_library()
+    stage_examples()
 
     scratch = EXT / ".package-downloads"
     try:

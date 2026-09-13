@@ -17,6 +17,7 @@ import {
   type FunctionEntry,
   type KeywordEntry,
 } from './generated/language-data';
+import { KEYWORDS_REFERENCE } from './links';
 import { bundledLibrary } from './toolchain';
 
 const IDENTIFIER = new RegExp(IDENTIFIER_SOURCE, 'u');
@@ -75,6 +76,11 @@ function keywordDocs(entry: KeywordEntry): vscode.MarkdownString {
         `perfectly good variable or field name.\n\n`
     );
   }
+
+  // The hover knows every spelling of a word and nothing about how to use
+  // it. That is what the reference is for, and an extension that never
+  // mentions the documentation is a good part of why people do not find it.
+  docs.appendMarkdown(`[Keyword reference](${KEYWORDS_REFERENCE})`);
 
   return docs;
 }

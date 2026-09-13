@@ -25,38 +25,46 @@ Read from the font's own tables, not from anywhere else:
 |---|---|
 | family | `ican qamiz` |
 | subfamily | Regular |
-| version | 2.538 |
+| version | 2.1.0 |
 | units per em | 1000 |
+| glyphs | 132 |
 | `isFixedPitch` | 0 — **proportional, not monospaced** |
 | copyright | Copyright (c) 2026, eTamil.in. All rights reserved. |
 | licence | SIL Open Font License 1.1 — `OFL.txt` beside this file |
-| designers | Aadarsh Rajan, Girish Dalvi, Yashodeep Gholap |
-| manufacturer | Ek Type, www.ektype.in |
+| designer | Esan Maruff |
+| manufacturer | eTamil India, eTamil.in |
 
-## Two things the file says that are worth knowing
+## The Tamil block is empty, and that is worth knowing
 
-**It covers ASCII and nothing else.** 129 codepoints are mapped: the 52 Latin
-letters, the digits, and punctuation. **The Tamil block is empty** — not one of
-U+0B80–U+0BFF has a glyph.
+Three cmap subtables — (0,3) format 4, (1,0) format 0, (3,1) format 4 — were
+read in full. Between them they map 143 codepoints, all of them ASCII and
+Latin-1. **Not one character of U+0B80–U+0BFF has a glyph.**
 
-That is not a defect and it does not need fixing, because of which way round
-the extension paints. `etamil.eTamilFont` is applied to the ASCII that is
-eTamil script and to nothing else; Unicode Tamil is never painted, so it keeps
-whatever Tamil face the editor's own font stack provides. Had the extension
-worked the other way — the whole editor in `ican qamiz`, with the English
-regions painted back to ISO — every Tamil letter in every file would have
-fallen back to some arbitrary face. See `docs/reference/SCRIPT_RULES.md`.
+The FontForge source has them. `ican_qmz.sfd` holds 201 glyphs, of which some
+seventy are `uniXXXX.glyph` files encoded at Tamil codepoints — உ at 2953, ஊ at
+2954, and so on, in glyph order 129 upwards. They are in the design and they
+are not in this export. Whoever regenerates the `.ttf` should check the export
+selection; nothing in this repository can add them.
 
-**It is proportional.** A run painted in it does not occupy the same width as
-the monospace grid underneath, so text after a painted run on the same line
-shifts. A monospaced build of the same face would make that exact, and nothing
-in the extension would have to change.
+It is not blocking, because of which way round the extension paints.
+`etamil.eTamilFont` is applied to the ASCII that is eTamil script and to
+nothing else, so Unicode Tamil is never painted and keeps whatever Tamil face
+the editor's own font stack provides. Had the extension worked the other way —
+the whole editor in `ican qamiz`, with the English regions painted back to ISO
+— every Tamil letter in every file would have fallen back to an arbitrary face.
+See `docs/reference/SCRIPT_RULES.md`.
 
-## For whoever maintains this
+## It is proportional
 
-The font is a derivative: the designers and the foundry named above are Ek
-Type's, and the name table's copyright names only eTamil.in. OFL 1.1 asks a
-derivative to carry the original copyright notices as well as the new one.
-Worth checking against the upstream face before publishing, and correcting in
-the font rather than here — `OFL.txt` deliberately repeats only what the font
-itself declares.
+A run painted in it does not occupy the same width as the monospace grid
+underneath, so text after a painted run on the same line shifts. A monospaced
+build of the same face would make that exact, and nothing in the extension
+would have to change.
+
+## Checking a replacement
+
+`test/bundle.test.js` reads this file and asserts that the family it declares
+is the family `src/bundle.ts` names, and that a font declaring the OFL has
+`OFL.txt` beside it. Both failures are otherwise silent: a family name wrong by
+one character resolves to nothing, the editor draws in its own font, and the
+feature appears simply not to work.

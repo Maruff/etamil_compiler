@@ -14,10 +14,14 @@
 //
 //     bin/<platform>-<arch>/etamil[.exe]
 //     runtime/nUlakam/**
+//     runtime/examples/**
 //
-// The library is shared rather than repeated under each target: it is eTamil
-// source, identical everywhere, and `ETAMIL_PATH` is what points the compiler
-// at it.
+// The library and the examples are shared rather than repeated under each
+// target: they are eTamil source, identical everywhere, and `ETAMIL_PATH` is
+// what points the compiler at the library. The examples are there so that
+// somebody who has just installed the extension has twenty-nine working
+// programs to open, rather than an empty file and a language they have never
+// seen.
 //
 // A third thing travels with them and is committed rather than staged, because
 // it is a source asset and not a build product:
@@ -35,12 +39,14 @@
 
 import * as path from 'path';
 
-/** Where the packaged compiler and library sit inside the extension. */
+/** Where the packaged compiler, library and examples sit inside the extension. */
 export interface BundleLayout {
   /** The binary for this platform. May not exist: see `platformKey`. */
   compiler: string;
   /** The directory to put on `ETAMIL_PATH`; `nUlakam` sits inside it. */
   library: string;
+  /** The repository's `examples/`, for **eTamil: Open an example**. */
+  examples: string;
 }
 
 /** Where an install puts them, outside the extension. */
@@ -73,6 +79,7 @@ export function bundleLayout(
   return {
     compiler: path.join(extensionPath, 'bin', platformKey(platform, arch), exe),
     library: path.join(extensionPath, 'runtime'),
+    examples: path.join(extensionPath, 'runtime', 'examples'),
   };
 }
 

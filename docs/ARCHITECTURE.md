@@ -138,7 +138,7 @@ need only implement the trait.
 ```
 source (.etamil / .qmz)
   ↓  module.rs        இறக்கு resolution, splicing imports ahead of the importer
-  ↓  lexer.rs         logos; 201 keywords; errors carry line and column
+  ↓  lexer.rs         logos; 202 keywords; errors carry line and column
   ↓  parser.rs        hand-written recursive descent → Expr / Stmt
   ↓  check.rs         holds the program to the types it declared
   ↓  vm/bytecode/compiler.rs

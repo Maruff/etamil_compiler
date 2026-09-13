@@ -34,6 +34,7 @@
 import * as vscode from 'vscode';
 
 import { check, toPosition } from './compiler';
+import { openExample, showDocumentation } from './docs';
 import { installFont } from './fontinstall';
 import { registerScriptFont } from './fonts';
 import {
@@ -299,6 +300,8 @@ function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('etamil.installFont', () =>
       installFont(output, context.extensionPath)
     ),
+    vscode.commands.registerCommand('etamil.documentation', () => showDocumentation()),
+    vscode.commands.registerCommand('etamil.openExample', () => openExample()),
     vscode.commands.registerCommand('etamil.showOutput', () => output.show())
   );
 }

@@ -43,6 +43,12 @@ describe('the carried toolchain', { skip: available ? false : 'run npm run build
     assert.notEqual(intel, silicon);
   });
 
+  test('the examples sit beside the library, under the same runtime', () => {
+    const layout = bundle.bundleLayout('/ext', 'linux', 'x64');
+    assert.equal(path.dirname(layout.examples), layout.library);
+    assert.equal(path.basename(layout.examples), 'examples');
+  });
+
   test('the library is one directory, shared by every platform', () => {
     const windows = bundle.bundleLayout('/ext', 'win32', 'x64').library;
     const mac = bundle.bundleLayout('/ext', 'darwin', 'arm64').library;
