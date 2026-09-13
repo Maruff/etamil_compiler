@@ -1178,7 +1178,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "IntegerType",
     "forms": [
       "எண்",
-      "eN"
+      "eN",
+      "_int"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1191,7 +1192,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "FloatType",
     "forms": [
       "பின்னம்",
-      "piZZam"
+      "piZZam",
+      "_float"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1204,7 +1206,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "StringType",
     "forms": [
       "சொல்",
-      "col"
+      "col",
+      "_string"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1217,7 +1220,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "BoolType",
     "forms": [
       "ஈர்ம",
-      "Irma"
+      "Irma",
+      "_bool"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1230,7 +1234,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "TextType",
     "forms": [
       "உரை",
-      "urY"
+      "urY",
+      "_text"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1243,7 +1248,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "ArrayType",
     "forms": [
       "அணி",
-      "aNi"
+      "aNi",
+      "_array"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1256,7 +1262,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "DataType",
     "forms": [
       "தரவு",
-      "qaravu"
+      "qaravu",
+      "_data"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1269,7 +1276,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "ObjectType",
     "forms": [
       "பொருள்",
-      "poruL"
+      "poruL",
+      "_object"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1282,7 +1290,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "DateType",
     "forms": [
       "தேதி",
-      "qEqi"
+      "qEqi",
+      "_date"
     ],
     "group": "Variables & Data Types",
     "scope": "storage.type.etamil",
@@ -1295,7 +1304,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "True",
     "forms": [
       "மெய்",
-      "mey"
+      "mey",
+      "_true"
     ],
     "group": "Variables & Data Types",
     "scope": "constant.language.boolean.etamil",
@@ -1308,7 +1318,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "False",
     "forms": [
       "பொய்",
-      "poy"
+      "poy",
+      "_false"
     ],
     "group": "Variables & Data Types",
     "scope": "constant.language.boolean.etamil",
@@ -1321,7 +1332,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Null",
     "forms": [
       "இன்மை",
-      "iZmY"
+      "iZmY",
+      "_null"
     ],
     "group": "Variables & Data Types",
     "scope": "constant.language.null.etamil",
@@ -1360,7 +1372,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "If",
     "forms": [
       "எனில்",
-      "eZil"
+      "eZil",
+      "_if"
     ],
     "group": "Control Flow",
     "scope": "keyword.control.conditional.etamil",
@@ -1373,7 +1386,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Else",
     "forms": [
       "இன்றேல்",
-      "iZREl"
+      "iZREl",
+      "_else"
     ],
     "group": "Control Flow",
     "scope": "keyword.control.conditional.etamil",
@@ -1386,7 +1400,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Loop",
     "forms": [
       "சுற்று",
-      "cuRRu"
+      "cuRRu",
+      "_loop"
     ],
     "group": "Control Flow",
     "scope": "keyword.control.loop.etamil",
@@ -1399,7 +1414,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Print",
     "forms": [
       "அச்சு",
-      "accu"
+      "accu",
+      "_print"
     ],
     "group": "Control Flow",
     "scope": "keyword.other.io.etamil",
@@ -1412,7 +1428,8 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Input",
     "forms": [
       "உள்ளிடு",
-      "uLLitu"
+      "uLLitu",
+      "_input"
     ],
     "group": "Control Flow",
     "scope": "keyword.other.io.etamil",

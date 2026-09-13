@@ -81,11 +81,11 @@
     },
     {
       "name": "keyword.control.conditional.etamil",
-      "match": "\\b(?:இன்றேல்|iZREl|எனில்|eZil)\\b"
+      "match": "\\b(?:இன்றேல்|_else|iZREl|எனில்|eZil|_if)\\b"
     },
     {
       "name": "keyword.control.loop.etamil",
-      "match": "\\b(?:ஒவ்வொரு|ovvoru|சுற்று|_each|cuRRu|_in|இல்|il)\\b"
+      "match": "\\b(?:ஒவ்வொரு|ovvoru|சுற்று|_each|_loop|cuRRu|_in|இல்|il)\\b"
     },
     {
       "name": "keyword.control.flow.return.etamil",
@@ -113,7 +113,7 @@
     },
     {
       "name": "keyword.other.io.etamil",
-      "match": "\\b(?:உள்ளிடு|uLLitu|அச்சு|accu)\\b"
+      "match": "\\b(?:உள்ளிடு|_input|_print|uLLitu|அச்சு|accu)\\b"
     },
     {
       "name": "keyword.other.response.etamil",
@@ -121,15 +121,15 @@
     },
     {
       "name": "storage.type.etamil",
-      "match": "\\b(?:பின்னம்|piZZam|qaravu|பொருள்|poruL|Irma|qEqi|ஈர்ம|சொல்|தரவு|தேதி|aNi|col|urY|அணி|உரை|எண்|eN)\\b"
+      "match": "\\b(?:_object|_string|பின்னம்|_array|_float|piZZam|qaravu|பொருள்|_bool|_data|_date|_text|poruL|Irma|_int|qEqi|ஈர்ம|சொல்|தரவு|தேதி|aNi|col|urY|அணி|உரை|எண்|eN)\\b"
     },
     {
       "name": "constant.language.boolean.etamil",
-      "match": "\\b(?:பொய்|மெய்|mey|poy)\\b"
+      "match": "\\b(?:_false|_true|பொய்|மெய்|mey|poy)\\b"
     },
     {
       "name": "constant.language.null.etamil",
-      "match": "\\b(?:இன்மை|iZmY)\\b"
+      "match": "\\b(?:_null|இன்மை|iZmY)\\b"
     },
     {
       "name": "support.constant.http-method.etamil",

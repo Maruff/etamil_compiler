@@ -76,6 +76,13 @@ as a variable cannot be called `வரி`. The keyword list is in
 [KEYWORDS.md](KEYWORDS.md); a clash reads as `expected a statement, found
 '_port'` and the fix is a longer name, `_server_port`.
 
+The ones most likely to catch you are the type names, which eTamil reserves
+where most languages do not: **`_int`, `_float`, `_string`, `_text`, `_bool`,
+`_array`, `_data`, `_object` and `_date`** are all spellings of a type, so
+`_date = ...` is a parse error while `_date _when = ...` is a typed
+declaration. `_if`, `_else`, `_loop`, `_true`, `_false`, `_null`, `_print` and
+`_input` are reserved too, and surprise nobody.
+
 ## Rule 2 — an English comment is wrapped in `__`
 
 > Any comment written in English starts and ends with `__`.

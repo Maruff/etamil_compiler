@@ -34,7 +34,7 @@ for an amount.
 | பற்று | `paRRu` | — | `Debit` |
 | இருப்பு | `iruppu` | — | `Balance` |
 | வீதம் | `vIqam` | — | `Rate` |
-| சொத்து | `soqqu` | — | `Asset` |
+| சொத்து | `coqqu` | `soqqu` | `Asset` |
 | பொறுப்பு | `poRuppu` | — | `Liability` |
 | பங்கு | `pawku` | — | `Equity` |
 | வருவாய் | `varuvAy` | — | `Revenue` |
@@ -51,7 +51,7 @@ for an amount.
 | கடன் | `kataZ` | — | `Loan` |
 | நிதி | `niqi` | — | `Finance` |
 | அறிக்கை | `aRikkY` | — | `Statement` |
-| மதிப்பீடு | `matippIDu` | — | `Valuation` |
+| மதிப்பீடு | `maqippItu` | `matippIDu` | `Valuation` |
 | கடன்_அட்டை | `kataZ_attY` | — | `CreditCard` |
 | பணம் | `paNam` | — | `Cash` |
 | வங்கி | `vawki` | — | `Bank` |
@@ -63,18 +63,18 @@ for an amount.
 | நடப்பு | `natappu` | — | `Current` |
 | நடப்பிலில்லா | `natappilillA` | — | `NonCurrent` |
 | முகவரி | `mukavari` | — | `Address` |
-| தொகை | `toqai` | — | `Amount` |
+| தொகை | `qokY` | `toqai` | `Amount` |
 | நாணயம் | `nANayam` | — | `Currency` |
-| பரிவர்த்தனை | `parivarttaZai` | — | `Transaction` |
+| பரிவர்த்தனை | `parivarqqaZY` | `parivarttaZai` | `Transaction` |
 | தேய்மானம் | `qEymAZam` | — | `Depreciation` |
-| கடன்தீர்ப்பு | `kataZ_qIrppu` | — | `Amortization` |
-| மதிப்புயர்வு | `matippuyarvu` | — | `Appreciation` |
-| மூலதனம் | `mUlataZam` | — | `Capital` |
+| கடன்தீர்ப்பு | `kataZqIrppu` | `kataZ_qIrppu` | `Amortization` |
+| மதிப்புயர்வு | `maqippuyarvu` | `matippuyarvu` | `Appreciation` |
+| மூலதனம் | `mUlaqaZam` | `mUlataZam` | `Capital` |
 | இருப்பாய்வு | `iruppAyvu` | — | `TrialBalance` |
 | இருப்புநிலை | `iruppunilY` | — | `BalanceSheet` |
-| வருமான_அறிக்கை | `varumAZ_aRikkY` | — | `IncomeStatement` |
+| வருமான_அறிக்கை | `varumAZa_aRikkY` | `varumAZ_aRikkY` | `IncomeStatement` |
 | பணப்புழக்கம் | `paNappuzakkam` | — | `CashFlow` |
-| வருமான_வரி | `varumAZ_vari` | — | `IncomeTax` |
+| வருமான_வரி | `varumAZa_vari` | `varumAZ_vari` | `IncomeTax` |
 | வணிகவரி | `vaNikavari` | `_GST` | `GST` |
 | வரியறிக்கை | `variyaRikkY` | `_ITR` | `ITR` |
 
@@ -146,18 +146,18 @@ for an amount.
 
 | Tamil | Romanized | English alias | Token |
 |---|---|---|---|
-| எண் | `eN` | — | `IntegerType` |
-| பின்னம் | `piZZam` | — | `FloatType` |
-| சொல் | `col` | — | `StringType` |
-| ஈர்ம | `Irma` | — | `BoolType` |
-| உரை | `urY` | — | `TextType` |
-| அணி | `aNi` | — | `ArrayType` |
-| தரவு | `qaravu` | — | `DataType` |
-| பொருள் | `poruL` | — | `ObjectType` |
-| தேதி | `qEqi` | — | `DateType` |
-| மெய் | `mey` | — | `True` |
-| பொய் | `poy` | — | `False` |
-| இன்மை | `iZmY` | — | `Null` |
+| எண் | `eN` | `_int` | `IntegerType` |
+| பின்னம் | `piZZam` | `_float` | `FloatType` |
+| சொல் | `col` | `_string` | `StringType` |
+| ஈர்ம | `Irma` | `_bool` | `BoolType` |
+| உரை | `urY` | `_text` | `TextType` |
+| அணி | `aNi` | `_array` | `ArrayType` |
+| தரவு | `qaravu` | `_data` | `DataType` |
+| பொருள் | `poruL` | `_object` | `ObjectType` |
+| தேதி | `qEqi` | `_date` | `DateType` |
+| மெய் | `mey` | `_true` | `True` |
+| பொய் | `poy` | `_false` | `False` |
+| இன்மை | `iZmY` | `_null` | `Null` |
 | மாறி | `mARi` | — | `Let` |
 | நிலை | `nilY` | — | `Const` |
 
@@ -165,11 +165,11 @@ for an amount.
 
 | Tamil | Romanized | English alias | Token |
 |---|---|---|---|
-| எனில் | `eZil` | — | `If` |
-| இன்றேல் | `iZREl` | — | `Else` |
-| சுற்று | `cuRRu` | — | `Loop` |
-| அச்சு | `accu` | — | `Print` |
-| உள்ளிடு | `uLLitu` | — | `Input` |
+| எனில் | `eZil` | `_if` | `If` |
+| இன்றேல் | `iZREl` | `_else` | `Else` |
+| சுற்று | `cuRRu` | `_loop` | `Loop` |
+| அச்சு | `accu` | `_print` | `Print` |
+| உள்ளிடு | `uLLitu` | `_input` | `Input` |
 
 ## Functions
 
@@ -241,11 +241,11 @@ for an amount.
 | Tamil | Romanized | English alias | Token |
 |---|---|---|---|
 | அட்டை | `attY` | `_table` | `Table` |
-| தொகுப்பு | `toguippu` | `_collection` | `Collection` |
+| தொகுப்பு | `qokuppu` | `toguippu` | `Collection` |
 | நிரை | `nirY` | `_row` | `Row` |
 | பத்தி | `paqqi` | `_column` | `Column` |
 | விசை | `vicY` | `_key` | `Key` |
-| தனிக_விசை | `taZik_vicY` | `_primaryKey` | `PrimaryKey` |
+| தனிக_விசை | `qaZika_vicY` | `taZik_vicY` | `PrimaryKey` |
 | வெளி_விசை | `veLi_vicY` | `_foreignKey` | `ForeignKey` |
 | குறியீடு | `kuRiyItu` | `_index` | `Index` |
 | அட்டை_ஆக்கு | `attY_Akku` | `_createTable` | `CreateTable` |
@@ -275,16 +275,16 @@ for an amount.
 | Tamil | Romanized | English alias | Token |
 |---|---|---|---|
 | தள_இடை | `qaLa_itY` | `_api` | `API` |
-| இறுதி_புள்ளி | `iraqi_pulli` | `_endpoint` | `Endpoint` |
-| வழி | `vazhi` | `_route` | `Route` |
+| இறுதி_புள்ளி | `iRuqi_puLLi` | `iraqi_pulli` | `Endpoint` |
+| வழி | `vazi` | `vazhi` | `Route` |
 | இடைவெளி | `itYveLi` | `_every` | `Every` |
 | கோரிக்கை | `kOrikkY` | `_request` | `Request` |
-| பதில் | `paDil` | `_response` | `Response` |
-| தலைப்பு | `talYppu` | `_header` | `Header` |
-| உடல் | `uqal` | `_body` | `Body` |
+| பதில் | `paqil` | `paDil` | `Response` |
+| தலைப்பு | `qalYppu` | `talYppu` | `Header` |
+| உடல் | `utal` | `uqal` | `Body` |
 | அளவுரு | `aLavuru` | `_param` | `Param` |
 | வினா_அளவுரு | `viZA_aLavuru` | `_queryParam` | `QueryParam` |
-| பாதை_அளவுரு | `pAtY_aLavuru` | `_pathParam` | `PathParam` |
+| பாதை_அளவுரு | `pAqY_aLavuru` | `pAtY_aLavuru` | `PathParam` |
 | ஜேசான்_உரை | `jEcAZ_urY` | `_jsonBody` | `JSONBody` |
 | உரலி | `urali` | `_url` | `URL` |
 | புரவலன் | `puravalaZ` | `_host` | `Host` |
@@ -296,14 +296,14 @@ for an amount.
 | அழி | `azi` | `_delete` | `HttpDelete` |
 | ஒட்டு | `ottu` | `_patch` | `HttpPatch` |
 | தெரிவு | `qerivu` | `_options` | `HttpOptions` |
-| தலை | `talY` | `_head` | `HttpHead` |
+| தலை | `qalY` | `talY` | `HttpHead` |
 | நிலை_குறி | `nilY_kuRi` | `_statusCode` | `StatusCode` |
 | நிலை_செய்தி | `nilY_ceyqi` | `_statusMessage` | `StatusMessage` |
 | உறுதி | `uRuqi` | `_auth` | `Auth` |
 | குறிதாங்கி | `kuRiqAwki` | `_bearerToken` | `BearerToken` |
 | உரை_வகை | `urY_vakY` | `_contentType` | `ContentType` |
 | சேவை | `cEvY` | `_serve` | `Serve` |
-| வழங்கி_தொடங்கு | `vazawki_toqotawku` | `_startServer` | `StartServer` |
+| வழங்கி_தொடங்கு | `vazawki_qotawku` | `vazawki_toqotawku` | `StartServer` |
 | வழங்கி_நிறுத்து | `vazawki_niRuqqu` | `_stopServer` | `StopServer` |
 
 ## Encryption & Security

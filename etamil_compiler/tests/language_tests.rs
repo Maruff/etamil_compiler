@@ -4092,3 +4092,63 @@ fn tamil_and_romanized_forms_compute_the_same_answers() {
     assert_eq!(num(&tamil, "விளைவு"), num(&roman, "viLYvu"));
     assert_eq!(num(&tamil, "விளைவு"), dec(30000));
 }
+
+// Half the keyword table had an English spelling and half did not, and the
+// half that did was the plumbing: `_post`, `_select`, `_encrypt`, `_fn`. The
+// half that did not was the domain vocabulary — deliberately — and, by
+// accident, the core of the language. `_get` existed and `if` did not, so the
+// English spellings led nowhere: the first conditional dropped you back into
+// Tamil and no program could be written in English at all. These seventeen are
+// what was missing.
+#[test]
+fn the_core_keywords_lex_the_same_in_english_as_in_tamil() {
+    let pairs = [
+        ("எண்", "_int"),
+        ("பின்னம்", "_float"),
+        ("சொல்", "_string"),
+        ("ஈர்ம", "_bool"),
+        ("உரை", "_text"),
+        ("அணி", "_array"),
+        ("தரவு", "_data"),
+        ("பொருள்", "_object"),
+        ("தேதி", "_date"),
+        ("மெய்", "_true"),
+        ("பொய்", "_false"),
+        ("இன்மை", "_null"),
+        ("எனில்", "_if"),
+        ("இன்றேல்", "_else"),
+        ("சுற்று", "_loop"),
+        ("அச்சு", "_print"),
+        ("உள்ளிடு", "_input"),
+    ];
+
+    for (tamil, english) in pairs {
+        let in_tamil = lexer::tokenize(tamil).unwrap_or_else(|_| panic!("{tamil} does not lex"));
+        let in_english =
+            lexer::tokenize(english).unwrap_or_else(|_| panic!("{english} does not lex"));
+        assert_eq!(
+            in_tamil[0].token, in_english[0].token,
+            "{english} is not the same token as {tamil}"
+        );
+    }
+}
+
+// The thing the seventeen were added for, asserted directly: a program with no
+// Tamil letter anywhere in it — types, literals, conditional, loop and all —
+// parses, compiles and computes.
+#[test]
+fn a_program_with_no_tamil_letter_in_it_runs() {
+    let vm = run(
+        "_fn _add(_int _a, _int _b) { _return _a + _b; } \
+         _total = _add(2, 3); \
+         _flag = _false; \
+         (_total == 5) _if { _flag = _true; } _else { _flag = _false; } \
+         _count = 0; \
+         (_count < 3) _loop { _count = _count + 1; }",
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "_total"), dec(5));
+    assert_eq!(num(&vm, "_count"), dec(3));
+    assert_eq!(vm.variables.get("_flag"), Some(&Value::Boolean(true)));
+}
