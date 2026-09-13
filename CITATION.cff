@@ -39,7 +39,7 @@ authors:
 repository-code: "https://github.com/Maruff/etamil_compiler"
 url: "https://etamil.in"
 license: AGPL-3.0-or-later
-version: "0.4.0"
+version: "1.0.0"
 
 keywords:
   - domain-specific language

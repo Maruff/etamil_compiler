@@ -24,13 +24,18 @@
 
 ---
 
-## Build & Test Status
+## Build and test status
 
+A snapshot here would be wrong within a week, and this one was: it claimed
+three examples when there are 110, and claimed them for years. The status
+that is true is the one the gates report.
+
+```bash
+cd etamil_compiler && cargo test     # the compiler and the runtime
+cd .. && ./scripts/run_examples.sh   # every example, against its expectations
 ```
-Build:  ✅ SUCCESS (0 errors, ~7 seconds)
-Tests:  ✅ 100% PASS (3/3 examples)
-Code:   ✅ CLEAN (professional quality)
-```
+
+`CONTRIBUTING.md` lists the rest, and each of them gates CI.
 
 ---
 

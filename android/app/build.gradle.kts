@@ -26,7 +26,7 @@ android {
         // one place to look — etamil_compiler/Cargo.toml — and the app reports
         // the compiler's version from the library itself, so a drift here is
         // cosmetic rather than misleading.
-        versionName = "0.4.0"
+        versionName = "1.0.0"
     }
 
     // No `abiFilters`. Whatever cargo-ndk has put in src/main/jniLibs is what

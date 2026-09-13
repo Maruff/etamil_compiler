@@ -220,7 +220,7 @@ cannot be names at all: `எண்`, `சொல்`, `அணி`, `வரிச�
 **Build and test**
 
 ```bash
-cd etamil_compiler && cargo test          # 226 tests
+cd etamil_compiler && cargo test          # 439 tests
 cd .. && ./scripts/run_examples.sh        # every example, with expectations
 python3 scripts/transliterate.py --check  # romanization audit
 ```

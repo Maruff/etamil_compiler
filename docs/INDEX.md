@@ -4,6 +4,8 @@
 
 Start with the [README](../README.md) for what eTamil is and which parts of it run today, then pick a page below.
 
+What changed in a release, and what it adds up to: [CHANGELOG](../CHANGELOG.md).
+
 ## Getting started
 
 | Page | What it covers |

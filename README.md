@@ -652,4 +652,4 @@ carries the metadata and GitHub turns it into a **Cite this repository** button.
 
 ---
 
-**Version**: 0.4.0 · **Author**: Esan Maruff
+**Version**: 1.0.0 · **Author**: Esan Maruff
