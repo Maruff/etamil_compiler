@@ -140,19 +140,29 @@ the rules depends on which font is in use; the marks are in the file either
 way. That is deliberate — a file must not read differently on a machine that
 does not have the eTamil font installed.
 
-### Where the extension has got to
+### What the extension does
+
+Set `etamil.eTamilFont` to the eTamil font's family name and the VS Code
+extension renders exactly the division above, from version 0.5.0.
 
 The grammar names both regions, which is what any highlighter needs to act on
-them:
+them, and a theme can colour them:
 
     meta.english.comment.etamil      the text between `__` and `__`
     variable.other.english.etamil    a name marked by Rule 1
 
-A theme can colour those today. **Switching the font family cannot be done from
-a theme** — VS Code's token colours carry `fontStyle` and not `fontFamily` — so
-the two-font rendering above needs the extension to draw the marked ranges
-itself with a decoration, and that is not written yet. Until it is, work in the
-standard ISO font, where the marks cost nothing and still say what they say.
+A theme cannot change the *font*, though — VS Code's token colours carry
+`fontStyle`, which is bold, italic and underline, and nothing else. So the
+extension does it with a decoration, whose `textDecoration` is injected as CSS
+and can carry a font family behind it. That is unofficial, and it is the only
+lever there is.
+
+Which way round it paints follows from how informal that lever is.
+`eTamil_Code/src/marks.ts` finds the ASCII that is **eTamil script** and paints
+only that, leaving the editor's own ISO font everywhere else. A span it fails to
+recognise therefore renders eTamil as plain Latin — the ordinary view of the
+file — instead of rendering English in Tamil glyphs, which would be unreadable.
+Given a mechanism this informal, the failure has to fall on the harmless side.
 
 ## What the rules do not cover
 
