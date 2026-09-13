@@ -58,7 +58,7 @@ LATIN = re.compile(r"[A-Za-z]")
 # otherwise be reported every run. English by intent, not Tamil gone wrong.
 ALLOW = {
     "README", "README_EXAMPLES", "README_TEST_FILES",
-    "fabric", "fabric_cOqaZY", "gateway",
+    "fabric", "fabric_cOqaZY", "fifo", "gateway",
     "backend", "basic_samples", "db_samples", "db_commands_demo",
     "finance", "language", "io_samples",
     "data", "id", "numbers", "products", "students",
