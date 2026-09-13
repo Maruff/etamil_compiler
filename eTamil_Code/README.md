@@ -28,7 +28,7 @@ vocabulary is Tamil, aimed at Indian FinTech.
 |---|---|
 | **Syntax highlighting** | All 202 keywords across 541 spellings — Tamil script, romanized, and the English aliases |
 | **Errors as you type** | From the compiler's own front end, so they are the errors you will actually get |
-| **Completions** | Keywords with correct statement templates, 62 host builtins, and all 681 `செயல்` functions in the `nUlakam` standard library |
+| **Completions** | Keywords with correct statement templates, 62 host builtins, and all 691 `செயல்` functions in the `nUlakam` standard library |
 | **Hover** | Every spelling of a word, whether it is reserved, and the doc comment from its definition |
 | **Signature help** | Parameter names, read from the library's own source |
 | **Go to Definition** | Jumps into `nUlakam`, and to functions in the current file |
@@ -81,7 +81,7 @@ standard library. Error checking, **eTamil: Run this file** and Go to Definition
 into the library all work the moment the extension finishes installing — no
 Rust, no download, no `PATH`. The Marketplace sends you the build for your
 machine; installing a `.vsix` by hand means picking the one whose name ends in
-your platform, `etamil-support-2.0.0-win32-x64.vsix`.
+your platform, `etamil-support-1.0.0-win32-x64.vsix`.
 
 Three things are worth knowing about it.
 
@@ -194,7 +194,7 @@ line shifts. A monospaced build of the face would make that exact and nothing
 in the extension would change.
 
 The two marks are the language's, not the extension's:
-[SCRIPT_RULES.md](../docs/reference/SCRIPT_RULES.md) specifies them,
+[SCRIPT_RULES.md](https://github.com/Maruff/etamil_compiler/blob/main/docs/reference/SCRIPT_RULES.md) specifies them,
 `scripts/check_script_rules.py` gates them, and `fonts/README.md` records what
 is in the font file.
 
@@ -218,7 +218,7 @@ Versions of this extension before 0.3.0 shipped the older scheme, where ந and
 were the ones the compiler rejected, and the ones it accepted got no
 highlighting. If you have romanized eTamil written against a pre-0.3.0
 extension, it needs updating — see the [letter equivalents
-guide](../docs/reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md).
+guide](https://github.com/Maruff/etamil_compiler/blob/main/docs/reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md).
 
 ## Contributing
 

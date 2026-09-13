@@ -12,3 +12,10 @@ out/**/*.map
 # compiler, the standard library and the eTamil font are what the VSIX carries,
 # and excluding any of them would ship an extension that still has to ask for
 # something to be installed before it works.
+
+# Not read by anything. kw.txt and kw-tamil.txt are keyword dumps from 0.4.0,
+# superseded by src/generated/language-data.ts, which is generated from the
+# lexer; .gitignore is about this working tree and means nothing inside a VSIX.
+.gitignore
+kw.txt
+kw-tamil.txt

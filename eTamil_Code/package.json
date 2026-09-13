@@ -2,7 +2,7 @@
   "name": "etamil-support",
   "displayName": "eTamil",
   "description": "eTamil, the Tamil-vocabulary FinTech DSL — with the compiler, the nUlakam standard library and the eTamil font included. Syntax, completions, hover, Go to Definition and errors as you type.",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "publisher": "etamil",
   "author": {
     "name": "Esan Maruff",
@@ -19,6 +19,8 @@
   },
   "//license": "AGPL-3.0-or-later, matching the repository's LICENSE. This said MIT until 0.3.0, which contradicted the compiler it ships alongside; the AGPL choice is deliberate and explained in the root README.",
   "license": "AGPL-3.0-or-later",
+  "//icon": "512x512, the same mark as etamil.in. Without one the Marketplace shows a grey placeholder.",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.84.0"
   },
@@ -179,7 +181,7 @@
     "build": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext .ts",
-    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js test/links.test.js",
+    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js test/links.test.js test/counts.test.js",
     "verify": "npm run check:generated && npm run build && npm run lint && npm run test",
     "stage": "python ../scripts/package_extension.py --stage",
     "package": "vsce package",

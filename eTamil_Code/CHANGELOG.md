@@ -1,11 +1,11 @@
 # Changelog
 
-## 2.0.0
+## 1.0.0
 
-A major version because the answer to "how do I start?" changes completely. The
-Marketplace has been serving 0.2.0, which could highlight eTamil and nothing
-else — everything below had to be installed by hand first, or was not possible
-at all. Installing this one is the whole setup.
+The first release numbered with the language: eTamil 1.0, and the extension that
+carries it. The Marketplace has been serving 0.2.0, which could highlight eTamil
+and nothing else — everything below had to be installed by hand first, or was
+not possible at all. Installing this one is the whole setup.
 
 ### Added
 

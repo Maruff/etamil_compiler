@@ -153,7 +153,7 @@ does not have the eTamil font installed.
 ### What the extension does
 
 Set `etamil.eTamilFont` to the eTamil font's family name and the VS Code
-extension renders exactly the division above, from version 2.0.0. The
+extension renders exactly the division above, from version 1.0.0. The
 extension carries such a font, `ican qamiz`, and **eTamil: Install the eTamil
 font** puts it where the operating system can see it.
 

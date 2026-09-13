@@ -47,7 +47,7 @@ that were tested, and because no one machine can build all four targets.
 
     python scripts/package_extension.py --stage                # current platform only
     python scripts/package_extension.py --from-dist            # stage and package
-    python scripts/package_extension.py --from-release v0.4.0  # every target
+    python scripts/package_extension.py --from-release v1.0.0  # every target
 
 `--stage` stops after copying the files in, which is what you want when you are
 about to press F5 in the extension host: the carried compiler is then the one
