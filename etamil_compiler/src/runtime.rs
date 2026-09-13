@@ -513,6 +513,51 @@ pub extern "C" fn etamil_read_line() -> i64 {
     }
 }
 
+/// `தளம்_வினா`. One record per row, so a result set is an array of records —
+/// a table in the language's own terms, and the same `Value::Array` the VM's
+/// `DBQuery` leaves on its stack.
+///
+/// `handle` is the connection's name, or null for "the only one open". That is
+/// how `Option<&str>` crosses the ABI, and it is the same `None` the parser
+/// puts in the AST when the author did not name one.
+///
+/// The registry it asks is the VM's own, on the same `HOST` the builtins
+/// dispatch through. Two registries would agree until somebody edited one of
+/// them, and "which connection is the only one open" is exactly the kind of
+/// question two backends must not answer differently.
+///
+/// **Nothing in a compiled program opens a connection yet** — `தரவுசேமி_இணை`
+/// is still refused by the backend — so today this can only report that there
+/// is none. That report is the VM's own message, for the same program.
+#[cfg(not(target_family = "wasm"))]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_db_query(sql: i64, params: i64, handle: *const c_char) -> i64 {
+    let named = if handle.is_null() {
+        None
+    } else {
+        Some(unsafe { borrow_str(handle) })
+    };
+
+    // Parameters are coerced before a connection is touched, in that order,
+    // because a parameter list that is not a list is the author's mistake and
+    // should be reported as one rather than as a database error.
+    let bound = match crate::db::params_from(&get(params)) {
+        Ok(bound) => bound,
+        Err(why) => fail(&why),
+    };
+    let sql = get(sql).to_string();
+
+    let rows = HOST.with(|host| -> Result<Vec<Value>, String> {
+        let mut host = host.borrow_mut();
+        host.connection_for(named.as_deref())?.query(&sql, &bound)
+    });
+
+    match rows {
+        Ok(rows) => put(Value::Array(rows)),
+        Err(why) => fail(&why),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -530,6 +575,75 @@ mod tests {
     fn text(value: &str) -> i64 {
         let c = std::ffi::CString::new(value).unwrap();
         unsafe { etamil_text(c.as_ptr()) }
+    }
+
+    // --- தளம்_வினா ------------------------------------------------------
+
+    /// Open an in-memory SQLite connection on the same `HOST` a compiled
+    /// program's query reaches, and put two rows in it.
+    ///
+    /// `:memory:` is never pooled, so each test gets its own database and the
+    /// order tests run in cannot matter.
+    #[cfg(feature = "sqlite")]
+    fn two_rows(name: &str) {
+        let lease = crate::db::pool::checkout("SQLite", ":memory:").expect("sqlite opens");
+        HOST.with(|host| {
+            host.borrow_mut()
+                .connections
+                .insert(name.to_string(), ":memory:".to_string(), lease)
+        });
+        HOST.with(|host| {
+            let mut host = host.borrow_mut();
+            let db = host.connection_for(Some(name)).expect("just opened");
+            db.execute("CREATE TABLE t (x INTEGER, y TEXT)", &[]).unwrap();
+            db.execute("INSERT INTO t VALUES (1, 'a')", &[]).unwrap();
+            db.execute("INSERT INTO t VALUES (2, 'b')", &[]).unwrap();
+        });
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn a_query_answers_with_one_record_per_row() {
+        two_rows("q");
+
+        let sql = text("SELECT x, y FROM t ORDER BY x");
+        let params = etamil_array();
+        let named = std::ffi::CString::new("q").unwrap();
+        let rows = unsafe { etamil_db_query(sql, params, named.as_ptr()) };
+
+        // A table in the language's own terms: an array of records, printed
+        // the way the VM prints the same value.
+        assert_eq!(shown(rows), "[{x: 1, y: a}, {x: 2, y: b}]");
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn a_bound_parameter_reaches_the_database() {
+        two_rows("q");
+
+        let sql = text("SELECT x, y FROM t WHERE x = ?");
+        let params = etamil_array();
+        etamil_array_push(params, number("2"));
+        let named = std::ffi::CString::new("q").unwrap();
+
+        assert_eq!(
+            shown(unsafe { etamil_db_query(sql, params, named.as_ptr()) }),
+            "[{x: 2, y: b}]"
+        );
+    }
+
+    #[cfg(feature = "sqlite")]
+    #[test]
+    fn a_null_handle_means_the_only_connection_that_is_open() {
+        // What `தளம்_வினா "…", []` without a name compiles to. `Option<&str>`
+        // crosses the ABI as a pointer, and this is the None side of it.
+        two_rows("whatever_it_is_called");
+
+        let sql = text("SELECT x FROM t ORDER BY x");
+        let params = etamil_array();
+        let rows = unsafe { etamil_db_query(sql, params, std::ptr::null()) };
+
+        assert_eq!(shown(rows), "[{x: 1}, {x: 2}]");
     }
 
     // --- the claim the language opens with -------------------------------

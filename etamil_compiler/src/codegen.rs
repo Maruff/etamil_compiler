@@ -35,7 +35,8 @@
 //!
 //! ## What is still refused
 //!
-//! Statements, not expressions: files, databases, HTTP, routes, scheduling.
+//! Statements, not expressions: files, HTTP, routes, scheduling, and every
+//! database statement except `தளம்_வினா`.
 //! Those need the VM's own machinery rather than a value representation, and
 //! `stmt_label` names each one so `run_parity.sh` can rank them. Refusing is
 //! the whole discipline here — IR that drops a statement or evaluates an
@@ -530,6 +531,43 @@ impl Compiler {
                     body,
                 } => {
                     self.compile_for_each(&var, &collection, &body);
+                }
+                // `தளம்_வினா "sql", [params], பெயர்;` — the rows, into a name.
+                //
+                // The one database statement this backend builds. The SQL and
+                // the parameter list are ordinary expressions, so they compile
+                // like any others; what is new is the connection, which is a C
+                // string for a named one and a null pointer for "the only one
+                // open" — the shape `Option<&str>` takes across the ABI.
+                //
+                // A compiled program cannot open a connection yet, so this
+                // reports that there is none. It reports it with the VM's own
+                // message, which is the only behaviour worth having until
+                // தரவுசேமி_இணை is built too.
+                Stmt::DBQuery {
+                    query,
+                    params,
+                    result_var,
+                    handle,
+                } => {
+                    let sql = self.compile_expr(&query);
+                    let bound = self.compile_expr(&params);
+                    let named = match &handle {
+                        Some(name) => self.constant_text(name, "connection"),
+                        None => Some(unsafe { LLVMConstNull(self.text()) }),
+                    };
+                    if let Some(named) = named {
+                        let rows = self.invoke(
+                            "etamil_db_query",
+                            vec![self.value(), self.value(), self.text()],
+                            self.value(),
+                            &mut [sql, bound, named],
+                        );
+                        let slot = self.storage_for(&result_var);
+                        unsafe {
+                            LLVMBuildStore(self.builder, rows, slot);
+                        }
+                    }
                 }
                 other => {
                     // Recording rather than ignoring: a statement this backend
@@ -1198,6 +1236,7 @@ pub fn builds(statement: &Stmt) -> bool {
             | Stmt::If { .. }
             | Stmt::Loop { .. }
             | Stmt::ForEach { .. }
+            | Stmt::DBQuery { .. }
     )
 }
 

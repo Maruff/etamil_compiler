@@ -112,10 +112,38 @@ reason the VM remains the way to run a server.
 
 ## What is still refused
 
-Statements, not expressions. Files, databases, HTTP, routes, scheduling, and
-`இறக்கு` at the point codegen sees one. Each is named individually by
-`stmt_label` so that `run_parity.sh` can rank them, and each needs the VM's own
-machinery rather than a value representation — a route is not a value problem.
+Statements, not expressions. Files, HTTP, routes, scheduling, `இறக்கு` at the
+point codegen sees one, and every database statement but one. Each is named
+individually by `stmt_label` so that `run_parity.sh` can rank them, and each
+needs the VM's own machinery rather than a value representation — a route is not
+a value problem.
+
+### The one that is built: `தளம்_வினா`
+
+A query is a value problem after all. The SQL and the parameter list are
+ordinary expressions, the answer is an array of records, and the only thing the
+IR has to carry that it did not already is *which connection* — a C string for
+a named one, a null pointer for "the only one open", which is the shape
+`Option<&str>` takes across the ABI.
+
+`etamil_db_query` in `runtime.rs` asks **the VM's own connection registry**, on
+the same `HOST` the builtins dispatch through. Two registries would agree until
+somebody edited one of them, and "which connection is the only one open" is
+exactly the kind of question the two backends must not answer differently.
+
+That half is tested here rather than argued about: `runtime.rs` opens an
+in-memory SQLite database on that `HOST`, runs a query through the C entry
+point, and asserts the rows — including a bound parameter and the null-handle
+case. It is the reason the value semantics live in `runtime.rs` and not in the
+emitted IR.
+
+**A compiled program still cannot open a connection**, because `தரவுசேமி_இணை`
+is refused. So a query in a compiled program reports that there is none — with
+the VM's own message, for the same program. The two nUlakam modules this
+unblocked define query functions their test suites call; run on their own, as
+`run_parity.sh` runs them, nothing calls one. Building `தரவுசேமி_இணை` and
+`தளம்_செய்` is what turns this from a statement that compiles into a statement
+that runs.
 
 Refusing remains the discipline. IR that dropped a statement, or evaluated an
 expression as a placeholder, would make a compiled program quietly disagree
@@ -205,11 +233,10 @@ upper bound rather than a promise.
 ### Where it stands
 
 The corpus is 111 programs now rather than the 68 measured below — nUlakam has
-roughly doubled since. **95 would compile; 16 are refused.**
+roughly doubled since. **97 would compile; 14 are refused.**
 
 | construct | programs | sole blocker |
 |---|---|---|
-| `தளம்_வினா` (query) | 7 | **2** |
 | `வழி` (a route) | 3 | **1** |
 | `கோப்பு_திற` / `கோப்பு_மூடு` | 6 | 0 |
 | `தரவுசேமி_இணை` / `தளம்_செய்` | 5 | 0 |
@@ -227,10 +254,13 @@ what ships a program is being the last thing it waits on.
 Every one of the sixteen is waiting on one of three groups, and no program
 straddles two of them:
 
-**Database — 7 programs, 4 statements.** `தரவுசேமி_இணை`, `தரவுசேமி_பிரி`,
-`தளம்_வினா`, `தளம்_செய்`. Two of the seven need only `தளம்_வினா`, so that one
-statement is the cheapest thing on this list that ships anything:
-`nUlakam/kaNakkiyal/vari_vikiqam.qmz` and `nUlakam/vawki/coqqu.qmz`.
+**Database — 5 programs, 3 statements.** `தரவுசேமி_இணை`, `தரவுசேமி_பிரி`,
+`தளம்_செய்`. It was 7 programs and 4 statements; `தளம்_வினா` is built, and the
+two programs that waited only on it compile now. Two of the five remaining —
+`vari_vikiqam_cOqaZY.qmz` and `coqqu_cOqaZY.qmz` — wait only on `தரவுசேமி_இணை`
+and `தளம்_செய்`, and they are the suites that would actually *exercise* the
+query. Those two statements are the next thing worth building, and they finish
+the cluster.
 
 **Files and CSV — 6 programs, 6 statements.** `கோப்பு_திற`, `கோப்பு_மூடு`,
 `கோப்பு_படி`, `கோப்பு_எழுது`, `CSV_படி`, `CSV_எழுது`. No partial credit here:
@@ -245,9 +275,10 @@ exactly the property a long-running server cannot have. **This cluster is the
 one that should stay refused**, and saying so is what turns "16 refused" into
 "13 to build and 3 by design".
 
-So the road to zero, in order: `தளம்_வினா` (2 programs), the rest of the
-database group (5), files and CSV (6), and then a decision about the server
-group rather than an implementation of it.
+So the road to zero, in order: the rest of the database group (5 programs,
+3 statements, and the two that would put the query under a real test), files and
+CSV (6 programs, 6 statements, no partial credit), and then a decision about the
+server group rather than an implementation of it.
 
 ## Re-measuring
 

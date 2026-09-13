@@ -193,7 +193,10 @@ impl VM {
     /// is every program written before handles existed. Unnamed with several
     /// open is refused: guessing which of two databases a query meant is the
     /// kind of wrong answer this project does not give.
-    fn connection_for(
+    /// Public for the same reason `invoke_builtin` and `index_of` are: the
+    /// LLVM backend's runtime reaches the same object rather than keeping a
+    /// second registry that would agree until somebody edited one of them.
+    pub fn connection_for(
         &mut self,
         handle: Option<&str>,
     ) -> Result<&mut dyn crate::db::Database, String> {
