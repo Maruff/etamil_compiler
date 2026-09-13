@@ -13,6 +13,13 @@ pub enum Instruction {
     // Variable operations
     StoreVar(String),
     LoadVar(String),
+    /// `x = இணை(x, v)` — pop v and push it onto x's own array.
+    ///
+    /// Emitted only for that exact shape, where the array is read and written
+    /// back under the same name in one statement. `இணை` is a function that
+    /// returns a new array, so the general form has to copy; this form cannot
+    /// be observed mid-flight, so it does not.
+    AppendVar(String),
 
     // Arithmetic
     Add,

@@ -10,6 +10,9 @@ pub struct BytecodeCompiler {
     bytecode: Bytecode,
     /// Makes each ஒவ்வொரு loop's hidden variables unique.
     loop_id: usize,
+    /// False when the program defines its own `இணை`, in which case the
+    /// in-place append below would call something the author replaced.
+    append_in_place: bool,
 }
 
 impl Default for BytecodeCompiler {
@@ -23,11 +26,44 @@ impl BytecodeCompiler {
         BytecodeCompiler {
             bytecode: Bytecode::new(),
             loop_id: 0,
+            append_in_place: true,
         }
+    }
+
+    /// The three spellings of the append builtin.
+    const APPEND: [&'static str; 3] = ["இணை", "iNY", "_append"];
+
+    /// Does this program define its own function called `இணை`?
+    ///
+    /// A user-defined function shadows a builtin at call time, so if one
+    /// exists the peephole below would silently call the builtin instead of
+    /// the author's function. Whole-program, because a definition anywhere —
+    /// including inside another function — shadows every call.
+    fn defines_own_append(statements: &[Stmt]) -> bool {
+        statements.iter().any(|stmt| match stmt {
+            Stmt::FunctionDef { name, body, .. } => {
+                Self::APPEND.contains(&name.as_str()) || Self::defines_own_append(body)
+            }
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                Self::defines_own_append(then_branch)
+                    || else_branch
+                        .as_ref()
+                        .is_some_and(|stmts| Self::defines_own_append(stmts))
+            }
+            Stmt::Loop { body, .. } | Stmt::ForEach { body, .. } => {
+                Self::defines_own_append(body)
+            }
+            _ => false,
+        })
     }
 
     pub fn compile_statements(statements: Vec<Stmt>) -> Bytecode {
         let mut compiler = BytecodeCompiler::new();
+        compiler.append_in_place = !Self::defines_own_append(&statements);
         for stmt in statements {
             compiler.compile_stmt(stmt);
         }
@@ -46,6 +82,24 @@ impl BytecodeCompiler {
                 declared: _,
                 at: _,
             } => {
+                // `x = இணை(x, v)` appends to x in place. Anything else —
+                // a different destination, a longer expression around the
+                // call, an author's own இணை — takes the copying path.
+                if self.append_in_place
+                    && let Expr::Call {
+                        name: called,
+                        args,
+                    } = &value
+                    && Self::APPEND.contains(&called.as_str())
+                    && args.len() == 2
+                    && matches!(&args[0], Expr::Variable(source) if *source == name)
+                {
+                    let mut args = args.clone();
+                    let item = args.pop().expect("two arguments were just checked");
+                    self.compile_expr(item);
+                    self.bytecode.push(Instruction::AppendVar(name));
+                    return;
+                }
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
             }

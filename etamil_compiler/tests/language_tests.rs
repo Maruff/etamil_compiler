@@ -4136,6 +4136,68 @@ fn the_core_keywords_lex_the_same_in_english_as_in_tamil() {
 // The thing the seventeen were added for, asserted directly: a program with no
 // Tamil letter anywhere in it — types, literals, conditional, loop and all —
 // parses, compiles and computes.
+// `x = இணை(x, v)` appends in place rather than copying the array, which turned
+// building a list of n items from n²/2 element copies into n. It is only sound
+// because every binding owns its own Vec — so the thing to assert is not that
+// it is faster but that nothing else can see the append.
+#[test]
+fn appending_in_place_leaves_the_other_binding_alone() {
+    let vm = run("a = [1]; b = a; a = இணை(a, 2);").unwrap();
+    assert_eq!(
+        vm.variables.get("a"),
+        Some(&Value::Array(vec![
+            Value::Number(dec(1)),
+            Value::Number(dec(2))
+        ]))
+    );
+    assert_eq!(vm.variables.get("b"), Some(&Value::Array(vec![Value::Number(dec(1))])));
+}
+
+// Assigning to a name inside a function makes a local, even when an outer name
+// of the same spelling exists — so appending inside one must copy the outer
+// array first rather than growing it where it stands. This is the case that
+// would have made the optimisation a bug.
+#[test]
+fn appending_inside_a_function_does_not_reach_the_global() {
+    let vm = run(
+        "பட்டியல் = [1]; \
+         செயல் சேர்ப்பு() { பட்டியல் = இணை(பட்டியல், 2); திரும்பு நீளம்(பட்டியல்); } \
+         எத்தனை = சேர்ப்பு();",
+    )
+    .unwrap();
+
+    assert_eq!(num(&vm, "எத்தனை"), dec(2));
+    assert_eq!(
+        vm.variables.get("பட்டியல்"),
+        Some(&Value::Array(vec![Value::Number(dec(1))])),
+        "the global grew when only the local should have"
+    );
+}
+
+// A user-defined function shadows a builtin at call time, so a program with its
+// own இணை must get its own — anywhere in the file, including after the call.
+#[test]
+fn a_program_that_defines_its_own_append_gets_its_own() {
+    let vm = run(
+        "a = [1]; a = இணை(a, 2); செயல் இணை(பட்டியல், ஒன்று) { திரும்பு \"mine\"; }",
+    )
+    .unwrap();
+    assert_eq!(text(&vm, "a"), "mine");
+}
+
+// The fast path reports the same refusal as the builtin it replaces, because
+// the message is what the author reads and it should not depend on which path
+// the compiler took.
+#[test]
+fn appending_to_something_that_is_not_an_array_still_says_so() {
+    let error = run("a = 5; a = இணை(a, 1);").expect_err("a number is not an array");
+    assert!(
+        error.contains("append needs an array"),
+        "unexpected error: {}",
+        error
+    );
+}
+
 #[test]
 fn a_program_with_no_tamil_letter_in_it_runs() {
     let vm = run(

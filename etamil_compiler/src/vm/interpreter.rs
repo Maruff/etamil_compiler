@@ -248,13 +248,20 @@ impl VM {
     /// Write a name. Inside a function this always creates or updates a
     /// local, so a function cannot silently clobber a global — assigning to
     /// an outer name shadows it for the duration of the call.
-    fn set_var(&mut self, name: String, value: Value) {
-        match self.frames.last_mut() {
-            Some(frame) => {
-                frame.locals.insert(name, value);
-            }
+    ///
+    /// It takes `&str` rather than `String` because only a *new* binding has to
+    /// own its key. Rebinding an existing one does not, and rebinding is what a
+    /// loop does on every pass: `i = i + 1` was allocating a fresh copy of
+    /// `"i"` per iteration and dropping the old one.
+    fn set_var(&mut self, name: &str, value: Value) {
+        let scope = match self.frames.last_mut() {
+            Some(frame) => &mut frame.locals,
+            None => &mut self.variables,
+        };
+        match scope.get_mut(name) {
+            Some(slot) => *slot = value,
             None => {
-                self.variables.insert(name, value);
+                scope.insert(name.to_string(), value);
             }
         }
     }
@@ -1911,11 +1918,17 @@ impl VM {
                     ));
                 }
             }
-            let instruction = bytecode.instructions[self.instruction_pointer].clone();
+            // Borrowed, not cloned. This used to deep-copy the instruction
+            // before dispatching it, which for `LoadVar`/`StoreVar` meant a
+            // heap allocation for the variable's name on every single access,
+            // and for `Push` a full copy of the operand. That was most of the
+            // ~75 ns per instruction the benchmarks measured — the dispatch
+            // cost the README calls out, and it was not dispatch at all.
+            let instruction = &bytecode.instructions[self.instruction_pointer];
 
             match instruction {
                 Instruction::Push(value) => {
-                    self.stack.push(value);
+                    self.stack.push(value.clone());
                 }
                 Instruction::Pop => {
                     self.stack.pop();
@@ -1923,6 +1936,46 @@ impl VM {
                 Instruction::StoreVar(name) => {
                     if let Some(value) = self.stack.pop() {
                         self.set_var(name, value);
+                    }
+                }
+                Instruction::AppendVar(name) => {
+                    let item = self.pop()?;
+
+                    // Inside a function, assigning to a name that is not
+                    // already local creates a local — it does not write
+                    // through to the global. So an array reached from an outer
+                    // scope is copied once, here, and every append after that
+                    // is in place on the local.
+                    if let Some(frame) = self.frames.last()
+                        && !frame.locals.contains_key(name.as_str())
+                    {
+                        let outer = self.get_var(name).ok_or_else(|| {
+                            format!(
+                                "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                                name, name
+                            )
+                        })?;
+                        self.set_var(name, outer);
+                    }
+
+                    let scope = match self.frames.last_mut() {
+                        Some(frame) => &mut frame.locals,
+                        None => &mut self.variables,
+                    };
+                    match scope.get_mut(name.as_str()) {
+                        Some(Value::Array(items)) => items.push(item),
+                        Some(other) => {
+                            return Err(format!(
+                                "சேர் ஒரு அணி தேவை  (append needs an array, got {})",
+                                Self::type_name(other)
+                            ));
+                        }
+                        None => {
+                            return Err(format!(
+                                "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                                name, name
+                            ));
+                        }
                     }
                 }
                 Instruction::LoadVar(name) => {
@@ -2040,12 +2093,12 @@ impl VM {
                     if let Some(value) = self.stack.pop()
                         && !value.is_truthy()
                     {
-                        self.instruction_pointer = target;
+                        self.instruction_pointer = *target;
                         continue;
                     }
                 }
                 Instruction::Jump(target) => {
-                    self.instruction_pointer = target;
+                    self.instruction_pointer = *target;
                     continue;
                 }
                 Instruction::And => {
@@ -2076,7 +2129,7 @@ impl VM {
                             )
                         })?;
                     }
-                    self.file_modes.insert(filename, mode);
+                    self.file_modes.insert(filename, mode.clone());
                 }
                 Instruction::FileClose => {
                     let filename = self.pop()?.to_string();
@@ -2124,8 +2177,8 @@ impl VM {
                     ));
                 }
                 Instruction::MakeArray(count) => {
-                    let mut items = Vec::with_capacity(count);
-                    for _ in 0..count {
+                    let mut items = Vec::with_capacity(*count);
+                    for _ in 0..*count {
                         items.push(self.pop()?);
                     }
                     items.reverse(); // pushed left to right
@@ -2133,9 +2186,9 @@ impl VM {
                 }
                 Instruction::MakeRecord(keys) => {
                     let mut fields = HashMap::with_capacity(keys.len());
-                    for key in keys.into_iter().rev() {
+                    for key in keys.iter().rev() {
                         let value = self.pop()?;
-                        fields.insert(key, value);
+                        fields.insert(key.clone(), value);
                     }
                     self.stack.push(Value::Map(fields));
                 }
@@ -2148,7 +2201,7 @@ impl VM {
                     let base = self.pop()?;
                     match base {
                         Value::Map(fields) => {
-                            let value = fields.get(&name).cloned().ok_or_else(|| {
+                            let value = fields.get(name.as_str()).cloned().ok_or_else(|| {
                                 format!(
                                     "புலம் '{}' இல்லை  (no field '{}' on this record)",
                                     name, name
@@ -2188,7 +2241,7 @@ impl VM {
                     })?;
                     match &mut base {
                         Value::Map(fields) => {
-                            fields.insert(field, value);
+                            fields.insert(field.clone(), value);
                         }
                         other => {
                             return Err(format!(
@@ -2215,16 +2268,19 @@ impl VM {
                 }
                 Instruction::Call(name, argc) => {
                     // User-defined functions shadow builtins.
-                    if !bytecode.functions.contains_key(&name) {
-                        let result = self.call_builtin(&name, argc)?;
+                    if !bytecode.functions.contains_key(name.as_str()) {
+                        let result = self.call_builtin(name, *argc)?;
                         self.stack.push(result);
                         self.instruction_pointer += 1;
                         continue;
                     }
-                    let info = bytecode.functions.get(&name).cloned().ok_or_else(|| {
+                    // Borrowed, not cloned. Cloning a FunctionInfo copies its
+                    // parameter names — one allocation per parameter, on every
+                    // single call — and nothing here needs to own them.
+                    let info = bytecode.functions.get(name.as_str()).ok_or_else(|| {
                         format!("அறியப்படாத செயல் '{}'  (unknown function '{}')", name, name)
                     })?;
-                    if info.params.len() != argc {
+                    if info.params.len() != *argc {
                         return Err(format!(
                             "செயல் '{}' {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
                              (function '{}' expects {} argument(s), got {})",
@@ -2244,7 +2300,7 @@ impl VM {
                     }
 
                     // Arguments were pushed left to right, so bind in reverse.
-                    let mut locals = HashMap::new();
+                    let mut locals = HashMap::with_capacity(info.params.len());
                     for param in info.params.iter().rev() {
                         let value = self.pop()?;
                         locals.insert(param.clone(), value);
@@ -2332,7 +2388,7 @@ impl VM {
                     // runs on a fresh VM, so this statement is reached once per
                     // request and used to mean a new connection each time.
                     let lease = crate::db::pool::checkout(&db_type, &connection)?;
-                    self.connections.insert(handle, connection, lease);
+                    self.connections.insert(handle.clone(), connection, lease);
                 }
                 // The operand is a handle, which for an unnamed connection is
                 // its driver name — so `தளம்_பிரி SQL` still means what it did.
