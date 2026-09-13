@@ -27,6 +27,7 @@ Both are written in eTamil, not Rust.
 | [Keywords](reference/KEYWORDS.md) | Every keyword in all three spellings, with its token name — generated from the lexer |
 | [Commands](reference/COMMANDS.md) | CLI flags, exit codes, environment variables |
 | [Tamil Letter Equivalents](reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md) | How the ezuqqu romanization is derived |
+| [Script rules](reference/SCRIPT_RULES.md) | The `_` and `__` marks that tell eTamil ASCII from English ASCII |
 | [File I/O](reference/FILE_IO_FEATURES.md) | File and CSV statements |
 | [VM Quick Start](reference/QUICK_START_VM.md) | Running programs on the bytecode VM |
 | [Quick Reference](reference/QUICK_REFERENCE.md) | Syntax at a glance — partly outdated |

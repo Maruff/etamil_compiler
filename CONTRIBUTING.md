@@ -62,6 +62,7 @@ cd etamil_compiler && cargo test && cd ..
 python3 scripts/generate_editor_support.py --check
 python3 scripts/transliterate.py --check
 python3 scripts/check_names.py --check
+python3 scripts/check_script_rules.py --check
 cd etamil_compiler && cargo check --lib --target wasm32-unknown-unknown --no-default-features
 ```
 
@@ -72,6 +73,9 @@ Two of these deserve a word, because they are unusual:
 
 - **`transliterate.py --check`** holds every keyword's romanization to the
   ezuqqu scheme. Adding a keyword with an off-scheme spelling fails it.
+- **`check_script_rules.py --check`** holds the `_` and `__` marks that say
+  which ASCII is English and which is Tamil spelled in ASCII. See
+  `docs/reference/SCRIPT_RULES.md`.
 - **`check_names.py --check`** does the same for everything that is not a
   keyword — module and file names, SQL tables and columns, record keys. A new
   English name containing `b`, `d`, `f` or `g` will trip it and belongs in that
@@ -87,6 +91,12 @@ ezuqqu scheme — one Latin letter per Tamil letter, documented in
 `docs/reference/COMPILER_TAMIL_LETTER_EQUIVALENTS.md`. It is deliberately not
 ISO 15919: no diacritics, no digraphs. `த` is `q` and not `th`, `ழ` is `z` and
 not `zh`, `ஐ` is `Y` and not `ai`.
+
+A name you mean as English is written in English and marked with a leading
+underscore — `_sum`, not `sum` — and an English comment is wrapped in `__`.
+ASCII is otherwise read as Tamil, and there is a font that draws it that way,
+so an unmarked English name is a name that renders as nonsense. The rules and
+their edges are in `docs/reference/SCRIPT_RULES.md`.
 
 To check a name, run it back through the scheme:
 
