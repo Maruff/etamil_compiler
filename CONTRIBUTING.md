@@ -63,6 +63,7 @@ python3 scripts/generate_editor_support.py --check
 python3 scripts/transliterate.py --check
 python3 scripts/check_names.py --check
 python3 scripts/check_script_rules.py --check
+python3 scripts/check_redundancy.py --check
 cd etamil_compiler && cargo check --lib --target wasm32-unknown-unknown --no-default-features
 ```
 
@@ -76,6 +77,10 @@ Two of these deserve a word, because they are unusual:
 - **`check_script_rules.py --check`** holds the `_` and `__` marks that say
   which ASCII is English and which is Tamil spelled in ASCII. See
   `docs/reference/SCRIPT_RULES.md`.
+- **`check_redundancy.py --check`** looks for two differently named nUlakam
+  functions with the same body, which is how a library ends up with four ways
+  to pro-rate an amount by days. A group that is deliberate goes in that file's
+  `ALLOW` with the reason — it is a list of decisions, not of exceptions.
 - **`check_names.py --check`** does the same for everything that is not a
   keyword — module and file names, SQL tables and columns, record keys. A new
   English name containing `b`, `d`, `f` or `g` will trip it and belongs in that

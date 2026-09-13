@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
+
+இறக்கு "../aNi.qmz";
 // __nUlakam/qittam/curukkal.qmz — சுருக்கல் (crashing, the time-cost trade-off)__
 //
 // __Shortening a project costs money, and the question is which activity to buy__
@@ -94,10 +96,7 @@
 }
 
 செயல் கடுமையானதா(கடுமையான_குறிகள், செயல்_குறி) {
-    ஒவ்வொரு ஒரு_குறி இல் கடுமையான_குறிகள் {
-        (ஒரு_குறி == செயல்_குறி) எனில் { திரும்பு மெய்; }
-    }
-    திரும்பு பொய்;
+    திரும்பு உள்ளதா(கடுமையான_குறிகள், செயல்_குறி);
 }
 
 // __கூட்டுச்_சரிவு(தரவுகள், குறிகள்) — the cost of crashing a whole set together__

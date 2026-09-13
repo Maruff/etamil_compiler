@@ -33,7 +33,7 @@
 // __Raw material consumed, which is what enters prime cost — not purchases.__
 // __Opening stock plus purchases less closing stock.__
 செயல் நுகர்ந்த_பொருட்கள்(ஆரம்பப்_பொருட்கள், வாங்கியவை, இறுதிப்_பொருட்கள்) {
-    திரும்பு ஆரம்பப்_பொருட்கள் + வாங்கியவை - இறுதிப்_பொருட்கள்;
+    திரும்பு இருப்பு_ஓட்டம்(வாங்கியவை, ஆரம்பப்_பொருட்கள், இறுதிப்_பொருட்கள்);
 }
 
 // __--- Rung 2: works or factory cost --------------------------------------__
@@ -61,7 +61,7 @@
 // __selling overhead is added — selling cost attaches to what was sold, never to__
 // __what is still in the warehouse.__
 செயல் விற்ற_பொருட்களின்_செலவு(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை) {
-    திரும்பு உற்பத்தி + ஆரம்ப_முடிந்தவை - இறுதி_முடிந்தவை;
+    திரும்பு இருப்பு_ஓட்டம்(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை);
 }
 
 // __--- Rung 4: cost of sales, and what is left ----------------------------__
@@ -146,4 +146,13 @@
         அச்சு "  அலகுக்குச் செலவு  (per unit)   : " & மதிப்பு(விடை);
     }
     திரும்பு தாள்;
+}
+
+// __இருப்பு_ஓட்டம்(உள்வரவு, தொடக்க_இருப்பு, இறுதி_இருப்பு) — what left the store__
+//
+// __The inventory identity, and it holds at every stage: materials consumed is__
+// __purchases plus opening less closing, and cost of goods sold is production__
+// __plus opening finished goods less closing. One identity, so one function.__
+செயல் இருப்பு_ஓட்டம்(உள்வரவு, தொடக்க_இருப்பு, இறுதி_இருப்பு) {
+    திரும்பு உள்வரவு + தொடக்க_இருப்பு - இறுதி_இருப்பு;
 }

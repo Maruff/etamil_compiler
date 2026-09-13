@@ -216,7 +216,7 @@
 // __Clamping this at zero would carry the overstatement forward silently, which__
 // __is the one thing the cumulative method exists to prevent.__
 செயல் இந்தக்_காலத்து_வருவாய்(இதுவரை_தொகை, முன்பு_அங்கீகரித்தது) {
-    திரும்பு வட்டமிடு(இதுவரை_தொகை - முன்பு_அங்கீகரித்தது, 2);
+    திரும்பு வட்டக்_கழி(இதுவரை_தொகை, முன்பு_அங்கீகரித்தது);
 }
 
 // மீட்பளவு_வருவாய்(ஏற்பட்ட_செலவு, மீட்கக்கூடியதா)

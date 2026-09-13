@@ -62,3 +62,18 @@
 செயல் காலியா(பட்டியல்) {
     திரும்பு நீளம்(பட்டியல்) == 0;
 }
+
+// __புலத்தால்_வடிகட்டு(பட்டியல், புலம், மதிப்பு) — the records whose புலம் is மதிப்பு__
+//
+// __Written out once per ledger before this existed. The field is named as text__
+// __rather than reached with a dot, which is what makes one function serve every__
+// __caller: `பதிவு.கணக்கு_குறி` can only ever filter on கணக்கு_குறி.__
+செயல் புலத்தால்_வடிகட்டு(பட்டியல், புலம், மதிப்பு) {
+    விடை = [];
+    ஒவ்வொரு ஒரு_பதிவு இல் பட்டியல் {
+        (ஒரு_பதிவு[புலம்] == மதிப்பு) எனில் {
+            விடை = இணை(விடை, ஒரு_பதிவு);
+        }
+    }
+    திரும்பு விடை;
+}

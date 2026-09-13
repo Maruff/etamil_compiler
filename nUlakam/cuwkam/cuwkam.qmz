@@ -100,8 +100,7 @@
 
 // __அத்தியாயம்(குறியீட்டெண்) — the chapter a heading belongs to__
 செயல் அத்தியாயம்(குறியீட்டெண்) {
-    (நீளம்(குறியீட்டெண்) < 2) எனில் { திரும்பு ""; }
-    திரும்பு துண்டு(குறியீட்டெண், 0, 2);
+    திரும்பு முதல்_இரண்டு(குறியீட்டெண்);
 }
 
 // __பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) — does a code fall under a heading?__
@@ -195,6 +194,16 @@
 
 // __ஜிஎஸ்டி_மாநிலம்(எண்) — the state code a GSTIN begins with__
 செயல் ஜிஎஸ்டி_மாநிலம்(எண்_மதிப்பு) {
-    (நீளம்(எண்_மதிப்பு) < 2) எனில் { திரும்பு ""; }
-    திரும்பு துண்டு(எண்_மதிப்பு, 0, 2);
+    திரும்பு முதல்_இரண்டு(எண்_மதிப்பு);
+}
+
+// __முதல்_இரண்டு(குறியீட்டு_உரை) — the leading two characters, or "" if there are not two__
+//
+// __Both codes this module reads are positional: the first two digits of an HS__
+// __code are its chapter, and the first two of a GSTIN are the state. Same slice,__
+// __two different questions, and the answer to "which two characters" belongs in__
+// __one place.__
+செயல் முதல்_இரண்டு(குறியீட்டு_உரை) {
+    (நீளம்(குறியீட்டு_உரை) < 2) எனில் { திரும்பு ""; }
+    திரும்பு துண்டு(குறியீட்டு_உரை, 0, 2);
 }

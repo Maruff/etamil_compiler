@@ -64,6 +64,13 @@ jobs:
       - name: Script mark check
         run: python ../scripts/check_script_rules.py --check
 
+      # Two differently named functions with the same body. Names cannot
+      # collide — that is already zero — so this is the quieter kind: four ways
+      # to pro-rate an amount by days and no agreement about which to call.
+      # docs, and the reasons a group is allowed, are in the script itself.
+      - name: Redundancy check
+        run: python ../scripts/check_redundancy.py --check
+
       - name: Build (release)
         run: cargo build --release
 

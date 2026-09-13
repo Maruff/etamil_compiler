@@ -88,9 +88,7 @@
 // __indexes out of bounds on the last step. Every read goes through here__
 // __instead.__
 செயல் ஜே_எழுத்து(மூல_உரை, ஒரு_இடம்) {
-    (ஒரு_இடம் < 0) எனில் { திரும்பு ""; }
-    (ஒரு_இடம் >= நீளம்(மூல_உரை)) எனில் { திரும்பு ""; }
-    திரும்பு மூல_உரை[ஒரு_இடம்];
+    திரும்பு எழுத்து(மூல_உரை, ஒரு_இடம்);
 }
 
 // __ஜே_வெண்மை(உரை, இடம்) — skip whitespace, returning the next position__
