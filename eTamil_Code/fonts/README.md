@@ -29,7 +29,7 @@ Read from the font's own tables, not from anywhere else:
 | units per em | 1000 |
 | glyphs | 132 |
 | `isFixedPitch` | 0 — **proportional, not monospaced** |
-| copyright | Copyright (c) 2026, eTamil.in. All rights reserved. |
+| copyright | Copyright (c) 2026, eTamil.in. |
 | licence | SIL Open Font License 1.1 — `OFL.txt` beside this file |
 | designer | Esan Maruff |
 | manufacturer | eTamil India, eTamil.in |
@@ -37,8 +37,10 @@ Read from the font's own tables, not from anywhere else:
 ## The Tamil block is empty, and that is worth knowing
 
 Three cmap subtables — (0,3) format 4, (1,0) format 0, (3,1) format 4 — were
-read in full. Between them they map 143 codepoints, all of them ASCII and
-Latin-1. **Not one character of U+0B80–U+0BFF has a glyph.**
+read in full. The two Unicode subtables map 129 codepoints each, the same 129
+both times, all of them ASCII and Latin-1; the Mac subtable maps 123 byte
+values, which are MacRoman rather than Unicode and so cannot be added to that
+129. **Not one character of U+0B80–U+0BFF has a glyph.**
 
 The FontForge source has them. `ican_qmz.sfd` holds 201 glyphs, of which some
 seventy are `uniXXXX.glyph` files encoded at Tamil codepoints — உ at 2953, ஊ at
