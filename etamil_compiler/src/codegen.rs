@@ -299,43 +299,10 @@ impl Compiler {
     }
 
     // --- Labels for what is refused ----------------------------------------
-
-    /// What to call a statement this backend will not build. This is the
-    /// roadmap `scripts/run_parity.sh` ranks, so naming the statement is worth
-    /// more than naming its category.
-    fn stmt_label(statement: &Stmt) -> &'static str {
-        match statement {
-            Stmt::Import(_) => "இறக்கு (import)",
-            // Files
-            Stmt::FileOpen { .. } => "கோப்பு_திற (open a file)",
-            Stmt::FileClose { .. } => "கோப்பு_மூடு (close a file)",
-            Stmt::FileRead { .. } => "கோப்பு_படி (read a file)",
-            Stmt::FileWrite { .. } => "கோப்பு_எழுது (write a file)",
-            Stmt::ReadCSV { .. } => "CSV_படி (read a CSV)",
-            Stmt::WriteCSV { .. } => "CSV_எழுது (write a CSV)",
-            // Database
-            Stmt::DBConnect { .. } => "தரவுசேமி_இணை (connect to a database)",
-            Stmt::DBDisconnect { .. } => "தரவுசேமி_பிரி (disconnect)",
-            Stmt::DBQuery { .. } => "தளம்_வினா (query)",
-            Stmt::DBExecute { .. } => "தளம்_செய் (execute)",
-            Stmt::DBInsert { .. } => "தளம்_நுழை (insert)",
-            Stmt::DBUpdate { .. } => "தளம்_புதுப்பி (update)",
-            Stmt::DBDelete { .. } => "தளம்_நீக்கு (delete)",
-            Stmt::CreateTable { .. } => "அட்டவணை_உருவாக்கு (create a table)",
-            Stmt::Select { .. } => "தேர்ந்தெடு (select)",
-            // Server
-            Stmt::DefineRoute { .. } => "வழி (a route)",
-            Stmt::StartServer { .. } => "சேவையகம்_தொடங்கு (start a server)",
-            Stmt::StopServer => "சேவையகம்_நிறுத்து (stop a server)",
-            Stmt::SendResponse { .. } => "பதில்_அனுப்பு (send a response)",
-            Stmt::SendJSON { .. } => "ஜேசான்_உரை (send JSON)",
-            Stmt::GetRequestBody { .. } => "வேண்டுகோள்_உடல் (the request body)",
-            Stmt::GetRequestParam { .. } => "வேண்டுகோள்_அளபுரு (a request parameter)",
-            Stmt::GetHeader { .. } => "தலைப்பு_பெறு (read a header)",
-            Stmt::SetHeader { .. } => "தலைப்பு_அமை (set a header)",
-            _ => "a statement this backend does not build",
-        }
-    }
+    //
+    // `stmt_label` and `refusals` are free functions at the end of this file,
+    // outside the `llvm` feature gate, so that the gap can be counted on a
+    // machine that cannot build the backend. See the note there.
 
     // --- Compiling ---------------------------------------------------------
 
@@ -569,7 +536,7 @@ impl Compiler {
                     // drops would make the compiled program quietly disagree
                     // with the same source on the VM.
                     self.unsupported
-                        .push(format!("statement {}", Self::stmt_label(&other)));
+                        .push(format!("statement {}", stmt_label(&other)));
                 }
             }
         }
@@ -1199,6 +1166,113 @@ impl Drop for Compiler {
             LLVMDisposeBuilder(self.builder);
             LLVMDisposeModule(self.module);
             LLVMContextDispose(self.context);
+        }
+    }
+}
+
+// --- What the backend refuses, countable without building it ----------------
+//
+// These two are deliberately outside `#[cfg(feature = "llvm")]`. The list of
+// what this backend cannot build is a pure function of the AST, and keeping it
+// behind the feature gate meant the gap could only be measured on a machine
+// with LLVM 18 — which is the one measurement you want *before* going to that
+// machine. `etamil --llvm-gaps` walks a program with these and prints what
+// would be refused, on any platform.
+//
+// `builds` is the same list of statement kinds `Compiler::compile_stmt` handles
+// explicitly. **Adding an arm there means adding it here**, or the report will
+// claim a refusal the backend no longer makes.
+
+/// Does the LLVM backend build this kind of statement?
+pub fn builds(statement: &Stmt) -> bool {
+    matches!(
+        statement,
+        Stmt::Assign { .. }
+            | Stmt::FunctionDef { .. }
+            | Stmt::Return(_)
+            | Stmt::Print(_)
+            | Stmt::Input(_)
+            | Stmt::SetIndex { .. }
+            | Stmt::SetField { .. }
+            | Stmt::Expression(_)
+            | Stmt::If { .. }
+            | Stmt::Loop { .. }
+            | Stmt::ForEach { .. }
+    )
+}
+
+/// What to call a statement this backend will not build. This is the roadmap
+/// `scripts/run_parity.sh` ranks, so naming the statement is worth more than
+/// naming its category.
+pub fn stmt_label(statement: &Stmt) -> &'static str {
+    match statement {
+        Stmt::Import(_) => "இறக்கு (import)",
+        // Files
+        Stmt::FileOpen { .. } => "கோப்பு_திற (open a file)",
+        Stmt::FileClose { .. } => "கோப்பு_மூடு (close a file)",
+        Stmt::FileRead { .. } => "கோப்பு_படி (read a file)",
+        Stmt::FileWrite { .. } => "கோப்பு_எழுது (write a file)",
+        Stmt::ReadCSV { .. } => "CSV_படி (read a CSV)",
+        Stmt::WriteCSV { .. } => "CSV_எழுது (write a CSV)",
+        // Database
+        Stmt::DBConnect { .. } => "தரவுசேமி_இணை (connect to a database)",
+        Stmt::DBDisconnect { .. } => "தரவுசேமி_பிரி (disconnect)",
+        Stmt::DBQuery { .. } => "தளம்_வினா (query)",
+        Stmt::DBExecute { .. } => "தளம்_செய் (execute)",
+        Stmt::DBInsert { .. } => "தளம்_நுழை (insert)",
+        Stmt::DBUpdate { .. } => "தளம்_புதுப்பி (update)",
+        Stmt::DBDelete { .. } => "தளம்_நீக்கு (delete)",
+        Stmt::CreateTable { .. } => "அட்டவணை_உருவாக்கு (create a table)",
+        Stmt::Select { .. } => "தேர்ந்தெடு (select)",
+        // Server
+        Stmt::DefineRoute { .. } => "வழி (a route)",
+        // Lifted out of the program at startup like வழி, and refused here for
+        // the same reason: it needs a server to run inside.
+        Stmt::Schedule { .. } => "இடைவெளி (a scheduled block)",
+        Stmt::StartServer { .. } => "சேவையகம்_தொடங்கு (start a server)",
+        Stmt::StopServer => "சேவையகம்_நிறுத்து (stop a server)",
+        Stmt::SendResponse { .. } => "பதில்_அனுப்பு (send a response)",
+        Stmt::SendJSON { .. } => "ஜேசான்_உரை (send JSON)",
+        Stmt::GetRequestBody { .. } => "வேண்டுகோள்_உடல் (the request body)",
+        Stmt::GetRequestParam { .. } => "வேண்டுகோள்_அளபுரு (a request parameter)",
+        Stmt::GetHeader { .. } => "தலைப்பு_பெறு (read a header)",
+        Stmt::SetHeader { .. } => "தலைப்பு_அமை (set a header)",
+        _ => "a statement this backend does not build",
+    }
+}
+
+/// Every statement in this program the backend would refuse, in source order.
+///
+/// Duplicates are kept: a program that opens four files is four refusals of
+/// one kind, and the ranking wants both numbers. Nested bodies are walked,
+/// because the backend compiles them and refuses inside them.
+pub fn refusals(statements: &[Stmt]) -> Vec<&'static str> {
+    let mut found = Vec::new();
+    collect(statements, &mut found);
+    found
+}
+
+fn collect(statements: &[Stmt], found: &mut Vec<&'static str>) {
+    for statement in statements {
+        if !builds(statement) {
+            found.push(stmt_label(statement));
+            continue;
+        }
+        match statement {
+            Stmt::FunctionDef { body, .. }
+            | Stmt::Loop { body, .. }
+            | Stmt::ForEach { body, .. } => collect(body, found),
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                collect(then_branch, found);
+                if let Some(other) = else_branch {
+                    collect(other, found);
+                }
+            }
+            _ => {}
         }
     }
 }

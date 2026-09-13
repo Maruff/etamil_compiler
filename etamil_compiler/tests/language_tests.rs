@@ -4136,6 +4136,44 @@ fn the_core_keywords_lex_the_same_in_english_as_in_tamil() {
 // The thing the seventeen were added for, asserted directly: a program with no
 // Tamil letter anywhere in it — types, literals, conditional, loop and all —
 // parses, compiles and computes.
+// The LLVM backend's list of what it cannot build used to live inside
+// `#[cfg(feature = "llvm")]`, so the gap could only be counted on a machine
+// with LLVM 18 installed — which is the one place you do not need to be told.
+// It is a pure function of the AST. This runs everywhere, including here.
+#[test]
+fn the_refusal_list_names_what_the_llvm_backend_cannot_build() {
+    fn parse(source: &str) -> Vec<etamil_compiler::parser::Stmt> {
+        let tokens = lexer::tokenize(source).expect("lexes");
+        Parser::new(tokens.iter()).parse().expect("parses")
+    }
+
+    let arithmetic = parse("மொத்தம் = 1 + 2; அச்சு மொத்தம்;");
+    assert!(
+        etamil_compiler::codegen::refusals(&arithmetic).is_empty(),
+        "arithmetic and printing are what this backend is for"
+    );
+
+    // Inside a body, because the backend compiles bodies and refuses in them.
+    let inside = parse("செயல் ஏதோ() { கோப்பு_திற \"a.txt\", \"write\"; திரும்பு 1; }");
+    assert_eq!(
+        etamil_compiler::codegen::refusals(&inside),
+        vec!["கோப்பு_திற (open a file)"]
+    );
+
+    // Every refusal, in source order, duplicates kept — the report counts them.
+    let several = parse(
+        "கோப்பு_திற \"a.txt\", \"write\"; கோப்பு_மூடு \"a.txt\"; கோப்பு_திற \"b.txt\", \"write\";",
+    );
+    assert_eq!(
+        etamil_compiler::codegen::refusals(&several),
+        vec![
+            "கோப்பு_திற (open a file)",
+            "கோப்பு_மூடு (close a file)",
+            "கோப்பு_திற (open a file)",
+        ]
+    );
+}
+
 // `x = இணை(x, v)` appends in place rather than copying the array, which turned
 // building a list of n items from n²/2 element copies into n. It is only sound
 // because every binding owns its own Vec — so the thing to assert is not that

@@ -45,6 +45,7 @@ fn print_help() {
     println!("    --async            Concurrent server: async accept, blocking handlers");
     println!("                       இடைவெளி blocks run on a timer under either server");
     println!("    --llvm             LLVM backend (requires --features llvm; Linux/macOS)");
+    println!("    --llvm-gaps        List what the LLVM backend would refuse — no LLVM needed");
     println!("    --host <HOST>      Server bind address (default: 127.0.0.1)");
     println!("    --port <PORT>      Server port (default: 8080)");
     println!("    -h, --help         Show this message");
@@ -56,6 +57,7 @@ fn print_help() {
     println!("    etamil --server --port 8080 examples/backend/hello_server.qmz");
     println!("    cat program.qmz | etamil --check     # errors only, nothing runs");
     println!("    etamil --repl                        # try something without a file");
+    println!("    etamil --llvm-gaps nUlakam/kAcu.qmz  # what stops --llvm compiling it");
 }
 
 /// `--check`: report every error the front end can find, and run nothing.
@@ -92,6 +94,44 @@ fn check_only(loaded: Result<Vec<parser::Stmt>, String>) -> ! {
     }
 }
 
+/// Print what the LLVM backend would refuse in this program, then exit.
+///
+/// `scripts/run_parity.sh` answers the same question by compiling and running
+/// every program, which needs LLVM 18 and clang. This needs neither: the list
+/// of unbuildable constructs is a pure function of the AST, so the gap can be
+/// counted — and ranked, and watched shrinking — on the machine the code is
+/// written on rather than only on the machine it is compiled on.
+///
+/// Exit 0 when nothing is refused, 1 when something is, 2 when the program
+/// could not be loaded at all. One construct per line, count first, most
+/// frequent first, so a script can sum the column.
+fn llvm_gaps(loaded: Result<Vec<parser::Stmt>, String>) -> ! {
+    let ast = match loaded {
+        Ok(ast) => ast,
+        Err(message) => {
+            eprintln!("✗ {}", message);
+            std::process::exit(2);
+        }
+    };
+
+    let refused = etamil_compiler::codegen::refusals(&ast);
+    if refused.is_empty() {
+        std::process::exit(0);
+    }
+
+    let mut counts: std::collections::BTreeMap<&str, usize> =
+        std::collections::BTreeMap::new();
+    for item in &refused {
+        *counts.entry(item).or_insert(0) += 1;
+    }
+    let mut ranked: Vec<(&str, usize)> = counts.into_iter().collect();
+    ranked.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(b.0)));
+    for (label, count) in ranked {
+        println!("{}\t{}", count, label);
+    }
+    std::process::exit(1);
+}
+
 fn main() {
     // Parse command line arguments
     let args: Vec<String> = env::args().collect();
@@ -99,6 +139,7 @@ fn main() {
     let mut use_http_server = false;
     let mut use_async_server = false; // Backend milestone 2: New async server flag
     let mut check_only_mode = false;
+    let mut llvm_gaps_mode = false;
     let mut repl_mode = false;
     let mut server_host = "127.0.0.1".to_string();
     let mut server_port = 8080u16;
@@ -160,6 +201,11 @@ fn main() {
                 println!("Source: <https://github.com/Maruff/etamil_compiler>");
                 return;
             }
+            // What the LLVM backend would refuse, without needing LLVM to
+            // say so. `run_parity.sh` answers this too, but only on a machine
+            // that can build the backend — which is the machine you want the
+            // answer before travelling to.
+            "--llvm-gaps" => llvm_gaps_mode = true,
             "--help" | "-h" => {
                 print_help();
                 return;
@@ -197,6 +243,10 @@ fn main() {
     // caller can treat any output at all as a failure.
     if check_only_mode {
         check_only(loaded);
+    }
+
+    if llvm_gaps_mode {
+        llvm_gaps(loaded);
     }
 
     let ast = match loaded {

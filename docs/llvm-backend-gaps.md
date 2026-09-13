@@ -122,7 +122,11 @@ expression as a placeholder, would make a compiled program quietly disagree
 with the same source run on the VM, and that is the one failure this project
 does not accept. `main.rs` refuses to emit when the list is non-empty.
 
-## Measured, on Ubuntu
+## Measured, on Ubuntu — the last run with LLVM present
+
+Superseded in scope by the burn-down below, which counts 111 programs rather than
+these 68. This is still the only measurement that has actually *run* the compiled
+code, and so the only one that can report a mismatch.
 
 `scripts/run_parity.sh`, LLVM 18, clang present so every accepted program was
 compiled *and run*:
@@ -174,6 +178,76 @@ step is to look rather than reason:
 That runs one program under both backends and prints where their output parts
 company. The summary form says only *that* two backends disagree, which made
 every mismatch cost a round trip.
+
+## The burn-down, countable anywhere
+
+`run_parity.sh` is the measurement that settles anything, and it needs LLVM 18
+and clang. That made the gap a number you could only learn on the Ubuntu box —
+which is the one place you do not need to be told what to build.
+
+The list of unbuildable constructs is a pure function of the AST, so it has
+been lifted out of `#[cfg(feature = "llvm")]` and is reachable everywhere:
+
+```bash
+etamil --llvm-gaps nUlakam/kAcu.qmz        # exits 0: nothing refused
+etamil --llvm-gaps examples/api/simple_api.qmz
+#   4  வழி (a route)
+#   1  சேவையகம்_தொடங்கு (start a server)
+#   1  சேவையகம்_நிறுத்து (stop a server)
+
+python3 scripts/llvm_gap_report.py         # the whole corpus, ranked
+```
+
+Statements only. The backend also refuses a name nothing in its own scope
+defines, and operators today's parser does not build, so a clean report is an
+upper bound rather than a promise.
+
+### Where it stands
+
+The corpus is 111 programs now rather than the 68 measured below — nUlakam has
+roughly doubled since. **95 would compile; 16 are refused.**
+
+| construct | programs | sole blocker |
+|---|---|---|
+| `தளம்_வினா` (query) | 7 | **2** |
+| `வழி` (a route) | 3 | **1** |
+| `கோப்பு_திற` / `கோப்பு_மூடு` | 6 | 0 |
+| `தரவுசேமி_இணை` / `தளம்_செய்` | 5 | 0 |
+| `CSV_படி` / `CSV_எழுது` | 4 | 0 |
+| `கோப்பு_படி` / `கோப்பு_எழுது` | 3 | 0 |
+| `தரவுசேமி_பிரி` | 3 | 0 |
+| `இடைவெளி`, `சேவையகம்_தொடங்கு`, `சேவையகம்_நிறுத்து` | 1 each | 0 |
+
+**Sole blocker is the column that moves the total.** A construct appearing in
+seven programs buys nothing if six of them are also waiting on something else;
+what ships a program is being the last thing it waits on.
+
+### Three clusters, and then it is zero
+
+Every one of the sixteen is waiting on one of three groups, and no program
+straddles two of them:
+
+**Database — 7 programs, 4 statements.** `தரவுசேமி_இணை`, `தரவுசேமி_பிரி`,
+`தளம்_வினா`, `தளம்_செய்`. Two of the seven need only `தளம்_வினா`, so that one
+statement is the cheapest thing on this list that ships anything:
+`nUlakam/kaNakkiyal/vari_vikiqam.qmz` and `nUlakam/vawki/coqqu.qmz`.
+
+**Files and CSV — 6 programs, 6 statements.** `கோப்பு_திற`, `கோப்பு_மூடு`,
+`கோப்பு_படி`, `கோப்பு_எழுது`, `CSV_படி`, `CSV_எழுது`. No partial credit here:
+every one of the six programs opens and closes, so nothing ships until at least
+four of the six exist.
+
+**Server and scheduling — 3 programs, 4 statements.** `வழி`,
+`சேவையகம்_தொடங்கு`, `சேவையகம்_நிறுத்து`, `இடைவெளி`. The hardest of the three
+and the least valuable: a compiled binary that serves HTTP needs the whole
+runtime the VM already is, and the arena in `runtime.rs` never frees — which is
+exactly the property a long-running server cannot have. **This cluster is the
+one that should stay refused**, and saying so is what turns "16 refused" into
+"13 to build and 3 by design".
+
+So the road to zero, in order: `தளம்_வினா` (2 programs), the rest of the
+database group (5), files and CSV (6), and then a decision about the server
+group rather than an implementation of it.
 
 ## Re-measuring
 
