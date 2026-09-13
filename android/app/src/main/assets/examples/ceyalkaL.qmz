@@ -1,15 +1,15 @@
-// செயல்கள் — functions, results and the ? operator
+// __செயல்கள் — functions, results and the ? operator__
 //
-// Failure is a value here, as in Rust: a செயல் that can fail returns
-// சரி(மதிப்பு) or தவறு(காரணம்), and ? hands a failure to the caller.
+// __Failure is a value here, as in Rust: a செயல் that can fail returns__
+// __சரி(மதிப்பு) or தவறு(காரணம்), and ? hands a failure to the caller.__
 
-// Recursion
+// __Recursion__
 செயல் காரணீயம்(எண்_மதிப்பு) {
     (எண்_மதிப்பு <= 1) எனில் { திரும்பு 1; }
     திரும்பு எண்_மதிப்பு * காரணீயம்(எண்_மதிப்பு - 1);
 }
 
-// A function that can fail
+// __A function that can fail__
 செயல் வகு(மேல், கீழ்) {
     (கீழ் == 0) எனில் {
         திரும்பு தவறு("பூஜ்ஜியத்தால் வகுக்க முடியாது");
@@ -17,7 +17,7 @@
     திரும்பு சரி(மேல் / கீழ்);
 }
 
-// ? propagates the failure without any explicit check
+// __? propagates the failure without any explicit check__
 செயல் சராசரி_விலை(மொத்தம், எண்ணிக்கை) {
     ஒன்று = வகு(மொத்தம், எண்ணிக்கை)?;
     திரும்பு சரி(வட்டமிடு(ஒன்று, 2));
@@ -33,5 +33,5 @@
     அச்சு "எதிர்பார்த்த தவறு பிடிபட்டது";
 }
 
-// இயல்பு supplies a fallback instead of failing
+// __இயல்பு supplies a fallback instead of failing__
 அச்சு "இயல்பு மதிப்புடன்: " & இயல்பு(சராசரி_விலை(10, 0), 0);

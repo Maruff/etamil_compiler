@@ -1,91 +1,91 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qaLam/retis.qmz — Redis, in words rather than command strings
+// __nUlakam/qaLam/retis.qmz — Redis, in words rather than command strings__
 //
-// The host gives one thing: ரெடிஸ்_கட்டளை, a command name and its arguments.
-// That is deliberate — it is the shape of Redis, so every command works,
-// including the ones invented after this file. What is here is the handful
-// anybody actually types, wrapped so a program reads as what it means.
+// __The host gives one thing: ரெடிஸ்_கட்டளை, a command name and its arguments.__
+// __That is deliberate — it is the shape of Redis, so every command works,__
+// __including the ones invented after this file. What is here is the handful__
+// __anybody actually types, wrapped so a program reads as what it means.__
 //
-// Everything answers a முடிவு. A cache being unreachable is an ordinary thing
-// for a cache, and a program that treats it as fatal has made the cache a
-// dependency rather than an optimisation.
+// __Everything answers a முடிவு. A cache being unreachable is an ordinary thing__
+// __for a cache, and a program that treats it as fatal has made the cache a__
+// __dependency rather than an optimisation.__
 //
-// The one distinction worth keeping: a key that is absent comes back as nil,
-// which is not the same as a key holding "". இருக்கிறதா asks the first
-// question; எடு answers with the value and lets nil mean absent.
+// __The one distinction worth keeping: a key that is absent comes back as nil,__
+// __which is not the same as a key holding "". இருக்கிறதா asks the first__
+// __question; எடு answers with the value and lets nil mean absent.__
 
 இறக்கு "../poruL.qmz";
 
-// --- keys -----------------------------------------------------------------
+// __--- keys -----------------------------------------------------------------__
 
-// சேமி(சாவி, மதிப்புரு) — SET
+// __சேமி(சாவி, மதிப்புரு) — SET__
 செயல் சேமி(சாவி, மதிப்புரு) {
     திரும்பு ரெடிஸ்_கட்டளை("SET", [சாவி, சொல்லாக்கு(மதிப்புரு)]);
 }
 
-// காலத்துடன்_சேமி(சாவி, மதிப்புரு, வினாடிகள்) — SET with an expiry
+// __காலத்துடன்_சேமி(சாவி, மதிப்புரு, வினாடிகள்) — SET with an expiry__
 //
-// What a cache is for: a value that stops being true after a while should stop
-// being served after a while, and saying so at write time is more reliable
-// than remembering to delete it.
+// __What a cache is for: a value that stops being true after a while should stop__
+// __being served after a while, and saying so at write time is more reliable__
+// __than remembering to delete it.__
 செயல் காலத்துடன்_சேமி(சாவி, மதிப்புரு, வினாடிகள்) {
     திரும்பு ரெடிஸ்_கட்டளை("SET",
         [சாவி, சொல்லாக்கு(மதிப்புரு), "EX", சொல்லாக்கு(வினாடிகள்)]);
 }
 
-// எடு(சாவி) — GET. A key that is not there answers சரி(nil), not a தவறு:
-// a miss is the ordinary outcome of a cache read.
+// __எடு(சாவி) — GET. A key that is not there answers சரி(nil), not a தவறு:__
+// __a miss is the ordinary outcome of a cache read.__
 செயல் எடு(சாவி) {
     திரும்பு ரெடிஸ்_கட்டளை("GET", [சாவி]);
 }
 
-// இருக்கிறதா(சாவி) — is the key there at all?
+// __இருக்கிறதா(சாவி) — is the key there at all?__
 செயல் இருக்கிறதா(சாவி) {
     விளைவு = ரெடிஸ்_கட்டளை("EXISTS", [சாவி]);
     (தவறா(விளைவு)) எனில் { திரும்பு விளைவு; }
     திரும்பு சரி(மதிப்பு(விளைவு) > 0);
 }
 
-// நீக்கு(சாவி) — DEL. Answers how many keys went.
+// __நீக்கு(சாவி) — DEL. Answers how many keys went.__
 செயல் நீக்கு(சாவி) {
     திரும்பு ரெடிஸ்_கட்டளை("DEL", [சாவி]);
 }
 
-// ஒன்று_கூட்டு(சாவி) — INCR, and the new value comes back a number
+// __ஒன்று_கூட்டு(சாவி) — INCR, and the new value comes back a number__
 //
-// Atomic at the server, which is the point: two requests counting the same
-// thing do not need a lock between them.
+// __Atomic at the server, which is the point: two requests counting the same__
+// __thing do not need a lock between them.__
 செயல் ஒன்று_கூட்டு(சாவி) {
     திரும்பு ரெடிஸ்_கட்டளை("INCR", [சாவி]);
 }
 
-// --- lists ----------------------------------------------------------------
+// __--- lists ----------------------------------------------------------------__
 
-// முன்_சேர்(சாவி, மதிப்புரு) — LPUSH, for a queue
+// __முன்_சேர்(சாவி, மதிப்புரு) — LPUSH, for a queue__
 செயல் முன்_சேர்(சாவி, மதிப்புரு) {
     திரும்பு ரெடிஸ்_கட்டளை("LPUSH", [சாவி, சொல்லாக்கு(மதிப்புரு)]);
 }
 
-// வரிசைப்_பகுதி(சாவி, தொடக்கம், முடிவு) — LRANGE. -1 as the end means to the end.
+// __வரிசைப்_பகுதி(சாவி, தொடக்கம், முடிவு) — LRANGE. -1 as the end means to the end.__
 செயல் வரிசைப்_பகுதி(சாவி, தொடக்கம், முடிவு) {
     திரும்பு ரெடிஸ்_கட்டளை("LRANGE",
         [சாவி, சொல்லாக்கு(தொடக்கம்), சொல்லாக்கு(முடிவு)]);
 }
 
-// --- the cache pattern ----------------------------------------------------
+// __--- the cache pattern ----------------------------------------------------__
 
-// உயிர்ப்பா() — PING, to see whether it is there at all
+// __உயிர்ப்பா() — PING, to see whether it is there at all__
 செயல் உயிர்ப்பா() {
     திரும்பு ரெடிஸ்_கட்டளை("PING", []);
 }
 
 // இல்லையெனில்_இயல்பு(சாவி, மாற்று_மதிப்பு)
 //
-// The value, or a fallback — for a miss, for a nil, and for the cache being
-// unreachable. All three are the same thing to a caller: no cached answer, so
-// compute it. Distinguishing them is possible with எடு and worth doing when
-// the cache is load-bearing, and this is for when it is not.
+// __The value, or a fallback — for a miss, for a nil, and for the cache being__
+// __unreachable. All three are the same thing to a caller: no cached answer, so__
+// __compute it. Distinguishing them is possible with எடு and worth doing when__
+// __the cache is load-bearing, and this is for when it is not.__
 செயல் இல்லையெனில்_இயல்பு(சாவி, மாற்று_மதிப்பு) {
     விளைவு = எடு(சாவி);
     (தவறா(விளைவு)) எனில் { திரும்பு மாற்று_மதிப்பு; }

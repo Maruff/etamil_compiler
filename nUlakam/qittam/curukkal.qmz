@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qittam/curukkal.qmz — சுருக்கல் (crashing, the time-cost trade-off)
+// __nUlakam/qittam/curukkal.qmz — சுருக்கல் (crashing, the time-cost trade-off)__
 //
-// Shortening a project costs money, and the question is which activity to buy
-// time from. Two facts decide it.
+// __Shortening a project costs money, and the question is which activity to buy__
+// __time from. Two facts decide it.__
 //
-// Only a **critical** activity is worth crashing. Shortening anything with
-// float buys nothing at all, and it is the most expensive mistake available
-// because it looks like progress.
+// __Only a **critical** activity is worth crashing. Shortening anything with__
+// __float buys nothing at all, and it is the most expensive mistake available__
+// __because it looks like progress.__
 //
-// Among critical activities, buy from the **cheapest slope**: the cost of one
-// unit of time. Crashing changes the critical path, so the choice has to be
-// remade after every step — which is why this module gives the pieces and the
-// caller loops, rather than pretending one call can do it.
+// __Among critical activities, buy from the **cheapest slope**: the cost of one__
+// __unit of time. Crashing changes the critical path, so the choice has to be__
+// __remade after every step — which is why this module gives the pieces and the__
+// __caller loops, rather than pretending one call can do it.__
 //
-// Where several paths are critical at once, one activity per path must be
-// crashed, or the paths that were not touched hold the duration exactly where
-// it was. An activity common to several paths is often cheaper than one on
-// each, and கூட்டுச்_சரிவு exists to price that comparison.
+// __Where several paths are critical at once, one activity per path must be__
+// __crashed, or the paths that were not touched hold the duration exactly where__
+// __it was. An activity common to several paths is often cheaper than one on__
+// __each, and கூட்டுச்_சரிவு exists to price that comparison.__
 //
-// The optimum is the minimum of **total** cost, direct plus indirect, not of
-// either alone: direct cost rises as the schedule shortens and indirect falls
-// with it. Always compute one step past the apparent minimum, because a
-// minimum you have not stepped over is only the last point you calculated.
+// __The optimum is the minimum of **total** cost, direct plus indirect, not of__
+// __either alone: direct cost rises as the schedule shortens and indirect falls__
+// __with it. Always compute one step past the apparent minimum, because a__
+// __minimum you have not stepped over is only the last point you calculated.__
 
 // செயல்_நேர_செலவு(செயல்_குறி, இயல்பு_காலம், இயல்பு_செலவு, சுருக்க_காலம்,
 //                  சுருக்கச்_செலவு)
 //
-// Normal time is the low-cost, efficient way of doing the work; crash time is
-// a **threshold**, the shortest the activity can go however much is spent.
+// __Normal time is the low-cost, efficient way of doing the work; crash time is__
+// __a **threshold**, the shortest the activity can go however much is spent.__
 செயல் செயல்_நேர_செலவு(செயல்_குறி, இயல்பு_காலம், இயல்பு_செலவு,
                         சுருக்க_காலம், சுருக்கச்_செலவு) {
     திரும்பு {
@@ -40,20 +40,20 @@
     };
 }
 
-// அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) — how many units of time are for sale
+// __அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) — how many units of time are for sale__
 //
-// The parameter is compound because தரவு on its own is a keyword in this
-// language; see celavu/README.md.
+// __The parameter is compound because தரவு on its own is a keyword in this__
+// __language; see celavu/README.md.__
 செயல் அதிகபட்ச_சுருக்கம்(நேரத்_தரவு) {
     திரும்பு நேரத்_தரவு.இயல்பு_காலம் - நேரத்_தரவு.சுருக்க_காலம்;
 }
 
-// செலவுச்_சரிவு(தரவு) — the cost of buying one unit of time
+// __செலவுச்_சரிவு(தரவு) — the cost of buying one unit of time__
 //
-//     (crash cost − normal cost) / (normal time − crash time)
+//     __(crash cost − normal cost) / (normal time − crash time)__
 //
-// An activity that cannot be shortened has no slope rather than an infinite
-// one, so it is a தவறு and can never be selected as cheapest by accident.
+// __An activity that cannot be shortened has no slope rather than an infinite__
+// __one, so it is a தவறு and can never be selected as cheapest by accident.__
 செயல் செலவுச்_சரிவு(நேரத்_தரவு) {
     சுருக்கம் = அதிகபட்ச_சுருக்கம்(நேரத்_தரவு);
     (சுருக்கம் <= 0) எனில் {
@@ -66,8 +66,8 @@
 
 // மலிவான_வேட்பாளர்(தரவுகள், கடுமையான_குறிகள்)
 //
-// The cheapest crashable activity that is also critical. Both conditions
-// matter and the second is the one that gets forgotten.
+// __The cheapest crashable activity that is also critical. Both conditions__
+// __matter and the second is the one that gets forgotten.__
 செயல் மலிவான_வேட்பாளர்(தரவுகள், கடுமையான_குறிகள்) {
     சிறந்த_குறி = "";
     சிறந்த_சரிவு = 0;
@@ -100,11 +100,11 @@
     திரும்பு பொய்;
 }
 
-// கூட்டுச்_சரிவு(தரவுகள், குறிகள்) — the cost of crashing a whole set together
+// __கூட்டுச்_சரிவு(தரவுகள், குறிகள்) — the cost of crashing a whole set together__
 //
-// When several paths are critical, compare the sum of one activity per path
-// against a single shared activity that shortens all of them. The shared one
-// frequently wins, and only this comparison shows it.
+// __When several paths are critical, compare the sum of one activity per path__
+// __against a single shared activity that shortens all of them. The shared one__
+// __frequently wins, and only this comparison shows it.__
 செயல் கூட்டுச்_சரிவு(தரவுகள், குறிகள்) {
     ஓடும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_குறி இல் குறிகள் {
@@ -119,7 +119,7 @@
     திரும்பு சரி(ஓடும்_கூட்டல்);
 }
 
-// --- Totals --------------------------------------------------------------
+// __--- Totals --------------------------------------------------------------__
 
 செயல் இயல்பு_நேரடிச்_செலவு(தரவுகள்) {
     ஓடும்_கூட்டல் = 0;
@@ -131,19 +131,19 @@
 
 // மொத்தச்_செலவு(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, காலம்)
 //
-// Direct plus indirect. Indirect runs with the calendar, so shortening the
-// project reduces it — which is why the optimum is not simply the cheapest
-// direct cost.
+// __Direct plus indirect. Indirect runs with the calendar, so shortening the__
+// __project reduces it — which is why the optimum is not simply the cheapest__
+// __direct cost.__
 செயல் மொத்தச்_செலவு(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, காலம்) {
     திரும்பு நேரடிச்_செலவு + நாள்_மறைமுகச்_செலவு * காலம்;
 }
 
 // தாமதச்_செலவுடன்(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு, நாள்_தாமதச்_செலவு, காலம்)
 //
-// The honest total. Project overhead is rarely the real cost of a day: a
-// delayed benefit, a penalty clause or a lost season usually dwarfs it, and
-// including it moves the optimum substantially earlier. Whose money is being
-// optimised is a decision to take consciously rather than by omission.
+// __The honest total. Project overhead is rarely the real cost of a day: a__
+// __delayed benefit, a penalty clause or a lost season usually dwarfs it, and__
+// __including it moves the optimum substantially earlier. Whose money is being__
+// __optimised is a decision to take consciously rather than by omission.__
 செயல் தாமதச்_செலவுடன்(நேரடிச்_செலவு, நாள்_மறைமுகச்_செலவு,
                         நாள்_தாமதச்_செலவு, காலம்) {
     திரும்பு நேரடிச்_செலவு

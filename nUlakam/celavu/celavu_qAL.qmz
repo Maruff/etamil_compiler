@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/celavu_qAL.qmz — செலவுத் தாள் (the cost sheet)
+// __nUlakam/celavu/celavu_qAL.qmz — செலவுத் தாள் (the cost sheet)__
 //
-// The cost sheet is a ladder, and its rungs are in a fixed order because each
-// is defined as the one below it plus a class of overhead:
+// __The cost sheet is a ladder, and its rungs are in a fixed order because each__
+// __is defined as the one below it plus a class of overhead:__
 //
-//     direct material + direct wages + direct expenses   = முதன்மைச் செலவு
-//     + factory overhead, ± work-in-progress             = தொழிற்சாலைச் செலவு
-//     + administrative overhead, ± finished stock        = உற்பத்திச் செலவு
-//     + selling and distribution overhead                = விற்பனைச் செலவு
+//     __direct material + direct wages + direct expenses   = முதன்மைச் செலவு__
+//     __+ factory overhead, ± work-in-progress             = தொழிற்சாலைச் செலவு__
+//     __+ administrative overhead, ± finished stock        = உற்பத்திச் செலவு__
+//     __+ selling and distribution overhead                = விற்பனைச் செலவு__
 //
-// Each rung is a separate function rather than one long sum, because the
-// intermediate figures are what the sheet is read for: works cost per unit is
-// the number a factory is judged on, and it is invisible if only the total is
-// computed.
+// __Each rung is a separate function rather than one long sum, because the__
+// __intermediate figures are what the sheet is read for: works cost per unit is__
+// __the number a factory is judged on, and it is invisible if only the total is__
+// __computed.__
 //
-// Stock adjustments go where the stock is. Work-in-progress adjusts inside the
-// factory, before administrative overhead is added — putting it after is the
-// classic error, and it overstates works cost by the movement in WIP.
+// __Stock adjustments go where the stock is. Work-in-progress adjusts inside the__
+// __factory, before administrative overhead is added — putting it after is the__
+// __classic error, and it overstates works cost by the movement in WIP.__
 
 இறக்கு "nilYyam.qmz";
 
-// --- Rung 1: prime cost --------------------------------------------------
+// __--- Rung 1: prime cost --------------------------------------------------__
 
 // முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்)
 செயல் முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்) {
@@ -30,26 +30,26 @@
 
 // நுகர்ந்த_பொருட்கள்(ஆரம்பப்_பொருட்கள், வாங்கியவை, இறுதிப்_பொருட்கள்)
 //
-// Raw material consumed, which is what enters prime cost — not purchases.
-// Opening stock plus purchases less closing stock.
+// __Raw material consumed, which is what enters prime cost — not purchases.__
+// __Opening stock plus purchases less closing stock.__
 செயல் நுகர்ந்த_பொருட்கள்(ஆரம்பப்_பொருட்கள், வாங்கியவை, இறுதிப்_பொருட்கள்) {
     திரும்பு ஆரம்பப்_பொருட்கள் + வாங்கியவை - இறுதிப்_பொருட்கள்;
 }
 
-// --- Rung 2: works or factory cost --------------------------------------
+// __--- Rung 2: works or factory cost --------------------------------------__
 
 // தொழிற்சாலைச்_செலவு(முதன்மை, தொழிற்சாலை_மேல்நிலை, ஆரம்ப_நிறைவேறாதவை,
 //                    இறுதி_நிறைவேறாதவை)
 //
-// Opening WIP is work already begun, so it is added; closing WIP is work not
-// finished, so it is taken out. Pass 0 for both when there is no WIP.
+// __Opening WIP is work already begun, so it is added; closing WIP is work not__
+// __finished, so it is taken out. Pass 0 for both when there is no WIP.__
 செயல் தொழிற்சாலைச்_செலவு(முதன்மை, தொழிற்சாலை_மேல்நிலை,
                           ஆரம்ப_நிறைவேறாதவை, இறுதி_நிறைவேறாதவை) {
     திரும்பு முதன்மை + தொழிற்சாலை_மேல்நிலை
              + ஆரம்ப_நிறைவேறாதவை - இறுதி_நிறைவேறாதவை;
 }
 
-// --- Rung 3: cost of production and cost of goods sold ------------------
+// __--- Rung 3: cost of production and cost of goods sold ------------------__
 
 செயல் உற்பத்திச்_செலவு(தொழிற்சாலை, நிர்வாக_மேல்நிலை) {
     திரும்பு தொழிற்சாலை + நிர்வாக_மேல்நிலை;
@@ -57,14 +57,14 @@
 
 // விற்ற_பொருட்களின்_செலவு(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை)
 //
-// Finished-goods stock adjusts here, after production is complete and before
-// selling overhead is added — selling cost attaches to what was sold, never to
-// what is still in the warehouse.
+// __Finished-goods stock adjusts here, after production is complete and before__
+// __selling overhead is added — selling cost attaches to what was sold, never to__
+// __what is still in the warehouse.__
 செயல் விற்ற_பொருட்களின்_செலவு(உற்பத்தி, ஆரம்ப_முடிந்தவை, இறுதி_முடிந்தவை) {
     திரும்பு உற்பத்தி + ஆரம்ப_முடிந்தவை - இறுதி_முடிந்தவை;
 }
 
-// --- Rung 4: cost of sales, and what is left ----------------------------
+// __--- Rung 4: cost of sales, and what is left ----------------------------__
 
 செயல் விற்பனைச்_செலவு(விற்றவை_செலவு, விற்பனை_மேல்நிலை) {
     திரும்பு விற்றவை_செலவு + விற்பனை_மேல்நிலை;
@@ -75,7 +75,7 @@
     திரும்பு விற்பனை_வருவாய் - விற்பனைச்_செலவு_மொத்தம்;
 }
 
-// --- Per unit ------------------------------------------------------------
+// __--- Per unit ------------------------------------------------------------__
 
 // அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்)
 செயல் அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்) {
@@ -85,16 +85,16 @@
     திரும்பு சரி(மொத்தச்_செலவு / அலகுகள்);
 }
 
-// --- The whole sheet ----------------------------------------------------
+// __--- The whole sheet ----------------------------------------------------__
 
 // செலவுத்_தாள்_ஆக்கு(தரவுத்_தொகுதி)
 //
-// One record in, one record out, carrying every rung so a caller can print the
-// sheet or read a single level. The input is a record rather than fourteen
-// positional arguments because a cost sheet read in the wrong order is a wrong
-// cost sheet, and named fields cannot be transposed by accident.
+// __One record in, one record out, carrying every rung so a caller can print the__
+// __sheet or read a single level. The input is a record rather than fourteen__
+// __positional arguments because a cost sheet read in the wrong order is a wrong__
+// __cost sheet, and named fields cannot be transposed by accident.__
 //
-// Expected fields, all numbers:
+// __Expected fields, all numbers:__
 //   நேரடிப்_பொருட்கள் நேரடி_ஊதியம் நேரடிச்_செலவுகள்
 //   தொழிற்சாலை_மேல்நிலை நிர்வாக_மேல்நிலை விற்பனை_மேல்நிலை
 //   ஆரம்ப_நிறைவேறாதவை இறுதி_நிறைவேறாதவை
@@ -132,7 +132,7 @@
     };
 }
 
-// தாளை_அச்சிடு(தாள்) — the sheet as a costing department would read it
+// __தாளை_அச்சிடு(தாள்) — the sheet as a costing department would read it__
 செயல் தாளை_அச்சிடு(தாள்) {
     அச்சு "── செலவுத் தாள் (cost sheet) ──";
     அச்சு "  முதன்மைச் செலவு    (prime)      : " & தாள்.முதன்மைச்_செலவு;

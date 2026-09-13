@@ -1,65 +1,65 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/nAtkAtti/nAL.qmz — நாள், the calendar itself
+// __nUlakam/nAtkAtti/nAL.qmz — நாள், the calendar itself__
 //
-// Dates are ISO-8601 text, "YYYY-MM-DD", which sorts chronologically — so
-// comparison, ordering and "is it in this period" need no arithmetic at all
-// and live in kaNakkiyal/kAlam.qmz. What needs arithmetic is everything else,
-// and the host provides exactly three primitives:
+// __Dates are ISO-8601 text, "YYYY-MM-DD", which sorts chronologically — so__
+// __comparison, ordering and "is it in this period" need no arithmetic at all__
+// __and live in kaNakkiyal/kAlam.qmz. What needs arithmetic is everything else,__
+// __and the host provides exactly three primitives:__
 //
-//     இன்று()                      today, in UTC
-//     நாள்_வேறுபாடு(அ, ஆ)          whole days from அ to ஆ, negative if earlier
-//     நாள்_கூட்டு(நாள், நாட்கள்)    a date shifted by whole days
+//     __இன்று()                      today, in UTC__
+//     __நாள்_வேறுபாடு(அ, ஆ)          whole days from அ to ஆ, negative if earlier__
+//     __நாள்_கூட்டு(நாள், நாட்கள்)    a date shifted by whole days__
 //
-// Everything here is built from those three. A month is not a fixed number of
-// days and a year is not 365, so anything stated in months or years — an
-// instalment date, a period of holding, interest "for every month or part of
-// a month" — cannot be computed by dividing days by 30. That division is what
-// this module exists to replace.
+// __Everything here is built from those three. A month is not a fixed number of__
+// __days and a year is not 365, so anything stated in months or years — an__
+// __instalment date, a period of holding, interest "for every month or part of__
+// __a month" — cannot be computed by dividing days by 30. That division is what__
+// __this module exists to replace.__
 //
-// **The host does not reject an impossible date.** நாள்_கூட்டு("2026-02-31", 0)
-// answers "2026-03-03": the parser checks only that the month is 1-12 and the
-// day 1-31, then rolls the overflow forward. So a date that came from outside
-// the program has to go through நாள்_செல்லுபடியா before it is trusted, and
-// that function deliberately does its own shape and range checks *before*
-// handing anything to the host — because a month of 13 is not a தவறு there, it
-// is a runtime error that stops the program.
+// __**The host does not reject an impossible date.** நாள்_கூட்டு("2026-02-31", 0)__
+// __answers "2026-03-03": the parser checks only that the month is 1-12 and the__
+// __day 1-31, then rolls the overflow forward. So a date that came from outside__
+// __the program has to go through நாள்_செல்லுபடியா before it is trusted, and__
+// __that function deliberately does its own shape and range checks *before*__
+// __handing anything to the host — because a month of 13 is not a தவறு there, it__
+// __is a runtime error that stops the program.__
 //
-// **Everything below assumes a valid date**, exactly as kAlam.qmz does.
-// Validating inside every function would mean every function returned a
-// Result, and a calendar whose every call has to be unwrapped is a calendar
-// nobody will use. Validate at the edge — where the date arrives from a user,
-// a file or a database — and the arithmetic stays readable.
+// __**Everything below assumes a valid date**, exactly as kAlam.qmz does.__
+// __Validating inside every function would mean every function returned a__
+// __Result, and a calendar whose every call has to be unwrapped is a calendar__
+// __nobody will use. Validate at the edge — where the date arrives from a user,__
+// __a file or a database — and the arithmetic stays readable.__
 //
-// Weekdays are numbered **0 = Sunday** through 6 = Saturday, which is the
-// numbering ISO-8601's own week rules are least like; it is chosen because
-// மீதி is floor-based and this keeps the arithmetic free of adjustments.
-// வாரநாள்_பெயர் exists so no caller has to remember it.
+// __Weekdays are numbered **0 = Sunday** through 6 = Saturday, which is the__
+// __numbering ISO-8601's own week rules are least like; it is chosen because__
+// __மீதி is floor-based and this keeps the arithmetic free of adjustments.__
+// __வாரநாள்_பெயர் exists so no caller has to remember it.__
 //
-// Years outside 0001-9999 are not representable in the four-digit form and are
-// not supported.
+// __Years outside 0001-9999 are not representable in the four-digit form and are__
+// __not supported.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../col.qmz";
 
-// The epoch the host counts from, and the weekday it fell on. 1 January 1970
-// was a Thursday, which is day 4 when Sunday is 0.
+// __The epoch the host counts from, and the weekday it fell on. 1 January 1970__
+// __was a Thursday, which is day 4 when Sunday is 0.__
 செயல் காலத்_தொடக்கம்() { திரும்பு "1970-01-01"; }
 
 // =========================================================================
-// செல்லுபடி — is this a date at all
+// __செல்லுபடி — is this a date at all__
 // =========================================================================
 //
-// நாள்_வடிவமா(நாள்_உரை) — the shape, checked without touching the host
+// __நாள்_வடிவமா(நாள்_உரை) — the shape, checked without touching the host__
 //
-// Ten characters, dashes in the fifth and eighth position, digits everywhere
-// else. This runs first and on its own, because the host's parser raises a
-// runtime error rather than a தவறு for anything it cannot read, and a library
-// that stops the program when handed a malformed string is not usable at the
-// edge of a system, which is the only place malformed strings arrive.
+// __Ten characters, dashes in the fifth and eighth position, digits everywhere__
+// __else. This runs first and on its own, because the host's parser raises a__
+// __runtime error rather than a தவறு for anything it cannot read, and a library__
+// __that stops the program when handed a malformed string is not usable at the__
+// __edge of a system, which is the only place malformed strings arrive.__
 செயல் நாள்_வடிவமா(நாள்_உரை) {
-    // வகை answers in English, so the name compared here is "a string"
-    // and not the Tamil word. Surprising, and checked by the tests.
+    // __வகை answers in English, so the name compared here is "a string"__
+    // __and not the Tamil word. Surprising, and checked by the tests.__
     (வகை(நாள்_உரை) != "a string") எனில் { திரும்பு பொய்; }
     (நீளம்(நாள்_உரை) != 10) எனில் { திரும்பு பொய்; }
     (எழுத்து(நாள்_உரை, 4) != "-") எனில் { திரும்பு பொய்; }
@@ -77,30 +77,30 @@
     திரும்பு மெய்;
 }
 
-// நாள்_செல்லுபடியா(நாள்_உரை) — and is it a day that exists
+// __நாள்_செல்லுபடியா(நாள்_உரை) — and is it a day that exists__
 //
-// Shape, then range, then the round trip. The round trip is the whole point:
-// the host accepts 2026-02-31 and answers 2026-03-03, so a date that comes
-// back different from the one that went in was never a real date. Thirty-first
-// of February, thirtieth of February in a leap year, twenty-ninth in a common
-// one — all caught by one comparison.
+// __Shape, then range, then the round trip. The round trip is the whole point:__
+// __the host accepts 2026-02-31 and answers 2026-03-03, so a date that comes__
+// __back different from the one that went in was never a real date. Thirty-first__
+// __of February, thirtieth of February in a leap year, twenty-ninth in a common__
+// __one — all caught by one comparison.__
 செயல் நாள்_செல்லுபடியா(நாள்_உரை) {
     (இல்லை நாள்_வடிவமா(நாள்_உரை)) எனில் { திரும்பு பொய்; }
 
     மாத_மதிப்பு = மதிப்பு(எண்ணாக்கு(துண்டு(நாள்_உரை, 5, 2)));
     நாள்_மதிப்பு = மதிப்பு(எண்ணாக்கு(துண்டு(நாள்_உரை, 8, 2)));
 
-    // The host errors rather than returning a தவறு outside these ranges, so
-    // they are checked here and not there.
+    // __The host errors rather than returning a தவறு outside these ranges, so__
+    // __they are checked here and not there.__
     (மாத_மதிப்பு < 1 அல்லது மாத_மதிப்பு > 12) எனில் { திரும்பு பொய்; }
     (நாள்_மதிப்பு < 1 அல்லது நாள்_மதிப்பு > 31) எனில் { திரும்பு பொய்; }
 
     திரும்பு நாள்_கூட்டு(நாள்_உரை, 0) == நாள்_உரை;
 }
 
-// நாள்_சரிபார்(நாள்_உரை) — the same question, answered as a Result
+// __நாள்_சரிபார்(நாள்_உரை) — the same question, answered as a Result__
 //
-// For the edge of a system, where the answer has to carry a reason.
+// __For the edge of a system, where the answer has to carry a reason.__
 செயல் நாள்_சரிபார்(நாள்_உரை) {
     (நாள்_செல்லுபடியா(நாள்_உரை)) எனில் { திரும்பு சரி(நாள்_உரை); }
     திரும்பு தவறு("செல்லாத நாள்  (not a valid date, expected YYYY-MM-DD): "
@@ -108,21 +108,21 @@
 }
 
 // =========================================================================
-// கூறுகள் — the parts of a date
+// __கூறுகள் — the parts of a date__
 // =========================================================================
 
 // நாளாக_வடிவமை(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு)
 //
-// Assembles the text without checking it. Used internally where the parts were
-// computed rather than supplied, so they are known good; நாள்_ஆக்கு is the one
-// that validates.
+// __Assembles the text without checking it. Used internally where the parts were__
+// __computed rather than supplied, so they are known good; நாள்_ஆக்கு is the one__
+// __that validates.__
 செயல் நாளாக_வடிவமை(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு) {
     திரும்பு இடமிருந்து_நிரப்பு(சொல்லாக்கு(ஆண்டு_மதிப்பு), 4, "0") & "-"
              & இடமிருந்து_நிரப்பு(சொல்லாக்கு(மாத_மதிப்பு), 2, "0") & "-"
              & இடமிருந்து_நிரப்பு(சொல்லாக்கு(நாள்_மதிப்பு), 2, "0");
 }
 
-// நாள்_ஆக்கு(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு) — the constructor
+// __நாள்_ஆக்கு(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு) — the constructor__
 செயல் நாள்_ஆக்கு(ஆண்டு_மதிப்பு, மாத_மதிப்பு, நாள்_மதிப்பு) {
     திரும்பு நாள்_சரிபார்(நாளாக_வடிவமை(ஆண்டு_மதிப்பு, மாத_மதிப்பு,
                                           நாள்_மதிப்பு));
@@ -141,14 +141,14 @@
 }
 
 // =========================================================================
-// மாதங்களும் ஆண்டுகளும் — months and years
+// __மாதங்களும் ஆண்டுகளும் — months and years__
 // =========================================================================
 //
-// நெட்டாண்டா(ஆண்டு_மதிப்பு) — a leap year
+// __நெட்டாண்டா(ஆண்டு_மதிப்பு) — a leap year__
 //
-// Divisible by four, except centuries, except every fourth century. 1900 was
-// not a leap year and 2000 was, and any rule that stops at "divisible by four"
-// gets one of those two wrong.
+// __Divisible by four, except centuries, except every fourth century. 1900 was__
+// __not a leap year and 2000 was, and any rule that stops at "divisible by four"__
+// __gets one of those two wrong.__
 செயல் நெட்டாண்டா(ஆண்டு_மதிப்பு) {
     (மீதி(ஆண்டு_மதிப்பு, 400) == 0) எனில் { திரும்பு மெய்; }
     (மீதி(ஆண்டு_மதிப்பு, 100) == 0) எனில் { திரும்பு பொய்; }
@@ -185,25 +185,25 @@
 
 // மாதங்களைக்_கூட்டு(ஒரு_நாள், மாத_எண்ணிக்கை)
 //
-// Adding a month is not adding thirty days, and the difference is the last few
-// days of every long month. The 31st of January plus one month is the 28th of
-// February — there is no 31st — and the rule is to **clamp to the end of the
-// target month** rather than to roll over into March.
+// __Adding a month is not adding thirty days, and the difference is the last few__
+// __days of every long month. The 31st of January plus one month is the 28th of__
+// __February — there is no 31st — and the rule is to **clamp to the end of the__
+// __target month** rather than to roll over into March.__
 //
-// Clamping is not reversible, and that is a property of the calendar rather
-// than a defect here: 31 January plus one month is 28 February, and 28
-// February minus one month is 28 January. A schedule generated by repeatedly
-// adding one month to the *previous* result therefore drifts — 31 Jan, 28 Feb,
-// 28 Mar — while one generated by adding n months to the *original* does not.
-// Always count from the original.
+// __Clamping is not reversible, and that is a property of the calendar rather__
+// __than a defect here: 31 January plus one month is 28 February, and 28__
+// __February minus one month is 28 January. A schedule generated by repeatedly__
+// __adding one month to the *previous* result therefore drifts — 31 Jan, 28 Feb,__
+// __28 Mar — while one generated by adding n months to the *original* does not.__
+// __Always count from the original.__
 //
-// A negative count subtracts.
+// __A negative count subtracts.__
 செயல் மாதங்களைக்_கூட்டு(ஒரு_நாள், மாத_எண்ணிக்கை) {
     ஆண்டு_மதிப்பு = ஆண்டைப்_பெறு(ஒரு_நாள்);
     மாத_மதிப்பு = மாதத்தைப்_பெறு(ஒரு_நாள்);
     நாள்_மதிப்பு = நாளைப்_பெறு(ஒரு_நாள்);
 
-    // Count months from year zero so that மீதி never sees a negative.
+    // __Count months from year zero so that மீதி never sees a negative.__
     ஓட்டு_மாதம் = ஆண்டு_மதிப்பு * 12 + (மாத_மதிப்பு - 1) + மாத_எண்ணிக்கை;
     புது_ஆண்டு = தரை(ஓட்டு_மாதம் / 12);
     புது_மாதம் = மீதி(ஓட்டு_மாதம், 12) + 1;
@@ -216,35 +216,35 @@
 
 // ஆண்டுகளைக்_கூட்டு(ஒரு_நாள், ஆண்டு_எண்ணிக்கை)
 //
-// Through months, so that the 29th of February clamps to the 28th in a common
-// year instead of becoming the 1st of March.
+// __Through months, so that the 29th of February clamps to the 28th in a common__
+// __year instead of becoming the 1st of March.__
 செயல் ஆண்டுகளைக்_கூட்டு(ஒரு_நாள், ஆண்டு_எண்ணிக்கை) {
     திரும்பு மாதங்களைக்_கூட்டு(ஒரு_நாள், ஆண்டு_எண்ணிக்கை * 12);
 }
 
 // =========================================================================
-// இடைவெளிகள் — how long between two dates
+// __இடைவெளிகள் — how long between two dates__
 // =========================================================================
 //
-// முடிந்த_மாதங்கள்(தொடக்கம், முடிவு) — whole months completed
+// __முடிந்த_மாதங்கள்(தொடக்கம், முடிவு) — whole months completed__
 //
-// The count of calendar months from one date to another, ignoring the part
-// month at the end. Gratuity, a period of holding, a loan tenor and a notice
-// period are all stated this way, and none of them is days divided by thirty:
-// from 31 January to 28 February is one completed month, and 28 days.
+// __The count of calendar months from one date to another, ignoring the part__
+// __month at the end. Gratuity, a period of holding, a loan tenor and a notice__
+// __period are all stated this way, and none of them is days divided by thirty:__
+// __from 31 January to 28 February is one completed month, and 28 days.__
 //
-// The end-of-month rule matters. 31 January to 28 February is a full month
-// because the 28th is as late as February goes — clamping made the target
-// date, so the target date counts as reached. Without that rule, a monthly
-// obligation starting on the 31st would never complete a month in February.
+// __The end-of-month rule matters. 31 January to 28 February is a full month__
+// __because the 28th is as late as February goes — clamping made the target__
+// __date, so the target date counts as reached. Without that rule, a monthly__
+// __obligation starting on the 31st would never complete a month in February.__
 செயல் முடிந்த_மாதங்கள்(தொடக்கம், முடிவு) {
     (நாள்_வேறுபாடு(தொடக்கம், முடிவு) <= 0) எனில் { திரும்பு 0; }
 
     கச்சா = (ஆண்டைப்_பெறு(முடிவு) * 12 + மாதத்தைப்_பெறு(முடிவு))
              - (ஆண்டைப்_பெறு(தொடக்கம்) * 12 + மாதத்தைப்_பெறு(தொடக்கம்));
 
-    // The day of the month has not come round yet, unless the month ran out
-    // first — in which case its last day is the day it came round on.
+    // __The day of the month has not come round yet, unless the month ran out__
+    // __first — in which case its last day is the day it came round on.__
     (நாளைப்_பெறு(முடிவு) < நாளைப்_பெறு(தொடக்கம்)
      மற்றும் இல்லை மாத_இறுதியா(முடிவு)) எனில் {
         கச்சா = கச்சா - 1;
@@ -253,28 +253,28 @@
     திரும்பு கச்சா;
 }
 
-// முடிந்த_ஆண்டுகள்(தொடக்கம், முடிவு) — whole years completed
+// __முடிந்த_ஆண்டுகள்(தொடக்கம், முடிவு) — whole years completed__
 //
-// Somebody's age, and the number of completed years of service that gratuity
-// is paid on.
+// __Somebody's age, and the number of completed years of service that gratuity__
+// __is paid on.__
 செயல் முடிந்த_ஆண்டுகள்(தொடக்கம், முடிவு) {
     திரும்பு தரை(முடிந்த_மாதங்கள்(தொடக்கம், முடிவு) / 12);
 }
 
-// பகுதி_மாதங்கள்(தொடக்கம், முடிவு) — months, counting a part month as whole
+// __பகுதி_மாதங்கள்(தொடக்கம், முடிவு) — months, counting a part month as whole__
 //
-// This is the rule the Income Tax Act's interest sections use — "for every
-// month or part of a month" — and it is the reason muZvari.qmz and
-// mUlavari.qmz take a count of months rather than a pair of dates. One day
-// into a new month is a whole month's interest.
+// __This is the rule the Income Tax Act's interest sections use — "for every__
+// __month or part of a month" — and it is the reason muZvari.qmz and__
+// __mUlavari.qmz take a count of months rather than a pair of dates. One day__
+// __into a new month is a whole month's interest.__
 //
-// It is **calendar** months, not days divided by thirty and rounded up, and
-// the two disagree on any month of 31 days: 1 January to 1 February is one
-// month here and 31/30 rounded up — two — by the division. Seven months of
-// twelve are long, so the error accumulates rather than averaging out, and a
-// full year is twelve months by this rule against thirteen by the division.
-// The division always overcharges and never under-charges, which is why it
-// survives review: nobody disputes an interest computation in their favour.
+// __It is **calendar** months, not days divided by thirty and rounded up, and__
+// __the two disagree on any month of 31 days: 1 January to 1 February is one__
+// __month here and 31/30 rounded up — two — by the division. Seven months of__
+// __twelve are long, so the error accumulates rather than averaging out, and a__
+// __full year is twelve months by this rule against thirteen by the division.__
+// __The division always overcharges and never under-charges, which is why it__
+// __survives review: nobody disputes an interest computation in their favour.__
 செயல் பகுதி_மாதங்கள்(தொடக்கம், முடிவு) {
     (நாள்_வேறுபாடு(தொடக்கம், முடிவு) <= 0) எனில் { திரும்பு 0; }
 
@@ -283,10 +283,10 @@
     திரும்பு முழுமை + 1;
 }
 
-// முந்தையது(அ, ஆ) / பிந்தையது(அ, ஆ) — the earlier and the later
+// __முந்தையது(அ, ஆ) / பிந்தையது(அ, ஆ) — the earlier and the later__
 //
-// ISO-8601 text sorts chronologically, so this is a string comparison and
-// needs no arithmetic. That is the whole reason the format was chosen.
+// __ISO-8601 text sorts chronologically, so this is a string comparison and__
+// __needs no arithmetic. That is the whole reason the format was chosen.__
 செயல் முந்தையது(அ, ஆ) {
     (அ <= ஆ) எனில் { திரும்பு அ; }
     திரும்பு ஆ;
@@ -298,14 +298,14 @@
 }
 
 // =========================================================================
-// வாரநாள் — the day of the week
+// __வாரநாள் — the day of the week__
 // =========================================================================
 //
-// வாரநாள்(ஒரு_நாள்) — 0 = Sunday through 6 = Saturday
+// __வாரநாள்(ஒரு_நாள்) — 0 = Sunday through 6 = Saturday__
 //
-// Derived from the epoch, which was a Thursday. மீதி floors, so this is
-// correct for dates before 1970 as well — 31 December 1969 answers 3, a
-// Wednesday, without a special case.
+// __Derived from the epoch, which was a Thursday. மீதி floors, so this is__
+// __correct for dates before 1970 as well — 31 December 1969 answers 3, a__
+// __Wednesday, without a special case.__
 செயல் வாரநாள்(ஒரு_நாள்) {
     திரும்பு மீதி(நாள்_வேறுபாடு(காலத்_தொடக்கம்(), ஒரு_நாள்) + 4, 7);
 }
@@ -322,19 +322,19 @@
 }
 
 // =========================================================================
-// நிதியாண்டு — the financial year
+// __நிதியாண்டு — the financial year__
 // =========================================================================
 //
 // நிதியாண்டின்_தொடக்க_ஆண்டு(ஒரு_நாள், தொடக்க_மாதம்)
 //
-// Which financial year a date falls in, named by the calendar year it starts
-// in. India's begins in April, so the 14th of March 2026 belongs to the year
-// that began in April 2025 and is called 2025-26.
+// __Which financial year a date falls in, named by the calendar year it starts__
+// __in. India's begins in April, so the 14th of March 2026 belongs to the year__
+// __that began in April 2025 and is called 2025-26.__
 //
-// The starting month is a parameter because it is not universal: the United
-// Kingdom's corporation tax year begins in April too but its personal tax year
-// begins on the 6th, Australia's begins in July, and a company's own financial
-// year may begin anywhere its articles say.
+// __The starting month is a parameter because it is not universal: the United__
+// __Kingdom's corporation tax year begins in April too but its personal tax year__
+// __begins on the 6th, Australia's begins in July, and a company's own financial__
+// __year may begin anywhere its articles say.__
 செயல் நிதியாண்டின்_தொடக்க_ஆண்டு(ஒரு_நாள், தொடக்க_மாதம்) {
     (மாதத்தைப்_பெறு(ஒரு_நாள்) >= தொடக்க_மாதம்) எனில் {
         திரும்பு ஆண்டைப்_பெறு(ஒரு_நாள்);
@@ -342,12 +342,12 @@
     திரும்பு ஆண்டைப்_பெறு(ஒரு_நாள்) - 1;
 }
 
-// கால்_ஆண்டு_எண்(ஒரு_நாள், தொடக்க_மாதம்) — which quarter, 1 to 4
+// __கால்_ஆண்டு_எண்(ஒரு_நாள், தொடக்க_மாதம்) — which quarter, 1 to 4__
 //
-// Counted from the financial year's own start, so with an April start July is
-// in the second quarter and not the third. A report that quarters the calendar
-// while the accounts quarter the financial year disagrees with the accounts
-// three times in four.
+// __Counted from the financial year's own start, so with an April start July is__
+// __in the second quarter and not the third. A report that quarters the calendar__
+// __while the accounts quarter the financial year disagrees with the accounts__
+// __three times in four.__
 செயல் கால்_ஆண்டு_எண்(ஒரு_நாள், தொடக்க_மாதம்) {
     இடைவெளி_மாதம் = மீதி(மாதத்தைப்_பெறு(ஒரு_நாள்) - தொடக்க_மாதம், 12);
     திரும்பு தரை(இடைவெளி_மாதம் / 3) + 1;

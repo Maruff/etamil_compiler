@@ -1,14 +1,14 @@
-// The slab-tax loop, N times. Exact decimal throughout.
+// __The slab-tax loop, N times. Exact decimal throughout.__
 //
-// N arrives on stdin because eTamil has no argv. That also keeps the loop
-// bound out of the source, which is what stops the C and Rust versions of this
-// benchmark being folded to a constant at compile time.
+// __N arrives on stdin because eTamil has no argv. That also keeps the loop__
+// __bound out of the source, which is what stops the C and Rust versions of this__
+// __benchmark being folded to a constant at compile time.__
 //
-// The conversion on the next line is load-bearing. உள்ளிடு yields *text*, and
-// comparison coerces text to a number rather than refusing — so leaving it as
-// text made `i < eNNikkY` re-parse the string with Decimal::from_str on every
-// single iteration. That inflated the measured cost of this loop by more than
-// half, and it was the benchmark's fault, not the VM's.
+// __The conversion on the next line is load-bearing. உள்ளிடு yields *text*, and__
+// __comparison coerces text to a number rather than refusing — so leaving it as__
+// __text made `i < eNNikkY` re-parse the string with Decimal::from_str on every__
+// __single iteration. That inflated the measured cost of this loop by more than__
+// __half, and it was the benchmark's fault, not the VM's.__
 uLLitu eNNikkY;
 eNNikkY = iyalpu(eNNAkku(eNNikkY), 0);
 

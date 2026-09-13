@@ -1,49 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/nErativari/mUlavari.qmz — மூலவரி, tax deducted at source
+// __nUlakam/nErativari/mUlavari.qmz — மூலவரி, tax deducted at source__
 //
-// Tax deducted at source is not a tax. It is a collection mechanism, and the
-// person it falls on is not the person who owes anything: the payer deducts,
-// deposits, and is personally liable for the whole amount plus interest if the
-// deduction was short — while the payee's actual liability may well be nil.
+// __Tax deducted at source is not a tax. It is a collection mechanism, and the__
+// __person it falls on is not the person who owes anything: the payer deducts,__
+// __deposits, and is personally liable for the whole amount plus interest if the__
+// __deduction was short — while the payee's actual liability may well be nil.__
 //
-// That asymmetry is why the arithmetic here is worth getting right. An
-// under-deduction costs the deductor money that cannot be recovered from
-// anybody, and an over-deduction costs the payee a year's use of the money and
-// a refund claim.
+// __That asymmetry is why the arithmetic here is worth getting right. An__
+// __under-deduction costs the deductor money that cannot be recovered from__
+// __anybody, and an over-deduction costs the payee a year's use of the money and__
+// __a refund claim.__
 //
-// Three rules do most of the damage.
+// __Three rules do most of the damage.__
 //
-// **The threshold is not an exemption.** Once the year's aggregate crosses the
-// limit, tax is deducted on the **whole aggregate** — including the earlier
-// payments that were individually below it. Deducting only on the excess is
-// the commonest error in this whole area, and it is always an under-deduction.
+// __**The threshold is not an exemption.** Once the year's aggregate crosses the__
+// __limit, tax is deducted on the **whole aggregate** — including the earlier__
+// __payments that were individually below it. Deducting only on the excess is__
+// __the commonest error in this whole area, and it is always an under-deduction.__
 //
-// **There are two thresholds, and either one triggers.** A single payment
-// limit and an annual aggregate limit, and a payment can breach the first
-// while the year is nowhere near the second.
+// __**There are two thresholds, and either one triggers.** A single payment__
+// __limit and an annual aggregate limit, and a payment can breach the first__
+// __while the year is nowhere near the second.__
 //
-// **Part of a month is a month.** Interest for late deduction or late payment
-// is charged by the month, and a single day's delay into a new month costs a
-// full month's interest. It is charged from the date the tax was deductible,
-// not from the date it was due to be deposited.
+// __**Part of a month is a month.** Interest for late deduction or late payment__
+// __is charged by the month, and a single day's delay into a new month costs a__
+// __full month's interest. It is charged from the date the tax was deductible,__
+// __not from the date it was due to be deposited.__
 //
-// Rates, thresholds and the no-PAN floor are all parameters. They are stated
-// per section and amended constantly; vari_vikiqam.qmz is where they live.
+// __Rates, thresholds and the no-PAN floor are all parameters. They are stated__
+// __per section and amended constantly; vari_vikiqam.qmz is where they live.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// ஒரு பிரிவு — a section
+// __ஒரு பிரிவு — a section__
 // =========================================================================
 //
 // பிரிவு_ஆக்கு(பிரிவுக்_குறி, விவரம், பிடித்த_வீதம், ஒரு_முறை_எல்லை,
 //               ஆண்டு_எல்லை)
 //
-// Pass 0 for a threshold that does not exist. A section with neither — tax
-// deducted on the first rupee — is written with both as 0 and behaves
-// correctly: பிடிக்க_வேண்டுமா then says yes to any positive payment.
+// __Pass 0 for a threshold that does not exist. A section with neither — tax__
+// __deducted on the first rupee — is written with both as 0 and behaves__
+// __correctly: பிடிக்க_வேண்டுமா then says yes to any positive payment.__
 செயல் பிரிவு_ஆக்கு(பிரிவுக்_குறி, விவரம், பிடித்த_வீதம், ஒரு_முறை_எல்லை,
                      ஆண்டு_எல்லை) {
     திரும்பு {"பிரிவு": பிரிவுக்_குறி,
@@ -54,25 +54,25 @@
 }
 
 // =========================================================================
-// எப்போது பிடிக்க வேண்டும் — when to deduct
+// __எப்போது பிடிக்க வேண்டும் — when to deduct__
 // =========================================================================
 //
 // பிடிக்க_வேண்டுமா(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது)
 //
-// முன்பு_செலுத்தியது is what has already been paid to this payee under this
-// section this year, before the payment being considered.
+// __முன்பு_செலுத்தியது is what has already been paid to this payee under this__
+// __section this year, before the payment being considered.__
 //
-// Either threshold triggers, and the aggregate one is tested **including** the
-// current payment. A year of eight payments of twenty thousand under a section
-// with a single-payment limit of thirty thousand and an annual limit of a lakh
-// crosses on the sixth, not on any single one of them.
+// __Either threshold triggers, and the aggregate one is tested **including** the__
+// __current payment. A year of eight payments of twenty thousand under a section__
+// __with a single-payment limit of thirty thousand and an annual limit of a lakh__
+// __crosses on the sixth, not on any single one of them.__
 செயல் பிடிக்க_வேண்டுமா(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது) {
     (இந்தத்_தொகை <= 0) எனில் { திரும்பு பொய்; }
 
     ஒரு_முறை = ஒரு_பிரிவு["ஒரு_முறை_எல்லை"];
     ஆண்டு = ஒரு_பிரிவு["ஆண்டு_எல்லை"];
 
-    // No thresholds at all: deduct on everything.
+    // __No thresholds at all: deduct on everything.__
     (ஒரு_முறை <= 0 மற்றும் ஆண்டு <= 0) எனில் { திரும்பு மெய்; }
 
     (ஒரு_முறை > 0 மற்றும் இந்தத்_தொகை > ஒரு_முறை) எனில் { திரும்பு மெய்; }
@@ -85,19 +85,19 @@
 // பிடித்த_அடிப்படை(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது,
 //                    முன்பு_பிடித்தது)
 //
-// What this payment's deduction is computed on — and it is not always this
-// payment.
+// __What this payment's deduction is computed on — and it is not always this__
+// __payment.__
 //
-// When the annual aggregate is what has just been crossed, the base is the
-// **whole aggregate to date**, and credit is given for whatever was already
-// deducted. So the payment that crosses the line carries the deduction for
-// every payment before it, and a twenty-thousand rupee invoice can attract tax
-// on a lakh and twenty thousand. Deductors who bill monthly meet this once a
-// year, in the month it happens, and it is never a welcome surprise.
+// __When the annual aggregate is what has just been crossed, the base is the__
+// __**whole aggregate to date**, and credit is given for whatever was already__
+// __deducted. So the payment that crosses the line carries the deduction for__
+// __every payment before it, and a twenty-thousand rupee invoice can attract tax__
+// __on a lakh and twenty thousand. Deductors who bill monthly meet this once a__
+// __year, in the month it happens, and it is never a welcome surprise.__
 //
-// முன்பு_பிடித்தது is what has already been deducted this year under this
-// section, so that a year which crossed the single-payment limit earlier does
-// not pay twice on the same money.
+// __முன்பு_பிடித்தது is what has already been deducted this year under this__
+// __section, so that a year which crossed the single-payment limit earlier does__
+// __not pay twice on the same money.__
 செயல் பிடித்த_அடிப்படை(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது,
                          முன்பு_பிடித்தது) {
     (இல்லை பிடிக்க_வேண்டுமா(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது)) எனில் {
@@ -107,16 +107,16 @@
     ஆண்டு = ஒரு_பிரிவு["ஆண்டு_எல்லை"];
     ஒரு_முறை = ஒரு_பிரிவு["ஒரு_முறை_எல்லை"];
 
-    // The aggregate limit is breached, so the whole year is in charge. This
-    // also covers the case where it was breached in an earlier payment: the
-    // credit for முன்பு_பிடித்தது is what keeps that from double counting.
+    // __The aggregate limit is breached, so the whole year is in charge. This__
+    // __also covers the case where it was breached in an earlier payment: the__
+    // __credit for முன்பு_பிடித்தது is what keeps that from double counting.__
     (ஆண்டு > 0 மற்றும் முன்பு_செலுத்தியது + இந்தத்_தொகை > ஆண்டு) எனில் {
         திரும்பு {"அடிப்படை": வட்டமிடு(முன்பு_செலுத்தியது + இந்தத்_தொகை, 2),
                   "முழு_ஆண்டா": மெய்,
                   "முன்பு_பிடித்தது": முன்பு_பிடித்தது};
     }
 
-    // Only the single-payment limit is breached: this payment alone.
+    // __Only the single-payment limit is breached: this payment alone.__
     (ஒரு_முறை > 0 மற்றும் இந்தத்_தொகை > ஒரு_முறை) எனில் {
         திரும்பு {"அடிப்படை": வட்டமிடு(இந்தத்_தொகை, 2), "முழு_ஆண்டா": பொய்};
     }
@@ -125,26 +125,26 @@
 }
 
 // =========================================================================
-// வீதம் — the rate that applies
+// __வீதம் — the rate that applies__
 // =========================================================================
 //
 // பயன்படும்_வீதம்(பிரிவு_வீதம், பான்_உள்ளதா, பான்_இல்லா_தளம்,
 //                  சான்று_உள்ளதா, சான்று_வீதம்)
 //
-// Three things can change a section's rate, and they do not compose the way
-// you would guess.
+// __Three things can change a section's rate, and they do not compose the way__
+// __you would guess.__
 //
-// **No PAN** (section 206AA) means the higher of the section rate and a
-// statutory floor. Higher, not the floor — a section whose rate already
-// exceeds the floor is unaffected, and replacing its rate with the floor would
-// be an under-deduction.
+// __**No PAN** (section 206AA) means the higher of the section rate and a__
+// __statutory floor. Higher, not the floor — a section whose rate already__
+// __exceeds the floor is unaffected, and replacing its rate with the floor would__
+// __be an under-deduction.__
 //
-// **A certificate** under section 197 for lower or nil deduction replaces the
-// rate entirely, including with zero.
+// __**A certificate** under section 197 for lower or nil deduction replaces the__
+// __rate entirely, including with zero.__
 //
-// A certificate does not survive a missing PAN. The floor applies regardless,
-// which is the one interaction between the two, and the reason the order here
-// is certificate first and floor second rather than the other way round.
+// __A certificate does not survive a missing PAN. The floor applies regardless,__
+// __which is the one interaction between the two, and the reason the order here__
+// __is certificate first and floor second rather than the other way round.__
 செயல் பயன்படும்_வீதம்(பிரிவு_வீதம், பான்_உள்ளதா, பான்_இல்லா_தளம்,
                         சான்று_உள்ளதா, சான்று_வீதம்) {
     பயன்_வீதம் = பிரிவு_வீதம்;
@@ -158,13 +158,13 @@
 
 // வரி_நீக்கிய_அடிப்படை(விலைப்பட்டியல்_மொத்தம், வணிகவரித்_தொகை, நீக்கவா)
 //
-// Whether tax is deducted on the invoice including GST or excluding it depends
-// on the section, and where the GST is shown separately the department's own
-// circular says to exclude it. Where it is not shown separately there is
-// nothing to exclude and the whole invoice is the base.
+// __Whether tax is deducted on the invoice including GST or excluding it depends__
+// __on the section, and where the GST is shown separately the department's own__
+// __circular says to exclude it. Where it is not shown separately there is__
+// __nothing to exclude and the whole invoice is the base.__
 //
-// A flag rather than an inference, because "shown separately" is a fact about
-// the document and not about the numbers.
+// __A flag rather than an inference, because "shown separately" is a fact about__
+// __the document and not about the numbers.__
 செயல் வரி_நீக்கிய_அடிப்படை(விலைப்பட்டியல்_மொத்தம், வணிகவரித்_தொகை, நீக்கவா) {
     (இல்லை நீக்கவா) எனில் { திரும்பு வட்டமிடு(விலைப்பட்டியல்_மொத்தம், 2); }
     விடை = விலைப்பட்டியல்_மொத்தம் - வணிகவரித்_தொகை;
@@ -173,21 +173,21 @@
 }
 
 // =========================================================================
-// பிடித்தம் — the deduction
+// __பிடித்தம் — the deduction__
 // =========================================================================
 //
 // பிடித்தத்_தொகை(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது,
 //                  முன்பு_பிடித்தது, பயன்_வீதம்)
 //
-// The whole thing for one payment. Answers {"அடிப்படை", "வீதம்", "பிடித்தம்",
+// __The whole thing for one payment. Answers {"அடிப்படை", "வீதம்", "பிடித்தம்",__
 // "முழு_ஆண்டா"}.
 //
-// The credit for earlier deductions is taken **after** the rate is applied to
-// the aggregate, not before — so the answer is the tax on the year to date
-// less the tax already taken, and never negative. A year in which the rate
-// fell mid-year can produce a computed liability lower than what has already
-// been deducted, and the answer to that is to deduct nothing further, not to
-// refund from the payer's own pocket.
+// __The credit for earlier deductions is taken **after** the rate is applied to__
+// __the aggregate, not before — so the answer is the tax on the year to date__
+// __less the tax already taken, and never negative. A year in which the rate__
+// __fell mid-year can produce a computed liability lower than what has already__
+// __been deducted, and the answer to that is to deduct nothing further, not to__
+// __refund from the payer's own pocket.__
 செயல் பிடித்தத்_தொகை(ஒரு_பிரிவு, இந்தத்_தொகை, முன்பு_செலுத்தியது,
                        முன்பு_பிடித்தது, பயன்_வீதம்) {
     விவரங்கள் = பிடித்த_அடிப்படை(ஒரு_பிரிவு, இந்தத்_தொகை,
@@ -212,14 +212,14 @@
 
 // ஆண்டுப்_பிடித்தம்(ஒரு_பிரிவு, செலுத்தல்கள், பயன்_வீதம்)
 //
-// A whole year of payments to one payee, run in order, so that the payment
-// which crosses the aggregate carries the catch-up. Answers each payment's
-// deduction and the year's totals.
+// __A whole year of payments to one payee, run in order, so that the payment__
+// __which crosses the aggregate carries the catch-up. Answers each payment's__
+// __deduction and the year's totals.__
 //
-// Running the year is the only way to get this right. Applying the rate to the
-// year's total at the end gives the same grand total and the wrong month for
-// every deduction, and the month is what the quarterly return and the interest
-// computation are about.
+// __Running the year is the only way to get this right. Applying the rate to the__
+// __year's total at the end gives the same grand total and the wrong month for__
+// __every deduction, and the month is what the quarterly return and the interest__
+// __computation are about.__
 செயல் ஆண்டுப்_பிடித்தம்(ஒரு_பிரிவு, செலுத்தல்கள், பயன்_வீதம்) {
     ஓடும்_செலுத்தல் = 0;
     ஓடும்_பிடித்தம் = 0;
@@ -242,20 +242,20 @@
 }
 
 // =========================================================================
-// தாமதம் — interest for default
+// __தாமதம் — interest for default__
 // =========================================================================
 //
 // முழு_மாதங்கள்(நாட்களின்_எண்ணிக்கை)
 //
-// Part of a month counts as a whole month, so twenty-eight days is one month
-// and thirty-two is two. This is the rule that makes a one-day delay cost a
-// month's interest.
+// __Part of a month counts as a whole month, so twenty-eight days is one month__
+// __and thirty-two is two. This is the rule that makes a one-day delay cost a__
+// __month's interest.__
 //
-// It divides by thirty and rounds up, which is right whenever the delay is
-// counted in days. Where real dates are available the statute counts
-// **calendar** months, and February will disagree with this by a day — so a
-// caller holding dates should count the calendar months itself and pass the
-// interest functions that number instead.
+// __It divides by thirty and rounds up, which is right whenever the delay is__
+// __counted in days. Where real dates are available the statute counts__
+// __**calendar** months, and February will disagree with this by a day — so a__
+// __caller holding dates should count the calendar months itself and pass the__
+// __interest functions that number instead.__
 செயல் முழு_மாதங்கள்(நாட்களின்_எண்ணிக்கை) {
     (நாட்களின்_எண்ணிக்கை <= 0) எனில் { திரும்பு 0; }
     திரும்பு மேல்(நாட்களின்_எண்ணிக்கை / 30);
@@ -263,10 +263,10 @@
 
 // பிடிக்காத_வட்டி(பிடிக்க_வேண்டியது, மாத_வீதம், மாதங்கள்)
 //
-// Interest for failing to deduct, at the lower monthly rate, running from the
-// date the tax was **deductible** — not from the date it would have been due
-// for deposit. The clock starts at the invoice, and a deductor who discovers
-// the default a year later owes twelve months.
+// __Interest for failing to deduct, at the lower monthly rate, running from the__
+// __date the tax was **deductible** — not from the date it would have been due__
+// __for deposit. The clock starts at the invoice, and a deductor who discovers__
+// __the default a year later owes twelve months.__
 செயல் பிடிக்காத_வட்டி(பிடிக்க_வேண்டியது, மாத_வீதம், மாதங்கள்) {
     (பிடிக்க_வேண்டியது <= 0 அல்லது மாதங்கள் <= 0) எனில் { திரும்பு 0; }
     திரும்பு வட்டமிடு(சதவீதம்(பிடிக்க_வேண்டியது, மாத_வீதம்) * மாதங்கள், 2);
@@ -274,31 +274,31 @@
 
 // செலுத்தாத_வட்டி(பிடித்த_தொகை, மாத_வீதம், மாதங்கள்)
 //
-// Interest for deducting and not depositing, at the higher monthly rate. The
-// rate is higher because the money is the government's and is being held: this
-// is not a late payment of the deductor's own liability but a failure to hand
-// over somebody else's tax.
+// __Interest for deducting and not depositing, at the higher monthly rate. The__
+// __rate is higher because the money is the government's and is being held: this__
+// __is not a late payment of the deductor's own liability but a failure to hand__
+// __over somebody else's tax.__
 செயல் செலுத்தாத_வட்டி(பிடித்த_தொகை, மாத_வீதம், மாதங்கள்) {
     (பிடித்த_தொகை <= 0 அல்லது மாதங்கள் <= 0) எனில் { திரும்பு 0; }
     திரும்பு வட்டமிடு(சதவீதம்(பிடித்த_தொகை, மாத_வீதம்) * மாதங்கள், 2);
 }
 
 // =========================================================================
-// சம்பளப் பிடித்தம் — TDS on salary
+// __சம்பளப் பிடித்தம் — TDS on salary__
 // =========================================================================
 //
 // சம்பள_பிடித்தம்(ஆண்டு_வரி, மீதி_மாதங்கள், ஏற்கனவே_பிடித்தது)
 //
-// Salary is the one section where the deduction is not a percentage of the
-// payment. The employer estimates the employee's tax for the whole year and
-// spreads what is left of it over the months remaining, so the rate is
-// whatever that division produces and changes whenever the estimate does.
+// __Salary is the one section where the deduction is not a percentage of the__
+// __payment. The employer estimates the employee's tax for the whole year and__
+// __spreads what is left of it over the months remaining, so the rate is__
+// __whatever that division produces and changes whenever the estimate does.__
 //
-// Which is why a mid-year change — a declared investment, a bonus, a switch of
-// regime — changes every remaining month rather than being settled in one.
-// The last month absorbs the rounding, the same way the last instalment of a
-// loan does; that is the caller's business, and re-running this each month
-// with the current estimate produces it naturally.
+// __Which is why a mid-year change — a declared investment, a bonus, a switch of__
+// __regime — changes every remaining month rather than being settled in one.__
+// __The last month absorbs the rounding, the same way the last instalment of a__
+// __loan does; that is the caller's business, and re-running this each month__
+// __with the current estimate produces it naturally.__
 செயல் சம்பள_பிடித்தம்(ஆண்டு_வரி, மீதி_மாதங்கள், ஏற்கனவே_பிடித்தது) {
     (மீதி_மாதங்கள் <= 0) எனில் { திரும்பு 0; }
     மீதி_வரி = ஆண்டு_வரி - ஏற்கனவே_பிடித்தது;

@@ -1,37 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/cawkili/fabric.qmz — Hyperledger Fabric, through a REST gateway
+// __nUlakam/cawkili/fabric.qmz — Hyperledger Fabric, through a REST gateway__
 //
-// Fabric's own peer Gateway speaks gRPC, which eTamil does not. Fronting a
-// network with a REST gateway is an ordinary deployment — Firefly does it, and
-// Hyperledger's own fabric-rest-sample is a reference for writing one — and
-// that is what this talks to. The alternative is months of HTTP/2 and protobuf
-// to reach the same ledger.
+// __Fabric's own peer Gateway speaks gRPC, which eTamil does not. Fronting a__
+// __network with a REST gateway is an ordinary deployment — Firefly does it, and__
+// __Hyperledger's own fabric-rest-sample is a reference for writing one — and__
+// __that is what this talks to. The alternative is months of HTTP/2 and protobuf__
+// __to reach the same ledger.__
 //
-// Gateways do not agree on their paths, so the paths are configuration rather
-// than something baked in here. Give நுழைவு the shape yours uses.
+// __Gateways do not agree on their paths, so the paths are configuration rather__
+// __than something baked in here. Give நுழைவு the shape yours uses.__
 //
-// Two operations, and the difference between them is the whole of Fabric:
+// __Two operations, and the difference between them is the whole of Fabric:__
 //
-//   மதிப்பிடு   ask a peer, change nothing. A query. No consensus, no
-//               ordering, no commit — and no guarantee another peer would
-//               answer the same.
-//   சமர்ப்பி    propose, collect endorsements, order, commit. A write. It can
-//               fail after apparently succeeding, which is why the conflict
-//               handling below exists.
+//   __மதிப்பிடு   ask a peer, change nothing. A query. No consensus, no__
+//               __ordering, no commit — and no guarantee another peer would__
+//               __answer the same.__
+//   __சமர்ப்பி    propose, collect endorsements, order, commit. A write. It can__
+//               __fail after apparently succeeding, which is why the conflict__
+//               __handling below exists.__
 //
-// Identity is an X.509 certificate and an ECDSA key — வளைவு_கையொப்பம் signs
-// with exactly the curve Fabric's default MSP uses. Whether the gateway wants
-// that signature, a bearer token, or a client certificate over mutual TLS is
-// again its business, so headers are configuration too.
+// __Identity is an X.509 certificate and an ECDSA key — வளைவு_கையொப்பம் signs__
+// __with exactly the curve Fabric's default MSP uses. Whether the gateway wants__
+// __that signature, a bearer token, or a client certificate over mutual TLS is__
+// __again its business, so headers are configuration too.__
 
 இறக்கு "../jEcAZ.qmz";
 இறக்கு "../poruL.qmz";
 
-// நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) — a gateway to talk to
+// __நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) — a gateway to talk to__
 //
-// நிரல்பொருள் is the chaincode name. The two path templates carry {channel}
-// and {chaincode}, which are filled in per call.
+// __நிரல்பொருள் is the chaincode name. The two path templates carry {channel}__
+// __and {chaincode}, which are filled in per call.__
 செயல் நுழைவு(முகவரிப்_பாதை, சேனல், நிரல்பொருள், தலைப்புகள்) {
     திரும்பு {"முகவரிப்_பாதை": முகவரிப்_பாதை,
               "சேனல்": சேனல்,
@@ -41,7 +41,7 @@
               "எழுதும்_பாதை": "/channels/{channel}/chaincodes/{chaincode}/invoke"};
 }
 
-// பாதையை_அமை(நுழைவு, வினவல், எழுதும்) — different gateway, different paths
+// __பாதையை_அமை(நுழைவு, வினவல், எழுதும்) — different gateway, different paths__
 செயல் பாதையை_அமை(நுழைவுப்_பொருள், வினவல், எழுதும்) {
     திரும்பு {"முகவரிப்_பாதை": நுழைவுப்_பொருள்["முகவரிப்_பாதை"],
               "சேனல்": நுழைவுப்_பொருள்["சேனல்"],
@@ -61,12 +61,12 @@
     திரும்பு ஜேசான்_ஆக்கு({"function": செயற்பெயர், "args": அளபுருக்கள்});
 }
 
-// --- what came back -------------------------------------------------------
+// __--- what came back -------------------------------------------------------__
 //
-// A gateway answers a chaincode failure with a non-2xx and a body explaining
-// it. That is an answer, not a transport failure, so it is unwrapped here into
-// something a program can look at rather than reported as though the network
-// broke.
+// __A gateway answers a chaincode failure with a non-2xx and a body explaining__
+// __it. That is an answer, not a transport failure, so it is unwrapped here into__
+// __something a program can look at rather than reported as though the network__
+// __broke.__
 செயல் விடையைப்_படி(வலைப்_பதில்) {
     (தவறா(வலைப்_பதில்)) எனில் {
         திரும்பு தவறு({"வகைப்பாடு": "வலை", "விவரம்": மதிப்பு(வலைப்_பதில்)});
@@ -83,10 +83,10 @@
                    "விவரம்": உடற்_பாடம்});
 }
 
-// --- reading --------------------------------------------------------------
+// __--- reading --------------------------------------------------------------__
 //
-// மதிப்பிடு(நுழைவு, செயற்பெயர், அளபுருக்கள்) — a query. Nothing is written,
-// nothing is ordered, and no conflict can arise.
+// __மதிப்பிடு(நுழைவு, செயற்பெயர், அளபுருக்கள்) — a query. Nothing is written,__
+// __nothing is ordered, and no conflict can arise.__
 செயல் மதிப்பிடு(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள்) {
     திரும்பு விடையைப்_படி(
         வலை_பதி(முழு_முகவரி(நுழைவுப்_பொருள், நுழைவுப்_பொருள்["வினவல்_பாதை"]),
@@ -94,12 +94,12 @@
                  நுழைவுப்_பொருள்["தலைப்புகள்"]));
 }
 
-// --- writing --------------------------------------------------------------
+// __--- writing --------------------------------------------------------------__
 //
-// சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள்) — one attempt at a write.
+// __சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள்) — one attempt at a write.__
 //
-// Use மீண்டும்_சமர்ப்பி unless you have a reason not to: a single attempt is
-// correct only for a transaction you would rather fail than retry.
+// __Use மீண்டும்_சமர்ப்பி unless you have a reason not to: a single attempt is__
+// __correct only for a transaction you would rather fail than retry.__
 செயல் சமர்ப்பி(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள்) {
     திரும்பு விடையைப்_படி(
         வலை_பதி(முழு_முகவரி(நுழைவுப்_பொருள், நுழைவுப்_பொருள்["எழுதும்_பாதை"]),
@@ -107,15 +107,15 @@
                  நுழைவுப்_பொருள்["தலைப்புகள்"]));
 }
 
-// மோதலா(பிழை) — is this the read-write conflict, or a real failure?
+// __மோதலா(பிழை) — is this the read-write conflict, or a real failure?__
 //
-// The one Fabric error worth knowing by name. Two transactions that read the
-// same key and both write it cannot both commit: the second is rejected at
-// validation with MVCC_READ_CONFLICT, after endorsement and ordering have
-// already succeeded. It means "someone got there first", not "this was wrong",
-// and the answer is to read again and redo the work.
+// __The one Fabric error worth knowing by name. Two transactions that read the__
+// __same key and both write it cannot both commit: the second is rejected at__
+// __validation with MVCC_READ_CONFLICT, after endorsement and ordering have__
+// __already succeeded. It means "someone got there first", not "this was wrong",__
+// __and the answer is to read again and redo the work.__
 //
-// Retrying anything else would be retrying something that failed for a reason.
+// __Retrying anything else would be retrying something that failed for a reason.__
 செயல் மோதலா(பிழை) {
     (வகை(பிழை) != "a record") எனில் { திரும்பு பொய்; }
     விவரம் = புலம்_அல்லது(பிழை, "விவரம்", "");
@@ -126,13 +126,13 @@
 
 // மீண்டும்_சமர்ப்பி(நுழைவு, செயற்பெயர், அளபுருக்கள், எத்தனை_முறை)
 //
-// Submit, and on a read-write conflict try again — up to the given number of
-// attempts. Bounded, because a key under constant contention would otherwise
-// retry until something else broke.
+// __Submit, and on a read-write conflict try again — up to the given number of__
+// __attempts. Bounded, because a key under constant contention would otherwise__
+// __retry until something else broke.__
 //
-// Only a conflict is retried. A chaincode that rejected the transaction will
-// reject it again, and retrying a business failure turns one refusal into
-// several.
+// __Only a conflict is retried. A chaincode that rejected the transaction will__
+// __reject it again, and retrying a business failure turns one refusal into__
+// __several.__
 செயல் மீண்டும்_சமர்ப்பி(நுழைவுப்_பொருள், செயற்பெயர், அளபுருக்கள், எத்தனை_முறை) {
     முயற்சி = 0;
     கடைசி = தவறு({"வகைப்பாடு": "முயற்சி", "விவரம்": "no attempt was made"});

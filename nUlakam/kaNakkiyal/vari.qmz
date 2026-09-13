@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/vari.qmz — வணிகவரி (GST) on transactions
+// __nUlakam/kaNakkiyal/vari.qmz — வணிகவரி (GST) on transactions__
 //
-// GST posts to a control account, exactly as eloquent-ifrs handles VAT:
-// output tax on a sale is a liability until it is paid over, and input tax
-// on a purchase is recoverable. Within a state the tax splits into CGST and
-// SGST; across states it is IGST.
+// __GST posts to a control account, exactly as eloquent-ifrs handles VAT:__
+// __output tax on a sale is a liability until it is paid over, and input tax__
+// __on a purchase is recoverable. Within a state the tax splits into CGST and__
+// __SGST; across states it is IGST.__
 
 இறக்கு "pErEtu.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -19,7 +19,7 @@
     };
 }
 
-// வரி_தொகை(அடிப்படை, விகிதம்) — tax on a net amount, to the paisa
+// __வரி_தொகை(அடிப்படை, விகிதம்) — tax on a net amount, to the paisa__
 செயல் வரி_தொகை(அடிப்படை, விகிதம்) {
     திரும்பு சதவீதம்(அடிப்படை, விகிதம்);
 }
@@ -29,17 +29,17 @@
     திரும்பு அடிப்படை + வரி_தொகை(அடிப்படை, விகிதம்);
 }
 
-// அடிப்படையை_பிரி(மொத்தம், விகிதம்) — strip tax out of a gross amount
+// __அடிப்படையை_பிரி(மொத்தம், விகிதம்) — strip tax out of a gross amount__
 செயல் அடிப்படையை_பிரி(மொத்தம், விகிதம்) {
     திரும்பு வட்டமிடு(மொத்தம் * 100 / (100 + விகிதம்), 2);
 }
 
-// மாநில_பிரிப்பு(வரி, உள்_மாநிலமா) — CGST/SGST within a state, IGST across
+// __மாநில_பிரிப்பு(வரி, உள்_மாநிலமா) — CGST/SGST within a state, IGST across__
 செயல் மாநில_பிரிப்பு(மொத்த_வரி, உள்_மாநிலமா) {
     (உள்_மாநிலமா) எனில் {
         பாதி = வட்டமிடு(மொத்த_வரி / 2, 2);
-        // The remainder goes to the second half so the two always sum to the
-        // whole, even when the tax is an odd number of paise.
+        // __The remainder goes to the second half so the two always sum to the__
+        // __whole, even when the tax is an odd number of paise.__
         திரும்பு {cgst: பாதி, sgst: மொத்த_வரி - பாதி, igst: 0};
     }
     திரும்பு {cgst: 0, sgst: 0, igst: மொத்த_வரி};
@@ -48,10 +48,10 @@
 // விற்பனை_பரிவர்த்தனை(எண், நாள், விவரம், வாடிக்கையாளர்_கணக்கு,
 //                     வருவாய்_கணக்கு, வரி_கணக்கு, அடிப்படை, விகிதம்)
 //
-// A credit sale with output tax:
-//   debit  receivable      gross
-//   credit revenue         net
-//   credit tax control     tax
+// __A credit sale with output tax:__
+//   __debit  receivable      gross__
+//   __credit revenue         net__
+//   __credit tax control     tax__
 செயல் விற்பனை_பரிவர்த்தனை(பரிவர்த்தனை_எண், நாள், விவரம்,
                              வாடிக்கையாளர்_கணக்கு, வருவாய்_கணக்கு,
                              வரி_கணக்கு, அடிப்படை, விகிதம்) {
@@ -68,10 +68,10 @@
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்);
 }
 
-// கொள்முதல்_பரிவர்த்தனை(...) — a credit purchase with recoverable input tax:
-//   debit  expense         net
-//   debit  tax control     tax
-//   credit payable         gross
+// __கொள்முதல்_பரிவர்த்தனை(...) — a credit purchase with recoverable input tax:__
+//   __debit  expense         net__
+//   __debit  tax control     tax__
+//   __credit payable         gross__
 செயல் கொள்முதல்_பரிவர்த்தனை(பரிவர்த்தனை_எண், நாள், விவரம்,
                                 விற்பனையாளர்_கணக்கு, செலவு_கணக்கு,
                                 வரி_கணக்கு, அடிப்படை, விகிதம்) {
@@ -86,7 +86,7 @@
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்);
 }
 
-// பணம்_பெறு(...) — a receipt against a receivable
+// __பணம்_பெறு(...) — a receipt against a receivable__
 செயல் பணம்_பெறு(பரிவர்த்தனை_எண், நாள், விவரம்,
                   வங்கி_கணக்கு, வாடிக்கையாளர்_கணக்கு, தொகை_மதிப்பு) {
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், [
@@ -95,7 +95,7 @@
     ]);
 }
 
-// பணம்_செலுத்து(...) — a payment against a payable
+// __பணம்_செலுத்து(...) — a payment against a payable__
 செயல் பணம்_செலுத்து(பரிவர்த்தனை_எண், நாள், விவரம்,
                       வங்கி_கணக்கு, விற்பனையாளர்_கணக்கு, தொகை_மதிப்பு) {
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், [
@@ -104,8 +104,8 @@
     ]);
 }
 
-// ரொக்க_விற்பனை(...) — a sale settled immediately: the money lands in the
-// bank instead of creating a receivable
+// __ரொக்க_விற்பனை(...) — a sale settled immediately: the money lands in the__
+// __bank instead of creating a receivable__
 செயல் ரொக்க_விற்பனை(பரிவர்த்தனை_எண், நாள், விவரம்,
                       வங்கி_கணக்கு, வருவாய்_கணக்கு, வரி_கணக்கு,
                       அடிப்படை, விகிதம்) {
@@ -114,7 +114,7 @@
                                    வரி_கணக்கு, அடிப்படை, விகிதம்);
 }
 
-// ரொக்க_கொள்முதல்(...) — a purchase paid on the spot
+// __ரொக்க_கொள்முதல்(...) — a purchase paid on the spot__
 செயல் ரொக்க_கொள்முதல்(பரிவர்த்தனை_எண், நாள், விவரம்,
                         வங்கி_கணக்கு, செலவு_கணக்கு, வரி_கணக்கு,
                         அடிப்படை, விகிதம்) {
@@ -123,8 +123,8 @@
                                      வரி_கணக்கு, அடிப்படை, விகிதம்);
 }
 
-// வரவு_குறிப்பு(...) — a credit note: a sale reversed, tax included.
-// Debit revenue and tax, credit the customer.
+// __வரவு_குறிப்பு(...) — a credit note: a sale reversed, tax included.__
+// __Debit revenue and tax, credit the customer.__
 செயல் வரவு_குறிப்பு(பரிவர்த்தனை_எண், நாள், விவரம்,
                       வாடிக்கையாளர்_கணக்கு, வருவாய்_கணக்கு, வரி_கணக்கு,
                       அடிப்படை, விகிதம்) {
@@ -139,7 +139,7 @@
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்);
 }
 
-// பற்று_குறிப்பு(...) — a debit note: a purchase returned to the supplier
+// __பற்று_குறிப்பு(...) — a debit note: a purchase returned to the supplier__
 செயல் பற்று_குறிப்பு(பரிவர்த்தனை_எண், நாள், விவரம்,
                        விற்பனையாளர்_கணக்கு, செலவு_கணக்கு, வரி_கணக்கு,
                        அடிப்படை, விகிதம்) {
@@ -154,8 +154,8 @@
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்);
 }
 
-// எதிர்_பதிவு(...) — a contra entry: money moved between the entity's own
-// accounts, such as a bank transfer or a cash deposit
+// __எதிர்_பதிவு(...) — a contra entry: money moved between the entity's own__
+// __accounts, such as a bank transfer or a cash deposit__
 செயல் எதிர்_பதிவு(பரிவர்த்தனை_எண், நாள், விவரம்,
                     இருந்து_கணக்கு, க்கு_கணக்கு, தொகை_மதிப்பு) {
     திரும்பு பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், [
@@ -164,7 +164,7 @@
     ]);
 }
 
-// தொடக்க_இருப்பு(...) — an opening balance at the start of a year
+// __தொடக்க_இருப்பு(...) — an opening balance at the start of a year__
 செயல் தொடக்க_இருப்பு(பரிவர்த்தனை_எண், நாள், கணக்கு_குறி,
                        எதிர்_கணக்கு, தொகை_மதிப்பு, பற்றா) {
     (பற்றா) எனில் {

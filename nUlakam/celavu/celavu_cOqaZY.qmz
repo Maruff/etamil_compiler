@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// செலவு_சோதனை — tests for the cost accounting modules, written in eTamil
+// __செலவு_சோதனை — tests for the cost accounting modules, written in eTamil__
 //
-// Run it like any other program:  etamil --vm nUlakam/celavu/celavu_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/celavu/celavu_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// The figures are chosen so the arithmetic is checkable by eye. None of them
-// is a claim about any real product's costs.
+// __The figures are chosen so the arithmetic is checkable by eye. None of them__
+// __is a claim about any real product's costs.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "pawkaLippu.qmz";
@@ -20,84 +20,84 @@
 
 ஓட்டம் = சோதனை_தொடக்கம்("செலவு — பங்களிப்பு (marginal costing)");
 
-// --- Contribution --------------------------------------------------------
+// __--- Contribution --------------------------------------------------------__
 //
-// A product at ₹250 with ₹150 of variable cost contributes ₹100 a unit. Fixed
-// cost does not appear yet, which is the whole point of the measure.
+// __A product at ₹250 with ₹150 of variable cost contributes ₹100 a unit. Fixed__
+// __cost does not appear yet, which is the whole point of the measure.__
 ஓட்டம் = சமம்(ஓட்டம், அலகு_பங்களிப்பு(250, 150), 100,
               "250 less 150 contributes 100 a unit");
 ஓட்டம் = சமம்(ஓட்டம், மொத்த_பங்களிப்பு(250, 150, 400), 40000,
               "400 units contribute 40,000");
 
-// A unit sold below variable cost contributes negatively. Worth pinning:
-// nothing in the function rejects it, because it is a real situation and the
-// caller has to see the sign.
+// __A unit sold below variable cost contributes negatively. Worth pinning:__
+// __nothing in the function rejects it, because it is a real situation and the__
+// __caller has to see the sign.__
 ஓட்டம் = சமம்(ஓட்டம், அலகு_பங்களிப்பு(120, 150), -30,
               "priced under variable cost, contribution is negative");
 
-// --- Profit is contribution less fixed cost, once ------------------------
+// __--- Profit is contribution less fixed cost, once ------------------------__
 ஓட்டம் = சமம்(ஓட்டம், லாபம்(250, 150, 400, 30000), 10000,
               "40,000 contribution less 30,000 fixed is 10,000 profit");
 ஓட்டம் = சமம்(ஓட்டம், லாபம்(250, 150, 300, 30000), 0,
               "at 300 units the same fixed cost is exactly covered");
 
-// --- The P/V ratio -------------------------------------------------------
+// __--- The P/V ratio -------------------------------------------------------__
 //
-// 100 on 250 is 40 per cent, written 40. Not 40% — see the note in the module.
+// __100 on 250 is 40 per cent, written 40. Not 40% — see the note in the module.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பங்களிப்பு_விகிதம்(250, 150)), 40,
               "the P/V ratio is 40, meaning forty per cent");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பங்களிப்பு_விகிதம்(0, 150)),
                   "a zero price has no P/V ratio");
 
-// --- Break-even ----------------------------------------------------------
+// __--- Break-even ----------------------------------------------------------__
 //
-// 30,000 of fixed cost over 100 a unit is 300 units, and 300 units at 250 is
-// ₹75,000. The two answers have to agree, which is what the second assertion
-// checks — computing it in rupees from the ratio instead of the unit count is
-// the standard exam shortcut and it must not disagree.
+// __30,000 of fixed cost over 100 a unit is 300 units, and 300 units at 250 is__
+// __₹75,000. The two answers have to agree, which is what the second assertion__
+// __checks — computing it in rupees from the ratio instead of the unit count is__
+// __the standard exam shortcut and it must not disagree.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(சமநிலை_அலகுகள்(30000, 250, 150)), 300,
               "30,000 fixed over 100 contribution breaks even at 300 units");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(சமநிலை_மதிப்பு(30000, 250, 150)), 75000,
               "which is 75,000 of sales");
 
-// A product that contributes nothing never breaks even, and a negative
-// contribution is worse. Both are தவறு rather than a division by zero.
+// __A product that contributes nothing never breaks even, and a negative__
+// __contribution is worse. Both are தவறு rather than a division by zero.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(சமநிலை_அலகுகள்(30000, 150, 150)),
                   "zero contribution has no break-even point");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(சமநிலை_அலகுகள்(30000, 120, 150)),
                   "nor does a negative one");
 
-// --- Margin of safety ----------------------------------------------------
+// __--- Margin of safety ----------------------------------------------------__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பாதுகாப்பு_வரம்பு(400, 30000, 250, 150)), 100,
               "planning 400 against a 300 break-even leaves 100 units of safety");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பாதுகாப்பு_விகிதம்(400, 30000, 250, 150)), 25,
               "which is 25 per cent of the plan");
 
-// Below break-even the margin is negative. That is a reading, not an error,
-// so it comes back as சரி with a negative number.
+// __Below break-even the margin is negative. That is a reading, not an error,__
+// __so it comes back as சரி with a negative number.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(பாதுகாப்பு_வரம்பு(250, 30000, 250, 150)), -50,
               "a plan below break-even has a negative margin of safety");
 
-// --- Planning backwards from a target ------------------------------------
+// __--- Planning backwards from a target ------------------------------------__
 //
-// The question the costing department is actually asked. 30,000 fixed plus
-// 20,000 wanted is 50,000 to recover at 100 a unit.
+// __The question the costing department is actually asked. 30,000 fixed plus__
+// __20,000 wanted is 50,000 to recover at 100 a unit.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_அலகுகள்(20000, 30000, 250, 150)), 500,
               "earning 20,000 on top of 30,000 fixed needs 500 units");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_அலகுகள்(0, 30000, 250, 150)), 300,
               "a target of nothing is the break-even point again");
 
-// The round trip: sell the target quantity and the profit is the target.
+// __The round trip: sell the target quantity and the profit is the target.__
 ஓட்டம் = சமம்(ஓட்டம், லாபம்(250, 150, மதிப்பு(இலக்கு_அலகுகள்(20000, 30000, 250, 150)),
                             30000), 20000,
               "and selling that quantity earns exactly the target");
 
-// --- Ranking under a constraint -----------------------------------------
+// __--- Ranking under a constraint -----------------------------------------__
 //
-// Product A contributes more per unit but eats three machine hours; B
-// contributes less and takes one. Ranked per unit A wins; ranked per hour of
-// the thing that is actually scarce, B wins by a wide margin. This is the
-// distinction the function exists for.
+// __Product A contributes more per unit but eats three machine hours; B__
+// __contributes less and takes one. Ranked per unit A wins; ranked per hour of__
+// __the thing that is actually scarce, B wins by a wide margin. This is the__
+// __distinction the function exists for.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், அலகு_பங்களிப்பு(250, 150) > அலகு_பங்களிப்பு(180, 120),
                   "per unit, A (100) beats B (60)");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(அலகு_வளத்திற்கு_பங்களிப்பு(250, 150, 3)), 100 / 3,
@@ -108,12 +108,12 @@
                   "a product consuming none of the constraint cannot be ranked");
 
 // =========================================================================
-// நிலையம் — cost centres, objects and elements
+// __நிலையம் — cost centres, objects and elements__
 // =========================================================================
 
-// Only a production centre absorbs cost into units. A service centre's total
-// is re-apportioned onto production centres first, and this flag is what a
-// caller checks before absorbing.
+// __Only a production centre absorbs cost into units. A service centre's total__
+// __is re-apportioned onto production centres first, and this flag is what a__
+// __caller checks before absorbing.__
 இயந்திரம் = மதிப்பு(நிலையம்_ஆக்கு("உ1", "இயந்திரப் பிரிவு", வகை_உற்பத்தி()));
 பணிமனை   = மதிப்பு(நிலையம்_ஆக்கு("ச1", "பணிமனை", வகை_சேவைத்துறை()));
 
@@ -132,17 +132,17 @@
 ஓட்டம் = சமம்(ஓட்டம், நீளம்(வகையால்_நிலையங்கள்(நிலையப்_பட்டி, "உற்பத்தி")), 1,
               "filtering by type finds the one production centre");
 
-// A cost object with no units is legal — a job can be open with nothing
-// finished — but a negative count is not.
+// __A cost object with no units is legal — a job can be open with nothing__
+// __finished — but a negative count is not.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(செலவுப்_பொருள்_ஆக்கு("ப1", "தொகுதி A", 0)),
                   "a cost object may carry zero units");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(செலவுப்_பொருள்_ஆக்கு("ப2", "தொகுதி B", -5)),
                   "but never a negative count");
 
-// The two classifications are independent. Rent is indirect and wholly fixed;
-// power is indirect and 70% variable; direct material is direct and wholly
-// variable. Summing them all gives 10,000; the variable part is only the
-// portions that move with volume.
+// __The two classifications are independent. Rent is indirect and wholly fixed;__
+// __power is indirect and 70% variable; direct material is direct and wholly__
+// __variable. Summing them all gives 10,000; the variable part is only the__
+// __portions that move with volume.__
 கூறுப்_பட்டி = [
     கூறு_ஆக்கு("நேரடிப் பொருள்", 6000, மெய், 1),
     கூறு_ஆக்கு("வாடகைச் செலவு", 2000, பொய், 0),
@@ -165,7 +165,7 @@
               "and the two parts add back to the whole");
 
 // =========================================================================
-// செலவுத் தாள் — the cost sheet
+// __செலவுத் தாள் — the cost sheet__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், நுகர்ந்த_பொருட்கள்(5000, 40000, 3000), 42000,
@@ -173,7 +173,7 @@
 ஓட்டம் = சமம்(ஓட்டம், முதன்மைச்_செலவு(42000, 18000, 2000), 62000,
               "prime cost is material + wages + direct expenses");
 
-// WIP adjusts inside the factory, before administrative overhead.
+// __WIP adjusts inside the factory, before administrative overhead.__
 ஓட்டம் = சமம்(ஓட்டம், தொழிற்சாலைச்_செலவு(62000, 15000, 4000, 6000), 75000,
               "works cost adds factory overhead and the movement in WIP");
 ஓட்டம் = சமம்(ஓட்டம், தொழிற்சாலைச்_செலவு(62000, 15000, 0, 0), 77000,
@@ -201,8 +201,8 @@
 ஓட்டம் = சமம்(ஓட்டம், தாள்.விற்பனைச்_செலவு, 90000, "its cost of sales");
 ஓட்டம் = சமம்(ஓட்டம், தாள்.ஈட்டிய_லாபம், 30000, "and the profit that leaves");
 
-// The ladder property: every rung is the one below it plus one class of
-// overhead, so the differences have to be exactly those overheads.
+// __The ladder property: every rung is the one below it plus one class of__
+// __overhead, so the differences have to be exactly those overheads.__
 ஓட்டம் = சமம்(ஓட்டம், தாள்.உற்பத்திச்_செலவு - தாள்.தொழிற்சாலைச்_செலவு, 8000,
               "production less works is exactly the administrative overhead");
 ஓட்டம் = சமம்(ஓட்டம், தாள்.விற்பனைச்_செலவு - தாள்.விற்றவை_செலவு, 5000,
@@ -214,10 +214,10 @@
                   "and no units means no unit cost, not a division by zero");
 
 // =========================================================================
-// மேல்நிலை — overhead absorption
+// __மேல்நிலை — overhead absorption__
 // =========================================================================
 
-// 80,000 of budgeted overhead over 2,000 budgeted machine hours is 40 an hour.
+// __80,000 of budgeted overhead over 2,000 budgeted machine hours is 40 an hour.__
 விகிதம் = மதிப்பு(உள்வாங்கல்_விகிதம்(80000, 2000, அடிப்படை_இயந்திர_நேரம்()));
 ஓட்டம் = சமம்(ஓட்டம், விகிதம்.விகிதப்_பணம், 40, "80,000 over 2,000 hours is 40");
 ஓட்டம் = சமம்(ஓட்டம், விகிதம்.அடிப்படை_வகை, "இயந்திர_நேரம்",
@@ -228,9 +228,9 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(உள்வாங்கல்_விகிதம்(80000, 2000, "நிலவு")),
                   "and an unknown base is rejected");
 
-// Worked 2,100 hours, so 84,000 is absorbed against 81,500 actually spent:
-// 2,500 over-absorbed. This is the case the rate is *supposed* to produce —
-// budgeted rate, actual activity — and it is not an error.
+// __Worked 2,100 hours, so 84,000 is absorbed against 81,500 actually spent:__
+// __2,500 over-absorbed. This is the case the rate is *supposed* to produce —__
+// __budgeted rate, actual activity — and it is not an error.__
 உள்வாங்கியவை = உள்வாங்கியது(விகிதம், 2100);
 ஓட்டம் = சமம்(ஓட்டம், உள்வாங்கியவை, 84000, "2,100 actual hours absorb 84,000");
 ஓட்டம் = சமம்(ஓட்டம், உள்வாங்கல்_வேறுபாடு(84000, 81500), 2500,
@@ -243,8 +243,8 @@
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(சதவீத_விகிதம்(30000, 20000)), 150,
               "30,000 of overhead on 20,000 of wages quotes as 150 per cent");
 
-// Apportionment must add back to the pool exactly. விகிதத்தில்_பிரி in kAcu
-// exists because naive division does not guarantee that.
+// __Apportionment must add back to the pool exactly. விகிதத்தில்_பிரி in kAcu__
+// __exists because naive division does not guarantee that.__
 பகிர்வு = விகிதத்தில்_பிரி(100000, [3, 1, 1]);
 ஓட்டம் = சமம்(ஓட்டம், கூட்டு(பகிர்வு), 100000,
               "overhead split 3:1:1 adds back to the whole, to the paisa");
@@ -252,12 +252,12 @@
               "and gives one share per centre");
 
 // =========================================================================
-// நியமச் செலவு — standard costing variances
+// __நியமச் செலவு — standard costing variances__
 // =========================================================================
 //
-// Standard: 500 kg at ₹20 = ₹10,000. Actual: 520 kg at ₹19 = ₹9,880.
-// Price is favourable (paid 1 less on 520 kg = +520); usage is adverse
-// (20 kg over at the standard 20 = −400). Net +120.
+// __Standard: 500 kg at ₹20 = ₹10,000. Actual: 520 kg at ₹19 = ₹9,880.__
+// __Price is favourable (paid 1 less on 520 kg = +520); usage is adverse__
+// __(20 kg over at the standard 20 = −400). Net +120.__
 பொருள்_தொகுதி = பொருள்_வேறுபாட்டுத்_தொகுதி(500, 20, 520, 19);
 
 ஓட்டம் = சமம்(ஓட்டம், பொருள்_தொகுதி.வீத_வேறுபாடு, 520,
@@ -267,8 +267,8 @@
 ஓட்டம் = சமம்(ஓட்டம், பொருள்_தொகுதி.மொத்த_வேறுபாடு, 120,
               "and the total is 120 favourable");
 
-// The reconciliation. This is the property that makes the decomposition mean
-// anything: the parts must equal the whole, exactly.
+// __The reconciliation. This is the property that makes the decomposition mean__
+// __anything: the parts must equal the whole, exactly.__
 ஓட்டம் = சமம்(ஓட்டம், பொருள்_தொகுதி.வீத_வேறுபாடு
                       + பொருள்_தொகுதி.பயன்பாட்டு_வேறுபாடு,
               பொருள்_தொகுதி.மொத்த_வேறுபாடு,
@@ -281,9 +281,9 @@
 ஓட்டம் = சமம்(ஓட்டம், வேறுபாட்டு_உரை(0), "வேறுபாடு இல்லை",
               "and no variance says so");
 
-// Labour. Standard 400 hours at ₹50 = ₹20,000. Actual 380 at ₹55 = ₹20,900.
-// Rate adverse (5 over on 380 = −1,900); efficiency favourable (20 hours saved
-// at 50 = +1,000). Net −900.
+// __Labour. Standard 400 hours at ₹50 = ₹20,000. Actual 380 at ₹55 = ₹20,900.__
+// __Rate adverse (5 over on 380 = −1,900); efficiency favourable (20 hours saved__
+// __at 50 = +1,000). Net −900.__
 ஊதியத்_தொகுதி = ஊதிய_வேறுபாட்டுத்_தொகுதி(400, 50, 380, 55);
 
 ஓட்டம் = சமம்(ஓட்டம், ஊதியத்_தொகுதி.வீத_வேறுபாடு, -1900,
@@ -297,11 +297,11 @@
               ஊதியத்_தொகுதி.மொத்த_வேறுபாடு,
               "rate + efficiency reconciles to the total labour variance");
 
-// Idle time is never favourable, whatever is passed.
+// __Idle time is never favourable, whatever is passed.__
 ஓட்டம் = சமம்(ஓட்டம், ஊதிய_செயலிழப்பு_வேறுபாடு(50, 12), -600,
               "12 idle hours at 50 is 600 adverse and cannot be otherwise");
 
-// Variable overhead reconciles the same way: expenditure + efficiency.
+// __Variable overhead reconciles the same way: expenditure + efficiency.__
 ஓட்டம் = சமம்(ஓட்டம், மாறும்_மேல்நிலை_செலவு_வேறுபாடு(380, 12, 4200), 360,
               "380 hours should carry 4,560 of overhead; 4,200 spent is 360 favourable");
 ஓட்டம் = சமம்(ஓட்டம், மாறும்_மேல்நிலை_திறன்_வேறுபாடு(12, 400, 380), 240,
@@ -311,25 +311,25 @@
               மாறும்_மேல்நிலை_மொத்த_வேறுபாடு(400, 12, 4200),
               "expenditure + efficiency reconciles to the total");
 
-// Fixed overhead: no usage variance, so the split is expenditure and volume.
+// __Fixed overhead: no usage variance, so the split is expenditure and volume.__
 ஓட்டம் = சமம்(ஓட்டம், நிலையான_மேல்நிலை_செலவு_வேறுபாடு(50000, 52000), -2000,
               "spending 52,000 against a 50,000 budget is 2,000 adverse");
 ஓட்டம் = சமம்(ஓட்டம், நிலையான_மேல்நிலை_கொள்திறன்_வேறுபாடு(25, 2000, 2200), 5000,
               "making 200 units more than planned over-recovers 5,000");
 
-// Sales is the exception to the sign rule: above standard price is favourable,
-// so it reads actual less standard.
+// __Sales is the exception to the sign rule: above standard price is favourable,__
+// __so it reads actual less standard.__
 ஓட்டம் = சமம்(ஓட்டம், விற்பனை_வீத_வேறுபாடு(1000, 260, 250), 10000,
               "selling 10 above standard on 1,000 units is 10,000 favourable");
 ஓட்டம் = சமம்(ஓட்டம், விற்பனை_அளவு_வேறுபாடு(100, 1000, 1100), 10000,
               "and 100 extra units at 100 contribution is 10,000 — contribution, not price");
 
 // =========================================================================
-// மீள்பகிர்வு — reciprocal service apportionment
+// __மீள்பகிர்வு — reciprocal service apportionment__
 // =========================================================================
 //
-// S1 costs 900 direct and sends P1 50%, P2 30%, S2 20%.
-// S2 costs 450 direct and sends P1 20%, P2 30%, S1 50%.
+// __S1 costs 900 direct and sends P1 50%, P2 30%, S2 20%.__
+// __S2 costs 450 direct and sends P1 20%, P2 30%, S1 50%.__
 
 சேவை1 = சேவை_நிலையம்_ஆக்கு("S1", 900, [பகிர்வு_ஆக்கு("P1", 50),
                                           பகிர்வு_ஆக்கு("P2", 30),
@@ -359,8 +359,8 @@
 ஓட்டம் = சமம்(ஓட்டம், நிலையத்_தொகையைப்_பெறு(மீள்_விடை["உற்பத்திக்கு"], "P2"),
               585, "and P2 585");
 
-// The two methods agree to the paisa. Repeated distribution is not an
-// approximation of a different answer; it converges to this one.
+// __The two methods agree to the paisa. Repeated distribution is not an__
+// __approximation of a different answer; it converges to this one.__
 ஓட்டம் = சமம்(ஓட்டம், நிலையத்_தொகையைப்_பெறு(மீள்_விடை["உற்பத்திக்கு"], "P1"),
               வட்டமிடு(சதவீதம்(ஒரேசமய_விடை["அ_மொத்தம்"], 50)
                         + சதவீதம்(ஒரேசமய_விடை["ஆ_மொத்தம்"], 20), 2),
@@ -390,11 +390,11 @@
                  & "nothing in the accounts records which was used");
 
 // =========================================================================
-// செயல்முறை — process costing
+// __செயல்முறை — process costing__
 // =========================================================================
 //
-// 1,000 units in at a cost of 9,500. Normal loss 10%, scrap 5 a unit.
-// Output 850, so 150 were lost and 50 of those should not have been.
+// __1,000 units in at a cost of 9,500. Normal loss 10%, scrap 5 a unit.__
+// __Output 850, so 150 were lost and 50 of those should not have been.__
 
 செயல்முறை_விடை = மதிப்பு(செயல்முறையைக்_கணக்கிடு(1000, 9500, 10, 850, 5));
 
@@ -410,7 +410,7 @@
               "and 9,000 over 900 surviving units is 10 — the normal loss is "
               & "absorbed by leaving its units out of the denominator");
 
-// The natural-looking mistake, priced.
+// __The natural-looking mistake, priced.__
 ஓட்டம் = சமம்(ஓட்டம், அலகுக்கான_செலவு_தவறாக(9000, 850), 10.5882,
               "dividing by good output instead gives 10.59 — the abnormal "
               & "loss buried in every good unit");
@@ -427,7 +427,7 @@
               "good output plus abnormal loss accounts for the whole cost — "
               & "the process account closes");
 
-// An abnormal gain, and the scrap it forgoes.
+// __An abnormal gain, and the scrap it forgoes.__
 ஆதாய_விடை = மதிப்பு(செயல்முறையைக்_கணக்கிடு(1000, 9500, 10, 920, 5));
 ஓட்டம் = சமம்(ஓட்டம், ஆதாய_விடை["அசாதாரண_வேறுபாடு"], 0 - 20,
               "losing less than expected is an abnormal gain, signed negative");
@@ -441,7 +441,7 @@
                   "a process whose normal loss consumes the whole input has "
                   & "nothing to absorb the cost");
 
-// --- equivalent units ----------------------------------------------------
+// __--- equivalent units ----------------------------------------------------__
 
 சமமான_விடை = முறைகளின்_வேறுபாடு(200, 40, 900, 300, 60);
 ஓட்டம் = சமம்(ஓட்டம், சமமான_விடை["சராசரி"], 1080,
@@ -459,12 +459,12 @@
                   "no equivalent units, no unit cost");
 
 // =========================================================================
-// செயல்பாடு — activity-based costing
+// __செயல்பாடு — activity-based costing__
 // =========================================================================
 //
-// Two pools: 1,10,000 of setup cost over 100 setups, and 50,000 of ordering
-// cost over 50 orders. Product A is high volume and simple, B is low volume
-// and complex, and the blanket base is 16,000 labour hours.
+// __Two pools: 1,10,000 of setup cost over 100 setups, and 50,000 of ordering__
+// __cost over 50 orders. Product A is high volume and simple, B is low volume__
+// __and complex, and the blanket base is 16,000 labour hours.__
 
 செயல்பாடுகள் = [
     செயல்பாடு_ஆக்கு("SET", "இயந்திர அமைப்பு", 110000, "அமைப்புகள்", 100),
@@ -521,7 +521,7 @@
                                                   15000, 10)),
                   "a shift of that size is worth the trouble");
 
-// Where consumption is proportional to the base, it is not.
+// __Where consumption is proportional to the base, it is not.__
 விகிதாசார_நுகர்வு = [நுகர்வு_ஆக்கு("SET", 50), நுகர்வு_ஆக்கு("ORD", 25)];
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை மதிப்பு(பயனளிக்குமா(செயல்பாடுகள்,
                                                         விகிதாசார_நுகர்வு,

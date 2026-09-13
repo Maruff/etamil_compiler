@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// வளம்_சோதனை — tests for resources, timesheets and posting
+// __வளம்_சோதனை — tests for resources, timesheets and posting__
 //
-// Run it like any other program:  etamil --vm nUlakam/vaLam/vaLam_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/vaLam/vaLam_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// The file follows one engineer through a rate change: ₹500 an hour to the end
-// of March 2026 and ₹600 from April. The point of the exercise is that a sheet
-// spanning the change is costed at both rates, entry by entry, and the total
-// is neither 500 nor 600 times the hours.
+// __The file follows one engineer through a rate change: ₹500 an hour to the end__
+// __of March 2026 and ₹600 from April. The point of the exercise is that a sheet__
+// __spanning the change is costed at both rates, entry by entry, and the total__
+// __is neither 500 nor 600 times the hours.__
 //
-// 2 March 2026 is a Monday and 5 March is treated as a holiday, the same
-// specimen calendar the nAtkAtti tests use.
+// __2 March 2026 is a Monday and 5 March is treated as a holiday, the same__
+// __specimen calendar the nAtkAtti tests use.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -22,7 +22,7 @@
 ஓட்டம் = சோதனை_தொடக்கம்("வளம் — resources, time and posting");
 
 // =========================================================================
-// விகிதம் — the rate in force on a day
+// __விகிதம் — the rate in force on a day__
 // =========================================================================
 
 விகிதங்கள் = [விகிதப்_பதிவு("E1", 500, "2025-04-01", "2026-03-31"),
@@ -47,7 +47,7 @@
               "overtime is a multiple of the base rate");
 
 // =========================================================================
-// திறன் — capacity against a calendar
+// __திறன் — capacity against a calendar__
 // =========================================================================
 
 நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 6], ["2026-03-05"]);
@@ -68,14 +68,14 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(பயன்பாட்டு_விகிதம்(24, 0)),
                   "with no available hours there is nothing to measure against");
 
-// Utilisation and chargeability are different questions, and a business that
-// reports only the first reports the flattering one.
+// __Utilisation and chargeability are different questions, and a business that__
+// __reports only the first reports the flattering one.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கட்டண_விகிதம்(0, 24)), 0,
               "a resource can be fully utilised and nothing chargeable");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கட்டண_விகிதம்(18, 24)), 75, "or three quarters so");
 
 // =========================================================================
-// உள்ளீடு — validating one entry
+// __உள்ளீடு — validating one entry__
 // =========================================================================
 
 நல்ல_உள்ளீடு = நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 8, மெய்);
@@ -98,7 +98,7 @@
                       நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 30, மெய்), 12)),
                   "thirty hours does not fit in a day");
 
-// --- the check that only works across entries ----------------------------
+// __--- the check that only works across entries ----------------------------__
 
 இரட்டைப்_பதிவு = [நேர_உள்ளீடு("E1", "2026-03-02", "S2a", 6, மெய்),
                    நேர_உள்ளீடு("E1", "2026-03-02", "S2b", 6, மெய்)];
@@ -120,7 +120,7 @@
                   "and so is a different person");
 
 // =========================================================================
-// நிலைமை — approval
+// __நிலைமை — approval__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நிலை_மாற்றம்_சரியா("வரைவு", "சமர்ப்பித்தது"),
@@ -147,10 +147,10 @@
               "only approved time is cost; the rest is somebody's intention");
 
 // =========================================================================
-// கணக்கிடல் — costing across a rate change
+// __கணக்கிடல் — costing across a rate change__
 // =========================================================================
 //
-// Four days in March at ₹500 and four in April at ₹600.
+// __Four days in March at ₹500 and four in April at ₹600.__
 
 தாள் = [நேர_உள்ளீடு("E1", "2026-03-30", "S2a", 8, மெய்),
          நேர_உள்ளீடு("E1", "2026-03-31", "S2a", 8, மெய்),
@@ -166,7 +166,7 @@
 ஓட்டம் = சமம்(ஓட்டம், கணக்கிட்டது["மொத்தத்_தொகை"], 17600,
               "for 17,600 — which is 8,000 plus 9,600");
 
-// The two ways of getting it wrong, priced.
+// __The two ways of getting it wrong, priced.__
 ஓட்டம் = வேறுபடு(ஓட்டம், கணக்கிட்டது["மொத்தத்_தொகை"], 32 * 600,
                  "costing the whole sheet at the current rate would give "
                  & "19,200 and reconcile perfectly to the wrong number");
@@ -179,7 +179,7 @@
                   "a sheet with one uncostable entry fails whole, rather than "
                   & "returning a plausible total that is short by one line");
 
-// --- totals by activity: this is AC --------------------------------------
+// __--- totals by activity: this is AC --------------------------------------__
 
 வரிசைகள் = கணக்கிட்டது["உள்ளீடுகள்"];
 ஓட்டம் = சமம்(ஓட்டம், பணிக்கு_மொத்தம்(வரிசைகள், "S2a")["தொகை"], 12800,
@@ -199,7 +199,7 @@
               "one engineer accounts for all of it");
 
 // =========================================================================
-// பதிவு — into the ledger, and back out
+// __பதிவு — into the ledger, and back out__
 // =========================================================================
 
 நடப்புக்_கணக்கு = நடப்புக்_கணக்குக்_குறி("SNG", "S2");

@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qittam/kattuppAtu.qmz — கட்டுப்பாட்டுக் கணக்கு (control accounts,
-// the time-phased budget, and reserves)
+// __nUlakam/qittam/kattuppAtu.qmz — கட்டுப்பாட்டுக் கணக்கு (control accounts,__
+// __the time-phased budget, and reserves)__
 //
-// The control account is where project structure meets the ledger: a WBS node
-// designated as the level at which scope, budget, actual cost and schedule are
-// integrated and performance is measured. It has one owner, one code, and that
-// code is a real account in the accounting system, so an invoice can be booked
-// straight to it instead of to one undifferentiated "project" account.
+// __The control account is where project structure meets the ledger: a WBS node__
+// __designated as the level at which scope, budget, actual cost and schedule are__
+// __integrated and performance is measured. It has one owner, one code, and that__
+// __code is a real account in the accounting system, so an invoice can be booked__
+// __straight to it instead of to one undifferentiated "project" account.__
 //
-// If that mapping is not designed before the first invoice arrives it gets
-// improvised later, and the improvisation is always the same: a spreadsheet in
-// which someone reconciles project codes to cost centres every month. That
-// spreadsheet is where project cost control quietly dies.
+// __If that mapping is not designed before the first invoice arrives it gets__
+// __improvised later, and the improvisation is always the same: a spreadsheet in__
+// __which someone reconciles project codes to cost centres every month. That__
+// __spreadsheet is where project cost control quietly dies.__
 //
-// A budget is not a total. It is a total *distributed across periods*, because
-// a project with the right total and the wrong phasing reports an alarming
-// variance every month while being perfectly on track. Planned value — the PV
-// of earned value analysis — is read off that distribution and nowhere else.
+// __A budget is not a total. It is a total *distributed across periods*, because__
+// __a project with the right total and the wrong phasing reports an alarming__
+// __variance every month while being perfectly on track. Planned value — the PV__
+// __of earned value analysis — is read off that distribution and nowhere else.__
 
 இறக்கு "pakuppu.qmz";
 
-// --- The control account -------------------------------------------------
+// __--- The control account -------------------------------------------------__
 
 // கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்)
 //
-// கணக்குக்_குறி is the code the ledger knows. கணு_குறி is the WBS node it sits
-// on. Keeping them as separate fields rather than one identifier is what lets
-// the accounting structure and the work structure be renamed independently,
-// which they will be.
+// __கணக்குக்_குறி is the code the ledger knows. கணு_குறி is the WBS node it sits__
+// __on. Keeping them as separate fields rather than one identifier is what lets__
+// __the accounting structure and the work structure be renamed independently,__
+// __which they will be.__
 செயல் கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு(கணக்குக்_குறி, கணு_குறி, உரிமையாளர்) {
     திரும்பு {
         கணக்குக்_குறி: கணக்குக்_குறி,
@@ -39,10 +39,10 @@
 
 // ஒரே_கணக்கா(கணக்குகள், கணுக்கள், கணு_குறி)
 //
-// Exactly one control account must lie on the path from a work package to the
-// root. Two means the package's cost is counted twice; none means it is
-// counted nowhere. Neither shows up in a tree view, and both show up in the
-// totals, which is the worst possible combination.
+// __Exactly one control account must lie on the path from a work package to the__
+// __root. Two means the package's cost is counted twice; none means it is__
+// __counted nowhere. Neither shows up in a tree view, and both show up in the__
+// __totals, which is the worst possible combination.__
 செயல் ஒரே_கணக்கா(கணக்குகள், கணுக்கள், கணு_குறி) {
     திரும்பு பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், கணு_குறி) == 1;
 }
@@ -60,7 +60,7 @@
                                  மதிப்பு(விடை).பெற்றோர்_குறி);
 }
 
-// கட்டமைப்பை_சரிபார்(கணக்குகள், கணுக்கள்) — every work package, checked
+// __கட்டமைப்பை_சரிபார்(கணக்குகள், கணுக்கள்) — every work package, checked__
 செயல் கட்டமைப்பை_சரிபார்(கணக்குகள், கணுக்கள்) {
     ஒவ்வொரு ஒரு_கணு இல் வேலைத்_தொகுப்புகள்(கணுக்கள்) {
         எத்தனை = பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், ஒரு_கணு.கணு_குறி);
@@ -72,16 +72,16 @@
     திரும்பு சரி(மெய்);
 }
 
-// --- The time-phased budget ---------------------------------------------
+// __--- The time-phased budget ---------------------------------------------__
 
 செயல் காலப்_பகிர்வு(காலம்_எண், காலத்_தொகை) {
     திரும்பு { காலம்_எண்: காலம்_எண், காலத்_தொகை: காலத்_தொகை };
 }
 
-// திரட்டிய_நிதி(பகிர்வுகள், காலம்_வரை) — the S-curve read at one period
+// __திரட்டிய_நிதி(பகிர்வுகள், காலம்_வரை) — the S-curve read at one period__
 //
-// This is planned value. It is cumulative by definition: PV at period 10 is
-// everything scheduled to be complete by then, not period 10's slice.
+// __This is planned value. It is cumulative by definition: PV at period 10 is__
+// __everything scheduled to be complete by then, not period 10's slice.__
 செயல் திரட்டிய_நிதி(பகிர்வுகள், காலம்_வரை) {
     ஓடும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_பகிர்வு இல் பகிர்வுகள் {
@@ -100,19 +100,19 @@
     திரும்பு ஓடும்_கூட்டல்;
 }
 
-// --- Reserves ------------------------------------------------------------
+// __--- Reserves ------------------------------------------------------------__
 
 // நிதித்_தொகுதி_ஆக்கு(அடிப்படை_நிதி, தற்செயல்_இருப்பு, மேலாண்மை_இருப்பு)
 //
-// Two reserves, and the distinction is not bureaucratic. Contingency reserve
-// covers *identified* risks, sits inside the performance measurement baseline
-// and is the project manager's to spend. Management reserve covers the
-// unknown, sits outside the baseline and belongs to the sponsor.
+// __Two reserves, and the distinction is not bureaucratic. Contingency reserve__
+// __covers *identified* risks, sits inside the performance measurement baseline__
+// __and is the project manager's to spend. Management reserve covers the__
+// __unknown, sits outside the baseline and belongs to the sponsor.__
 //
-// Performance is measured against the baseline. If management reserve were
-// inside it, drawing on the reserve would improve reported performance, which
-// is exactly backwards — and is how a project 30% over budget reports itself
-// as on plan.
+// __Performance is measured against the baseline. If management reserve were__
+// __inside it, drawing on the reserve would improve reported performance, which__
+// __is exactly backwards — and is how a project 30% over budget reports itself__
+// __as on plan.__
 செயல் நிதித்_தொகுதி_ஆக்கு(அடிப்படை_நிதி, தற்செயல்_இருப்பு, மேலாண்மை_இருப்பு) {
     திரும்பு {
         அடிப்படை_நிதி: அடிப்படை_நிதி,
@@ -121,22 +121,22 @@
     };
 }
 
-// அளவீட்டு_அடிப்படை(தொகுதி) — the performance measurement baseline
+// __அளவீட்டு_அடிப்படை(தொகுதி) — the performance measurement baseline__
 செயல் அளவீட்டு_அடிப்படை(தொகுதி) {
     திரும்பு தொகுதி.அடிப்படை_நிதி + தொகுதி.தற்செயல்_இருப்பு;
 }
 
-// அனுமதித்த_நிதி(தொகுதி) — baseline plus management reserve
+// __அனுமதித்த_நிதி(தொகுதி) — baseline plus management reserve__
 செயல் அனுமதித்த_நிதி(தொகுதி) {
     திரும்பு அளவீட்டு_அடிப்படை(தொகுதி) + தொகுதி.மேலாண்மை_இருப்பு;
 }
 
 // இருப்பை_விடுவி(தொகுதி, விடுவிக்கும்_தொகை)
 //
-// Releasing management reserve moves value into the baseline; it does not
-// create any. The total authorised funding is unchanged by the transfer, which
-// is the property the test asserts. A release larger than the reserve is a
-// தவறு rather than a silent overdraft.
+// __Releasing management reserve moves value into the baseline; it does not__
+// __create any. The total authorised funding is unchanged by the transfer, which__
+// __is the property the test asserts. A release larger than the reserve is a__
+// __தவறு rather than a silent overdraft.__
 செயல் இருப்பை_விடுவி(தொகுதி, விடுவிக்கும்_தொகை) {
     (விடுவிக்கும்_தொகை <= 0) எனில் {
         திரும்பு தவறு("விடுவிப்புத் தொகை பூஜ்யம் அல்லது எதிர்மறை");

@@ -1,56 +1,56 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/nErativari/oqqivari.qmz — ஒத்திவரி, deferred tax under Ind AS 12
+// __nUlakam/nErativari/oqqivari.qmz — ஒத்திவரி, deferred tax under Ind AS 12__
 //
-// Tax is computed on taxable profit and reported against accounting profit,
-// and the two are not the same number. Deferred tax is the accounting for the
-// difference — but only for the part of it that will reverse.
+// __Tax is computed on taxable profit and reported against accounting profit,__
+// __and the two are not the same number. Deferred tax is the accounting for the__
+// __difference — but only for the part of it that will reverse.__
 //
-// **Ind AS 12 uses the balance sheet approach, and this is the whole of it.**
-// A temporary difference is
+// __**Ind AS 12 uses the balance sheet approach, and this is the whole of it.**__
+// __A temporary difference is__
 //
-//     carrying amount of an asset or liability − its tax base
+//     __carrying amount of an asset or liability − its tax base__
 //
-// It is not a difference between accounting income and taxable income for the
-// year. AS 22 worked that way — timing differences, out of the profit and loss
-// — and the two methods agree on most items and disagree on exactly the ones
-// that matter: a revaluation, a business combination, a fair value adjustment,
-// anything recognised in other comprehensive income. Those never pass through
-// profit or loss at all, so an income-statement method finds no difference in
-// them and reports no deferred tax on differences that are unmistakably there.
+// __It is not a difference between accounting income and taxable income for the__
+// __year. AS 22 worked that way — timing differences, out of the profit and loss__
+// __— and the two methods agree on most items and disagree on exactly the ones__
+// __that matter: a revaluation, a business combination, a fair value adjustment,__
+// __anything recognised in other comprehensive income. Those never pass through__
+// __profit or loss at all, so an income-statement method finds no difference in__
+// __them and reports no deferred tax on differences that are unmistakably there.__
 //
-// Three consequences worth stating before any code:
+// __Three consequences worth stating before any code:__
 //
-// **The sign flips between assets and liabilities.** An asset carried above
-// its tax base will be taxed on the excess in future and produces a
-// *liability*. A liability carried above its tax base will be deducted in
-// future and produces an *asset*. Half of all deferred tax errors are this one.
+// __**The sign flips between assets and liabilities.** An asset carried above__
+// __its tax base will be taxed on the excess in future and produces a__
+// __*liability*. A liability carried above its tax base will be deducted in__
+// __future and produces an *asset*. Half of all deferred tax errors are this one.__
 //
-// **Deferred tax is never discounted.** Ind AS 12 prohibits it outright. The
-// reversals often lie years out and discounting them would be defensible in
-// principle; the standard forbids it because scheduling every reversal
-// reliably is not possible, and a half-discounted number is worse than an
-// undiscounted one. There is deliberately **no discounting function in this
-// module** — its absence is the rule.
+// __**Deferred tax is never discounted.** Ind AS 12 prohibits it outright. The__
+// __reversals often lie years out and discounting them would be defensible in__
+// __principle; the standard forbids it because scheduling every reversal__
+// __reliably is not possible, and a half-discounted number is worse than an__
+// __undiscounted one. There is deliberately **no discounting function in this__
+// __module** — its absence is the rule.__
 //
-// **Permanent differences produce nothing.** Expenditure disallowed for ever,
-// income exempt for ever — no reversal, no temporary difference, no deferred
-// tax. They belong in the effective-rate reconciliation and nowhere else.
+// __**Permanent differences produce nothing.** Expenditure disallowed for ever,__
+// __income exempt for ever — no reversal, no temporary difference, no deferred__
+// __tax. They belong in the effective-rate reconciliation and nowhere else.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// தற்காலிக வேறுபாடு — the temporary difference
+// __தற்காலிக வேறுபாடு — the temporary difference__
 // =========================================================================
 //
 // வரி_அடிப்படை_சொத்து(புத்தக_மதிப்பு, எதிர்கால_கழிவு, வரிக்குரியதா)
 //
-// The tax base of an asset is the amount deductible against future taxable
-// economic benefits. Where those benefits will not be taxable at all, the tax
-// base equals the carrying amount — so there is no temporary difference, which
-// is the standard's own way of saying that untaxed benefits need no deferred
-// tax.
+// __The tax base of an asset is the amount deductible against future taxable__
+// __economic benefits. Where those benefits will not be taxable at all, the tax__
+// __base equals the carrying amount — so there is no temporary difference, which__
+// __is the standard's own way of saying that untaxed benefits need no deferred__
+// __tax.__
 செயல் வரி_அடிப்படை_சொத்து(புத்தக_மதிப்பு, எதிர்கால_கழிவு, வரிக்குரியதா) {
     (இல்லை வரிக்குரியதா) எனில் { திரும்பு வட்டமிடு(புத்தக_மதிப்பு, 2); }
     திரும்பு வட்டமிடு(எதிர்கால_கழிவு, 2);
@@ -58,41 +58,41 @@
 
 // வரி_அடிப்படை_பொறுப்பு(புத்தக_மதிப்பு, எதிர்கால_கழிவு)
 //
-// The tax base of a liability is its carrying amount less any amount that will
-// be deductible in future. A provision fully disallowed until paid therefore
-// has a tax base of nil and its whole carrying amount is a deductible
-// temporary difference — the commonest deferred tax asset in an Indian
-// balance sheet.
+// __The tax base of a liability is its carrying amount less any amount that will__
+// __be deductible in future. A provision fully disallowed until paid therefore__
+// __has a tax base of nil and its whole carrying amount is a deductible__
+// __temporary difference — the commonest deferred tax asset in an Indian__
+// __balance sheet.__
 செயல் வரி_அடிப்படை_பொறுப்பு(புத்தக_மதிப்பு, எதிர்கால_கழிவு) {
     திரும்பு வட்டமிடு(புத்தக_மதிப்பு - எதிர்கால_கழிவு, 2);
 }
 
 // தற்காலிக_வேறுபாடு(புத்தக_மதிப்பு, வரி_அடிப்படை)
 //
-// Carrying amount less tax base. Signed, and the sign carries meaning that
-// depends on what is being measured — which is வேறுபாட்டு_வகை's job and not
-// this one's.
+// __Carrying amount less tax base. Signed, and the sign carries meaning that__
+// __depends on what is being measured — which is வேறுபாட்டு_வகை's job and not__
+// __this one's.__
 செயல் தற்காலிக_வேறுபாடு(புத்தக_மதிப்பு, வரி_அடிப்படை) {
     திரும்பு வட்டமிடு(புத்தக_மதிப்பு - வரி_அடிப்படை, 2);
 }
 
 // வேறுபாட்டு_வகை(வேறுபாட்டுத்_தொகை, சொத்தா)
 //
-// Taxable or deductible — and it depends on whether the item is an asset or a
-// liability, because the same signed difference means opposite things:
+// __Taxable or deductible — and it depends on whether the item is an asset or a__
+// __liability, because the same signed difference means opposite things:__
 //
-//   asset,     carrying > tax base  ->  taxable     ->  deferred tax LIABILITY
-//   asset,     carrying < tax base  ->  deductible  ->  deferred tax ASSET
-//   liability, carrying > tax base  ->  deductible  ->  deferred tax ASSET
-//   liability, carrying < tax base  ->  taxable     ->  deferred tax LIABILITY
+//   __asset,     carrying > tax base  ->  taxable     ->  deferred tax LIABILITY__
+//   __asset,     carrying < tax base  ->  deductible  ->  deferred tax ASSET__
+//   __liability, carrying > tax base  ->  deductible  ->  deferred tax ASSET__
+//   __liability, carrying < tax base  ->  taxable     ->  deferred tax LIABILITY__
 //
-// The intuition for the liability rows: a provision the tax authority has not
-// yet allowed is sitting in the books at more than the tax authority
-// recognises, and the deduction is still to come. Money owed to the business
-// by the future, which is an asset.
+// __The intuition for the liability rows: a provision the tax authority has not__
+// __yet allowed is sitting in the books at more than the tax authority__
+// __recognises, and the deduction is still to come. Money owed to the business__
+// __by the future, which is an asset.__
 //
-// Answers "" for no difference, so that a caller can distinguish nil from
-// either kind without inspecting an amount.
+// __Answers "" for no difference, so that a caller can distinguish nil from__
+// __either kind without inspecting an amount.__
 செயல் வேறுபாட்டு_வகை(வேறுபாட்டுத்_தொகை, சொத்தா) {
     (வேறுபாட்டுத்_தொகை == 0) எனில் { திரும்பு ""; }
     (சொத்தா) எனில் {
@@ -104,23 +104,23 @@
 }
 
 // =========================================================================
-// ஒத்திவைத்த வரி — the balance
+// __ஒத்திவைத்த வரி — the balance__
 // =========================================================================
 //
 // ஒத்திவரிக்_கணக்கு(புத்தக_மதிப்பு, வரி_அடிப்படை, சொத்தா, எதிர்பார்க்கும்_வீதம்)
 //
-// One item, measured. Answers {"வேறுபாடு", "வகை", "ஒத்திவரி_சொத்து",
-// "ஒத்திவரி_பொறுப்பு"} with exactly one of the last two non-zero.
+// __One item, measured. Answers {"வேறுபாடு", "வகை", "ஒத்திவரி_சொத்து",__
+// __"ஒத்திவரி_பொறுப்பு"} with exactly one of the last two non-zero.__
 //
-// The rate is **the rate expected to apply when the difference reverses**,
-// enacted or substantively enacted by the reporting date — not this year's
-// rate, and not a rate somebody expects the government to legislate. A rate
-// change enacted in March remeasures every deferred balance at once, and the
-// whole of that remeasurement hits the current year.
+// __The rate is **the rate expected to apply when the difference reverses**,__
+// __enacted or substantively enacted by the reporting date — not this year's__
+// __rate, and not a rate somebody expects the government to legislate. A rate__
+// __change enacted in March remeasures every deferred balance at once, and the__
+// __whole of that remeasurement hits the current year.__
 //
-// Both outputs are returned as positive magnitudes. A deferred tax asset
-// carried as a negative liability is arithmetically identical and reads wrong
-// in every statement it appears in.
+// __Both outputs are returned as positive magnitudes. A deferred tax asset__
+// __carried as a negative liability is arithmetically identical and reads wrong__
+// __in every statement it appears in.__
 செயல் ஒத்திவரிக்_கணக்கு(புத்தக_மதிப்பு, வரி_அடிப்படை, சொத்தா,
                           எதிர்பார்க்கும்_வீதம்) {
     வேறுபாட்டுத்_தொகை = தற்காலிக_வேறுபாடு(புத்தக_மதிப்பு, வரி_அடிப்படை);
@@ -142,9 +142,9 @@
 
 // ஒத்திவரியைத்_திரட்டு(கணக்குகள்)
 //
-// Every item's deferred tax, summed into a gross asset and a gross liability.
-// Gross, not netted — offsetting is a presentation question with conditions of
-// its own, and ஈடுசெய்யலாமா answers it separately.
+// __Every item's deferred tax, summed into a gross asset and a gross liability.__
+// __Gross, not netted — offsetting is a presentation question with conditions of__
+// __its own, and ஈடுசெய்யலாமா answers it separately.__
 செயல் ஒத்திவரியைத்_திரட்டு(கணக்குகள்) {
     சொத்துக்_கூட்டல் = 0;
     பொறுப்புக்_கூட்டல் = 0;
@@ -159,25 +159,25 @@
 }
 
 // =========================================================================
-// அங்கீகாரம் — recognising a deferred tax asset
+// __அங்கீகாரம் — recognising a deferred tax asset__
 // =========================================================================
 //
 // அங்கீகரிக்கத்தக்க_சொத்து(கணக்கிட்ட_சொத்து, எதிர்பார்க்கும்_வரி_லாபம்,
 //                            எதிர்பார்க்கும்_வீதம்)
 //
-// The asymmetry at the centre of Ind AS 12: a deferred tax **liability** is
-// recognised in full, always. A deferred tax **asset** is recognised only to
-// the extent that future taxable profit will probably be available against
-// which the deduction can be used.
+// __The asymmetry at the centre of Ind AS 12: a deferred tax **liability** is__
+// __recognised in full, always. A deferred tax **asset** is recognised only to__
+// __the extent that future taxable profit will probably be available against__
+// __which the deduction can be used.__
 //
-// It is prudence, and it is the reason a company with a large deferred tax
-// asset and no history of profits should be read carefully. The asset is worth
-// nothing unless profits arrive, and the profits are management's forecast.
+// __It is prudence, and it is the reason a company with a large deferred tax__
+// __asset and no history of profits should be read carefully. The asset is worth__
+// __nothing unless profits arrive, and the profits are management's forecast.__
 //
-// Answers {"அங்கீகரித்தது", "அங்கீகரிக்காதது"}, because the unrecognised part
-// does not disappear. It is disclosed, and it is recognised later if the
-// prospects improve — a fact that makes a subsequent year's tax charge
-// negative for reasons that have nothing to do with that year's trading.
+// __Answers {"அங்கீகரித்தது", "அங்கீகரிக்காதது"}, because the unrecognised part__
+// __does not disappear. It is disclosed, and it is recognised later if the__
+// __prospects improve — a fact that makes a subsequent year's tax charge__
+// __negative for reasons that have nothing to do with that year's trading.__
 செயல் அங்கீகரிக்கத்தக்க_சொத்து(கணக்கிட்ட_சொத்து, எதிர்பார்க்கும்_வரி_லாபம்,
                                   எதிர்பார்க்கும்_வீதம்) {
     (கணக்கிட்ட_சொத்து <= 0) எனில் {
@@ -188,7 +188,7 @@
                   "அங்கீகரிக்காதது": வட்டமிடு(கணக்கிட்ட_சொத்து, 2)};
     }
 
-    // The forecast profit supports only the tax that would be charged on it.
+    // __The forecast profit supports only the tax that would be charged on it.__
     தாங்கும்_அளவு = வட்டமிடு(சதவீதம்(எதிர்பார்க்கும்_வரி_லாபம்,
                                         எதிர்பார்க்கும்_வீதம்), 2);
     அங்கீகரித்தது = சிறியது(கணக்கிட்ட_சொத்து, தாங்கும்_அளவு);
@@ -199,14 +199,14 @@
 // இழப்பின்_ஒத்திவரி(முன்_கொண்டுசென்ற_இழப்பு, எதிர்பார்க்கும்_வரி_லாபம்,
 //                     எதிர்பார்க்கும்_வீதம்)
 //
-// Unused tax losses and unused tax credits produce a deferred tax asset on the
-// same terms as a deductible temporary difference — and the standard adds a
-// warning to this one specifically: the existence of recent losses is itself
-// strong evidence that future taxable profit may not be available.
+// __Unused tax losses and unused tax credits produce a deferred tax asset on the__
+// __same terms as a deductible temporary difference — and the standard adds a__
+// __warning to this one specifically: the existence of recent losses is itself__
+// __strong evidence that future taxable profit may not be available.__
 //
-// Which is the difficulty exactly. The asset arises from losing money, and it
-// is recognised on a forecast of making money, produced by the people who lost
-// it.
+// __Which is the difficulty exactly. The asset arises from losing money, and it__
+// __is recognised on a forecast of making money, produced by the people who lost__
+// __it.__
 செயல் இழப்பின்_ஒத்திவரி(முன்_கொண்டுசென்ற_இழப்பு, எதிர்பார்க்கும்_வரி_லாபம்,
                           எதிர்பார்க்கும்_வீதம்) {
     (முன்_கொண்டுசென்ற_இழப்பு <= 0) எனில் {
@@ -220,53 +220,53 @@
 
 // ஈடுசெய்யலாமா(சட்ட_உரிமை_உள்ளதா, ஒரே_அதிகாரமா)
 //
-// Deferred tax assets and liabilities are offset only where there is a legally
-// enforceable right to set off **current** tax assets against current tax
-// liabilities, and they relate to taxes levied by the same authority on the
-// same taxable entity.
+// __Deferred tax assets and liabilities are offset only where there is a legally__
+// __enforceable right to set off **current** tax assets against current tax__
+// __liabilities, and they relate to taxes levied by the same authority on the__
+// __same taxable entity.__
 //
-// Both conditions, and the first is about current tax while the item being
-// offset is deferred. Two subsidiaries in the same group, in the same country,
-// filing separately, cannot offset — and a consolidated balance sheet that
-// nets them has overstated neither total and understated both.
+// __Both conditions, and the first is about current tax while the item being__
+// __offset is deferred. Two subsidiaries in the same group, in the same country,__
+// __filing separately, cannot offset — and a consolidated balance sheet that__
+// __nets them has overstated neither total and understated both.__
 செயல் ஈடுசெய்யலாமா(சட்ட_உரிமை_உள்ளதா, ஒரே_அதிகாரமா) {
     திரும்பு சட்ட_உரிமை_உள்ளதா மற்றும் ஒரே_அதிகாரமா;
 }
 
 // =========================================================================
-// வரிச் செலவு — the charge for the year
+// __வரிச் செலவு — the charge for the year__
 // =========================================================================
 //
 // ஒத்திவரி_மாற்றம்(தொடக்கத்_தொகை, இறுதித்_தொகை)
 //
-// What goes to the profit and loss is the **movement** in the deferred tax
-// balance, not the balance. A closing deferred tax liability of eighty against
-// an opening of sixty is a charge of twenty, and taking the eighty is a
-// three-fold overstatement of this year's tax.
+// __What goes to the profit and loss is the **movement** in the deferred tax__
+// __balance, not the balance. A closing deferred tax liability of eighty against__
+// __an opening of sixty is a charge of twenty, and taking the eighty is a__
+// __three-fold overstatement of this year's tax.__
 //
-// Signed: positive is a charge, negative a credit.
+// __Signed: positive is a charge, negative a credit.__
 செயல் ஒத்திவரி_மாற்றம்(தொடக்கத்_தொகை, இறுதித்_தொகை) {
     திரும்பு வட்டமிடு(இறுதித்_தொகை - தொடக்கத்_தொகை, 2);
 }
 
 // மொத்த_வரிச்_செலவு(நடப்பு_வரி, ஒத்திவரி_மாற்றத்_தொகை)
 //
-// Tax expense is current plus deferred. Two components, disclosed separately,
-// and the reason a company can report a tax charge in a year it paid no tax
-// and paid tax in a year it reported a credit.
+// __Tax expense is current plus deferred. Two components, disclosed separately,__
+// __and the reason a company can report a tax charge in a year it paid no tax__
+// __and paid tax in a year it reported a credit.__
 செயல் மொத்த_வரிச்_செலவு(நடப்பு_வரி, ஒத்திவரி_மாற்றத்_தொகை) {
     திரும்பு வட்டமிடு(நடப்பு_வரி + ஒத்திவரி_மாற்றத்_தொகை, 2);
 }
 
 // =========================================================================
-// வீத ஒப்புரவு — the effective tax rate reconciliation
+// __வீத ஒப்புரவு — the effective tax rate reconciliation__
 // =========================================================================
 //
 // நிரந்தர_தாக்கம்(நிரந்தர_வேறுபாடு, சட்ட_வீதம்)
 //
-// The tax effect of a permanent difference. It never becomes deferred tax —
-// there is no reversal to defer — and it shows up only here, as the thing that
-// makes the effective rate differ from the statutory one.
+// __The tax effect of a permanent difference. It never becomes deferred tax —__
+// __there is no reversal to defer — and it shows up only here, as the thing that__
+// __makes the effective rate differ from the statutory one.__
 செயல் நிரந்தர_தாக்கம்(நிரந்தர_வேறுபாடு, சட்ட_வீதம்) {
     திரும்பு வட்டமிடு(சதவீதம்(நிரந்தர_வேறுபாடு, சட்ட_வீதம்), 2);
 }
@@ -274,22 +274,22 @@
 // வீத_ஒப்புரவு(கணக்கு_லாபம், சட்ட_வீதம், நிரந்தர_வேறுபாடுகள்,
 //               பிற_சரிசெய்தல்கள்)
 //
-// Accounting profit at the statutory rate, reconciled to the tax expense
-// actually reported. The disclosure Ind AS 12 requires, and the most useful
-// single table in a set of accounts: it says in one place why a company taxed
-// at twenty-five per cent reported a charge of nine.
+// __Accounting profit at the statutory rate, reconciled to the tax expense__
+// __actually reported. The disclosure Ind AS 12 requires, and the most useful__
+// __single table in a set of accounts: it says in one place why a company taxed__
+// __at twenty-five per cent reported a charge of nine.__
 //
-// நிரந்தர_வேறுபாடுகள் is a list of *amounts of income or expense* — a
-// disallowed expense positive, exempt income negative — and their tax effect
-// is computed here. பிற_சரிசெய்தல்கள் is a list of already-computed **tax**
-// amounts: an unrecognised deferred tax asset, a prior-year adjustment, a rate
-// change remeasurement. The two are different kinds of number and mixing them
-// is an error of a hundred-fold in whichever direction.
+// __நிரந்தர_வேறுபாடுகள் is a list of *amounts of income or expense* — a__
+// __disallowed expense positive, exempt income negative — and their tax effect__
+// __is computed here. பிற_சரிசெய்தல்கள் is a list of already-computed **tax**__
+// __amounts: an unrecognised deferred tax asset, a prior-year adjustment, a rate__
+// __change remeasurement. The two are different kinds of number and mixing them__
+// __is an error of a hundred-fold in whichever direction.__
 //
-// The reconciliation closes by construction. It is the expected tax plus every
-// adjustment, so it cannot fail to add up — which is exactly why the
-// adjustments have to be named. A reconciliation whose last line is "other"
-// has explained nothing.
+// __The reconciliation closes by construction. It is the expected tax plus every__
+// __adjustment, so it cannot fail to add up — which is exactly why the__
+// __adjustments have to be named. A reconciliation whose last line is "other"__
+// __has explained nothing.__
 செயல் வீத_ஒப்புரவு(கணக்கு_லாபம், சட்ட_வீதம், நிரந்தர_வேறுபாடுகள்,
                      பிற_சரிசெய்தல்கள்) {
     எதிர்பார்த்த_வரி = வட்டமிடு(சதவீதம்(கணக்கு_லாபம், சட்ட_வீதம்), 2);

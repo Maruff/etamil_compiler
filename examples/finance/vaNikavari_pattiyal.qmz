@@ -1,7 +1,7 @@
-// வணிகவரி விலைப்பட்டியல் — a GST invoice
+// __வணிகவரி விலைப்பட்டியல் — a GST invoice__
 //
-// Line items are records, the invoice is an array of them. GST splits into
-// CGST and SGST within a state, or IGST across states.
+// __Line items are records, the invoice is an array of them. GST splits into__
+// __CGST and SGST within a state, or IGST across states.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";

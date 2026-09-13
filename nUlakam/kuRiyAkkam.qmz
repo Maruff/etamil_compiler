@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kuRiyAkkam.qmz — குறியாக்கம் (encoding): base64 and hex
+// __nUlakam/kuRiyAkkam.qmz — குறியாக்கம் (encoding): base64 and hex__
 //
-// Written in eTamil. The host provides only பைட்டுகள் and பைட்டுச்_சரம் — the
-// UTF-8 bytes of a string and the string back — because a byte is not
-// something the language can reach on its own. Everything above that is
-// arithmetic and string indexing, which it can, so this is ordinary eTamil
-// rather than more Rust.
+// __Written in eTamil. The host provides only பைட்டுகள் and பைட்டுச்_சரம் — the__
+// __UTF-8 bytes of a string and the string back — because a byte is not__
+// __something the language can reach on its own. Everything above that is__
+// __arithmetic and string indexing, which it can, so this is ordinary eTamil__
+// __rather than more Rust.__
 //
-// A byte array is an array of numbers. There is no separate byte type, and
-// adding one would have touched every exhaustive match in the value path to
-// express something already representable.
+// __A byte array is an array of numbers. There is no separate byte type, and__
+// __adding one would have touched every exhaustive match in the value path to__
+// __express something already representable.__
 //
-//   அறுபத்துநான்கு_ஆக்கு(சரம்)  -> base64 text
-//   அறுபத்துநான்கு_படி(சரம்)    -> சரி(சரம்) or தவறு
-//   பதினாறு_ஆக்கு(சரம்)         -> lowercase hex
-//   பதினாறு_படி(சரம்)           -> சரி(சரம்) or தவறு
+//   __அறுபத்துநான்கு_ஆக்கு(சரம்)  -> base64 text__
+//   __அறுபத்துநான்கு_படி(சரம்)    -> சரி(சரம்) or தவறு__
+//   __பதினாறு_ஆக்கு(சரம்)         -> lowercase hex__
+//   __பதினாறு_படி(சரம்)           -> சரி(சரம்) or தவறு__
 
 இறக்கு "kaNiqam.qmz";
 இறக்கு "col.qmz";
@@ -26,13 +26,13 @@
 
 செயல் பதினாறு_எழுத்துகள்() { திரும்பு "0123456789abcdef"; }
 
-// --- base64 ---------------------------------------------------------------
+// __--- base64 ---------------------------------------------------------------__
 
-// அறுபத்துநான்கு_ஆக்கு(சரம்) — text as base64
+// __அறுபத்துநான்கு_ஆக்கு(சரம்) — text as base64__
 //
-// Three bytes carry 24 bits, which divide into four 6-bit groups. Without a
-// shift operator the groups come out by division and remainder, which is the
-// same arithmetic written differently.
+// __Three bytes carry 24 bits, which divide into four 6-bit groups. Without a__
+// __shift operator the groups come out by division and remainder, which is the__
+// __same arithmetic written differently.__
 செயல் அறுபத்துநான்கு_ஆக்கு(மூலம்) {
     எழுத்துகள் = அறுபத்துநான்கு_எழுத்துகள்();
     பைட்டு_அணி = பைட்டுகள்(சொல்லாக்கு(மூலம்));
@@ -42,8 +42,8 @@
     இடம்_எண் = 0;
 
     (இடம்_எண் < மொத்தம்) சுற்று {
-        // The last group may be short, so the missing bytes count as zero and
-        // the output is padded with '=' to say how many were absent.
+        // __The last group may be short, so the missing bytes count as zero and__
+        // __the output is padded with '=' to say how many were absent.__
         முதல் = பைட்டு_அணி[இடம்_எண்];
         உள்ளது = மொத்தம் - இடம்_எண்;
 
@@ -74,15 +74,15 @@
     திரும்பு விடை;
 }
 
-// அறுபத்துநான்கு_படி(சரம்) — base64 back to text
+// __அறுபத்துநான்கு_படி(சரம்) — base64 back to text__
 செயல் அறுபத்துநான்கு_படி(குறியிட்டது) {
     எழுத்துகள் = அறுபத்துநான்கு_எழுத்துகள்();
     உரைப்பு = சொல்லாக்கு(குறியிட்டது);
     மொத்தம் = நீளம்(உரைப்பு);
 
-    // Six bits at a time into an accumulator; every time eight are available
-    // a byte comes out. Padding contributes no bits, which is what makes a
-    // short final group work.
+    // __Six bits at a time into an accumulator; every time eight are available__
+    // __a byte comes out. Padding contributes no bits, which is what makes a__
+    // __short final group work.__
     சேமிப்பு = 0;
     பிட்டுகள் = 0;
     பைட்டு_அணி = [];
@@ -120,7 +120,7 @@
     திரும்பு பைட்டுச்_சரம்(பைட்டு_அணி);
 }
 
-// --- hex ------------------------------------------------------------------
+// __--- hex ------------------------------------------------------------------__
 
 செயல் பதினாறு_ஆக்கு(மூலம்) {
     எழுத்துகள் = பதினாறு_எழுத்துகள்();

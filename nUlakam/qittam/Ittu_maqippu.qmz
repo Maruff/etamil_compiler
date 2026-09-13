@@ -1,60 +1,60 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qittam/Ittu_maqippu.qmz — ஈட்டு மதிப்பு (earned value management)
+// __nUlakam/qittam/Ittu_maqippu.qmz — ஈட்டு மதிப்பு (earned value management)__
 //
-// A project has a budget of 1,750 and has spent 805. Is it in trouble?
+// __A project has a budget of 1,750 and has spent 805. Is it in trouble?__
 //
-// The question has no answer, and that is the whole argument for this module.
-// Two numbers cannot describe three variables. Spend says how much money left;
-// budget says how much was meant to. Neither says anything about **work
-// accomplished**, and without that the other two are uninterpretable: 46% of
-// the budget spent is excellent against 60% of the work and alarming against
-// 30%, and the financial data is identical in both cases.
+// __The question has no answer, and that is the whole argument for this module.__
+// __Two numbers cannot describe three variables. Spend says how much money left;__
+// __budget says how much was meant to. Neither says anything about **work__
+// __accomplished**, and without that the other two are uninterpretable: 46% of__
+// __the budget spent is excellent against 60% of the work and alarming against__
+// __30%, and the financial data is identical in both cases.__
 //
-// Earned value supplies the missing variable, and a cost accountant already
-// knows the technique under another name. It is standard costing applied to a
-// project: a physical measure of output, valued at standard, compared with
-// actual cost. ஈட்டிய_மதிப்பு is the flexed budget; செலவு_வேறுபாடு is the
-// total cost variance; செலவுச்_செயல்திறன் is an efficiency ratio.
-// celavu/niyamam.qmz is the same arithmetic on a production order.
+// __Earned value supplies the missing variable, and a cost accountant already__
+// __knows the technique under another name. It is standard costing applied to a__
+// __project: a physical measure of output, valued at standard, compared with__
+// __actual cost. ஈட்டிய_மதிப்பு is the flexed budget; செலவு_வேறுபாடு is the__
+// __total cost variance; செலவுச்_செயல்திறன் is an efficiency ratio.__
+// __celavu/niyamam.qmz is the same arithmetic on a production order.__
 //
-// One trap, and it catches everyone once: **கால_வேறுபாடு is in money, not
-// time.** A schedule variance of −85 does not mean the project is 85 short; it
-// means the work not yet done was budgeted at 85. Converting that to time
-// needs the schedule, which is pAqY.qmz, not this module.
+// __One trap, and it catches everyone once: **கால_வேறுபாடு is in money, not__
+// __time.** A schedule variance of −85 does not mean the project is 85 short; it__
+// __means the work not yet done was budgeted at 85. Converting that to time__
+// __needs the schedule, which is pAqY.qmz, not this module.__
 //
-// Sign convention matches celavu/: negative is unfavourable, because both
-// variances are (what we should have) less (what we have).
+// __Sign convention matches celavu/: negative is unfavourable, because both__
+// __variances are (what we should have) less (what we have).__
 
-// --- Percent complete: three honest methods, and one dishonest one -------
+// __--- Percent complete: three honest methods, and one dishonest one -------__
 //
-// The hard part of earned value is not the arithmetic, it is establishing what
-// proportion of a work package is done. The natural human answer is optimistic
-// and unfalsifiable — "about 80%" has been the status of many packages for
-// many months. These three conventions remove the judgement, and the module
-// offers no function that accepts a typed-in percentage, deliberately.
+// __The hard part of earned value is not the arithmetic, it is establishing what__
+// __proportion of a work package is done. The natural human answer is optimistic__
+// __and unfalsifiable — "about 80%" has been the status of many packages for__
+// __many months. These three conventions remove the judgement, and the module__
+// __offers no function that accepts a typed-in percentage, deliberately.__
 
-// முறை_0_100(முடிந்ததா) — nothing until complete, then everything
+// __முறை_0_100(முடிந்ததா) — nothing until complete, then everything__
 //
-// Conservative, ungameable, and right for any package inside one or two
-// reporting periods.
+// __Conservative, ungameable, and right for any package inside one or two__
+// __reporting periods.__
 செயல் முறை_0_100(முடிந்ததா) {
     (முடிந்ததா) எனில் { திரும்பு 1; }
     திரும்பு 0;
 }
 
-// முறை_50_50(தொடங்கியதா, முடிந்ததா) — half on starting, half on finishing
+// __முறை_50_50(தொடங்கியதா, முடிந்ததா) — half on starting, half on finishing__
 செயல் முறை_50_50(தொடங்கியதா, முடிந்ததா) {
     (முடிந்ததா) எனில் { திரும்பு 1; }
     (தொடங்கியதா) எனில் { திரும்பு 0.5; }
     திரும்பு 0;
 }
 
-// முறை_மைல்கற்கள்(அடைந்த_எடைகள்) — weighted milestones
+// __முறை_மைல்கற்கள்(அடைந்த_எடைகள்) — weighted milestones__
 //
-// For long packages. The weights are assigned *before* work starts and credit
-// is taken only when a milestone is objectively achieved. Pass the list of
-// weights actually reached.
+// __For long packages. The weights are assigned *before* work starts and credit__
+// __is taken only when a milestone is objectively achieved. Pass the list of__
+// __weights actually reached.__
 செயல் முறை_மைல்கற்கள்(அடைந்த_எடைகள்) {
     ஓடும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_எடை இல் அடைந்த_எடைகள் {
@@ -63,16 +63,16 @@
     திரும்பு ஓடும்_கூட்டல்;
 }
 
-// ஈட்டிய_மதிப்பு(கணு_நிதி, நிறைவுப்_பங்கு) — EV for one package
+// __ஈட்டிய_மதிப்பு(கணு_நிதி, நிறைவுப்_பங்கு) — EV for one package__
 //
-// The *budget* of finished work, never its cost. That distinction is the
-// entire mechanism: valuing completed work at what it was supposed to cost is
-// what makes EV comparable with both PV and AC.
+// __The *budget* of finished work, never its cost. That distinction is the__
+// __entire mechanism: valuing completed work at what it was supposed to cost is__
+// __what makes EV comparable with both PV and AC.__
 செயல் ஈட்டிய_மதிப்பு(கணு_நிதி, நிறைவுப்_பங்கு) {
     திரும்பு கணு_நிதி * நிறைவுப்_பங்கு;
 }
 
-// --- Variances -----------------------------------------------------------
+// __--- Variances -----------------------------------------------------------__
 
 செயல் செலவு_வேறுபாடு(ஈட்டியது, உண்மைச்_செலவு) {
     திரும்பு ஈட்டியது - உண்மைச்_செலவு;
@@ -84,20 +84,20 @@
 
 // கணக்கியல்_வேறுபாடு(திட்டமிட்டது, உண்மைச்_செலவு)
 //
-// Planned less actual — the figure a conventional "spend against budget"
-// report shows. Included precisely so a caller can demonstrate how misleading
-// it is: it can read favourable while both real variances are adverse.
+// __Planned less actual — the figure a conventional "spend against budget"__
+// __report shows. Included precisely so a caller can demonstrate how misleading__
+// __it is: it can read favourable while both real variances are adverse.__
 செயல் கணக்கியல்_வேறுபாடு(திட்டமிட்டது, உண்மைச்_செலவு) {
     திரும்பு திட்டமிட்டது - உண்மைச்_செலவு;
 }
 
-// --- Indices -------------------------------------------------------------
+// __--- Indices -------------------------------------------------------------__
 
-// செலவுச்_செயல்திறன்(ஈட்டியது, உண்மைச்_செலவு) — CPI
+// __செலவுச்_செயல்திறன்(ஈட்டியது, உண்மைச்_செலவு) — CPI__
 //
-// Rupees of value earned per rupee spent. Dimensionless, so projects of
-// different sizes compare, and empirically quite stable once a project is
-// about 20% complete — which is what makes it usable for forecasting.
+// __Rupees of value earned per rupee spent. Dimensionless, so projects of__
+// __different sizes compare, and empirically quite stable once a project is__
+// __about 20% complete — which is what makes it usable for forecasting.__
 செயல் செலவுச்_செயல்திறன்(ஈட்டியது, உண்மைச்_செலவு) {
     (உண்மைச்_செலவு == 0) எனில் {
         திரும்பு தவறு("உண்மைச் செலவு பூஜ்யம்: செயல்திறன் இன்னும் பொருளற்றது");
@@ -117,22 +117,22 @@
     திரும்பு சரி(ஈட்டியது / மொத்த_நிதி * 100);
 }
 
-// --- Forecasting ---------------------------------------------------------
+// __--- Forecasting ---------------------------------------------------------__
 //
-// Three estimates at completion, answering three different questions. Which
-// one to use is a governance decision, not a calculation preference, so the
-// module makes the caller choose rather than defaulting silently — the spread
-// between them is usually large enough to change what a steering committee
-// does.
+// __Three estimates at completion, answering three different questions. Which__
+// __one to use is a governance decision, not a calculation preference, so the__
+// __module makes the caller choose rather than defaulting silently — the spread__
+// __between them is usually large enough to change what a steering committee__
+// __does.__
 
 // முடிவில்_மதிப்பீடு_மீதியால்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது)
-// The overrun was a one-off; the rest goes to plan.
+// __The overrun was a one-off; the rest goes to plan.__
 செயல் முடிவில்_மதிப்பீடு_மீதியால்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது) {
     திரும்பு உண்மைச்_செலவு + (மொத்த_நிதி - ஈட்டியது);
 }
 
 // முடிவில்_மதிப்பீடு_திறனால்(மொத்த_நிதி, செலவுத்_திறன்)
-// Current cost efficiency persists. The default assumption, and usually right.
+// __Current cost efficiency persists. The default assumption, and usually right.__
 செயல் முடிவில்_மதிப்பீடு_திறனால்(மொத்த_நிதி, செலவுத்_திறன்) {
     (செலவுத்_திறன் == 0) எனில் { திரும்பு தவறு("செயல்திறன் பூஜ்யம்"); }
     திரும்பு சரி(மொத்த_நிதி / செலவுத்_திறன்);
@@ -140,8 +140,8 @@
 
 // முடிவில்_மதிப்பீடு_இரண்டாலும்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது,
 //                                செலவுத்_திறன், காலத்_திறன்)
-// Both cost and schedule pressure persist — appropriate when a fixed end date
-// will force expediting.
+// __Both cost and schedule pressure persist — appropriate when a fixed end date__
+// __will force expediting.__
 செயல் முடிவில்_மதிப்பீடு_இரண்டாலும்(உண்மைச்_செலவு, மொத்த_நிதி, ஈட்டியது,
                                     செலவுத்_திறன், காலத்_திறன்) {
     கூட்டுத்_திறன் = செலவுத்_திறன் * காலத்_திறன்;
@@ -157,13 +157,13 @@
     திரும்பு மொத்த_நிதி - முடிவில்_மதிப்பீடு;
 }
 
-// முடிக்கத்_தேவையான_திறன்(மொத்த_நிதி, ஈட்டியது, உண்மைச்_செலவு) — TCPI
+// __முடிக்கத்_தேவையான_திறன்(மொத்த_நிதி, ஈட்டியது, உண்மைச்_செலவு) — TCPI__
 //
-// The sharpest number on a status report: the efficiency now required to
-// finish within budget. A project running at 0.91 that must run at 1.07 is
-// being asked to improve by 18% immediately and hold it. Teams routinely
-// promise this; it essentially never happens, and the gap between achieved and
-// required is the quantitative form of that judgement.
+// __The sharpest number on a status report: the efficiency now required to__
+// __finish within budget. A project running at 0.91 that must run at 1.07 is__
+// __being asked to improve by 18% immediately and hold it. Teams routinely__
+// __promise this; it essentially never happens, and the gap between achieved and__
+// __required is the quantitative form of that judgement.__
 செயல் முடிக்கத்_தேவையான_திறன்(மொத்த_நிதி, ஈட்டியது, உண்மைச்_செலவு) {
     மீதி_நிதி = மொத்த_நிதி - உண்மைச்_செலவு;
     (மீதி_நிதி == 0) எனில் {
@@ -178,12 +178,12 @@
     திரும்பு சரி(அசல்_காலம் / காலத்_திறன்);
 }
 
-// --- The status report ---------------------------------------------------
+// __--- The status report ---------------------------------------------------__
 
 // நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி)
 //
-// Everything a steering committee needs from one reading, computed rather than
-// stored — nothing here is a field that could drift from its inputs.
+// __Everything a steering committee needs from one reading, computed rather than__
+// __stored — nothing here is a field that could drift from its inputs.__
 செயல் நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி) {
     செலவுத்_திறன் = செலவுச்_செயல்திறன்(ஈட்டியது, உண்மைச்_செலவு);
     காலத்_திறன் = காலச்_செயல்திறன்(ஈட்டியது, திட்டமிட்டது);

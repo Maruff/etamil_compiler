@@ -1,41 +1,41 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/varuvAy/iruppukaL.qmz — இருப்புகள், what sits on the balance sheet
+// __nUlakam/varuvAy/iruppukaL.qmz — இருப்புகள், what sits on the balance sheet__
 //
-// Revenue recognised and amounts invoiced are two different clocks, and they
-// are almost never in step. The difference is an asset or a liability:
+// __Revenue recognised and amounts invoiced are two different clocks, and they__
+// __are almost never in step. The difference is an asset or a liability:__
 //
-//   revenue ahead of billing   →  a **contract asset**
-//   billing ahead of revenue   →  a **contract liability**
+//   __revenue ahead of billing   →  a **contract asset**__
+//   __billing ahead of revenue   →  a **contract liability**__
 //
-// Under the old standards these were "amounts due from customers" and
-// "advances", and both were routinely presented as one net figure across a
-// portfolio. Ind AS 115 does not permit that. The netting is **per contract**,
-// and contracts are then aggregated **gross** — every contract asset in one
-// line and every contract liability in another.
+// __Under the old standards these were "amounts due from customers" and__
+// __"advances", and both were routinely presented as one net figure across a__
+// __portfolio. Ind AS 115 does not permit that. The netting is **per contract**,__
+// __and contracts are then aggregated **gross** — every contract asset in one__
+// __line and every contract liability in another.__
 //
-// A builder with fifty contracts, half ahead of billing and half behind, has
-// two large balances and not one small one. Netting them across the portfolio
-// understates both sides of the balance sheet by the same amount, flatters
-// every working-capital ratio, and hides the fact that the money owed and the
-// money owing belong to different people.
+// __A builder with fifty contracts, half ahead of billing and half behind, has__
+// __two large balances and not one small one. Netting them across the portfolio__
+// __understates both sides of the balance sheet by the same amount, flatters__
+// __every working-capital ratio, and hides the fact that the money owed and the__
+// __money owing belong to different people.__
 //
-// Record keys are quoted: சொத்து, பொறுப்பு, விலைப்பட்டியல், வருவாய், நிலுவை
-// and நிலை are all keywords.
+// __Record keys are quoted: சொத்து, பொறுப்பு, விலைப்பட்டியல், வருவாய், நிலுவை__
+// __and நிலை are all keywords.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// ஒரு ஒப்பந்தத்தின் நிலை — one contract's position
+// __ஒரு ஒப்பந்தத்தின் நிலை — one contract's position__
 // =========================================================================
 //
 // ஒப்பந்த_நிலை(ஒப்பந்தக்_குறி, அங்கீகரித்த_வருவாய், விலைப்பட்டியலிட்டது)
 //
-// Netted within the contract, which is the only place netting is allowed.
-// Exactly one of the two balances is non-zero, and a contract exactly in step
-// has neither — which is worth being able to say, rather than reporting a zero
-// asset.
+// __Netted within the contract, which is the only place netting is allowed.__
+// __Exactly one of the two balances is non-zero, and a contract exactly in step__
+// __has neither — which is worth being able to say, rather than reporting a zero__
+// __asset.__
 செயல் ஒப்பந்த_நிலை(ஒப்பந்தக்_குறி, அங்கீகரித்த_வருவாய், விலைப்பட்டியலிட்டது) {
     வேறுபாடு = வட்டமிடு(அங்கீகரித்த_வருவாய் - விலைப்பட்டியலிட்டது, 2);
 
@@ -54,47 +54,47 @@
 }
 
 // =========================================================================
-// சொத்தா, பெறவேண்டியதா — contract asset or receivable
+// __சொத்தா, பெறவேண்டியதா — contract asset or receivable__
 // =========================================================================
 //
 // உரிமை_வகை(காலம்_மட்டும்_நிபந்தனையா)
 //
-// Both are amounts the entity expects to collect, and they are different
-// things:
+// __Both are amounts the entity expects to collect, and they are different__
+// __things:__
 //
-//   a **receivable** is an unconditional right — only the passage of time
-//     stands between the entity and the money;
-//   a **contract asset** is conditional on something else, usually on
-//     performing more of the contract.
+//   __a **receivable** is an unconditional right — only the passage of time__
+//     __stands between the entity and the money;__
+//   __a **contract asset** is conditional on something else, usually on__
+//     __performing more of the contract.__
 //
-// The distinction is not presentational. A contract asset carries the risk
-// that the rest of the work is not completed as well as the customer's credit
-// risk, it is impaired differently, and it is disclosed separately. An entity
-// that calls everything a receivable has understated how much of its balance
-// sheet depends on work it has not yet done.
+// __The distinction is not presentational. A contract asset carries the risk__
+// __that the rest of the work is not completed as well as the customer's credit__
+// __risk, it is impaired differently, and it is disclosed separately. An entity__
+// __that calls everything a receivable has understated how much of its balance__
+// __sheet depends on work it has not yet done.__
 //
-// The test is whether anything other than time remains. Not whether an invoice
-// has been raised — invoicing is an administrative act and the standard is
-// indifferent to it.
+// __The test is whether anything other than time remains. Not whether an invoice__
+// __has been raised — invoicing is an administrative act and the standard is__
+// __indifferent to it.__
 செயல் உரிமை_வகை(காலம்_மட்டும்_நிபந்தனையா) {
     (காலம்_மட்டும்_நிபந்தனையா) எனில் { திரும்பு "பெறவேண்டியது"; }
     திரும்பு "ஒப்பந்தச்_சொத்து";
 }
 
 // =========================================================================
-// தேக்கம் — retention
+// __தேக்கம் — retention__
 // =========================================================================
 //
 // தேக்கத்_தொகை(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்)
 //
-// Money the customer keeps back from each certified bill until the defects
-// liability period expires. It is part of the transaction price and it is
-// revenue when earned — withholding it does not defer the revenue, it defers
-// the cash.
+// __Money the customer keeps back from each certified bill until the defects__
+// __liability period expires. It is part of the transaction price and it is__
+// __revenue when earned — withholding it does not defer the revenue, it defers__
+// __the cash.__
 //
-// Treating retention as revenue only on release is the common error, and it
-// understates revenue for the whole life of the contract and then overstates
-// it in the final year.
+// __Treating retention as revenue only on release is the common error, and it__
+// __understates revenue for the whole life of the contract and then overstates__
+// __it in the final year.__
 செயல் தேக்கத்_தொகை(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்) {
     (தேக்க_விகிதம் <= 0) எனில் { திரும்பு 0; }
     திரும்பு வட்டமிடு(சதவீதம்(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்), 2);
@@ -102,13 +102,13 @@
 
 // தேக்கத்தை_வகைப்படுத்து(தேக்கத்_தொகைமதிப்பு, குறை_நீக்கம்_மட்டுமா)
 //
-// Retention is a **receivable** only where nothing but time remains — the work
-// is done and the money falls due on a date. Where release depends on making
-// good defects, something other than time stands in the way and it is a
-// contract asset.
+// __Retention is a **receivable** only where nothing but time remains — the work__
+// __is done and the money falls due on a date. Where release depends on making__
+// __good defects, something other than time stands in the way and it is a__
+// __contract asset.__
 //
-// Most retention is the second kind while the defects period runs, and becomes
-// the first when it expires.
+// __Most retention is the second kind while the defects period runs, and becomes__
+// __the first when it expires.__
 செயல் தேக்கத்தை_வகைப்படுத்து(தேக்கத்_தொகைமதிப்பு, குறை_நீக்கம்_மட்டுமா) {
     திரும்பு {"தொகை": வட்டமிடு(தேக்கத்_தொகைமதிப்பு, 2),
               "வகை": உரிமை_வகை(குறை_நீக்கம்_மட்டுமா)};
@@ -116,26 +116,26 @@
 
 // விலைப்பட்டியல்_நிகரம்(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்)
 //
-// What is actually collectable now from a bill: the certified amount less the
-// retention withheld from it.
+// __What is actually collectable now from a bill: the certified amount less the__
+// __retention withheld from it.__
 செயல் விலைப்பட்டியல்_நிகரம்(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்) {
     திரும்பு வட்டமிடு(விலைப்பட்டியல்_தொகை
                        - தேக்கத்_தொகை(விலைப்பட்டியல்_தொகை, தேக்க_விகிதம்), 2);
 }
 
 // =========================================================================
-// தொகுத்தல் — aggregating across contracts
+// __தொகுத்தல் — aggregating across contracts__
 // =========================================================================
 //
 // ஒப்பந்தங்களைத்_தொகு(நிலைகள்)
 //
-// Every contract asset added into one figure and every contract liability into
-// another. **Gross, never netted**, which is the whole reason this function
-// exists rather than a sum.
+// __Every contract asset added into one figure and every contract liability into__
+// __another. **Gross, never netted**, which is the whole reason this function__
+// __exists rather than a sum.__
 //
-// The record also carries the net, because somebody will want it and it is
-// better computed here beside the two gross figures than derived somewhere
-// else without them. It is not what goes on the balance sheet.
+// __The record also carries the net, because somebody will want it and it is__
+// __better computed here beside the two gross figures than derived somewhere__
+// __else without them. It is not what goes on the balance sheet.__
 செயல் ஒப்பந்தங்களைத்_தொகு(நிலைகள்) {
     சொத்துக்_கூட்டல் = 0;
     பொறுப்புக்_கூட்டல் = 0;
@@ -151,13 +151,13 @@
 
 // தவறாக_நிகரமிட்டால்(நிலைகள்)
 //
-// What a portfolio-level netting would report, so the difference can be
-// measured rather than argued about.
+// __What a portfolio-level netting would report, so the difference can be__
+// __measured rather than argued about.__
 //
-// This is not an alternative presentation and it is not offered as one. It is
-// here because the size of the understatement is the only thing that makes the
-// rule feel worth obeying, and in a contracting business it is usually very
-// large.
+// __This is not an alternative presentation and it is not offered as one. It is__
+// __here because the size of the understatement is the only thing that makes the__
+// __rule feel worth obeying, and in a contracting business it is usually very__
+// __large.__
 செயல் தவறாக_நிகரமிட்டால்(நிலைகள்) {
     தொகுப்பு_விடை = ஒப்பந்தங்களைத்_தொகு(நிலைகள்);
     சிறியது_பக்கம் = சிறியது(தொகுப்பு_விடை["மொத்தச்_சொத்து"],

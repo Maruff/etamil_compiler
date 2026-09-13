@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/upi/vilAcam.qmz — UPI virtual payment addresses, and the pay link
+// __nUlakam/upi/vilAcam.qmz — UPI virtual payment addresses, and the pay link__
 //
-// What this is, and what it is not.
+// __What this is, and what it is not.__
 //
-// A VPA and the upi:// link are public, specified, and checkable without
-// anyone's permission — a QR sticker in a shop is that link and nothing more.
-// This builds and checks them.
+// __A VPA and the upi:// link are public, specified, and checkable without__
+// __anyone's permission — a QR sticker in a shop is that link and nothing more.__
+// __This builds and checks them.__
 //
-// Moving money is not public. That needs a payment service provider or a bank
-// to sponsor you and NPCI to certify you, and no library substitutes for
-// either. What this gives you is everything up to the moment a request leaves
-// for your PSP: an address you have checked, a link you have built, an amount
-// in the only form UPI accepts.
+// __Moving money is not public. That needs a payment service provider or a bank__
+// __to sponsor you and NPCI to certify you, and no library substitutes for__
+// __either. What this gives you is everything up to the moment a request leaves__
+// __for your PSP: an address you have checked, a link you have built, an amount__
+// __in the only form UPI accepts.__
 //
-// Amounts are the reason a fixed-point language matters here. UPI takes rupees
-// and paise, two decimal places and no more, and 0.1 + 0.2 being exactly 0.3
-// is the difference between a request accepted and one rejected.
+// __Amounts are the reason a fixed-point language matters here. UPI takes rupees__
+// __and paise, two decimal places and no more, and 0.1 + 0.2 being exactly 0.3__
+// __is the difference between a request accepted and one rejected.__
 
 இறக்கு "../col.qmz";
 இறக்கு "../poruL.qmz";
 
-// --- the address ----------------------------------------------------------
+// __--- the address ----------------------------------------------------------__
 //
-// A VPA is name@handle: ravi@okaxis, 9876543210@ybl, a merchant's own. The
-// handle is the PSP. Neither half may be empty and there is exactly one @,
-// which is the check that catches a typed address; the rest is the PSP's
-// business, and refusing an address it would have accepted is worse than
-// passing one it will reject with a clear message.
+// __A VPA is name@handle: ravi@okaxis, 9876543210@ybl, a merchant's own. The__
+// __handle is the PSP. Neither half may be empty and there is exactly one @,__
+// __which is the check that catches a typed address; the rest is the PSP's__
+// __business, and refusing an address it would have accepted is worse than__
+// __passing one it will reject with a clear message.__
 செயல் முகவரி_சரியா(வி_பி_ஏ) {
     (நீளம்(வி_பி_ஏ) == 0) எனில் { திரும்பு பொய்; }
 
@@ -41,38 +41,38 @@
         திரும்பு பொய்;
     }
 
-    // A space is the one character that certainly does not belong, and the one
-    // a person typing an address most often leaves in.
+    // __A space is the one character that certainly does not belong, and the one__
+    // __a person typing an address most often leaves in.__
     (கொண்டுள்ளதா(வி_பி_ஏ, " ")) எனில் { திரும்பு பொய்; }
 
     திரும்பு மெய்;
 }
 
-// கை_பகுதி(வி_பி_ஏ) — the handle, which says which PSP holds the account
+// __கை_பகுதி(வி_பி_ஏ) — the handle, which says which PSP holds the account__
 செயல் கை_பகுதி(வி_பி_ஏ) {
     (முகவரி_சரியா(வி_பி_ஏ) == பொய்) எனில் { திரும்பு ""; }
     திரும்பு பிரி(வி_பி_ஏ, "@")[1];
 }
 
-// --- the amount -----------------------------------------------------------
+// __--- the amount -----------------------------------------------------------__
 //
-// தொகை_சரியா(தொகை_மதிப்பு) — is this an amount UPI will take?
+// __தொகை_சரியா(தொகை_மதிப்பு) — is this an amount UPI will take?__
 //
-// Positive, and not more than two decimal places. The second is the one that
-// bites: an amount computed as a third of something arrives with a tail of
-// digits, the PSP rejects it, and the rejection reads like the payment failed
-// rather than like the request was malformed.
+// __Positive, and not more than two decimal places. The second is the one that__
+// __bites: an amount computed as a third of something arrives with a tail of__
+// __digits, the PSP rejects it, and the rejection reads like the payment failed__
+// __rather than like the request was malformed.__
 செயல் தொகை_சரியா(தொகை_மதிப்பு) {
     (தொகை_மதிப்பு <= 0) எனில் { திரும்பு பொய்; }
     திரும்பு வட்டமிடு(தொகை_மதிப்பு, 2) == தொகை_மதிப்பு;
 }
 
-// தொகை_உரை(தொகை_மதிப்பு) — the amount as UPI wants it written
+// __தொகை_உரை(தொகை_மதிப்பு) — the amount as UPI wants it written__
 //
-// Always two decimal places. A decimal normalises 249.50 to 249.5, and while
-// most apps accept that, the spec writes rupees and paise and some payment
-// service providers hold you to it. Padding costs nothing; being rejected at a
-// counter for a missing zero costs a sale.
+// __Always two decimal places. A decimal normalises 249.50 to 249.5, and while__
+// __most apps accept that, the spec writes rupees and paise and some payment__
+// __service providers hold you to it. Padding costs nothing; being rejected at a__
+// __counter for a missing zero costs a sale.__
 செயல் தொகை_உரை(தொகை_மதிப்பு) {
     வட்டமிட்டது = சொல்லாக்கு(வட்டமிடு(தொகை_மதிப்பு, 2));
     பகுதிகள் = பிரி(வட்டமிட்டது, ".");
@@ -82,12 +82,12 @@
     திரும்பு வட்டமிட்டது;
 }
 
-// --- percent-encoding -----------------------------------------------------
+// __--- percent-encoding -----------------------------------------------------__
 //
-// A payee's name and a note go into a query string, and a shop called "Raja &
-// Sons" would otherwise end the parameter at the ampersand. Only what has to
-// be escaped is escaped: over-escaping produces a link that works and displays
-// wrongly in the payer's app.
+// __A payee's name and a note go into a query string, and a shop called "Raja &__
+// __Sons" would otherwise end the parameter at the ampersand. Only what has to__
+// __be escaped is escaped: over-escaping produces a link that works and displays__
+// __wrongly in the payer's app.__
 செயல் உரை_மறை(மூலப்_பாடம்) {
     வெளியே = மாற்று(மூலப்_பாடம், "%", "%25");
     வெளியே = மாற்று(வெளியே, "&", "%26");
@@ -98,22 +98,22 @@
     திரும்பு வெளியே;
 }
 
-// --- the link -------------------------------------------------------------
+// __--- the link -------------------------------------------------------------__
 //
-// பணம்_இணைப்பு(விவரங்கள்) — the upi:// link behind every payment QR
+// __பணம்_இணைப்பு(விவரங்கள்) — the upi:// link behind every payment QR__
 //
-// விவரங்கள் carries what the spec names:
-//   pa  the payee address, required
-//   pn  the payee name, required
-//   am  the amount — leave it out and the payer types one, which is what a
-//       donation box wants and a bill does not
-//   tn  a note shown to the payer
-//   tr  your reference, which is what you reconcile against later
-//   mc  the merchant category code, for a registered merchant
+// __விவரங்கள் carries what the spec names:__
+//   __pa  the payee address, required__
+//   __pn  the payee name, required__
+//   __am  the amount — leave it out and the payer types one, which is what a__
+//       __donation box wants and a bill does not__
+//   __tn  a note shown to the payer__
+//   __tr  your reference, which is what you reconcile against later__
+//   __mc  the merchant category code, for a registered merchant__
 //
-// Answers a தவறு rather than a link when the address or amount is wrong. A
-// malformed link becomes a QR that a shop prints, sticks to a counter, and
-// discovers is unscannable one customer at a time.
+// __Answers a தவறு rather than a link when the address or amount is wrong. A__
+// __malformed link becomes a QR that a shop prints, sticks to a counter, and__
+// __discovers is unscannable one customer at a time.__
 செயல் பணம்_இணைப்பு(விவரங்கள்) {
     முகவரி = புலம்_அல்லது(விவரங்கள், "pa", "");
     (முகவரி_சரியா(முகவரி) == பொய்) எனில் {
@@ -136,8 +136,8 @@
         இணைப்பு = இணைப்பு & "&am=" & தொகை_உரை(தொகை_மதிப்பு);
     }
 
-    // The currency is always INR. It is written anyway, because the spec says
-    // so and a payer's app is entitled to insist.
+    // __The currency is always INR. It is written anyway, because the spec says__
+    // __so and a payer's app is entitled to insist.__
     இணைப்பு = இணைப்பு & "&cu=INR";
 
     இணைப்பு = விருப்பத்தைச்_சேர்(இணைப்பு, "tn", புலம்_அல்லது(விவரங்கள், "tn", ""));
@@ -152,14 +152,14 @@
     திரும்பு இணைப்பு & "&" & பெயர் & "=" & உரை_மறை(சொல்லாக்கு(மதிப்பீடு));
 }
 
-// --- reading one back -----------------------------------------------------
+// __--- reading one back -----------------------------------------------------__
 //
-// இணைப்பைப்_படி(இணைப்பு) — the parameters of a upi:// link, as a record
+// __இணைப்பைப்_படி(இணைப்பு) — the parameters of a upi:// link, as a record__
 //
-// For checking what was printed on a sticker, and for a payer app reading what
-// it was handed. Values are left percent-encoded: decoding needs the reverse
-// of உரை_மறை and every escape a payer's app might have used, which is more
-// than this claims to do.
+// __For checking what was printed on a sticker, and for a payer app reading what__
+// __it was handed. Values are left percent-encoded: decoding needs the reverse__
+// __of உரை_மறை and every escape a payer's app might have used, which is more__
+// __than this claims to do.__
 செயல் இணைப்பைப்_படி(இணைப்பு) {
     (தொடங்குகிறதா(இணைப்பு, "upi://pay?") == பொய்) எனில் {
         திரும்பு தவறு("upi://pay? இல் தொடங்கவில்லை  (not a UPI pay link)");

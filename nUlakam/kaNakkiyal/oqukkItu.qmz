@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/oqukkItu.qmz — ஒதுக்கீடு (assignment / clearing)
+// __nUlakam/kaNakkiyal/oqukkItu.qmz — ஒதுக்கீடு (assignment / clearing)__
 //
-// A receipt is assigned against the invoices it settles. Until it is, an
-// invoice is outstanding for its full amount. This is what gives "நிலுவை"
-// a meaning, and everything about ageing depends on it.
+// __A receipt is assigned against the invoices it settles. Until it is, an__
+// __invoice is outstanding for its full amount. This is what gives "நிலுவை"__
+// __a meaning, and everything about ageing depends on it.__
 //
-// Assignments are values in a list, like postings: assigning returns a new
-// list rather than editing the old one.
+// __Assignments are values in a list, like postings: assigning returns a new__
+// __list rather than editing the old one.__
 
 இறக்கு "pErEtu.qmz";
 இறக்கு "kAlam.qmz";
 இறக்கு "../kaNiqam.qmz";
 
 // ஒதுக்கீடு_ஆக்கு(மூல_எண், இலக்கு_எண், தொகை)
-//   மூல_எண்   — the clearing transaction (a receipt or payment)
-//   இலக்கு_எண் — the transaction being cleared (an invoice or bill)
+//   __மூல_எண்   — the clearing transaction (a receipt or payment)__
+//   __இலக்கு_எண் — the transaction being cleared (an invoice or bill)__
 செயல் ஒதுக்கீடு_ஆக்கு(மூல_எண், இலக்கு_எண், தொகை_மதிப்பு) {
     திரும்பு {
         மூல_எண்: மூல_எண்,
@@ -25,7 +25,7 @@
 }
 
 // ஒதுக்கப்பட்ட_மொத்தம்(ஒதுக்கீடுகள், பரிவர்த்தனை_எண்)
-// How much has been cleared against a transaction so far.
+// __How much has been cleared against a transaction so far.__
 செயல் ஒதுக்கப்பட்ட_மொத்தம்(ஒதுக்கீடுகள், பரிவர்த்தனை_எண்) {
     மொத்தம் = 0;
     ஒவ்வொரு ஒன்று இல் ஒதுக்கீடுகள் {
@@ -37,7 +37,7 @@
 }
 
 // பயன்படுத்தப்பட்டது(ஒதுக்கீடுகள், மூல_எண்)
-// How much of a receipt has already been spread over invoices.
+// __How much of a receipt has already been spread over invoices.__
 செயல் பயன்படுத்தப்பட்டது(ஒதுக்கீடுகள், மூல_எண்) {
     மொத்தம் = 0;
     ஒவ்வொரு ஒன்று இல் ஒதுக்கீடுகள் {
@@ -49,18 +49,18 @@
 }
 
 // நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், பரிவர்த்தனை_எண், கணக்கு, வகை)
-// What is still owed on one transaction.
+// __What is still owed on one transaction.__
 செயல் நிலுவைத்_தொகை(பேரேடு, ஒதுக்கீடுகள், பரிவர்த்தனை_எண்,
                       கணக்கு_குறி, கணக்கு_வகை) {
     மொத்தம் = பரிவர்த்தனை_தொகை(பேரேடு, பரிவர்த்தனை_எண், கணக்கு_குறி, கணக்கு_வகை);
     திரும்பு மொத்தம் - ஒதுக்கப்பட்ட_மொத்தம்(ஒதுக்கீடுகள், பரிவர்த்தனை_எண்);
 }
 
-// ஒதுக்கு(...) — clear one transaction against another, or refuse
+// __ஒதுக்கு(...) — clear one transaction against another, or refuse__
 //
-// Two things are checked, and both are real accounting errors rather than
-// programming mistakes: you cannot clear more than the invoice is worth, and
-// you cannot spread a receipt further than the receipt itself.
+// __Two things are checked, and both are real accounting errors rather than__
+// __programming mistakes: you cannot clear more than the invoice is worth, and__
+// __you cannot spread a receipt further than the receipt itself.__
 செயல் ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு, மூல_எண், இலக்கு_எண்,
                தொகை_மதிப்பு, கணக்கு_குறி, கணக்கு_வகை) {
     (தொகை_மதிப்பு <= 0) எனில் {
@@ -87,7 +87,7 @@
         ஒதுக்கீடு_ஆக்கு(மூல_எண், இலக்கு_எண், தொகை_மதிப்பு)));
 }
 
-// நிலுவைப்_பட்டியல்(...) — every transaction on an account still owing
+// __நிலுவைப்_பட்டியல்(...) — every transaction on an account still owing__
 செயல் நிலுவைப்_பட்டியல்(பேரேடு, ஒதுக்கீடுகள், கணக்கு_குறி, கணக்கு_வகை) {
     விடை = [];
     ஒவ்வொரு ஒரு_எண் இல் பரிவர்த்தனை_எண்கள்(பேரேடு, கணக்கு_குறி) {
@@ -104,10 +104,10 @@
     திரும்பு விடை;
 }
 
-// வயது_அட்டவணை(...) — an ageing schedule
+// __வயது_அட்டவணை(...) — an ageing schedule__
 //
-// Buckets follow the usual receivables convention. இன்று is passed in
-// rather than read from the clock so a report can be reproduced.
+// __Buckets follow the usual receivables convention. இன்று is passed in__
+// __rather than read from the clock so a report can be reproduced.__
 செயல் வயது_அட்டவணை(பேரேடு, ஒதுக்கீடுகள், கணக்கு_குறி, கணக்கு_வகை, அன்றைய_நாள்) {
     நடப்பு = 0;
     முப்பது = 0;

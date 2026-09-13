@@ -1,6 +1,6 @@
-// Calculator Server
-// Demonstrates mathematical operations
-// Run: ./etamil_compiler --server --port 8080 calculator_server.qmz
+// __Calculator Server__
+// __Demonstrates mathematical operations__
+// __Run: ./etamil_compiler --server --port 8080 calculator_server.qmz__
 
 எண் _a;
 எண் _b;

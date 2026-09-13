@@ -1,28 +1,28 @@
-// Inventory Management Example
-// Demonstrates database operations for product inventory
+// __Inventory Management Example__
+// __Demonstrates database operations for product inventory__
 //
-// This program shows:
-// 1. Managing product inventory
-// 2. Tracking stock levels
-// 3. Recording sales
-// 4. Calculating revenue
+// __This program shows:__
+// __1. Managing product inventory__
+// __2. Tracking stock levels__
+// __3. Recording sales__
+// __4. Calculating revenue__
 
 எண் product_id = 0;
 எண் stock_quantity = 0;
 எண் sale_amount = 0;
 எண் _revenue = 0;
 
-// Initialize inventory
+// __Initialize inventory__
 கோப்பு_திற "inventory.csv", "write";
 
-// Write product data (ID, Name, Stock, Price)
+// __Write product data (ID, Name, Stock, Price)__
 தரவுரை_எழுது "inventory.csv", "product_id,name,stock,price";
 தரவுரை_எழுது "inventory.csv", "2001,Laptop,50,40000";
 தரவுரை_எழுது "inventory.csv", "2002,Mouse,200,500";
 தரவுரை_எழுது "inventory.csv", "2003,Keyboard,150,1200";
 தரவுரை_எழுது "inventory.csv", "2004,Monitor,75,8000";
 
-// Record sales transactions
+// __Record sales transactions__
 கோப்பு_திற "sales.csv", "write";
 தரவுரை_எழுது "sales.csv", "sale_id,product_id,quantity,amount";
 தரவுரை_எழுது "sales.csv", "5001,2001,2,80000";
@@ -30,20 +30,20 @@
 தரவுரை_எழுது "sales.csv", "5003,2003,5,6000";
 தரவுரை_எழுது "sales.csv", "5004,2004,3,24000";
 
-// Calculate total revenue
+// __Calculate total revenue__
 _revenue = 80000 + 5000 + 6000 + 24000;
 
-// Display inventory report
+// __Display inventory report__
 அச்சு "Inventory Management System";
 அச்சு "==========================";
 
-// Read and display sales
+// __Read and display sales__
 கோப்பு_திற "sales.csv", "read";
 தரவுரை_படி "sales.csv", sale_amount;
 
 அச்சு "Total Revenue: ";
 அச்சு _revenue;
 
-// Close files
+// __Close files__
 கோப்பு_மூடு "inventory.csv";
 கோப்பு_மூடு "sales.csv";

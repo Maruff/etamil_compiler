@@ -1,67 +1,67 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qittam/qotarpu.qmz — தொடர்பு, the four dependency types and lag
+// __nUlakam/qittam/qotarpu.qmz — தொடர்பு, the four dependency types and lag__
 //
-// pAqY.qmz schedules finish-to-start with no lag, says so at the top, and is
-// right to: that is the network a textbook draws and a hand calculation can
-// check. Real schedules are not that, and this module is the other four
-// fifths.
+// __pAqY.qmz schedules finish-to-start with no lag, says so at the top, and is__
+// __right to: that is the network a textbook draws and a hand calculation can__
+// __check. Real schedules are not that, and this module is the other four__
+// __fifths.__
 //
-//   **முடிவு_தொடக்கம்** (FS) — the successor starts after the predecessor
-//     finishes. The default, and the only one pAqY.qmz knows.
-//   **தொடக்கம்_தொடக்கம்** (SS) — the successor starts after the predecessor
-//     *starts*. Two activities running together, offset.
-//   **முடிவு_முடிவு** (FF) — the successor finishes after the predecessor
-//     finishes. Constrains the end rather than the beginning.
-//   **தொடக்கம்_முடிவு** (SF) — the successor finishes after the predecessor
-//     starts. Rare, and nearly always a mistake where it appears.
+//   __**முடிவு_தொடக்கம்** (FS) — the successor starts after the predecessor__
+//     __finishes. The default, and the only one pAqY.qmz knows.__
+//   __**தொடக்கம்_தொடக்கம்** (SS) — the successor starts after the predecessor__
+//     __*starts*. Two activities running together, offset.__
+//   __**முடிவு_முடிவு** (FF) — the successor finishes after the predecessor__
+//     __finishes. Constrains the end rather than the beginning.__
+//   __**தொடக்கம்_முடிவு** (SF) — the successor finishes after the predecessor__
+//     __starts. Rare, and nearly always a mistake where it appears.__
 //
-// A **lag** delays the relationship; a negative lag is a **lead**.
+// __A **lag** delays the relationship; a negative lag is a **lead**.__
 //
-// Every constraint becomes a lower bound on the successor's early start, which
-// is what lets all four run in one pass:
+// __Every constraint becomes a lower bound on the successor's early start, which__
+// __is what lets all four run in one pass:__
 //
-//     FS   ES(s) ≥ EF(p) + lag
-//     SS   ES(s) ≥ ES(p) + lag
-//     FF   ES(s) ≥ EF(p) + lag − duration(s)
-//     SF   ES(s) ≥ ES(p) + lag − duration(s)
+//     __FS   ES(s) ≥ EF(p) + lag__
+//     __SS   ES(s) ≥ ES(p) + lag__
+//     __FF   ES(s) ≥ EF(p) + lag − duration(s)__
+//     __SF   ES(s) ≥ ES(p) + lag − duration(s)__
 //
-// and each becomes an upper bound on the predecessor's late finish going back.
-// Both passes run to a fixed point rather than over a topological sort, for
-// the reason pAqY.qmz gives: a cycle then produces a தவறு instead of a stack
-// overflow, and a cycle is the commonest structural error in a network.
+// __and each becomes an upper bound on the predecessor's late finish going back.__
+// __Both passes run to a fixed point rather than over a topological sort, for__
+// __the reason pAqY.qmz gives: a cycle then produces a தவறு instead of a stack__
+// __overflow, and a cycle is the commonest structural error in a network.__
 //
-// **Two things a lag does that nothing else in the schedule records.**
+// __**Two things a lag does that nothing else in the schedule records.**__
 //
-// It is elapsed time with no activity, no cost and no owner — the commonest
-// way a schedule conceals a dependency on somebody outside the project:
-// concrete curing, a permit, a supplier's lead time. It appears in no resource
-// plan and no budget, and தாமதப்_பங்கு exists to say how much of a project is
-// spent waiting.
+// __It is elapsed time with no activity, no cost and no owner — the commonest__
+// __way a schedule conceals a dependency on somebody outside the project:__
+// __concrete curing, a permit, a supplier's lead time. It appears in no resource__
+// __plan and no budget, and தாமதப்_பங்கு exists to say how much of a project is__
+// __spent waiting.__
 //
-// And **a lag cannot be crashed**. curukkal.qmz says only critical activities
-// are worth shortening; the companion rule is that only the *work* on them
-// can be. A critical path that is half lag compresses by half of what its
-// duration suggests, and சுருக்கக்கூடிய_காலம் says so before the money is
-// spent finding out.
+// __And **a lag cannot be crashed**. curukkal.qmz says only critical activities__
+// __are worth shortening; the companion rule is that only the *work* on them__
+// __can be. A critical path that is half lag compresses by half of what its__
+// __duration suggests, and சுருக்கக்கூடிய_காலம் says so before the money is__
+// __spent finding out.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
-// How many passes before a network is called circular. A pass propagates at
-// least one activity's worth of constraint, so a sound network settles well
-// within its own size; anything past that is not converging.
+// __How many passes before a network is called circular. A pass propagates at__
+// __least one activity's worth of constraint, so a sound network settles well__
+// __within its own size; anything past that is not converging.__
 செயல் தொடர்பு_சுற்று_எல்லை() { திரும்பு 200; }
 
 // =========================================================================
-// கட்டமைப்பு — activities and relationships
+// __கட்டமைப்பு — activities and relationships__
 // =========================================================================
 //
 // முனை_ஆக்கு(முனைக்_குறி, விவரம், கால_அளவு)
 //
-// An activity. Unlike pAqY.qmz's செயல்_ஆக்கு it carries **no predecessors** —
-// a relationship now has a type and a lag of its own and no longer fits inside
-// a list of codes.
+// __An activity. Unlike pAqY.qmz's செயல்_ஆக்கு it carries **no predecessors** —__
+// __a relationship now has a type and a lag of its own and no longer fits inside__
+// __a list of codes.__
 செயல் முனை_ஆக்கு(முனைக்_குறி, விவரம், கால_அளவு) {
     திரும்பு {"குறி": முனைக்_குறி,
               "விவரம்": விவரம்,
@@ -84,21 +84,21 @@
     திரும்பு பொய்;
 }
 
-// முன்னோட்டமா(ஒரு_தொடர்பு) — a lead rather than a lag
+// __முன்னோட்டமா(ஒரு_தொடர்பு) — a lead rather than a lag__
 //
-// A negative lag asserts the successor may begin before the predecessor ends.
-// If that is true the two overlap, and **overlapping work is two activities,
-// not one with a lead**. The lead hides the decomposition: nobody can say
-// which part of the predecessor must finish first, so nobody can check the
-// claim or resource it.
+// __A negative lag asserts the successor may begin before the predecessor ends.__
+// __If that is true the two overlap, and **overlapping work is two activities,__
+// __not one with a lead**. The lead hides the decomposition: nobody can say__
+// __which part of the predecessor must finish first, so nobody can check the__
+// __claim or resource it.__
 //
-// The same overlap written as a start-to-start with a positive lag, closed by
-// a finish-to-finish, says what is actually true and survives being questioned.
+// __The same overlap written as a start-to-start with a positive lag, closed by__
+// __a finish-to-finish, says what is actually true and survives being questioned.__
 செயல் முன்னோட்டமா(ஒரு_தொடர்பு) {
     திரும்பு ஒரு_தொடர்பு["தாமதம்"] < 0;
 }
 
-// --- helpers, named apart from pAqY.qmz's --------------------------------
+// __--- helpers, named apart from pAqY.qmz's --------------------------------__
 
 செயல் முனையைப்_பெறு(முனைகள், முனைக்_குறி) {
     ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
@@ -122,9 +122,9 @@
 
 // முந்தியை_அமை(முந்திகள், முனைக்_குறி, புது_தொடக்கம், கால_அளவு)
 //
-// Writes the early start and the early finish together, because the second
-// follows from the first and letting them drift apart is how a scheduler ends
-// up with an activity whose finish is not its start plus its duration.
+// __Writes the early start and the early finish together, because the second__
+// __follows from the first and letting them drift apart is how a scheduler ends__
+// __up with an activity whose finish is not its start plus its duration.__
 செயல் முந்தியை_அமை(முந்திகள், முனைக்_குறி, புது_தொடக்கம், கால_அளவு) {
     விடை = [];
     ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
@@ -154,14 +154,14 @@
 }
 
 // =========================================================================
-// கட்டுப்பாடுகள் — one relationship, as a bound
+// __கட்டுப்பாடுகள் — one relationship, as a bound__
 // =========================================================================
 //
 // தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்னோடி_தொடக்கம், முன்னோடி_முடிவு,
 //                    பின்தொடர்_கால_அளவு)
 //
-// The earliest the successor may start, given this one relationship. The four
-// types differ only here, which is why the passes below need no cases.
+// __The earliest the successor may start, given this one relationship. The four__
+// __types differ only here, which is why the passes below need no cases.__
 செயல் தேவையான_தொடக்கம்(ஒரு_தொடர்பு, முன்னோடி_தொடக்கம், முன்னோடி_முடிவு,
                         பின்தொடர்_கால_அளவு) {
     தாமதம் = ஒரு_தொடர்பு["தாமதம்"];
@@ -183,9 +183,9 @@
 // அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்தொடர்_தொடக்கம், பின்தொடர்_முடிவு,
 //                   முன்னோடி_கால_அளவு)
 //
-// The latest the predecessor may finish, given this one relationship. The
-// mirror of the above, and the reason the backward pass is the same shape as
-// the forward one.
+// __The latest the predecessor may finish, given this one relationship. The__
+// __mirror of the above, and the reason the backward pass is the same shape as__
+// __the forward one.__
 செயல் அனுமதித்த_முடிவு(ஒரு_தொடர்பு, பின்தொடர்_தொடக்கம், பின்தொடர்_முடிவு,
                         முன்னோடி_கால_அளவு) {
     தாமதம் = ஒரு_தொடர்பு["தாமதம்"];
@@ -205,18 +205,18 @@
 }
 
 // =========================================================================
-// வலையைக் கணக்கிடுதல் — both passes
+// __வலையைக் கணக்கிடுதல் — both passes__
 // =========================================================================
 //
 // தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்)
 //
-// Answers one record per activity — early start and finish, late start and
-// finish, total float — and the project duration.
+// __Answers one record per activity — early start and finish, late start and__
+// __finish, total float — and the project duration.__
 //
-// An unknown relationship type, or one naming an activity that does not exist,
-// is a தவறு before any arithmetic happens. A schedule with a typo in a code
-// silently loses the constraint otherwise, and a lost constraint makes a
-// project look shorter, which is the direction nobody questions.
+// __An unknown relationship type, or one naming an activity that does not exist,__
+// __is a தவறு before any arithmetic happens. A schedule with a typo in a code__
+// __silently loses the constraint otherwise, and a lost constraint makes a__
+// __project look shorter, which is the direction nobody questions.__
 செயல் தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்) {
     (நீளம்(முனைகள்) == 0) எனில் {
         திரும்பு தவறு("முனைகள் இல்லை  (the network has no activities)");
@@ -240,7 +240,7 @@
         }
     }
 
-    // --- forward pass -----------------------------------------------------
+    // __--- forward pass -----------------------------------------------------__
     முந்திகள் = [];
     ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
         முந்திகள் = இணை(முந்திகள், {"குறி": ஒரு_முனை["குறி"],
@@ -278,7 +278,7 @@
                        & "probably contains a cycle)");
     }
 
-    // The project ends when the last activity does.
+    // __The project ends when the last activity does.__
     திட்ட_முடிவு = 0;
     ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
         (ஒரு_நிலை["முடிவு"] > திட்ட_முடிவு) எனில் {
@@ -286,7 +286,7 @@
         }
     }
 
-    // --- backward pass ----------------------------------------------------
+    // __--- backward pass ----------------------------------------------------__
     தாழ்த்திகள் = [];
     ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
         தாழ்த்திகள் = இணை(தாழ்த்திகள்,
@@ -326,7 +326,7 @@
                        & "probably contains a cycle)");
     }
 
-    // --- combine ----------------------------------------------------------
+    // __--- combine ----------------------------------------------------------__
     விடைகள் = [];
     ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
         முன்_தொ = முந்தியைப்_பெறு(முந்திகள், ஒரு_முனை["குறி"], "தொடக்கம்");
@@ -345,7 +345,7 @@
     திரும்பு சரி({"முனைகள்": விடைகள், "திட்ட_காலம்": திட்ட_முடிவு});
 }
 
-// தொடர்பு_கடுமையானவை(வலை_விடை) — the codes with no float
+// __தொடர்பு_கடுமையானவை(வலை_விடை) — the codes with no float__
 செயல் தொடர்பு_கடுமையானவை(வலை_விடை) {
     விடை = [];
     ஒவ்வொரு ஒரு_முனை இல் வலை_விடை["முனைகள்"] {
@@ -367,14 +367,14 @@
 }
 
 // =========================================================================
-// தாமதம் — what the waiting costs
+// __தாமதம் — what the waiting costs__
 // =========================================================================
 //
-// மொத்தத்_தாமதம்(தொடர்புகள்) — every positive lag in the network, added up
+// __மொத்தத்_தாமதம்(தொடர்புகள்) — every positive lag in the network, added up__
 //
-// Leads are excluded deliberately: a negative lag is an overlap, not waiting,
-// and adding the two together would net a genuine delay against a claimed
-// compression and report neither.
+// __Leads are excluded deliberately: a negative lag is an overlap, not waiting,__
+// __and adding the two together would net a genuine delay against a claimed__
+// __compression and report neither.__
 செயல் மொத்தத்_தாமதம்(தொடர்புகள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
@@ -385,11 +385,11 @@
     திரும்பு கூட்டல்;
 }
 
-// முன்னோட்டங்கள்(தொடர்புகள்) — the relationships carrying a lead
+// __முன்னோட்டங்கள்(தொடர்புகள்) — the relationships carrying a lead__
 //
-// Worth listing rather than counting. Each one is a claim that work can
-// overlap, and each should be either evidenced or rewritten as the two
-// activities it actually describes.
+// __Worth listing rather than counting. Each one is a claim that work can__
+// __overlap, and each should be either evidenced or rewritten as the two__
+// __activities it actually describes.__
 செயல் முன்னோட்டங்கள்(தொடர்புகள்) {
     விடை = [];
     ஒவ்வொரு ஒரு_தொடர்பு இல் தொடர்புகள் {
@@ -400,14 +400,14 @@
 
 // தாமதப்_பங்கு(தொடர்புகள், திட்ட_காலம்)
 //
-// Total lag as a percentage of the project's duration.
+// __Total lag as a percentage of the project's duration.__
 //
-// It is not a precise share — lags on parallel paths overlap, so the figure
-// can exceed a hundred — and it is not meant to be. It answers a blunter
-// question: how much of this plan is somebody waiting? A schedule where the
-// answer is large is a schedule whose critical path runs mostly through other
-// people's organisations, and no amount of managing this project's resources
-// will shorten it.
+// __It is not a precise share — lags on parallel paths overlap, so the figure__
+// __can exceed a hundred — and it is not meant to be. It answers a blunter__
+// __question: how much of this plan is somebody waiting? A schedule where the__
+// __answer is large is a schedule whose critical path runs mostly through other__
+// __people's organisations, and no amount of managing this project's resources__
+// __will shorten it.__
 செயல் தாமதப்_பங்கு(தொடர்புகள், திட்ட_காலம்) {
     (திட்ட_காலம் <= 0) எனில் {
         திரும்பு தவறு("திட்டக் காலம் இல்லை  (the project has no duration)");
@@ -416,29 +416,29 @@
 }
 
 // =========================================================================
-// சுருக்கம் — what can actually be compressed
+// __சுருக்கம் — what can actually be compressed__
 // =========================================================================
 //
 // சுருக்கக்கூடிய_காலம்(முனைகள், தொடர்புகள், பாதைக்_குறிகள்)
 //
-// Splits a path into the work on it, the lag between its activities, and —
-// the figure that matters — **the work that shortening would actually move**.
+// __Splits a path into the work on it, the lag between its activities, and —__
+// __the figure that matters — **the work that shortening would actually move**.__
 //
-// curukkal.qmz will price a day off any critical activity. Two things stop
-// that day reaching the project's end date.
+// __curukkal.qmz will price a day off any critical activity. Two things stop__
+// __that day reaching the project's end date.__
 //
-// A **lag** cannot be bought. The concrete cures at its own speed and the
-// permit office keeps its own calendar.
+// __A **lag** cannot be bought. The concrete cures at its own speed and the__
+// __permit office keeps its own calendar.__
 //
-// And an activity's duration reaches its successor **only through a
-// relationship that depends on its finish** — finish-to-start or
-// finish-to-finish. Through a start-to-start the successor is tied to the
-// predecessor's *start*, so shortening the predecessor moves nothing. An
-// activity can sit squarely on the critical path, have zero float, and be
-// entirely unworth crashing.
+// __And an activity's duration reaches its successor **only through a__
+// __relationship that depends on its finish** — finish-to-start or__
+// __finish-to-finish. Through a start-to-start the successor is tied to the__
+// __predecessor's *start*, so shortening the predecessor moves nothing. An__
+// __activity can sit squarely on the critical path, have zero float, and be__
+// __entirely unworth crashing.__
 //
-// The last activity on the path always counts: it reaches the project's end
-// through its own finish.
+// __The last activity on the path always counts: it reaches the project's end__
+// __through its own finish.__
 செயல் சுருக்கக்கூடிய_காலம்(முனைகள், தொடர்புகள், பாதைக்_குறிகள்) {
     (நீளம்(பாதைக்_குறிகள்) == 0) எனில் {
         திரும்பு {"வேலை": 0, "தாமதம்": 0, "சுருக்கக்கூடியது": 0};
@@ -479,7 +479,7 @@
         எண்ணி = எண்ணி + 1;
     }
 
-    // The path's last activity drives the end through its own finish.
+    // __The path's last activity drives the end through its own finish.__
     சுருக்கக்கூடியது = சுருக்கக்கூடியது
                         + கால_அளவைப்_பெறு(முனைகள், பாதைக்_குறிகள்[கடைசி]);
 

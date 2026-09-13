@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/aNi.qmz — அணி (array) helpers
+// __nUlakam/aNi.qmz — அணி (array) helpers__
 //
-// Note: the language has no first-class functions yet, so there is no map or
-// filter here. When function values arrive these become one-liners.
+// __Note: the language has no first-class functions yet, so there is no map or__
+// __filter here. When function values arrive these become one-liners.__
 
-// உள்ளதா(அணி, மதிப்பு) — membership
+// __உள்ளதா(அணி, மதிப்பு) — membership__
 செயல் உள்ளதா(பட்டியல், தேடல்) {
     ஒவ்வொரு உறுப்பு இல் பட்டியல் {
         (உறுப்பு == தேடல்) எனில் { திரும்பு மெய்; }
@@ -13,7 +13,7 @@
     திரும்பு பொய்;
 }
 
-// இடம்_காண்(அணி, மதிப்பு) — first position, or -1
+// __இடம்_காண்(அணி, மதிப்பு) — first position, or -1__
 செயல் இடம்_காண்(பட்டியல், தேடல்) {
     எண்ணி = 0;
     மொத்தம் = நீளம்(பட்டியல்);
@@ -24,7 +24,7 @@
     திரும்பு 0 - 1;
 }
 
-// தலைகீழ்(அணி) — reversed copy
+// __தலைகீழ்(அணி) — reversed copy__
 செயல் தலைகீழ்(பட்டியல்) {
     விடை = [];
     எண்ணி = நீளம்(பட்டியல்);
@@ -35,7 +35,7 @@
     திரும்பு விடை;
 }
 
-// வெட்டு(அணி, தொடக்கம், அளவு) — slice
+// __வெட்டு(அணி, தொடக்கம், அளவு) — slice__
 செயல் வெட்டு(பட்டியல், தொடக்கம், அளவு) {
     விடை = [];
     எண்ணி = தொடக்கம்;
@@ -48,8 +48,8 @@
     திரும்பு விடை;
 }
 
-// புலம்_எடு(வரிசைகள், புலம்) — pluck one field from every record.
-// This is the column-from-rows operation a result set needs.
+// __புலம்_எடு(வரிசைகள், புலம்) — pluck one field from every record.__
+// __This is the column-from-rows operation a result set needs.__
 செயல் புலம்_எடு(வரிசைகள், புலம்) {
     விடை = [];
     ஒவ்வொரு ஒரு_பதிவு இல் வரிசைகள் {

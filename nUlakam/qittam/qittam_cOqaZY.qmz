@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// திட்டம்_சோதனை — tests for the project costing modules, written in eTamil
+// __திட்டம்_சோதனை — tests for the project costing modules, written in eTamil__
 //
-// Run it like any other program:  etamil --vm nUlakam/qittam/qittam_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/qittam/qittam_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// The figures are chosen so every answer divides cleanly and can be checked by
-// eye. Where a result is not exactly representable in binary floating point it
-// is asserted within a tolerance rather than for equality, and said so.
+// __The figures are chosen so every answer divides cleanly and can be checked by__
+// __eye. Where a result is not exactly representable in binary floating point it__
+// __is asserted within a tolerance rather than for equality, and said so.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -22,15 +22,15 @@
 ஓட்டம் = சோதனை_தொடக்கம்("திட்டம் — project costing");
 
 // =========================================================================
-// வேலைப் பகுப்பு — the WBS
+// __வேலைப் பகுப்பு — the WBS__
 // =========================================================================
 //
-//   S  1750
-//   ├── S1   310   (leaf)
-//   ├── S2   720
-//   │   ├── S2a  400
-//   │   └── S2b  320
-//   └── S3   720   (leaf)
+//   __S  1750__
+//   __├── S1   310   (leaf)__
+//   __├── S2   720__
+//   __│   ├── S2a  400__
+//   __│   └── S2b  320__
+//   __└── S3   720   (leaf)__
 
 கணுக்கள் = [
     கணு_ஆக்கு("S",   "",   "திட்டம் சங்கமம்", 1750),
@@ -50,20 +50,20 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை இலைக்_கணுவா(கணுக்கள், "S2"),
                   "S2 has children, so it is not");
 
-// Depth is per branch, not global: the WBS stops where an owner can be held
-// to a cost, and that is level 1 on one branch and level 2 on another.
+// __Depth is per branch, not global: the WBS stops where an owner can be held__
+// __to a cost, and that is level 1 on one branch and level 2 on another.__
 ஓட்டம் = சமம்(ஓட்டம், ஆழம்(கணுக்கள், "S"), 0, "the root is at depth 0");
 ஓட்டம் = சமம்(ஓட்டம், ஆழம்(கணுக்கள், "S1"), 1, "S1 at depth 1");
 ஓட்டம் = சமம்(ஓட்டம், ஆழம்(கணுக்கள், "S2b"), 2, "S2b at depth 2");
 
-// The roll-up sums leaves, so it answers what the work actually adds to.
+// __The roll-up sums leaves, so it answers what the work actually adds to.__
 ஓட்டம் = சமம்(ஓட்டம், உள்_கூட்டல்(கணுக்கள், "S2"), 720, "S2 rolls up to 720");
 ஓட்டம் = சமம்(ஓட்டம், உள்_கூட்டல்(கணுக்கள், "S"), 1750,
               "and the whole tree to 1,750 — 310 + 400 + 320 + 720");
 ஓட்டம் = சமம்(ஓட்டம், உள்_கூட்டல்(கணுக்கள், "S1"), 310,
               "a leaf rolls up to itself");
 
-// The 100% rule holds here, at both levels.
+// __The 100% rule holds here, at both levels.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நூறு_விதி_சரியா(கணுக்கள், "S"),
                   "the root's entered budget equals its children's");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நூறு_விதி_சரியா(கணுக்கள், "S2"), "and S2's does too");
@@ -72,8 +72,8 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(விதியை_சரிபார்(கணுக்கள்)),
                   "so the whole tree passes");
 
-// Break it: 20 of work that is in no child. Invisible in a tree view, and
-// exactly what the rule exists to find.
+// __Break it: 20 of work that is in no child. Invisible in a tree view, and__
+// __exactly what the rule exists to find.__
 உடைந்த_கணுக்கள் = [
     கணு_ஆக்கு("S",  "",  "திட்டம்", 1750),
     கணு_ஆக்கு("S1", "S", "ஒன்று",    900),
@@ -85,7 +85,7 @@
                   "and the check reports it rather than returning a bare false");
 
 // =========================================================================
-// கட்டுப்பாட்டுக் கணக்கு — control accounts, budget, reserves
+// __கட்டுப்பாட்டுக் கணக்கு — control accounts, budget, reserves__
 // =========================================================================
 
 கணக்குகள் = [
@@ -94,7 +94,7 @@
     கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு("SNG-MIG", "S3", "ஸ்வேதா")
 ];
 
-// Exactly one control account on the path from every work package to the root.
+// __Exactly one control account on the path from every work package to the root.__
 ஓட்டம் = சமம்(ஓட்டம், பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், "S2a"), 1,
               "S2a reaches exactly one control account, at S2");
 ஓட்டம் = சமம்(ஓட்டம், பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், "S1"), 1,
@@ -102,15 +102,15 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(கட்டமைப்பை_சரிபார்(கணக்குகள், கணுக்கள்)),
                   "so the structure is sound");
 
-// Two on one path is double counting; it is invisible in a tree and shows up
-// only in the totals, which is the worst combination available.
+// __Two on one path is double counting; it is invisible in a tree and shows up__
+// __only in the totals, which is the worst combination available.__
 மிகை_கணக்குகள் = இணை(கணக்குகள், கட்டுப்பாட்டுக்_கணக்கு_ஆக்கு("SNG-ALL", "S", "கணேஷ்"));
 ஓட்டம் = சமம்(ஓட்டம், பாதையில்_கணக்குகள்(மிகை_கணக்குகள், கணுக்கள், "S2a"), 2,
               "adding one at the root puts two on S2a's path");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(கட்டமைப்பை_சரிபார்(மிகை_கணக்குகள், கணுக்கள்)),
                   "and the check refuses it");
 
-// The time-phased budget. PV is cumulative by definition.
+// __The time-phased budget. PV is cumulative by definition.__
 பகிர்வுகள் = [
     காலப்_பகிர்வு(1, 100), காலப்_பகிர்வு(2, 150), காலப்_பகிர்வு(3, 250),
     காலப்_பகிர்வு(4, 300), காலப்_பகிர்வு(5, 200)
@@ -122,8 +122,8 @@
 ஓட்டம் = சமம்(ஓட்டம், திரட்டிய_நிதி(பகிர்வுகள், 5), மொத்த_நிதி(பகிர்வுகள்),
               "and the cumulative at the last period is that total");
 
-// Reserves. Contingency sits inside the measurement baseline; management
-// reserve sits outside it.
+// __Reserves. Contingency sits inside the measurement baseline; management__
+// __reserve sits outside it.__
 தொகுதி = நிதித்_தொகுதி_ஆக்கு(1650, 100, 100);
 ஓட்டம் = சமம்(ஓட்டம், அளவீட்டு_அடிப்படை(தொகுதி), 1750,
               "the measurement baseline is 1,650 + 100 contingency");
@@ -142,10 +142,10 @@
                   "and so is releasing nothing");
 
 // =========================================================================
-// ஈட்டு மதிப்பு — earned value
+// __ஈட்டு மதிப்பு — earned value__
 // =========================================================================
 
-// The three percent-complete conventions.
+// __The three percent-complete conventions.__
 ஓட்டம் = சமம்(ஓட்டம், முறை_0_100(பொய்), 0, "0/100 credits nothing until done");
 ஓட்டம் = சமம்(ஓட்டம், முறை_0_100(மெய்), 1, "and everything when it is");
 ஓட்டம் = சமம்(ஓட்டம், முறை_50_50(மெய், பொய்), 0.5, "50/50 credits half on starting");
@@ -156,7 +156,7 @@
 ஓட்டம் = சமம்(ஓட்டம், ஈட்டிய_மதிப்பு(400, 0.45), 180,
               "a 400 package 45% done has earned 180 of budget — not of cost");
 
-// The month-10 position. Note what the conventional report says first.
+// __The month-10 position. Note what the conventional report says first.__
 திட்டமிட்டது = 800;
 ஈட்டியது = 620;
 உண்மைச்_செலவு = 775;
@@ -169,8 +169,8 @@
 ஓட்டம் = சமம்(ஓட்டம், கால_வேறுபாடு(ஈட்டியது, திட்டமிட்டது), -180,
               "and 180 of budgeted work has not been done at all");
 
-// That contrast is the entire argument for the technique: the conventional
-// report and the real position disagree in direction, not just in degree.
+// __That contrast is the entire argument for the technique: the conventional__
+// __report and the real position disagree in direction, not just in degree.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
                   கணக்கியல்_வேறுபாடு(திட்டமிட்டது, உண்மைச்_செலவு) > 0
                   மற்றும் செலவு_வேறுபாடு(ஈட்டியது, உண்மைச்_செலவு) < 0,
@@ -185,15 +185,15 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(செலவுச்_செயல்திறன்(ஈட்டியது, 0)),
                   "and before any spend the index is refused, not infinite");
 
-// The three forecasts, answering three different questions.
+// __The three forecasts, answering three different questions.__
 ஓட்டம் = சமம்(ஓட்டம், முடிவில்_மதிப்பீடு_மீதியால்(உண்மைச்_செலவு, மொத்த_நிதி,
                                                     ஈட்டியது), 1705,
               "if the overrun was a one-off, 1,705");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(முடிவில்_மதிப்பீடு_திறனால்(மொத்த_நிதி, 0.8)), 1937.5,
               "if current efficiency persists, 1,937.50");
 
-// The third is 2,275 in exact arithmetic; 0.8 × 0.775 is not exactly
-// representable in binary, so it is asserted within a rupee.
+// __The third is 2,275 in exact arithmetic; 0.8 × 0.775 is not exactly__
+// __representable in binary, so it is asserted within a rupee.__
 இரண்டாலும் = முடிவில்_மதிப்பீடு_இரண்டாலும்(உண்மைச்_செலவு, மொத்த_நிதி,
                                             ஈட்டியது, 0.8, 0.775);
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
@@ -207,18 +207,18 @@
 ஓட்டம் = சமம்(ஓட்டம், முடிவில்_வேறுபாடு(மொத்த_நிதி, 1937.5), -387.5,
               "which overruns the budget by 387.50");
 
-// The sharpest figure on the report.
+// __The sharpest figure on the report.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(முடிக்கத்_தேவையான_திறன்(மொத்த_நிதி, ஈட்டியது,
                                                         உண்மைச்_செலவு)), 1.2,
               "finishing within budget now needs 1.2 against the 0.8 achieved");
 
-// Expected duration: 31 / 0.775 is 40 in exact arithmetic, asserted loosely
-// for the same floating-point reason.
+// __Expected duration: 31 / 0.775 is 40 in exact arithmetic, asserted loosely__
+// __for the same floating-point reason.__
 எதிர்_காலம் = எதிர்பார்க்கும்_காலம்(31, 0.775);
 ஓட்டம் = உறுதிசெய்(ஓட்டம், முழுமதிப்பு(மதிப்பு(எதிர்_காலம்) - 40) < 0.01,
                   "a 31-period plan at SPI 0.775 forecasts about 40");
 
-// The whole report in one call, and its parts must agree with the pieces.
+// __The whole report in one call, and its parts must agree with the pieces.__
 நிலவரப்_பதிவு = நிலவரம்(திட்டமிட்டது, ஈட்டியது, உண்மைச்_செலவு, மொத்த_நிதி);
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(நிலவரப்_பதிவு), "the status report computes");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நிலவரப்_பதிவு).செலவு_வேறுபாடு, -155,
@@ -227,11 +227,11 @@
               "and the same estimate at completion");
 
 // =========================================================================
-// கடுமையான பாதை — CPM
+// __கடுமையான பாதை — CPM__
 // =========================================================================
 //
-// The data migration workstream. A and B start; C and D follow A; E follows
-// B; F merges C, D and E; G finishes.
+// __The data migration workstream. A and B start; C and D follow A; E follows__
+// __B; F merges C, D and E; G finishes.__
 
 செயல்கள் = [
     செயல்_ஆக்கு("A", 10, []),
@@ -255,8 +255,8 @@
 ஓட்டம் = சமம்(ஓட்டம், வலை.திட்ட_காலம், 53,
               "the workstream takes 53 days — A 10, D 25, F 8, G 10");
 
-// The forward pass. F is a merge, so it waits for the largest EF of C (30),
-// D (35) and E (27) — that is 35, not the average and not the first.
+// __The forward pass. F is a merge, so it waits for the largest EF of C (30),__
+// __D (35) and E (27) — that is 35, not the average and not the first.__
 ஓட்டம் = சமம்(ஓட்டம், பெறு_புலம்(வலை.செயல்கள், "D", "முந்தைய_முடிவு"), 35,
               "D finishes at 35 on the forward pass");
 ஓட்டம் = சமம்(ஓட்டம், பெறு_புலம்(வலை.செயல்கள், "F", "முந்தைய_தொடக்கம்"), 35,
@@ -264,8 +264,8 @@
 ஓட்டம் = சமம்(ஓட்டம், பெறு_புலம்(வலை.செயல்கள், "E", "முந்தைய_முடிவு"), 27,
               "E was ready at 27 and waits");
 
-// The backward pass and float. A is a burst, so its LF is the smallest LS of
-// C (15) and D (10) — that is 10, which leaves it no float.
+// __The backward pass and float. A is a burst, so its LF is the smallest LS of__
+// __C (15) and D (10) — that is 10, which leaves it no float.__
 ஓட்டம் = சமம்(ஓட்டம், பெறு_புலம்(வலை.செயல்கள், "A", "மிதப்பு"), 0,
               "A is a burst activity and has no float");
 ஓட்டம் = சமம்(ஓட்டம், பெறு_புலம்(வலை.செயல்கள், "D", "மிதப்பு"), 0, "nor has D");
@@ -279,8 +279,8 @@
 ஓட்டம் = சமம்(ஓட்டம், நீளம்(கடுமையான), 4,
               "four activities are critical: A, D, F and G");
 
-// The defining property: the critical path is the longest path, so its
-// durations sum to the project duration.
+// __The defining property: the critical path is the longest path, so its__
+// __durations sum to the project duration.__
 கடுமையான_கூட்டல் = 0;
 ஒவ்வொரு ஒரு_செயல் இல் கடுமையான {
     கடுமையான_கூட்டல் = கடுமையான_கூட்டல் + ஒரு_செயல்.செயல்_காலம்;
@@ -288,7 +288,7 @@
 ஓட்டம் = சமம்(ஓட்டம், கடுமையான_கூட்டல், 53,
               "and their durations sum to the project duration, as they must");
 
-// A cycle must fail loudly rather than loop or overflow.
+// __A cycle must fail loudly rather than loop or overflow.__
 சுழற்சி_செயல்கள் = [
     செயல்_ஆக்கு("X", 5, ["Z"]),
     செயல்_ஆக்கு("Y", 5, ["X"]),
@@ -299,13 +299,13 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(வலையைக்_கணக்கிடு(சுழற்சி_செயல்கள்)),
                   "and refused, rather than looping forever");
 
-// A predecessor that does not exist is a typo, and typos must not compute.
+// __A predecessor that does not exist is a typo, and typos must not compute.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
                   தவறா(வலையைக்_கணக்கிடு([செயல்_ஆக்கு("P", 3, ["இல்லாதது"])])),
                   "a named predecessor that does not exist is refused");
 
 // =========================================================================
-// சுருக்கல் — crashing
+// __சுருக்கல் — crashing__
 // =========================================================================
 
 சுருக்கத்_தரவு = [
@@ -324,14 +324,14 @@
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(செலவுச்_சரிவு(சுருக்கத்_தரவு[2])), 100, "D costs 100");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(செலவுச்_சரிவு(சுருக்கத்_தரவு[4])), 120, "G costs 120");
 
-// An activity already at its crash time has no slope, so it can never be
-// selected as cheapest by accident.
+// __An activity already at its crash time has no slope, so it can never be__
+// __selected as cheapest by accident.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
                   தவறா(செலவுச்_சரிவு(செயல்_நேர_செலவு("H", 4, 100, 4, 100))),
                   "an activity that cannot be shortened has no slope");
 
-// The choice: cheapest, and critical. C is cheaper per day than D but has
-// float, so buying from it changes nothing.
+// __The choice: cheapest, and critical. C is cheaper per day than D but has__
+// __float, so buying from it changes nothing.__
 கடுமையான_குறிகள் = ["A", "D", "F", "G"];
 வேட்பாளர் = மலிவான_வேட்பாளர்(சுருக்கத்_தரவு, கடுமையான_குறிகள்);
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(வேட்பாளர்), "there is a candidate");
@@ -339,15 +339,15 @@
               "and it is A, the cheapest critical activity");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வேட்பாளர்).சரிவு, 60, "at 60 a day");
 
-// C is not offered even though it is crashable, because it is not critical —
-// the mistake this function exists to prevent.
+// __C is not offered even though it is crashable, because it is not critical —__
+// __the mistake this function exists to prevent.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், மதிப்பு(வேட்பாளர்).செயல்_குறி != "C",
                   "C is cheaper per day than D but has float, so it is not offered");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(மலிவான_வேட்பாளர்(சுருக்கத்_தரவு, [])),
                   "with nothing critical there is no candidate");
 
-// When several paths are critical, one activity per path is often dearer than
-// a single shared one. Only the comparison shows it.
+// __When several paths are critical, one activity per path is often dearer than__
+// __a single shared one. Only the comparison shows it.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கூட்டுச்_சரிவு(சுருக்கத்_தரவு, ["A", "F"])), 140,
               "crashing A and F together costs 140 a day");
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
@@ -355,7 +355,7 @@
                   < மதிப்பு(கூட்டுச்_சரிவு(சுருக்கத்_தரவு, ["A", "F"])),
                   "so a shared G at 120 beats a pair at 140");
 
-// Totals. Direct rises as the schedule shortens; indirect falls with it.
+// __Totals. Direct rises as the schedule shortens; indirect falls with it.__
 ஓட்டம் = சமம்(ஓட்டம், இயல்பு_நேரடிச்_செலவு(சுருக்கத்_தரவு), 4500,
               "direct cost at normal durations is 4,500");
 ஓட்டம் = சமம்(ஓட்டம், மொத்தச்_செலவு(4500, 90, 53), 9270,
@@ -366,8 +366,8 @@
                           < மொத்தச்_செலவு(4500, 90, 53),
                   "so that crash is worth making");
 
-// And the honest total, which usually moves the optimum earlier: project
-// overhead is rarely the real cost of a day.
+// __And the honest total, which usually moves the optimum earlier: project__
+// __overhead is rarely the real cost of a day.__
 ஓட்டம் = சமம்(ஓட்டம், தாமதச்_செலவுடன்(4500, 90, 200, 53), 19870,
               "at 200 a day of deferred benefit the same schedule costs 19,870");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தாமதச்_செலவுடன்(4500, 90, 200, 53)
@@ -375,11 +375,11 @@
                   "which is why whose money is being optimised must be decided");
 
 // =========================================================================
-// ஒப்பந்த வகை — who carries the cost risk
+// __ஒப்பந்த வகை — who carries the cost risk__
 // =========================================================================
 //
-// Target cost 1,00,000; target fee 10,000, so a target price of 1,10,000;
-// ceiling price 1,25,000; the buyer takes 75% of a variance and the seller 25%.
+// __Target cost 1,00,000; target fee 10,000, so a target price of 1,10,000;__
+// __ceiling price 1,25,000; the buyer takes 75% of a variance and the seller 25%.__
 
 ஓட்டம் = சமம்(ஓட்டம், விற்பவர்_இடர்("உறுதி_நிலை_விலை"), "முழு",
               "a firm fixed price puts the whole overrun on the seller");
@@ -402,14 +402,14 @@
 ஓட்டம் = சமம்(ஓட்டம், ஊக்கக்_கட்டணம்(100000, 10000, 100000, 0.25), 10000,
               "at target cost the fee is the target fee");
 
-// --- the point of total assumption ---------------------------------------
+// __--- the point of total assumption ---------------------------------------__
 
 புள்ளி = மதிப்பு(முழுப்_பொறுப்புப்_புள்ளி(100000, 10000, 125000, 0.75));
 ஓட்டம் = சமம்(ஓட்டம், புள்ளி, 120000,
               "the point of total assumption: target cost plus the room "
               & "between target and ceiling, divided by the buyer's share");
 
-// The formula proves itself: at the PTA the final price *is* the ceiling.
+// __The formula proves itself: at the PTA the final price *is* the ceiling.__
 புள்ளியில் = நிலை_விலை_ஊக்கம்(100000, 10000, 125000, 0.25, புள்ளி);
 ஓட்டம் = சமம்(ஓட்டம், புள்ளியில்["இறுதி_விலை"], 125000,
               "at that cost the final price is exactly the ceiling — which is "
@@ -428,7 +428,7 @@
 ஓட்டம் = சமம்(ஓட்டம், மேலே["இறுதி_விலை"], 125000,
               "and the buyer pays no more than the ceiling, ever");
 
-// The marginal rate quadruples at the point, and nothing in the contract says so.
+// __The marginal rate quadruples at the point, and nothing in the contract says so.__
 ஓட்டம் = சமம்(ஓட்டம், கீழே["கட்டணம்"] - புள்ளியில்["கட்டணம்"], 2500,
               "10,000 of overrun below the point costs the seller 2,500");
 ஓட்டம் = சமம்(ஓட்டம், புள்ளியில்["கட்டணம்"] - மேலே["கட்டணம்"], 10000,
@@ -446,7 +446,7 @@
                                                             105000, 0.75)),
                   "and a ceiling below the target price is refused");
 
-// --- cost plus ------------------------------------------------------------
+// __--- cost plus ------------------------------------------------------------__
 
 ஓட்டம் = சமம்(ஓட்டம், செலவுடன்_நிலைக்_கட்டணம்(130000, 10000)["விற்பவர்_கட்டணம்"],
               10000, "a fixed fee does not move with the cost");
@@ -464,7 +464,7 @@
                                         15000)["விற்பவர்_கட்டணம்"],
               15000, "and the cap holds a large underrun at 15,000");
 
-// --- time and materials ---------------------------------------------------
+// __--- time and materials ---------------------------------------------------__
 
 மீறியது = நேரமும்_பொருளும்(500, 1000, 50000, 500000);
 ஓட்டம் = சமம்(ஓட்டம், மீறியது["ஈட்டியது"], 550000, "550,000 of work was done");
@@ -479,7 +479,7 @@
 ஓட்டம் = சமம்(ஓட்டம், நேரமும்_பொருளும்(500, 1000, 50000, 0)["வசூலிப்பது"],
               550000, "and with no ceiling the whole amount is billable");
 
-// --- the same overrun, four ways -----------------------------------------
+// __--- the same overrun, four ways -----------------------------------------__
 
 விளைவு = மிகைச்_செலவின்_விளைவு(100000, 10000, 125000, 0.25, 130000);
 ஓட்டம் = சமம்(ஓட்டம், விளைவு["உறுதி_நிலை_விலை"], 0 - 20000,
@@ -494,10 +494,10 @@
                  & "variance reported without naming the contract is half a fact");
 
 // =========================================================================
-// தொடர்பு — the four dependency types, and lag
+// __தொடர்பு — the four dependency types, and lag__
 // =========================================================================
 //
-// Two activities, P of four days and Q of six, related four different ways.
+// __Two activities, P of four days and Q of six, related four different ways.__
 
 இரண்டு_நீளம் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 6)];
 இரண்டு_குறுகல் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 2)];
@@ -528,9 +528,9 @@
               "start-to-finish ties the successor's end to the predecessor's "
               & "start — rare, and nearly always a mistake where it appears");
 
-// A relationship can bind backwards instead of forwards, which is the case
-// people do not expect: the successor is long enough already, so the
-// constraint gives the *predecessor* float.
+// __A relationship can bind backwards instead of forwards, which is the case__
+// __people do not expect: the successor is long enough already, so the__
+// __constraint gives the *predecessor* float.__
 ஒட்டுதல் = மதிப்பு(தொடர்பு_வலையைக்_கணக்கிடு(இரண்டு_நீளம்,
               [தொடர்பு_ஆக்கு("P", "Q", "முடிவு_முடிவு", 0)]));
 ஓட்டம் = சமம்(ஓட்டம், ஒட்டுதல்["திட்ட_காலம்"], 6,
@@ -539,9 +539,9 @@
               "but it gives the predecessor two days of float, because P must "
               & "now finish by 6");
 
-// --- a mixed network ------------------------------------------------------
+// __--- a mixed network ------------------------------------------------------__
 //
-// A(5) --FS+0--> B(3) ;  A --SS+2--> C(4) ;  B --FF+1--> D(2) ;  C --FS+3--> D
+// __A(5) --FS+0--> B(3) ;  A --SS+2--> C(4) ;  B --FF+1--> D(2) ;  C --FS+3--> D__
 
 கலவை_முனைகள் = [முனை_ஆக்கு("A", "அடித்தளம்", 5),
                   முனை_ஆக்கு("B", "சுவர்", 3),
@@ -566,7 +566,7 @@
 ஓட்டம் = சமம்(ஓட்டம், நீளம்(தொடர்பு_கடுமையானவை(கலவை)), 3,
               "so three of the four are critical");
 
-// --- what a lag is, and what it costs -------------------------------------
+// __--- what a lag is, and what it costs -------------------------------------__
 
 ஓட்டம் = சமம்(ஓட்டம், மொத்தத்_தாமதம்(கலவை_தொடர்புகள்), 6,
               "six days of the plan are lag");
@@ -589,7 +589,7 @@
               "and a lead is not counted as lag — netting the two would report "
               & "neither");
 
-// --- what can actually be crashed -----------------------------------------
+// __--- what can actually be crashed -----------------------------------------__
 
 சுருக்கம் = சுருக்கக்கூடிய_காலம்(கலவை_முனைகள், கலவை_தொடர்புகள், ["A", "C", "D"]);
 ஓட்டம் = சமம்(ஓட்டம், சுருக்கம்["வேலை"], 11,
@@ -606,7 +606,7 @@
                  & "crash** — which curukkal.qmz, looking only at float, would "
                  & "happily price");
 
-// --- a plain finish-to-start chain agrees with the simple scheduler --------
+// __--- a plain finish-to-start chain agrees with the simple scheduler --------__
 
 சங்கிலி_முனைகள் = [முனை_ஆக்கு("X", "", 4), முனை_ஆக்கு("Y", "", 6),
                     முனை_ஆக்கு("Z", "", 3)];
@@ -616,7 +616,7 @@
               "with only finish-to-start and no lag this reduces to what "
               & "pAqY.qmz computes: the durations add");
 
-// --- refusals --------------------------------------------------------------
+// __--- refusals --------------------------------------------------------------__
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(தொடர்பு_வலையைக்_கணக்கிடு(கலவை_முனைகள்,
                       [தொடர்பு_ஆக்கு("A", "B", "ஏதோ", 0)])),

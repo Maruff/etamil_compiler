@@ -1,49 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/mILpakirvu.qmz — மீள்பகிர்வு, reciprocal service apportionment
+// __nUlakam/celavu/mILpakirvu.qmz — மீள்பகிர்வு, reciprocal service apportionment__
 //
-// mElnilY.qmz's சேவையை_மறுபகிர் spreads a service centre's cost over the
-// production centres and says, at the point of definition, that two service
-// centres serving *each other* needs simultaneous equations and is not
-// attempted there. This is that.
+// __mElnilY.qmz's சேவையை_மறுபகிர் spreads a service centre's cost over the__
+// __production centres and says, at the point of definition, that two service__
+// __centres serving *each other* needs simultaneous equations and is not__
+// __attempted there. This is that.__
 //
-// The maintenance department services the canteen and the canteen feeds the
-// maintenance staff. Each one's total therefore depends on the other's, and
-// there is no order in which to do the arithmetic once.
+// __The maintenance department services the canteen and the canteen feeds the__
+// __maintenance staff. Each one's total therefore depends on the other's, and__
+// __there is no order in which to do the arithmetic once.__
 //
-// Three answers are possible and only two of them are the same:
+// __Three answers are possible and only two of them are the same:__
 //
-//   **Simultaneous equations** — solve the mutual dependency exactly. Closed
-//     form for two centres, which is the case that actually occurs.
-//   **Repeated distribution** — hand each service centre's balance out, over
-//     and over, until what is left is immaterial. It **converges to the
-//     simultaneous answer**, and is not an approximation of a different one.
-//   **Step-down** — take the service centres in some order and refuse to send
-//     anything backwards. Faster, wrong, and wrong by exactly the reciprocal
-//     service it declined to recognise.
+//   __**Simultaneous equations** — solve the mutual dependency exactly. Closed__
+//     __form for two centres, which is the case that actually occurs.__
+//   __**Repeated distribution** — hand each service centre's balance out, over__
+//     __and over, until what is left is immaterial. It **converges to the__
+//     __simultaneous answer**, and is not an approximation of a different one.__
+//   __**Step-down** — take the service centres in some order and refuse to send__
+//     __anything backwards. Faster, wrong, and wrong by exactly the reciprocal__
+//     __service it declined to recognise.__
 //
-// The step-down's real defect is not its size but its arbitrariness: **the
-// answer depends on the order**, two defensible orders give two different
-// product costs, and nothing in the accounts records which was used.
+// __The step-down's real defect is not its size but its arbitrariness: **the__
+// __answer depends on the order**, two defensible orders give two different__
+// __product costs, and nothing in the accounts records which was used.__
 //
-// Percentages are whole numbers out of a hundred, as everywhere else here.
+// __Percentages are whole numbers out of a hundred, as everywhere else here.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// கட்டமைப்பு — the shape of the problem
+// __கட்டமைப்பு — the shape of the problem__
 // =========================================================================
 //
 // சேவை_நிலையம்_ஆக்கு(நிலையக்_குறி, நேரடிச்_செலவு, பகிர்வுகள்)
 //
-// பகிர்வுகள் is a list of {"க்கு", "விகிதம்"} — where this centre's cost goes
-// and in what proportion. Recipients may be production centres or other
-// service centres, which is the whole difficulty.
+// __பகிர்வுகள் is a list of {"க்கு", "விகிதம்"} — where this centre's cost goes__
+// __and in what proportion. Recipients may be production centres or other__
+// __service centres, which is the whole difficulty.__
 //
-// The percentages should total a hundred. They are not checked here because a
-// centre that retains part of its own cost is a real, if unusual, arrangement,
-// and பகிர்வு_மொத்தம் lets a caller check when it wants to.
+// __The percentages should total a hundred. They are not checked here because a__
+// __centre that retains part of its own cost is a real, if unusual, arrangement,__
+// __and பகிர்வு_மொத்தம் lets a caller check when it wants to.__
 செயல் சேவை_நிலையம்_ஆக்கு(நிலையக்_குறி, நேரடிச்_செலவு, பகிர்வுகள்) {
     திரும்பு {"குறி": நிலையக்_குறி,
               "நேரடிச்_செலவு": நேரடிச்_செலவு,
@@ -62,7 +62,7 @@
     திரும்பு கூட்டல்;
 }
 
-// --- small helpers, named so they cannot collide across nUlakam -----------
+// __--- small helpers, named so they cannot collide across nUlakam -----------__
 
 செயல் உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_குறி) {
     ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
@@ -80,8 +80,8 @@
 
 // நிலையத்_தொகையைக்_கூட்டு(இருப்புகள், ஒரு_குறி, சேர்க்கும்_தொகை)
 //
-// Answers a new list rather than changing the old one, because a செயல் cannot
-// mutate what it is given. Every accumulation below is a reassignment.
+// __Answers a new list rather than changing the old one, because a செயல் cannot__
+// __mutate what it is given. Every accumulation below is a reassignment.__
 செயல் நிலையத்_தொகையைக்_கூட்டு(இருப்புகள், ஒரு_குறி, சேர்க்கும்_தொகை) {
     விடை = [];
     கிடைத்ததா = பொய்;
@@ -109,30 +109,30 @@
 }
 
 // =========================================================================
-// ஒரேசமயச் சமன்பாடு — the exact answer, for two centres
+// __ஒரேசமயச் சமன்பாடு — the exact answer, for two centres__
 // =========================================================================
 //
 // இரு_சேவை_ஒரேசமயம்(அ_நேரடி, ஆ_நேரடி, அ_இலிருந்து_ஆ, ஆ_இலிருந்து_அ)
 //
-// With two service centres the mutual dependency is two equations in two
-// unknowns:
+// __With two service centres the mutual dependency is two equations in two__
+// __unknowns:__
 //
-//     A = direct(A) + b × B
-//     B = direct(B) + a × A
+//     __A = direct(A) + b × B__
+//     __B = direct(B) + a × A__
 //
-// which solve to
+// __which solve to__
 //
-//     A = (direct(A) + b × direct(B)) ÷ (1 − a·b)
-//     B = (direct(B) + a × direct(A)) ÷ (1 − a·b)
+//     __A = (direct(A) + b × direct(B)) ÷ (1 − a·b)__
+//     __B = (direct(B) + a × direct(A)) ÷ (1 − a·b)__
 //
-// The grossed-up totals A and B are larger than the direct costs, and that is
-// correct rather than double counting: each is the centre's own cost plus the
-// service it received, and the part it sends back out is removed again when it
-// is distributed. Only what reaches production is charged to a unit.
+// __The grossed-up totals A and B are larger than the direct costs, and that is__
+// __correct rather than double counting: each is the centre's own cost plus the__
+// __service it received, and the part it sends back out is removed again when it__
+// __is distributed. Only what reaches production is charged to a unit.__
 //
-// Two centres that send each other everything — a·b = 1 — have no solution,
-// because nothing would ever reach production. It is a தவறு rather than a
-// division by zero.
+// __Two centres that send each other everything — a·b = 1 — have no solution,__
+// __because nothing would ever reach production. It is a தவறு rather than a__
+// __division by zero.__
 செயல் இரு_சேவை_ஒரேசமயம்(அ_நேரடி, ஆ_நேரடி, அ_இலிருந்து_ஆ, ஆ_இலிருந்து_அ) {
     அ_பின்னம் = அ_இலிருந்து_ஆ / 100;
     ஆ_பின்னம் = ஆ_இலிருந்து_அ / 100;
@@ -152,26 +152,26 @@
 }
 
 // =========================================================================
-// மீண்டும் பகிர்தல் — the iterative answer, for any number
+// __மீண்டும் பகிர்தல் — the iterative answer, for any number__
 // =========================================================================
 //
 // மீண்டும்_பகிர்(சேவை_நிலையங்கள், உற்பத்திக்_குறிகள், சுற்று_எல்லை, துல்லியம்)
 //
-// Hand every service centre's balance out at once, collect what lands back on
-// service centres, and do it again. Each pass multiplies the service balances
-// by the fraction they send to each other, so they shrink geometrically and
-// the thing terminates.
+// __Hand every service centre's balance out at once, collect what lands back on__
+// __service centres, and do it again. Each pass multiplies the service balances__
+// __by the fraction they send to each other, so they shrink geometrically and__
+// __the thing terminates.__
 //
-// It is **not an approximation of a different method**. The limit it converges
-// to is the simultaneous solution, which is why the tests assert the two agree
-// to the paisa rather than merely being close.
+// __It is **not an approximation of a different method**. The limit it converges__
+// __to is the simultaneous solution, which is why the tests assert the two agree__
+// __to the paisa rather than merely being close.__
 //
-// For three or more service centres this is the practical method, because the
-// closed form needs matrix inversion the language has no use for elsewhere.
+// __For three or more service centres this is the practical method, because the__
+// __closed form needs matrix inversion the language has no use for elsewhere.__
 //
-// The round limit is a guard and not a tuning knob. Reaching it means the
-// service centres pass nearly everything to each other, which is a
-// configuration worth failing on rather than truncating.
+// __The round limit is a guard and not a tuning knob. Reaching it means the__
+// __service centres pass nearly everything to each other, which is a__
+// __configuration worth failing on rather than truncating.__
 செயல் மீண்டும்_பகிர்(சேவை_நிலையங்கள், உற்பத்திக்_குறிகள், சுற்று_எல்லை,
                      துல்லியம்) {
     உற்பத்தி_இருப்புகள் = [];
@@ -201,9 +201,9 @@
             கையிருப்பு = நிலையத்_தொகையைப்_பெறு(சேவை_இருப்புகள்,
                                                  ஒரு_நிலையம்["குறி"]);
             ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
-                // Raw, not சதவீதம் — that rounds to the paisa, and rounding
-                // every share on every round injects money into the total.
-                // Rounding happens once, where the answer leaves.
+                // __Raw, not சதவீதம் — that rounds to the paisa, and rounding__
+                // __every share on every round injects money into the total.__
+                // __Rounding happens once, where the answer leaves.__
                 பங்குத்_தொகை = கையிருப்பு * ஒரு_பகிர்வு["விகிதம்"] / 100;
                 (உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_பகிர்வு["க்கு"])) எனில் {
                     உற்பத்தி_இருப்புகள் = நிலையத்_தொகையைக்_கூட்டு(
@@ -239,22 +239,22 @@
 }
 
 // =========================================================================
-// படிநிலைப் பகிர்வு — the approximation, and its arbitrariness
+// __படிநிலைப் பகிர்வு — the approximation, and its arbitrariness__
 // =========================================================================
 //
 // படிநிலைப்_பகிர்வு(வரிசைப்படுத்திய_நிலையங்கள், உற்பத்திக்_குறிகள்)
 //
-// Take the service centres in the order given. Each one distributes its whole
-// balance — including whatever earlier centres sent it — and is then closed;
-// anything it would have sent to a centre **already closed** is redistributed
-// among the recipients still open, in proportion.
+// __Take the service centres in the order given. Each one distributes its whole__
+// __balance — including whatever earlier centres sent it — and is then closed;__
+// __anything it would have sent to a centre **already closed** is redistributed__
+// __among the recipients still open, in proportion.__
 //
-// It is one pass, it always terminates, and it is wrong by the service it
-// refused to send backwards.
+// __It is one pass, it always terminates, and it is wrong by the service it__
+// __refused to send backwards.__
 //
-// The order is a parameter because there is no right one. Convention takes the
-// centre serving the most others first, which is a rule of thumb and not a
-// derivation — and `படிநிலை_வரிசை_வேறுபாடு` exists to show what turns on it.
+// __The order is a parameter because there is no right one. Convention takes the__
+// __centre serving the most others first, which is a rule of thumb and not a__
+// __derivation — and `படிநிலை_வரிசை_வேறுபாடு` exists to show what turns on it.__
 செயல் படிநிலைப்_பகிர்வு(வரிசைப்படுத்திய_நிலையங்கள், உற்பத்திக்_குறிகள்) {
     உற்பத்தி_இருப்புகள் = [];
     ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
@@ -274,8 +274,8 @@
         கையிருப்பு = நிலையத்_தொகையைப்_பெறு(சேவை_இருப்புகள்,
                                              ஒரு_நிலையம்["குறி"]);
 
-        // Only recipients still open count, and the percentages are rescaled
-        // over them so the whole balance is distributed.
+        // __Only recipients still open count, and the percentages are rescaled__
+        // __over them so the whole balance is distributed.__
         திறந்த_எடை = 0;
         ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
             (இல்லை உற்பத்தியா(மூடியவை, ஒரு_பகிர்வு["க்கு"])) எனில் {
@@ -312,17 +312,17 @@
 }
 
 // =========================================================================
-// சரிபார்ப்பு — what must hold whichever method is used
+// __சரிபார்ப்பு — what must hold whichever method is used__
 // =========================================================================
 //
 // உற்பத்திக்கு_மொத்தம்(விடைப்_பட்டியல்)
 //
-// Everything the service centres held must end up on a production centre. The
-// direct costs in and the apportioned costs out are the same money, and a
-// method that loses some of it has not apportioned, it has evaporated.
+// __Everything the service centres held must end up on a production centre. The__
+// __direct costs in and the apportioned costs out are the same money, and a__
+// __method that loses some of it has not apportioned, it has evaporated.__
 //
-// This is the assertion worth making about all three methods, and it holds for
-// all three even though two of them disagree about *where* the money goes.
+// __This is the assertion worth making about all three methods, and it holds for__
+// __all three even though two of them disagree about *where* the money goes.__
 செயல் உற்பத்திக்கு_மொத்தம்(விடைப்_பட்டியல்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஓர்_இருப்பு இல் விடைப்_பட்டியல் {
@@ -343,12 +343,12 @@
 // படிநிலை_வரிசை_வேறுபாடு(முதல்_வரிசை, இரண்டாம்_வரிசை, உற்பத்திக்_குறிகள்,
 //                          ஒரு_குறி)
 //
-// What one production centre is charged under two different step-down orders.
+// __What one production centre is charged under two different step-down orders.__
 //
-// The size of the gap is the point. Both orders are defensible, both totals
-// reconcile to the same money, and the product cost differs — so a unit cost
-// arrived at this way depends on a decision nobody records and few would
-// recognise as a decision.
+// __The size of the gap is the point. Both orders are defensible, both totals__
+// __reconcile to the same money, and the product cost differs — so a unit cost__
+// __arrived at this way depends on a decision nobody records and few would__
+// __recognise as a decision.__
 செயல் படிநிலை_வரிசை_வேறுபாடு(முதல்_வரிசை, இரண்டாம்_வரிசை, உற்பத்திக்_குறிகள்,
                                ஒரு_குறி) {
     முதல் = படிநிலைப்_பகிர்வு(முதல்_வரிசை, உற்பத்திக்_குறிகள்);

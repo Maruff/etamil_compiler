@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/pErEtu.qmz — பேரேடு (the ledger)
+// __nUlakam/kaNakkiyal/pErEtu.qmz — பேரேடு (the ledger)__
 //
-// Double entry, enforced. A transaction that does not balance is rejected;
-// it never reaches the ledger. The ledger itself is append-only: posting
-// returns a new ledger rather than modifying the old one, so an entry cannot
-// be edited after the fact — the property eloquent-ifrs protects by keeping
-// clients away from the table.
+// __Double entry, enforced. A transaction that does not balance is rejected;__
+// __it never reaches the ledger. The ledger itself is append-only: posting__
+// __returns a new ledger rather than modifying the old one, so an entry cannot__
+// __be edited after the fact — the property eloquent-ifrs protects by keeping__
+// __clients away from the table.__
 
 இறக்கு "kaNakkukaL.qmz";
 இறக்கு "kAlam.qmz";
@@ -21,7 +21,7 @@
     };
 }
 
-// பற்று(கணக்கு_குறி, தொகை) / வரவு(கணக்கு_குறி, தொகை) — the readable forms
+// __பற்று(கணக்கு_குறி, தொகை) / வரவு(கணக்கு_குறி, தொகை) — the readable forms__
 செயல் பற்று_வரிசை(கணக்கு_குறி, தொகை_மதிப்பு) {
     திரும்பு வரிசை_ஆக்கு(கணக்கு_குறி, தொகை_மதிப்பு, 0);
 }
@@ -40,7 +40,7 @@
     };
 }
 
-// மொத்த_பற்று / மொத்த_வரவு over a transaction's lines
+// __மொத்த_பற்று / மொத்த_வரவு over a transaction's lines__
 செயல் மொத்த_பற்று(வரிசைகள்) {
     மொத்தம் = 0;
     ஒவ்வொரு ஒரு_வரிசை இல் வரிசைகள் {
@@ -57,15 +57,15 @@
     திரும்பு மொத்தம்;
 }
 
-// சமநிலையா(பரிவர்த்தனை) — do the two sides agree?
+// __சமநிலையா(பரிவர்த்தனை) — do the two sides agree?__
 செயல் சமநிலையா(பரிவர்த்தனை) {
     திரும்பு மொத்த_பற்று(பரிவர்த்தனை.வரிசைகள்) == மொத்த_வரவு(பரிவர்த்தனை.வரிசைகள்);
 }
 
-// பதிவிடு(பேரேடு, பரிவர்த்தனை) — post, or refuse
+// __பதிவிடு(பேரேடு, பரிவர்த்தனை) — post, or refuse__
 //
-// Exact decimals matter here: with f64 a transaction could be a fraction of
-// a paisa out and this equality would fail, or worse, silently pass.
+// __Exact decimals matter here: with f64 a transaction could be a fraction of__
+// __a paisa out and this equality would fail, or worse, silently pass.__
 செயல் பதிவிடு(பேரேடு, பரிவர்த்தனை) {
     (நீளம்(பரிவர்த்தனை.வரிசைகள்) == 0) எனில் {
         திரும்பு தவறு("வரிசைகள் இல்லாத பரிவர்த்தனை: " & பரிவர்த்தனை.பரிவர்த்தனை_எண்);
@@ -93,9 +93,9 @@
 
 // கணக்கு_இருப்பு(பேரேடு, கணக்கு_குறி, வகை)
 //
-// Returned in the account's own normal direction, so an asset with more
-// debits than credits reads positive, and so does a liability with more
-// credits than debits.
+// __Returned in the account's own normal direction, so an asset with more__
+// __debits than credits reads positive, and so does a liability with more__
+// __credits than debits.__
 செயல் கணக்கு_இருப்பு(பேரேடு, கணக்கு_குறி, கணக்கு_வகை) {
     பற்று_மொத்தம் = 0;
     வரவு_மொத்தம் = 0;
@@ -111,7 +111,7 @@
     திரும்பு வரவு_மொத்தம் - பற்று_மொத்தம்;
 }
 
-// கணக்கு_பதிவுகள்(பேரேடு, கணக்கு_குறி) — the lines for one account
+// __கணக்கு_பதிவுகள்(பேரேடு, கணக்கு_குறி) — the lines for one account__
 செயல் கணக்கு_பதிவுகள்(பேரேடு, கணக்கு_குறி) {
     விடை = [];
     ஒவ்வொரு பதிவு இல் பேரேடு {
@@ -122,13 +122,13 @@
     திரும்பு விடை;
 }
 
-// --- Period filters ---
+// __--- Period filters ---__
 //
-// Reports run over a filtered ledger rather than taking a period argument
-// each. An income statement filters to a period; a balance sheet filters to
-// everything up to a date, because it is cumulative by nature.
+// __Reports run over a filtered ledger rather than taking a period argument__
+// __each. An income statement filters to a period; a balance sheet filters to__
+// __everything up to a date, because it is cumulative by nature.__
 
-// காலம்_வடிகட்டு(பேரேடு, காலம்) — postings within the period
+// __காலம்_வடிகட்டு(பேரேடு, காலம்) — postings within the period__
 செயல் காலம்_வடிகட்டு(பேரேடு, காலம்) {
     விடை = [];
     ஒவ்வொரு பதிவு இல் பேரேடு {
@@ -139,7 +139,7 @@
     திரும்பு விடை;
 }
 
-// வரை_வடிகட்டு(பேரேடு, நாள்) — everything on or before a date
+// __வரை_வடிகட்டு(பேரேடு, நாள்) — everything on or before a date__
 செயல் வரை_வடிகட்டு(பேரேடு, வரம்பு_நாள்) {
     விடை = [];
     ஒவ்வொரு பதிவு இல் பேரேடு {
@@ -151,8 +151,8 @@
 }
 
 // பரிவர்த்தனை_தொகை(பேரேடு, பரிவர்த்தனை_எண், கணக்கு_குறி)
-// The amount one transaction put on one account, in that account's normal
-// direction. Clearing needs this to know what an invoice was worth.
+// __The amount one transaction put on one account, in that account's normal__
+// __direction. Clearing needs this to know what an invoice was worth.__
 செயல் பரிவர்த்தனை_தொகை(பேரேடு, பரிவர்த்தனை_எண், கணக்கு_குறி, கணக்கு_வகை) {
     பற்று_மொத்தம் = 0;
     வரவு_மொத்தம் = 0;
@@ -179,8 +179,8 @@
     திரும்பு தவறு("பரிவர்த்தனை காணவில்லை: " & பரிவர்த்தனை_எண்);
 }
 
-// பரிவர்த்தனை_எண்கள்(பேரேடு, கணக்கு_குறி) — distinct transactions touching
-// an account, in the order they were posted
+// __பரிவர்த்தனை_எண்கள்(பேரேடு, கணக்கு_குறி) — distinct transactions touching__
+// __an account, in the order they were posted__
 செயல் பரிவர்த்தனை_எண்கள்(பேரேடு, கணக்கு_குறி) {
     விடை = [];
     ஒவ்வொரு பதிவு இல் பேரேடு {

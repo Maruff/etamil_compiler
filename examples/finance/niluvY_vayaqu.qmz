@@ -1,6 +1,6 @@
-// நிலுவை மற்றும் வயது — clearing and ageing
+// __நிலுவை மற்றும் வயது — clearing and ageing__
 //
-// Three invoices, one part payment. What is still owed, and how old is it.
+// __Three invoices, one part payment. What is still owed, and how old is it.__
 
 இறக்கு "../../nUlakam/kaNakkiyal/kaNakkukaL.qmz";
 இறக்கு "../../nUlakam/kaNakkiyal/pErEtu.qmz";
@@ -19,7 +19,7 @@
 பேரேடு = [];
 ஒதுக்கீடுகள் = [];
 
-// Three invoices, spread across four months
+// __Three invoices, spread across four months__
 வி1 = விற்பனை_பரிவர்த்தனை("INV001", "2026-01-10", "ஜனவரி சேவை",
                             "1100", "4000", "2100", 100000, 18);
 வி2 = விற்பனை_பரிவர்த்தனை("INV002", "2026-03-05", "மார்ச் சேவை",
@@ -31,12 +31,12 @@
 பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, வி2));
 பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, வி3));
 
-// A receipt of ₹1,18,000 — exactly settles the first invoice
+// __A receipt of ₹1,18,000 — exactly settles the first invoice__
 ர1 = பணம்_பெறு("RCT001", "2026-04-20", "வாடிக்கையாளர் பணம்",
                  "1000", "1100", 118000);
 பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, ர1));
 
-// Assign it against INV001
+// __Assign it against INV001__
 ஒதுக்கீடுகள் = மதிப்பு(ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு,
                                  "RCT001", "INV001", 118000, "1100", "சொத்து"));
 
@@ -46,30 +46,30 @@
                                                   "INV002", "1100", "சொத்து"));
 அச்சு "";
 
-// Over-assigning is refused
+// __Over-assigning is refused__
 மீறல் = ஒதுக்கு(ஒதுக்கீடுகள், பேரேடு, "RCT001", "INV002", 1, "1100", "சொத்து");
 (தவறா(மீறல்)) எனில் {
     அச்சு "✓ பணத்திற்கு மேல் ஒதுக்குவது மறுக்கப்பட்டது";
     அச்சு "";
 }
 
-// Ageing as at 30 April 2026
+// __Ageing as at 30 April 2026__
 வயது_அட்டவணை_அச்சிடு(வயது_அட்டவணை(பேரேடு, ஒதுக்கீடுகள்,
                                      "1100", "சொத்து", "2026-04-30"));
 அச்சு "";
 
-// The Indian financial year 2026-27 begins 1 April, so only INV003 counts
+// __The Indian financial year 2026-27 begins 1 April, so only INV003 counts__
 ஆண்டு = இந்திய_ஆண்டு(2026);
 அச்சு "காலம்: " & காலம்_விவரம்(ஆண்டு);
 வரு = கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், ஆண்டு);
 அச்சு "  அந்த ஆண்டின் வருவாய்: " & ரூபாய்(வரு.மொத்த_வருவாய்);
 
-// The balance sheet is cumulative, so it carries everything up to the date
+// __The balance sheet is cumulative, so it carries everything up to the date__
 நிலை = நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், "2026-04-30");
 அச்சு "  30-04-2026 அன்று மொத்த சொத்து: " & ரூபாய்(நிலை.மொத்த_சொத்து);
 அச்சு "";
 
-// A customer's account statement
+// __A customer's account statement__
 அறிக்கை = கணக்கு_அறிக்கை(பேரேடு, "1100", "சொத்து");
 அச்சு "வாங்குநர் கணக்கு அறிக்கை";
 ஒவ்வொரு வரி இல் அறிக்கை.வரிகள் {

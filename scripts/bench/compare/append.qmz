@@ -1,14 +1,14 @@
-// Building a list by appending, N times — the shape the accounting framework
-// uses. `பதிவிடு` appends a transaction to a ledger, so a book of N entries is
-// N appends.
+// __Building a list by appending, N times — the shape the accounting framework__
+// __uses. `பதிவிடு` appends a transaction to a ledger, so a book of N entries is__
+// __N appends.__
 //
-// This is measured separately from tax.qmz because it is not a per-iteration
-// cost at all. `இணை` clones the whole array before pushing, so N appends copy
-// about N²/2 elements. Run it at N and 2N: if the time quadruples rather than
-// doubles, the growth is quadratic.
+// __This is measured separately from tax.qmz because it is not a per-iteration__
+// __cost at all. `இணை` clones the whole array before pushing, so N appends copy__
+// __about N²/2 elements. Run it at N and 2N: if the time quadruples rather than__
+// __doubles, the growth is quadratic.__
 //
-// N arrives on stdin, then is converted once. Leaving it as text would make
-// every loop comparison re-parse it.
+// __N arrives on stdin, then is converted once. Leaving it as text would make__
+// __every loop comparison re-parse it.__
 uLLitu eNNikkY;
 eNNikkY = iyalpu(eNNAkku(eNNikkY), 0);
 

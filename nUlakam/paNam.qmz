@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/paNam.qmz — பணம் (money) formatting
+// __nUlakam/paNam.qmz — பணம் (money) formatting__
 //
-// Indian digit grouping: the last three digits, then groups of two, so
-// 12345678.5 reads as 1,23,45,678.50 — not the 12,345,678.50 that a
-// western formatter would give you.
+// __Indian digit grouping: the last three digits, then groups of two, so__
+// __12345678.5 reads as 1,23,45,678.50 — not the 12,345,678.50 that a__
+// __western formatter would give you.__
 
 இறக்கு "col.qmz";
 இறக்கு "kaNiqam.qmz";
 
-// குழுக்கள்(இலக்கங்கள்) — apply the 3-then-2s grouping to a digit string
+// __குழுக்கள்(இலக்கங்கள்) — apply the 3-then-2s grouping to a digit string__
 செயல் குழுக்கள்(இலக்கங்கள்) {
     மொத்தம் = நீளம்(இலக்கங்கள்);
     (மொத்தம் <= 3) எனில் { திரும்பு இலக்கங்கள்; }
@@ -31,7 +31,7 @@
     திரும்பு விடை;
 }
 
-// காசு_வடிவம்(தொகை) — group and show exactly two decimal places
+// __காசு_வடிவம்(தொகை) — group and show exactly two decimal places__
 செயல் காசு_வடிவம்(தொகை) {
     வட்டம் = வட்டமிடு(தொகை, 2);
 
@@ -50,17 +50,17 @@
     திரும்பு விடை;
 }
 
-// ரூபாய்(தொகை) — the same, with the rupee sign
+// __ரூபாய்(தொகை) — the same, with the rupee sign__
 செயல் ரூபாய்(தொகை) {
     திரும்பு "₹" & காசு_வடிவம்(தொகை);
 }
 
-// காசாக(தொகை) — round to the paisa, which is what a ledger stores
+// __காசாக(தொகை) — round to the paisa, which is what a ledger stores__
 செயல் காசாக(தொகை) {
     திரும்பு வட்டமிடு(தொகை, 2);
 }
 
-// லட்சம்(தொகை) / கோடி(தொகை) — express in lakhs or crores
+// __லட்சம்(தொகை) / கோடி(தொகை) — express in lakhs or crores__
 செயல் லட்சம்(தொகை) {
     திரும்பு வட்டமிடு(தொகை / 100000, 2);
 }

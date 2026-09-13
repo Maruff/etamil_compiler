@@ -1,30 +1,30 @@
-// examples/katY/katY_cEvY.qmz — the shop's REST API
+// __examples/katY/katY_cEvY.qmz — the shop's REST API__
 //
-//   etamil --server --port 8090 examples/katY/katY_cEvY.qmz
+//   __etamil --server --port 8090 examples/katY/katY_cEvY.qmz__
 //
-// Run katY_kAttu.qmz first, in the same directory: it creates katY.db and
-// the catalogue this serves.
+// __Run katY_kAttu.qmz first, in the same directory: it creates katY.db and__
+// __the catalogue this serves.__
 //
-// Under --vm this fails on the first வழி, and that is correct — route
-// statements need a server. scripts/run_examples.sh expects that failure.
+// __Under --vm this fails on the first வழி, and that is correct — route__
+// __statements need a server. scripts/run_examples.sh expects that failure.__
 //
-// Every response is built with ஜேசான்_ஆக்கு, which is eTamil, not a host
-// builtin. தளம்_இணை appears in every handler because each request gets its own
-// VM — but it borrows from a cache rather than opening a socket, so saying it
-// per route costs nothing.
+// __Every response is built with ஜேசான்_ஆக்கு, which is eTamil, not a host__
+// __builtin. தளம்_இணை appears in every handler because each request gets its own__
+// __VM — but it borrows from a cache rather than opening a socket, so saying it__
+// __per route costs nothing.__
 
 இறக்கு "katY.qmz";
 இறக்கு "../../nUlakam/jEcAZ.qmz";
 
-// The webhook secret the payment gateway signs with. Read from the
-// environment in anything real; written here so the example runs.
+// __The webhook secret the payment gateway signs with. Read from the__
+// __environment in anything real; written here so the example runs.__
 செயல் வலைக்கொக்கி_இரகசியம்() { திரும்பு "wh_test_secret"; }
 
 செயல் பிழை_பதில்(செய்தி) {
     திரும்பு ஜேசான்_ஆக்கு({பிழை: செய்தி});
 }
 
-// GET /carakku — the catalogue
+// __GET /carakku — the catalogue__
 வழி பெறு, "/carakku" {
     தளம்_இணை சீகுலைட், "katY.db";
     தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL
@@ -43,7 +43,7 @@
     பதில் 200, ஜேசான்_ஆக்கு({சரக்குகள்: விடை});
 }
 
-// GET /carakku/:kuRi — one product
+// __GET /carakku/:kuRi — one product__
 வழி பெறு, "/carakku/:kuRi" {
     தளம்_இணை சீகுலைட், "katY.db";
     தளம்_வினா "SELECT kuRi, peyar, vilY, vari_viqam, iruppu FROM carakkukaL WHERE kuRi = ?",
@@ -61,13 +61,13 @@
     }
 }
 
-// POST /vaNti/kaNakku — price a cart, GST and all
+// __POST /vaNti/kaNakku — price a cart, GST and all__
 //
-//   {"uL_mAnilam": true,
-//    "varicYkaL": [{"kuRi": "P1", "aLavu": 2}, {"kuRi": "P2", "aLavu": 3}]}
+//   __{"uL_mAnilam": true,__
+//    __"varicYkaL": [{"kuRi": "P1", "aLavu": 2}, {"kuRi": "P2", "aLavu": 3}]}__
 //
-// Prices come from the database, never from the request: a client that could
-// send its own price could set it to zero.
+// __Prices come from the database, never from the request: a client that could__
+// __send its own price could set it to zero.__
 வழி பதி, "/vaNti/kaNakku" {
     படித்தது = ஜேசான்_படி(request_body);
     (தவறா(படித்தது)) எனில் {
@@ -103,18 +103,18 @@
     }
 }
 
-// POST /paNam/vaLYkkokki — the payment gateway's callback
+// __POST /paNam/vaLYkkokki — the payment gateway's callback__
 //
-// The signature is the whole point. Without checking it this endpoint is an
-// unauthenticated POST that marks orders paid, so anyone who learns the URL
-// can have the shop's stock for nothing. கையொப்பம்_சரியா compares in constant
-// time, which is why it is a primitive rather than == in eTamil.
+// __The signature is the whole point. Without checking it this endpoint is an__
+// __unauthenticated POST that marks orders paid, so anyone who learns the URL__
+// __can have the shop's stock for nothing. கையொப்பம்_சரியா compares in constant__
+// __time, which is why it is a primitive rather than == in eTamil.__
 வழி பதி, "/paNam/vaLYkkokki" {
     வந்த_கையொப்பம் = headers["x-etamil-signature"];
 
     (இல்லை கையொப்பம்_சரியா(வலைக்கொக்கி_இரகசியம்(), request_body, வந்த_கையொப்பம்)) எனில் {
-        // No detail in the reply: telling a caller *why* it failed helps them
-        // work out what a valid signature looks like.
+        // __No detail in the reply: telling a caller *why* it failed helps them__
+        // __work out what a valid signature looks like.__
         பதில் 401, பிழை_பதில்("கையொப்பம் சரியில்லை");
     }
     இன்றேல் {
@@ -132,7 +132,7 @@
     }
 }
 
-// GET /ANY/:kuRi — an order and its lines
+// __GET /ANY/:kuRi — an order and its lines__
 வழி பெறு, "/ANY/:kuRi" {
     தளம்_இணை சீகுலைட், "katY.db";
     தளம்_வினா "SELECT kuRi, vAtikkYyALar, nAL, qokY, nilY FROM ANYkaL WHERE kuRi = ?",
@@ -159,17 +159,17 @@
     }
 }
 
-// --- A timed job ----------------------------------------------------------
+// __--- A timed job ----------------------------------------------------------__
 //
-// இடைவெளி runs a block on a timer under either server. The number is the gap
-// *between* runs, not a fixed rate: a job slower than its interval runs late
-// rather than twice at once, and two settlement runs overlapping is worse than
-// one running behind.
+// __இடைவெளி runs a block on a timer under either server. The number is the gap__
+// __*between* runs, not a fixed rate: a job slower than its interval runs late__
+// __rather than twice at once, and two settlement runs overlapping is worse than__
+// __one running behind.__
 //
-// Every ten minutes here so the example is watchable; a real shop would want
-// this nightly. It borrows its connection from the same pool the routes use,
-// and a failure is logged rather than taking the server down — there is no
-// caller to return an error to.
+// __Every ten minutes here so the example is watchable; a real shop would want__
+// __this nightly. It borrows its connection from the same pool the routes use,__
+// __and a failure is logged rather than taking the server down — there is no__
+// __caller to return an error to.__
 இடைவெளி 600 {
     தளம்_இணை சீகுலைட், "katY.db";
 
@@ -180,7 +180,7 @@
     அச்சு "  செலுத்தப்படாத ஆணைகள்: " & நிலுவை[0].eNNikkY
           & "   மொத்தம் " & ரூபாய்(நிலுவை[0].moqqam);
 
-    // Anything still unpaid after a week is worth a human looking at.
+    // __Anything still unpaid after a week is worth a human looking at.__
     தளம்_வினா "SELECT kuRi, nAL, qokY FROM ANYkaL
                WHERE nilY = ? AND nAL < ?", ["இடப்பட்டது", நாள்_கூட்டு(இன்று(), 0 - 7)],
               பழையவை;

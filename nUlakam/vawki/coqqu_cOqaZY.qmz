@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// சொத்து வகைப்பாடு சோதனை — tests for asset classification
+// __சொத்து வகைப்பாடு சோதனை — tests for asset classification__
 //
-//   etamil --vm nUlakam/vawki/coqqu_cOqaZY.qmz
+//   __etamil --vm nUlakam/vawki/coqqu_cOqaZY.qmz__
 //
-// The rules are built here, in memory, rather than read from a file. Two
-// reasons: the suite then needs no fixture and leaves nothing behind, and the
-// figures it asserts on are visibly its own. Nothing in this file is a claim
-// about what any real rule says — the day counts below are invented to make
-// the boundaries easy to see.
+// __The rules are built here, in memory, rather than read from a file. Two__
+// __reasons: the suite then needs no fixture and leaves nothing behind, and the__
+// __figures it asserts on are visibly its own. Nothing in this file is a claim__
+// __about what any real rule says — the day counts below are invented to make__
+// __the boundaries easy to see.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "coqqu.qmz";
@@ -24,13 +24,13 @@
              amal_mutivu TEXT,
              mUlam TEXT NOT NULL)", [];
 
-// Three classes, the last with no upper bound.
+// __Three classes, the last with no upper bound.__
 //
-// The columns that should be NULL are left out of the INSERT rather than bound
-// to "". eTamil has no nil to pass, and an empty string is not a NULL: the
-// loader asks for `amal_mutivu IS NULL`, and a row holding "" is a row still
-// in force according to nobody. Omitting the column is how a NULL is written
-// from here.
+// __The columns that should be NULL are left out of the INSERT rather than bound__
+// __to "". eTamil has no nil to pass, and an empty string is not a NULL: the__
+// __loader asks for `amal_mutivu IS NULL`, and a row holding "" is a row still__
+// __in force according to nobody. Omitting the column is how a NULL is written__
+// __from here.__
 நிரல்கள் = "(vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, amal_qotakkam, mUlam)";
 
 தளம்_செய் "INSERT INTO coqqu_viqimuRY " & நிரல்கள் & " VALUES (?,?,?,?,?,?)",
@@ -38,13 +38,13 @@
 தளம்_செய் "INSERT INTO coqqu_viqimuRY " & நிரல்கள் & " VALUES (?,?,?,?,?,?)",
           ["சந்தேகம்", 91, 365, 20, "2020-01-01", "சோதனை"];
 
-// No upper bound at all: that column is left out too.
+// __No upper bound at all: that column is left out too.__
 தளம்_செய் "INSERT INTO coqqu_viqimuRY
              (vakY, nAtkaL_muqal, oqukkItu_vikiqam, amal_qotakkam, mUlam)
              VALUES (?,?,?,?,?)",
           ["இழப்பு", 366, 100, "2020-01-01", "PLACEHOLDER — invented"];
 
-// A rule that was replaced: in force until 2020, and must not be seen after.
+// __A rule that was replaced: in force until 2020, and must not be seen after.__
 தளம்_செய் "INSERT INTO coqqu_viqimuRY
              (vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam,
               amal_qotakkam, amal_mutivu, mUlam)
@@ -57,10 +57,10 @@
 ஓட்டம் = சமம்(ஓட்டம், நீளம்(விதிகள்), 3,
               "a rule that has been replaced is not in force");
 
-// --- the boundaries -------------------------------------------------------
+// __--- the boundaries -------------------------------------------------------__
 //
-// The day a class starts and the day it ends are where a classification is
-// got wrong, so each is asserted on both sides.
+// __The day a class starts and the day it ends are where a classification is__
+// __got wrong, so each is asserted on both sides.__
 செயல் வகை_பெயர்(விதிகள், நாட்கள்) {
     விடை = வகைப்படுத்து(விதிகள், நாட்கள்);
     (தவறா(விடை)) எனில் { திரும்பு "—"; }
@@ -73,13 +73,13 @@
 ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 365), "சந்தேகம்", "its last day");
 ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 366), "இழப்பு", "and over into the last class");
 
-// The open-ended class is the one that broke first: an upper bound written
-// NULL arrives as nil, and nil is equal to nothing, so comparing it against a
-// number put every very old account outside every rule.
+// __The open-ended class is the one that broke first: an upper bound written__
+// __NULL arrives as nil, and nil is equal to nothing, so comparing it against a__
+// __number put every very old account outside every rule.__
 ஓட்டம் = சமம்(ஓட்டம், வகை_பெயர்(விதிகள், 5000), "இழப்பு",
               "a class with no upper bound catches everything above it");
 
-// --- what is set aside ----------------------------------------------------
+// __--- what is set aside ----------------------------------------------------__
 கணக்கு = ஒதுக்கீடு(விதிகள், 100, 1000000);
 ஓட்டம் = உறுதிசெய்(ஓட்டம், சரியா(கணக்கு), "a hundred days overdue classifies");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(கணக்கு)["ஒதுக்கீடு"], 200000,
@@ -91,16 +91,16 @@
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நல்லது)["ஒதுக்கீடு"], 10000,
               "a performing account still provisions something");
 
-// --- what it refuses to guess ---------------------------------------------
+// __--- what it refuses to guess ---------------------------------------------__
 //
-// An account no rule covers is not quietly called standard. Standard is the
-// class that provisions least, so that default would understate the exposure
-// — the one direction a provisioning error must never go.
+// __An account no rule covers is not quietly called standard. Standard is the__
+// __class that provisions least, so that default would understate the exposure__
+// __— the one direction a provisioning error must never go.__
 காலி = [];
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(வகைப்படுத்து(காலி, 30)),
                     "with no rules at all it refuses rather than assuming");
 
-// --- and what it will not vouch for ---------------------------------------
+// __--- and what it will not vouch for ---------------------------------------__
 சரிபார்க்காதவை = சரிபார்க்கப்படாதவை(விதிகள்);
 ஓட்டம் = சமம்(ஓட்டம், நீளம்(சரிபார்க்காதவை), 1,
               "the placeholder row is named");

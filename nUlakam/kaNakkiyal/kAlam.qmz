@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/kAlam.qmz — காலம் (reporting periods)
+// __nUlakam/kaNakkiyal/kAlam.qmz — காலம் (reporting periods)__
 //
-// Dates are ISO-8601 text, which sorts chronologically, so "is this posting
-// within the period" needs nothing but a string comparison. Only arithmetic
-// — how many days between two dates — needs the host.
+// __Dates are ISO-8601 text, which sorts chronologically, so "is this posting__
+// __within the period" needs nothing but a string comparison. Only arithmetic__
+// __— how many days between two dates — needs the host.__
 //
-// The distinction this file exists to enforce: an income statement covers a
-// period, a balance sheet is as at a date. Reporting one as the other is a
-// real error, not a presentation choice.
+// __The distinction this file exists to enforce: an income statement covers a__
+// __period, a balance sheet is as at a date. Reporting one as the other is a__
+// __real error, not a presentation choice.__
 
 // காலம்_ஆக்கு(தொடக்கம், முடிவு)
 செயல் காலம்_ஆக்கு(தொடக்கம், முடிவு) {
@@ -19,7 +19,7 @@
     திரும்பு சரி({தொடக்கம்: தொடக்கம், முடிவு: முடிவு});
 }
 
-// இந்திய_ஆண்டு(ஆண்டு) — the Indian financial year, 1 April to 31 March
+// __இந்திய_ஆண்டு(ஆண்டு) — the Indian financial year, 1 April to 31 March__
 செயல் இந்திய_ஆண்டு(ஆண்டு) {
     அடுத்தது = ஆண்டு + 1;
     திரும்பு மதிப்பு(காலம்_ஆக்கு(
@@ -41,7 +41,7 @@
     திரும்பு நாள் >= காலம்.தொடக்கம் மற்றும் நாள் <= காலம்.முடிவு;
 }
 
-// வரையிலா(நாள், வரம்பு_நாள்) — on or before, for as-at reporting
+// __வரையிலா(நாள், வரம்பு_நாள்) — on or before, for as-at reporting__
 செயல் வரையிலா(நாள், வரம்பு_நாள்) {
     திரும்பு நாள் <= வரம்பு_நாள்;
 }

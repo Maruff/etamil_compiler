@@ -1,29 +1,29 @@
-// திட்டம் சங்கமம் — one project, end to end
+// __திட்டம் சங்கமம் — one project, end to end__
 //
-// Every directory in nUlakam that touches a project, used together on a single
-// job. The point is not any one calculation — each has its own tests — but that
-// they compose, and that the same underlying facts reach control, the ledger
-// and the financial statements without being re-keyed.
+// __Every directory in nUlakam that touches a project, used together on a single__
+// __job. The point is not any one calculation — each has its own tests — but that__
+// __they compose, and that the same underlying facts reach control, the ledger__
+// __and the financial statements without being re-keyed.__
 //
-// The chain:
+// __The chain:__
 //
-//   the work breakdown            qittam/pakuppu
-//   three-point estimates         itar/mUZRuppuLLi
-//   the critical path             qittam/pAqY
-//   real dates                    nAtkAtti/vElYnAL
-//   the risk register             itar/itar
-//   the budget and its reserves   qittam/kattuppAtu
-//   timesheets, costed            vaLam/vaLam, vaLam/nEraqqAL
-//   posted to the ledger          vaLam/paqivu
-//   earned value                  qittam/Ittu_maqippu
-//   revenue                       varuvAy/muZZERRam
-//   the contract's position       varuvAy/iruppukaL, varuvAy/oppanqac_celavu
+//   __the work breakdown            qittam/pakuppu__
+//   __three-point estimates         itar/mUZRuppuLLi__
+//   __the critical path             qittam/pAqY__
+//   __real dates                    nAtkAtti/vElYnAL__
+//   __the risk register             itar/itar__
+//   __the budget and its reserves   qittam/kattuppAtu__
+//   __timesheets, costed            vaLam/vaLam, vaLam/nEraqqAL__
+//   __posted to the ledger          vaLam/paqivu__
+//   __earned value                  qittam/Ittu_maqippu__
+//   __revenue                       varuvAy/muZZERRam__
+//   __the contract's position       varuvAy/iruppukaL, varuvAy/oppanqac_celavu__
 //
-// It ends where a project like this usually ends: a cost performance index of
-// 0.75 implies an estimate at completion above the contract price, and the
-// contract is onerous. Ind AS 37 then wants the whole remaining loss today,
-// while Ind AS 115 goes on recognising revenue as the work is done. Both are
-// right, and a business that sees only one of them is surprised twice.
+// __It ends where a project like this usually ends: a cost performance index of__
+// __0.75 implies an estimate at completion above the contract price, and the__
+// __contract is onerous. Ind AS 37 then wants the whole remaining loss today,__
+// __while Ind AS 115 goes on recognising revenue as the work is done. Both are__
+// __right, and a business that sees only one of them is surprised twice.__
 
 இறக்கு "../../nUlakam/qittam/pakuppu.qmz";
 இறக்கு "../../nUlakam/qittam/kattuppAtu.qmz";
@@ -43,7 +43,7 @@
 அச்சு "";
 
 // =========================================================================
-// 1. வேலைப் பகுப்பு — what the work is
+// __1. வேலைப் பகுப்பு — what the work is__
 // =========================================================================
 
 கணுக்கள் = [
@@ -62,12 +62,12 @@
 அச்சு "";
 
 // =========================================================================
-// 2. மூன்றுப் புள்ளி மதிப்பீடு — how long, and how sure
+// __2. மூன்றுப் புள்ளி மதிப்பீடு — how long, and how sure__
 // =========================================================================
 //
-// The durations that go into the network are the beta means. What a single
-// number cannot carry is the spread, and that is what decides the date the
-// business can actually promise.
+// __The durations that go into the network are the beta means. What a single__
+// __number cannot carry is the spread, and that is what decides the date the__
+// __business can actually promise.__
 
 வடிவமைப்பு = மதிப்பு(முப்புள்ளி_ஆக்கு(8, 10, 18));
 கட்டமைப்பு = மதிப்பு(முப்புள்ளி_ஆக்கு(18, 20, 28));
@@ -89,7 +89,7 @@
 அச்சு "";
 
 // =========================================================================
-// 3. கடுமையான பாதை — the critical path
+// __3. கடுமையான பாதை — the critical path__
 // =========================================================================
 
 செயல்கள் = [
@@ -107,7 +107,7 @@
 அச்சு "";
 
 // =========================================================================
-// 4. நாட்காட்டி — turning a duration into dates
+// __4. நாட்காட்டி — turning a duration into dates__
 // =========================================================================
 
 நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 6], ["2026-05-01", "2026-08-15"]);
@@ -124,7 +124,7 @@
 அச்சு "";
 
 // =========================================================================
-// 5. இடர்ப் பதிவேடு — and where the contingency reserve comes from
+// __5. இடர்ப் பதிவேடு — and where the contingency reserve comes from__
 // =========================================================================
 
 இடர்கள் = [
@@ -144,7 +144,7 @@
 அச்சு "";
 
 // =========================================================================
-// 6. நிதி — the budget
+// __6. நிதி — the budget__
 // =========================================================================
 
 தொகுதி = நிதித்_தொகுதி_ஆக்கு(1000000, தற்செயல், மேலாண்மை);
@@ -155,7 +155,7 @@
 அச்சு "";
 
 // =========================================================================
-// 7. நேரத்தாள் — actual cost, from hours and rates
+// __7. நேரத்தாள் — actual cost, from hours and rates__
 // =========================================================================
 
 விகிதங்கள் = [
@@ -178,7 +178,7 @@
 அச்சு "";
 
 // =========================================================================
-// 8. பேரேடு — posted, and read back
+// __8. பேரேடு — posted, and read back__
 // =========================================================================
 
 நடப்பு = நடப்புக்_கணக்குக்_குறி("SNG", "ALL");
@@ -199,11 +199,11 @@
 அச்சு "";
 
 // =========================================================================
-// 9. ஈட்டு மதிப்பு — control
+// __9. ஈட்டு மதிப்பு — control__
 // =========================================================================
 //
-// Earned value credits *scope*, by a completion rule. S1 is finished, so 0/100
-// credits all of it; S2a has started and not finished, so 50/50 credits half.
+// __Earned value credits *scope*, by a completion rule. S1 is finished, so 0/100__
+// __credits all of it; S2a has started and not finished, so 50/50 credits half.__
 
 ஈட்டியது = ஈட்டிய_மதிப்பு(200000, முறை_0_100(மெய்))
             + ஈட்டிய_மதிப்பு(200000, முறை_50_50(மெய், பொய்));
@@ -226,23 +226,23 @@
 அச்சு "";
 
 // =========================================================================
-// 10. வருவாய் — Ind AS 115, on the same costs
+// __10. வருவாய் — Ind AS 115, on the same costs__
 // =========================================================================
 //
-// The contract sells for 12,50,000. Revenue uses cost-to-cost against the
-// *revised* total cost — the estimate at completion earned value just produced.
+// __The contract sells for 12,50,000. Revenue uses cost-to-cost against the__
+// __*revised* total cost — the estimate at completion earned value just produced.__
 //
-// Control and recognition then report the **same** percentage, and not by
-// coincidence. An estimate at completion derived as BAC ÷ CPI is
-// BAC × AC ÷ EV, so cost-to-cost progress AC ÷ EAC reduces to EV ÷ BAC — the
-// earned value percent complete, exactly. The two measures agree precisely
-// because one was built from the other.
+// __Control and recognition then report the **same** percentage, and not by__
+// __coincidence. An estimate at completion derived as BAC ÷ CPI is__
+// __BAC × AC ÷ EV, so cost-to-cost progress AC ÷ EAC reduces to EV ÷ BAC — the__
+// __earned value percent complete, exactly. The two measures agree precisely__
+// __because one was built from the other.__
 //
-// They part company the moment the estimate at completion is re-built from the
-// bottom up instead of scaled by CPI, which is what a project in trouble
-// eventually does. Then the same facts give two percentages, each correct
-// under its own standard, and the difference has to be explained rather than
-// reconciled away.
+// __They part company the moment the estimate at completion is re-built from the__
+// __bottom up instead of scaled by CPI, which is what a project in trouble__
+// __eventually does. Then the same facts give two percentages, each correct__
+// __under its own standard, and the difference has to be explained rather than__
+// __reconciled away.__
 
 ஒப்பந்த_மதிப்பு = 1250000;
 திருத்திய_செலவு = நிலை.முடிவில்_மதிப்பீடு;
@@ -265,7 +265,7 @@
 அச்சு "";
 
 // =========================================================================
-// 11. ஒப்பந்த நிலை — the balance sheet, and the loss
+// __11. ஒப்பந்த நிலை — the balance sheet, and the loss__
 // =========================================================================
 
 விலைப்பட்டியலிட்டது = 300000;

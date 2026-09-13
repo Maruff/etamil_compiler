@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/qittam/pAqY.qmz — கடுமையான பாதை (the critical path method)
+// __nUlakam/qittam/pAqY.qmz — கடுமையான பாதை (the critical path method)__
 //
-// The WBS says what must be produced. The network says in what order, and from
-// that one fact everything schedulers care about falls out: the earliest each
-// activity can happen, the latest it can happen without delaying the project,
-// how much slack that leaves, and which chain has none.
+// __The WBS says what must be produced. The network says in what order, and from__
+// __that one fact everything schedulers care about falls out: the earliest each__
+// __activity can happen, the latest it can happen without delaying the project,__
+// __how much slack that leaves, and which chain has none.__
 //
-// Two passes over a directed acyclic graph:
+// __Two passes over a directed acyclic graph:__
 //
-//   forward   ES = max(EF of predecessors)        EF = ES + duration
-//   backward  LF = min(LS of successors)          LS = LF − duration
-//   float     LS − ES, equivalently LF − EF
+//   __forward   ES = max(EF of predecessors)        EF = ES + duration__
+//   __backward  LF = min(LS of successors)          LS = LF − duration__
+//   __float     LS − ES, equivalently LF − EF__
 //
-// The critical path is the zero-float chain, and it is also necessarily the
-// longest path through the network. Its length is the project duration.
+// __The critical path is the zero-float chain, and it is also necessarily the__
+// __longest path through the network. Its length is the project duration.__
 //
-// **Implementation note.** The passes are iterated to a fixed point rather
-// than run over a topological sort. The textbook algorithm needs the sort;
-// this does not, and for the sizes a human builds by hand the cost is
-// irrelevant. The benefit is that a cycle cannot produce a stack overflow or a
-// wrong answer — it produces a தவறு from சுழற்சி_உள்ளதா, which is checked
-// first. A cycle is the commonest structural error in a hand-built network and
-// it must fail loudly.
+// __**Implementation note.** The passes are iterated to a fixed point rather__
+// __than run over a topological sort. The textbook algorithm needs the sort;__
+// __this does not, and for the sizes a human builds by hand the cost is__
+// __irrelevant. The benefit is that a cycle cannot produce a stack overflow or a__
+// __wrong answer — it produces a தவறு from சுழற்சி_உள்ளதா, which is checked__
+// __first. A cycle is the commonest structural error in a hand-built network and__
+// __it must fail loudly.__
 //
-// Lags and the four dependency types are not modelled. Finish-to-start only,
-// which is what CPM proper is; start-to-start with a lag belongs to a richer
-// scheduler and would change every signature here.
+// __Lags and the four dependency types are not modelled. Finish-to-start only,__
+// __which is what CPM proper is; start-to-start with a lag belongs to a richer__
+// __scheduler and would change every signature here.__
 
 // செயல்_ஆக்கு(செயல்_குறி, செயல்_காலம், முன்னோடிகள்)
 //
-// முன்னோடிகள் is a list of activity codes. An empty list starts the network.
+// __முன்னோடிகள் is a list of activity codes. An empty list starts the network.__
 செயல் செயல்_ஆக்கு(செயல்_குறி, செயல்_காலம், முன்னோடிகள்) {
     திரும்பு {
         செயல்_குறி: செயல்_குறி,
@@ -46,7 +46,7 @@
     திரும்பு தவறு("செயல் காணவில்லை: " & செயல்_குறி);
 }
 
-// வழித்தோன்றல்கள்(செயல்கள், செயல்_குறி) — the successors of an activity
+// __வழித்தோன்றல்கள்(செயல்கள், செயல்_குறி) — the successors of an activity__
 செயல் வழித்தோன்றல்கள்(செயல்கள், செயல்_குறி) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_செயல் இல் செயல்கள் {
@@ -59,9 +59,9 @@
     திரும்பு விடை_பட்டி;
 }
 
-// --- Structural checks --------------------------------------------------
+// __--- Structural checks --------------------------------------------------__
 
-// முன்னோடிகள்_உள்ளனவா(செயல்கள்) — every named predecessor must exist
+// __முன்னோடிகள்_உள்ளனவா(செயல்கள்) — every named predecessor must exist__
 செயல் முன்னோடிகள்_உள்ளனவா(செயல்கள்) {
     ஒவ்வொரு ஒரு_செயல் இல் செயல்கள் {
         ஒவ்வொரு ஒரு_முன்னோடி இல் ஒரு_செயல்.முன்னோடிகள் {
@@ -74,11 +74,11 @@
     திரும்பு சரி(மெய்);
 }
 
-// சுழற்சி_உள்ளதா(செயல்கள்) — is there a cycle?
+// __சுழற்சி_உள்ளதா(செயல்கள்) — is there a cycle?__
 //
-// Repeatedly strip activities all of whose predecessors have already been
-// stripped. What cannot be stripped is in, or downstream of, a cycle. This is
-// Kahn's algorithm used only for its emptiness test.
+// __Repeatedly strip activities all of whose predecessors have already been__
+// __stripped. What cannot be stripped is in, or downstream of, a cycle. This is__
+// __Kahn's algorithm used only for its emptiness test.__
 செயல் சுழற்சி_உள்ளதா(செயல்கள்) {
     தீர்ந்தவை = [];
     மாற்றம்_உண்டு = மெய்;
@@ -102,13 +102,13 @@
     திரும்பு நீளம்(தீர்ந்தவை) != நீளம்(செயல்கள்);
 }
 
-// --- The two passes ------------------------------------------------------
+// __--- The two passes ------------------------------------------------------__
 
 // வலையைக்_கணக்கிடு(செயல்கள்)
 //
-// One call does both passes and returns the activities enriched with
-// முந்தைய_தொடக்கம் (ES), முந்தைய_முடிவு (EF), பிந்தைய_தொடக்கம் (LS),
-// பிந்தைய_முடிவு (LF) and மிதப்பு (float).
+// __One call does both passes and returns the activities enriched with__
+// __முந்தைய_தொடக்கம் (ES), முந்தைய_முடிவு (EF), பிந்தைய_தொடக்கம் (LS),__
+// __பிந்தைய_முடிவு (LF) and மிதப்பு (float).__
 செயல் வலையைக்_கணக்கிடு(செயல்கள்) {
     சரிபார்ப்பு = முன்னோடிகள்_உள்ளனவா(செயல்கள்);
     (தவறா(சரிபார்ப்பு)) எனில் { திரும்பு சரிபார்ப்பு; }
@@ -116,7 +116,7 @@
         திரும்பு தவறு("வலையில் சுழற்சி உள்ளது: முன்னோக்கு கணக்கிட முடியாது");
     }
 
-    // Forward pass, iterated to a fixed point.
+    // __Forward pass, iterated to a fixed point.__
     முந்தைய = [];
     ஒவ்வொரு ஒரு_செயல் இல் செயல்கள் {
         முந்தைய = இணை(முந்தைய, { செயல்_குறி: ஒரு_செயல்.செயல்_குறி,
@@ -150,8 +150,8 @@
         (ஒரு_பதிவு.முடிவு > திட்ட_காலம்) எனில் { திட்ட_காலம் = ஒரு_பதிவு.முடிவு; }
     }
 
-    // Backward pass, likewise. Every activity starts at the project duration
-    // and is pulled earlier by its successors.
+    // __Backward pass, likewise. Every activity starts at the project duration__
+    // __and is pulled earlier by its successors.__
     பிந்தைய = [];
     ஒவ்வொரு ஒரு_செயல் இல் செயல்கள் {
         பிந்தைய = இணை(பிந்தைய, { செயல்_குறி: ஒரு_செயல்.செயல்_குறி,
@@ -200,13 +200,13 @@
     திரும்பு சரி({ செயல்கள்: விடை_பட்டி, திட்ட_காலம்: திட்ட_காலம் });
 }
 
-// --- Reading the answer --------------------------------------------------
+// __--- Reading the answer --------------------------------------------------__
 
-// கடுமையானவை(கணக்கிட்டவை) — the zero-float activities
+// __கடுமையானவை(கணக்கிட்டவை) — the zero-float activities__
 //
-// Float belongs to the project, not to the activity's owner. Where it is
-// treated as a private buffer it is consumed first and unavailable when
-// genuinely needed, which is a governance point rather than a technical one.
+// __Float belongs to the project, not to the activity's owner. Where it is__
+// __treated as a private buffer it is consumed first and unavailable when__
+// __genuinely needed, which is a governance point rather than a technical one.__
 செயல் கடுமையானவை(கணக்கிட்டவை) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_செயல் இல் கணக்கிட்டவை.செயல்கள் {
@@ -217,12 +217,12 @@
     திரும்பு விடை_பட்டி;
 }
 
-// உணர்திறன்_வலையா(கணக்கிட்டவை) — is the network sensitive?
+// __உணர்திறன்_வலையா(கணக்கிட்டவை) — is the network sensitive?__
 //
-// A network where most activities are critical absorbs no disturbance: a small
-// slip anywhere makes a new path critical. One with a single critical chain
-// and generous float elsewhere is insensitive. Half is the conventional line
-// and it is a judgement, not a law.
+// __A network where most activities are critical absorbs no disturbance: a small__
+// __slip anywhere makes a new path critical. One with a single critical chain__
+// __and generous float elsewhere is insensitive. Half is the conventional line__
+// __and it is a judgement, not a law.__
 செயல் உணர்திறன்_வலையா(கணக்கிட்டவை) {
     மொத்தம் = நீளம்(கணக்கிட்டவை.செயல்கள்);
     (மொத்தம் == 0) எனில் { திரும்பு பொய்; }
@@ -231,11 +231,11 @@
 
 // பெறு_புலம்(கணக்கிட்ட_செயல்கள், செயல்_குறி, புலப்_பெயர்)
 //
-// One computed field of one activity, by name. Exists because the result of
-// வலையைக்_கணக்கிடு is a list and the caller almost always wants a single
-// figure out of it — "what is D's float?" — rather than the whole table.
-// Valid field names are முந்தைய_தொடக்கம், முந்தைய_முடிவு,
-// பிந்தைய_தொடக்கம், பிந்தைய_முடிவு, மிதப்பு and செயல்_காலம்.
+// __One computed field of one activity, by name. Exists because the result of__
+// __வலையைக்_கணக்கிடு is a list and the caller almost always wants a single__
+// __figure out of it — "what is D's float?" — rather than the whole table.__
+// __Valid field names are முந்தைய_தொடக்கம், முந்தைய_முடிவு,__
+// __பிந்தைய_தொடக்கம், பிந்தைய_முடிவு, மிதப்பு and செயல்_காலம்.__
 செயல் பெறு_புலம்(கணக்கிட்ட_செயல்கள், செயல்_குறி, புலப்_பெயர்) {
     ஒவ்வொரு ஒரு_செயல் இல் கணக்கிட்ட_செயல்கள் {
         (ஒரு_செயல்.செயல்_குறி == செயல்_குறி) எனில் {
@@ -260,7 +260,7 @@
     திரும்பு 0;
 }
 
-// --- Small helpers the passes need --------------------------------------
+// __--- Small helpers the passes need --------------------------------------__
 
 செயல் குறி_உள்ளதா(பட்டியல், தேடும்_குறி) {
     ஒவ்வொரு ஒன்று இல் பட்டியல் {

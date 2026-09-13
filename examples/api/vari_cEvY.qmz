@@ -1,11 +1,11 @@
-// வரி சேவை — a routed tax API
+// __வரி சேவை — a routed tax API__
 //
-// Run it:   etamil --server --port 8080 examples/api/vari_cEvY.qmz
-// Try it:   curl http://localhost:8080/vari
-//           curl http://localhost:8080/
+// __Run it:   etamil --server --port 8080 examples/api/vari_cEvY.qmz__
+// __Try it:   curl http://localhost:8080/vari__
+//           __curl http://localhost:8080/__
 //
-// Everything outside a வழி block is a prelude: imports and functions are
-// compiled into every handler, so routes can use them.
+// __Everything outside a வழி block is a prelude: imports and functions are__
+// __compiled into every handler, so routes can use them.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";

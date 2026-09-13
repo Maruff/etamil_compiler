@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// வருவாய்_சோதனை — tests for revenue recognition, written in eTamil
+// __வருவாய்_சோதனை — tests for revenue recognition, written in eTamil__
 //
-// Run it like any other program:  etamil --vm nUlakam/varuvAy/varuvAy_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/varuvAy/varuvAy_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// One contract runs through most of the file: a ₹12,000 job expected to cost
-// ₹9,000, of which ₹3,000 is a machine bought in and not yet installed. It is
-// re-estimated at ₹20,000 part way through, which turns it from profitable to
-// onerous, and the tests follow that through progress, revenue, the cumulative
-// catch-up and the provision. The figures are small so every step divides.
+// __One contract runs through most of the file: a ₹12,000 job expected to cost__
+// __₹9,000, of which ₹3,000 is a machine bought in and not yet installed. It is__
+// __re-estimated at ₹20,000 part way through, which turns it from profitable to__
+// __onerous, and the tests follow that through progress, revenue, the cumulative__
+// __catch-up and the provision. The figures are small so every step divides.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -23,7 +23,7 @@
 ஓட்டம் = சோதனை_தொடக்கம்("வருவாய் — Ind AS 115");
 
 // =========================================================================
-// படி 1 — is there a contract at all
+// __படி 1 — is there a contract at all__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், ஒப்பந்தம்_உள்ளதா(மெய், மெய், மெய், மெய், மெய்),
@@ -35,7 +35,7 @@
                   "and without approval there is none either");
 
 // =========================================================================
-// படி 2 — performance obligations
+// __படி 2 — performance obligations__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தனிக்_கடமையா(மெய், மெய்),
@@ -47,7 +47,7 @@
                   "and neither condition works alone");
 
 // =========================================================================
-// படி 3 — the transaction price
+// __படி 3 — the transaction price__
 // =========================================================================
 
 விளைவுகள் = [{"தொகை": 8000, "நிகழ்தகவு": 60},
@@ -82,7 +82,7 @@
               "and a significant financing component is stripped out as interest");
 
 // =========================================================================
-// படி 4 — allocation
+// __படி 4 — allocation__
 // =========================================================================
 
 கட்டு = [கடமை_ஆக்கு("M", "இயந்திரம்", 6000, பொய்),
@@ -98,7 +98,7 @@
 ஓட்டம் = சமம்(ஓட்டம், ஒதுக்கியதன்_கூட்டல்(ஒதுக்கியவை), 10000,
               "the allocation reconciles to the transaction price");
 
-// The case rounding breaks: a price that does not divide by three.
+// __The case rounding breaks: a price that does not divide by three.__
 சமமானவை = [கடமை_ஆக்கு("A", "ஒன்று", 1000, மெய்),
              கடமை_ஆக்கு("B", "இரண்டு", 1000, மெய்),
              கடமை_ஆக்கு("C", "மூன்று", 1000, மெய்)];
@@ -131,7 +131,7 @@
               & "the default");
 
 // =========================================================================
-// படி 5 — over time or at a point in time
+// __படி 5 — over time or at a point in time__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், காலப்போக்கிலா(மெய், பொய், பொய், பொய்),
@@ -153,7 +153,7 @@
               "all five pointing the same way is the easy case");
 
 // =========================================================================
-// முன்னேற்றம் — measuring it
+// __முன்னேற்றம் — measuring it__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(செலவு_முன்னேற்றம்(4500, 9000)), 0.5,
@@ -170,7 +170,7 @@
 ஓட்டம் = சமம்(ஓட்டம், முன்னேற்றத்தை_வரம்பிடு(1.4), 1, "progress is held at 1");
 ஓட்டம் = சமம்(ஓட்டம், முன்னேற்றத்தை_வரம்பிடு(0 - 0.2), 0, "and at 0");
 
-// --- uninstalled materials, the adjustment that gets left out -------------
+// __--- uninstalled materials, the adjustment that gets left out -------------__
 
 நேரடி_முன்னேற்றம் = மதிப்பு(செலவு_முன்னேற்றம்(4500, 9000));
 ஓட்டம் = சமம்(ஓட்டம், இதுவரை_வருவாய்(12000, நேரடி_முன்னேற்றம்), 6000,
@@ -200,7 +200,7 @@
               "and where recovery is not expected, nothing at all");
 
 // =========================================================================
-// கூட்டுப் பிடிப்பு — the cumulative catch-up
+// __கூட்டுப் பிடிப்பு — the cumulative catch-up__
 // =========================================================================
 
 முதல்_காலம் = மதிப்பு(வருவாய்_நிலவரம்(12000, 4500, 9000, 0));
@@ -209,7 +209,7 @@
 ஓட்டம் = சமம்(ஓட்டம், முதல்_காலம்["எதிர்பார்க்கும்_விளிம்பு"], 3000,
               "on an expected margin of 3,000");
 
-// The estimate of total cost is revised from 9,000 to 20,000.
+// __The estimate of total cost is revised from 9,000 to 20,000.__
 இரண்டாம்_காலம் = மதிப்பு(வருவாய்_நிலவரம்(12000, 5000, 20000, 6000));
 ஓட்டம் = சமம்(ஓட்டம், இரண்டாம்_காலம்["இதுவரை_வருவாய்"], 3000,
               "the revised estimate drops revenue to date to 3,000");
@@ -222,7 +222,7 @@
               "which is simply revenue to date less revenue already taken");
 
 // =========================================================================
-// இருப்புகள் — contract asset and contract liability
+// __இருப்புகள் — contract asset and contract liability__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், ஒப்பந்த_நிலை("A", 8000, 3000)["ஒப்பந்தச்_சொத்து"], 5000,
@@ -270,7 +270,7 @@
               "and becomes a receivable once only the date stands in the way");
 
 // =========================================================================
-// ஒப்பந்தச் செலவு — capitalise or expense
+// __ஒப்பந்தச் செலவு — capitalise or expense__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம்,
@@ -318,12 +318,12 @@
               "and not impaired when there is room");
 
 // =========================================================================
-// நட்டம் தரும் ஒப்பந்தம் — Ind AS 37, not 115
+// __நட்டம் தரும் ஒப்பந்தம் — Ind AS 37, not 115__
 // =========================================================================
 //
-// Carrying on the re-estimated contract: 3,000 of revenue recognised of
-// 12,000, so 9,000 remains; 5,000 of cost incurred of 20,000, so 15,000
-// remains. Walking away would cost 20,000.
+// __Carrying on the re-estimated contract: 3,000 of revenue recognised of__
+// __12,000, so 9,000 remains; 5,000 of cost incurred of 20,000, so 15,000__
+// __remains. Walking away would cost 20,000.__
 
 ஓட்டம் = சமம்(ஓட்டம், தவிர்க்க_முடியாத_செலவு(15000, 20000), 15000,
               "the unavoidable cost is the lower of fulfilling and exiting");
@@ -361,12 +361,12 @@
               "a profitable contract needs neither");
 
 // =========================================================================
-// மாற்றம் — contract modifications
+// __மாற்றம் — contract modifications__
 // =========================================================================
 //
-// A contract for 80 units at ₹1,000 each, 60 delivered and ₹60,000 recognised.
-// The variation adds 20 units for ₹4,000, nowhere near their ₹20,000
-// standalone value.
+// __A contract for 80 units at ₹1,000 each, 60 delivered and ₹60,000 recognised.__
+// __The variation adds 20 units for ₹4,000, nowhere near their ₹20,000__
+// __standalone value.__
 
 தள்ளுபடி_மாற்றம் = மாற்றம்_ஆக்கு("V1", 4000, 20000, மெய், மெய்);
 சந்தை_மாற்றம் = மாற்றம்_ஆக்கு("V2", 20000, 20000, மெய், மெய்);
@@ -398,7 +398,7 @@
                   & "with an enforceable right it is a claim, and a claim is "
                   & "variable consideration in the original contract");
 
-// The same variation, three ways.
+// __The same variation, three ways.__
 மூன்று = மூன்று_வழியும்(80000, 60000, தள்ளுபடி_மாற்றம், 0.6);
 
 ஓட்டம் = சமம்(ஓட்டம், மூன்று["தனி_ஒப்பந்தம்"]["இப்போதைய_வருவாய்"], 0,
@@ -439,10 +439,10 @@
               "with the same answer");
 
 // =========================================================================
-// முகவர் — principal or agent
+// __முகவர் — principal or agent__
 // =========================================================================
 //
-// The customer pays ₹10,00,000 and a subcontractor charges ₹8,00,000.
+// __The customer pays ₹10,00,000 and a subcontractor charges ₹8,00,000.__
 
 இரண்டு = இரு_வழியும்(1000000, 800000);
 

@@ -1,8 +1,8 @@
-// கணக்கு தளம் — a ledger in SQLite
+// __கணக்கு தளம் — a ledger in SQLite__
 //
-// Queries are always parameterised: values are bound by the driver, never
-// spliced into the SQL text. A result set comes back as an array of records,
-// so it iterates like any other table.
+// __Queries are always parameterised: values are bound by the driver, never__
+// __spliced into the SQL text. A result set comes back as an array of records,__
+// __so it iterates like any other table.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";
@@ -17,7 +17,7 @@
               vakY TEXT NOT NULL,
               qokY TEXT NOT NULL)", [];
 
-// Bound parameters — note the values are passed, not concatenated
+// __Bound parameters — note the values are passed, not concatenated__
 தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
           ["வாடகை", "செலவு", 25000];
 தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
@@ -27,7 +27,7 @@
 தளம்_செய் "INSERT INTO pativukaL (peyar, vakY, qokY) VALUES (?, ?, ?)",
           ["ஆலோசனை", "வரவு", 62000];
 
-// A parameterised read
+// __A parameterised read__
 தளம்_வினா "SELECT peyar, qokY FROM pativukaL WHERE vakY = ? ORDER BY qokY DESC",
           ["வரவு"], வரவுகள்;
 
@@ -46,7 +46,7 @@
     அச்சு "  " & பதிவு.peyar & " — " & ரூபாய்(பதிவு.qokY);
 }
 
-// புலம்_எடு turns the rows into a column, which கூட்டு can total
+// __புலம்_எடு turns the rows into a column, which கூட்டு can total__
 மொத்த_வரவு = கூட்டு(புலம்_எடு(வரவுகள், "qokY"));
 மொத்த_செலவு = கூட்டு(புலம்_எடு(செலவுகள், "qokY"));
 

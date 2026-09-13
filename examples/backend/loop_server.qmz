@@ -1,6 +1,6 @@
-// Loop Server
-// Demonstrates loop structures
-// Run: ./etamil_compiler --server --port 8080 loop_server.qmz
+// __Loop Server__
+// __Demonstrates loop structures__
+// __Run: ./etamil_compiler --server --port 8080 loop_server.qmz__
 
 எண் _counter;
 எண் _sum;

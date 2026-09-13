@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/col.qmz — சரம் (string) helpers
+// __nUlakam/col.qmz — சரம் (string) helpers__
 //
-// Written in eTamil, not Rust. The only primitives borrowed from the host
-// are நீளம், சொல்லாக்கு and indexing; everything here is built from those.
+// __Written in eTamil, not Rust. The only primitives borrowed from the host__
+// __are நீளம், சொல்லாக்கு and indexing; everything here is built from those.__
 
-// எழுத்து(சரம், எழுத்திடம்) — the letter at a position, or "" past either end.
+// __எழுத்து(சரம், எழுத்திடம்) — the letter at a position, or "" past either end.__
 //
-// This was once necessary: மற்றும் evaluated both sides, so a guard like
-// `(இ < நீளம்(சரம்) மற்றும் சரம்[இ] == " ")` indexed out of bounds on the very
-// step that failed the first test. மற்றும் short-circuits now, so that guard
-// is safe to write directly. This stays because "the letter there, or nothing"
-// is worth saying in one word, not because indexing needs guarding.
+// __This was once necessary: மற்றும் evaluated both sides, so a guard like__
+// __`(இ < நீளம்(சரம்) மற்றும் சரம்[இ] == " ")` indexed out of bounds on the very__
+// __step that failed the first test. மற்றும் short-circuits now, so that guard__
+// __is safe to write directly. This stays because "the letter there, or nothing"__
+// __is worth saying in one word, not because indexing needs guarding.__
 //
-// The parameter is எழுத்திடம் rather than the plainer இடம் because that word
-// is the SQL LEFT keyword and is hard reserved — it cannot be a name at all.
+// __The parameter is எழுத்திடம் rather than the plainer இடம் because that word__
+// __is the SQL LEFT keyword and is hard reserved — it cannot be a name at all.__
 செயல் எழுத்து(சரம், எழுத்திடம்) {
     (எழுத்திடம் < 0) எனில் { திரும்பு ""; }
     (எழுத்திடம் >= நீளம்(சரம்)) எனில் { திரும்பு ""; }
     திரும்பு சரம்[எழுத்திடம்];
 }
 
-// துண்டு(சரம், தொடக்கம், அளவு) — substring
+// __துண்டு(சரம், தொடக்கம், அளவு) — substring__
 செயல் துண்டு(சரம், தொடக்கம், அளவு) {
     விடை = "";
     எண்ணி = தொடக்கம்;
@@ -34,7 +34,7 @@
     திரும்பு விடை;
 }
 
-// தேடு(சரம், தேடல்) — position of the first match, or -1
+// __தேடு(சரம், தேடல்) — position of the first match, or -1__
 செயல் தேடு(சரம், தேடல்) {
     மொத்தம் = நீளம்(சரம்);
     அளவு = நீளம்(தேடல்);
@@ -49,7 +49,7 @@
     திரும்பு 0 - 1;
 }
 
-// கொண்டுள்ளதா(சரம், தேடல்) — does it contain?
+// __கொண்டுள்ளதா(சரம், தேடல்) — does it contain?__
 செயல் கொண்டுள்ளதா(சரம், தேடல்) {
     திரும்பு தேடு(சரம், தேடல்) >= 0;
 }
@@ -69,11 +69,11 @@
     திரும்பு துண்டு(சரம், மொத்தம் - அளவு, அளவு) == பின்னொட்டு;
 }
 
-// ஒழுங்கு(சரம்) — trim spaces from both ends
+// __ஒழுங்கு(சரம்) — trim spaces from both ends__
 //
-// Both scans read through எழுத்து. Written as a direct index this crashed on
-// "" and on a string of nothing but spaces: the loop guard was correct, but
-// மற்றும் evaluates its right side anyway, so the index ran off the end.
+// __Both scans read through எழுத்து. Written as a direct index this crashed on__
+// __"" and on a string of nothing but spaces: the loop guard was correct, but__
+// __மற்றும் evaluates its right side anyway, so the index ran off the end.__
 செயல் ஒழுங்கு(சரம்) {
     தொடக்கம் = 0;
     (எழுத்து(சரம், தொடக்கம்) == " ") சுற்று {
@@ -86,19 +86,19 @@
     திரும்பு துண்டு(சரம், தொடக்கம், முடிவு - தொடக்கம்);
 }
 
-// பிரி(சரம், பிரிப்பான்) and ஒன்றிணை(அணி, இணைப்பான்) are host builtins now.
+// __பிரி(சரம், பிரிப்பான்) and ஒன்றிணை(அணி, இணைப்பான்) are host builtins now.__
 //
-// They were written here, in eTamil, like everything else in this file. Both
-// walked the string a letter at a time, and each read re-segmented the whole
-// string into letters, so splitting a document cost O(n²) segmentations —
-// 14 seconds over 8 KB, and 400 KB never finished. The host does one
-// segmentation pass and then a byte search. The letter-boundary rule is
-// unchanged, so the pieces are the same pieces; only the cost differs.
+// __They were written here, in eTamil, like everything else in this file. Both__
+// __walked the string a letter at a time, and each read re-segmented the whole__
+// __string into letters, so splitting a document cost O(n²) segmentations —__
+// __14 seconds over 8 KB, and 400 KB never finished. The host does one__
+// __segmentation pass and then a byte search. The letter-boundary rule is__
+// __unchanged, so the pieces are the same pieces; only the cost differs.__
 //
-// A function defined here would shadow the builtin, so they are gone rather
-// than delegating. See மாற்று too, which is new and has no version here.
+// __A function defined here would shadow the builtin, so they are gone rather__
+// __than delegating. See மாற்று too, which is new and has no version here.__
 
-// திரும்பச்செய்(சரம், எண்ணிக்கை) — repeat
+// __திரும்பச்செய்(சரம், எண்ணிக்கை) — repeat__
 செயல் திரும்பச்செய்(சரம், எண்ணிக்கை) {
     விடை = "";
     எண்ணி = 0;
@@ -109,7 +109,7 @@
     திரும்பு விடை;
 }
 
-// இடமிருந்து_நிரப்பு(சரம், அகலம், நிரப்பி) — left pad
+// __இடமிருந்து_நிரப்பு(சரம், அகலம், நிரப்பி) — left pad__
 செயல் இடமிருந்து_நிரப்பு(சரம், அகலம், நிரப்பி) {
     விடை = சொல்லாக்கு(சரம்);
     (நீளம்(விடை) < அகலம்) சுற்று {

@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/itar/itar.qmz — இடர், the risk register
+// __nUlakam/itar/itar.qmz — இடர், the risk register__
 //
-// qittam/kattuppAtu.qmz takes a contingency reserve as a number somebody
-// passes in. This is where that number comes from.
+// __qittam/kattuppAtu.qmz takes a contingency reserve as a number somebody__
+// __passes in. This is where that number comes from.__
 //
-// A contingency reserve covers **identified** risks and is sized from them:
-// the expected monetary value of the register. A management reserve covers
-// what nobody identified, cannot be sized from a register by definition, and
-// is a policy percentage. Sizing the second from the first is the commonest
-// error in reserve setting and it produces a management reserve that is
-// precisely as complete as the risk workshop was.
+// __A contingency reserve covers **identified** risks and is sized from them:__
+// __the expected monetary value of the register. A management reserve covers__
+// __what nobody identified, cannot be sized from a register by definition, and__
+// __is a policy percentage. Sizing the second from the first is the commonest__
+// __error in reserve setting and it produces a management reserve that is__
+// __precisely as complete as the risk workshop was.__
 //
-// **An opportunity is a risk.** The register holds both, the expected value of
-// an opportunity is positive, and a register of nothing but threats is a
-// register somebody has only half filled in. Every function here is signed for
-// that reason.
+// __**An opportunity is a risk.** The register holds both, the expected value of__
+// __an opportunity is positive, and a register of nothing but threats is a__
+// __register somebody has only half filled in. Every function here is signed for__
+// __that reason.__
 //
-// Probabilities are whole numbers out of a hundred, following the rates
-// convention everywhere else in nUlakam.
+// __Probabilities are whole numbers out of a hundred, following the rates__
+// __convention everywhere else in nUlakam.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// ஒரு இடர் — one risk
+// __ஒரு இடர் — one risk__
 // =========================================================================
 //
 // இடர்_ஆக்கு(இடர்க்_குறி, விவரம், நிகழ்தகவு, தாக்கத்_தொகை, இடர்_வகை,
 //             உரிமையாளர்)
 //
-// தாக்கத்_தொகை is a **positive magnitude** in both cases, and இடர்_வகை —
-// "அச்சுறுத்தல்" or "வாய்ப்பு" — carries the direction. Keeping the sign in
-// the kind rather than in the amount means a register can be read without
-// knowing which convention its author used, and it makes a threat entered as
-// a negative impact obvious instead of silently doubling back to positive.
+// __தாக்கத்_தொகை is a **positive magnitude** in both cases, and இடர்_வகை —__
+// __"அச்சுறுத்தல்" or "வாய்ப்பு" — carries the direction. Keeping the sign in__
+// __the kind rather than in the amount means a register can be read without__
+// __knowing which convention its author used, and it makes a threat entered as__
+// __a negative impact obvious instead of silently doubling back to positive.__
 செயல் இடர்_ஆக்கு(இடர்க்_குறி, விவரம், நிகழ்தகவு, தாக்கத்_தொகை, இடர்_வகை,
                   உரிமையாளர்) {
     திரும்பு {"குறி": இடர்க்_குறி,
@@ -47,9 +47,9 @@
 
 // இடர்_செல்லுபடியா(ஒரு_இடர்)
 //
-// A probability outside 0 to 100, a negative impact, or an unknown kind. The
-// impact check matters: a threat entered with a negative impact is a threat
-// that will be added to the reserve instead of subtracted from it.
+// __A probability outside 0 to 100, a negative impact, or an unknown kind. The__
+// __impact check matters: a threat entered with a negative impact is a threat__
+// __that will be added to the reserve instead of subtracted from it.__
 செயல் இடர்_செல்லுபடியா(ஒரு_இடர்) {
     (ஒரு_இடர்["நிகழ்தகவு"] < 0 அல்லது ஒரு_இடர்["நிகழ்தகவு"] > 100) எனில் {
         திரும்பு தவறு("நிகழ்தகவு 0 முதல் 100 வரை இருக்க வேண்டும்  "
@@ -69,20 +69,20 @@
 }
 
 // =========================================================================
-// எதிர்பார்க்கும் பண மதிப்பு — expected monetary value
+// __எதிர்பார்க்கும் பண மதிப்பு — expected monetary value__
 // =========================================================================
 //
-// எதிர்பார்ப்பு(ஒரு_இடர்) — probability times impact, signed by kind
+// __எதிர்பார்ப்பு(ஒரு_இடர்) — probability times impact, signed by kind__
 //
-// Negative for a threat, positive for an opportunity, so a register sums
-// without the caller sorting it first.
+// __Negative for a threat, positive for an opportunity, so a register sums__
+// __without the caller sorting it first.__
 //
-// The figure is an average over many projects and **this project will not
-// experience it**. A risk with a 20% chance of costing ten lakh has an expected
-// value of two lakh, and the actual outcome is either ten lakh or nothing —
-// never two. That is what a reserve is for, and it is why a reserve sized from
-// expected value is right for a portfolio and merely reasonable for one
-// project.
+// __The figure is an average over many projects and **this project will not__
+// __experience it**. A risk with a 20% chance of costing ten lakh has an expected__
+// __value of two lakh, and the actual outcome is either ten lakh or nothing —__
+// __never two. That is what a reserve is for, and it is why a reserve sized from__
+// __expected value is right for a portfolio and merely reasonable for one__
+// __project.__
 செயல் எதிர்பார்ப்பு(ஒரு_இடர்) {
     அளவு_மதிப்பு = வட்டமிடு(சதவீதம்(ஒரு_இடர்["தாக்கம்"],
                                       ஒரு_இடர்["நிகழ்தகவு"]), 2);
@@ -90,11 +90,11 @@
     திரும்பு அளவு_மதிப்பு;
 }
 
-// மொத்த_எதிர்பார்ப்பு(இடர்கள்) — the register's net exposure
+// __மொத்த_எதிர்பார்ப்பு(இடர்கள்) — the register's net exposure__
 //
-// Threats and opportunities together. A net figure near zero does not mean a
-// project without risk; it means the two sides are of similar size, and they
-// will not cancel in practice because they are different events.
+// __Threats and opportunities together. A net figure near zero does not mean a__
+// __project without risk; it means the two sides are of similar size, and they__
+// __will not cancel in practice because they are different events.__
 செயல் மொத்த_எதிர்பார்ப்பு(இடர்கள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_இடர் இல் இடர்கள் {
@@ -105,9 +105,9 @@
 
 // வகையால்_எதிர்பார்ப்பு(இடர்கள், இடர்_வகை)
 //
-// One side of the register on its own. Both are wanted: the threats size the
-// contingency reserve, and the opportunities are what a project manager is
-// supposed to be chasing rather than merely recording.
+// __One side of the register on its own. Both are wanted: the threats size the__
+// __contingency reserve, and the opportunities are what a project manager is__
+// __supposed to be chasing rather than merely recording.__
 செயல் வகையால்_எதிர்பார்ப்பு(இடர்கள், இடர்_வகை) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_இடர் இல் இடர்கள் {
@@ -119,24 +119,24 @@
 }
 
 // =========================================================================
-// தரவரிசை — qualitative scoring
+// __தரவரிசை — qualitative scoring__
 // =========================================================================
 //
 // இடர்_மதிப்பெண்(நிகழ்தகவுத்_தரம், தாக்கத்_தரம்)
 //
-// The probability-and-impact matrix: two ordinal ranks, multiplied.
+// __The probability-and-impact matrix: two ordinal ranks, multiplied.__
 //
-// **This is not arithmetic and the number it produces is not a quantity.** A
-// rank of 5 for probability and 1 for impact scores 5, and so does 1 and 5,
-// and they are completely different risks — one that happens constantly and
-// costs nothing, and one that would end the project but almost certainly will
-// not. Ranking by the product puts them side by side.
+// __**This is not arithmetic and the number it produces is not a quantity.** A__
+// __rank of 5 for probability and 1 for impact scores 5, and so does 1 and 5,__
+// __and they are completely different risks — one that happens constantly and__
+// __costs nothing, and one that would end the project but almost certainly will__
+// __not. Ranking by the product puts them side by side.__
 //
-// It is kept because it is what a risk workshop can actually produce in an
-// afternoon, and because ordering risks roughly is better than not ordering
-// them. The components are returned alongside the score so a caller can break
-// the tie the way the score cannot, and எதிர்பார்ப்பு is the answer wherever
-// real money is available.
+// __It is kept because it is what a risk workshop can actually produce in an__
+// __afternoon, and because ordering risks roughly is better than not ordering__
+// __them. The components are returned alongside the score so a caller can break__
+// __the tie the way the score cannot, and எதிர்பார்ப்பு is the answer wherever__
+// __real money is available.__
 செயல் இடர்_மதிப்பெண்(நிகழ்தகவுத்_தரம், தாக்கத்_தரம்) {
     திரும்பு {"மதிப்பெண்": நிகழ்தகவுத்_தரம் * தாக்கத்_தரம்,
               "நிகழ்தகவுத்_தரம்": நிகழ்தகவுத்_தரம்,
@@ -145,10 +145,10 @@
 
 // மதிப்பெண்_நிலைமை(மதிப்பெண், உயர்_எல்லை, நடுத்தர_எல்லை)
 //
-// Banding a score into high, medium and low. The thresholds are parameters
-// because they are a matter of appetite rather than of fact, and an
-// organisation that treats a score of 12 as high is making a policy statement
-// and not a measurement.
+// __Banding a score into high, medium and low. The thresholds are parameters__
+// __because they are a matter of appetite rather than of fact, and an__
+// __organisation that treats a score of 12 as high is making a policy statement__
+// __and not a measurement.__
 செயல் மதிப்பெண்_நிலைமை(மதிப்பெண், உயர்_எல்லை, நடுத்தர_எல்லை) {
     (மதிப்பெண் >= உயர்_எல்லை) எனில் { திரும்பு "உயர்"; }
     (மதிப்பெண் >= நடுத்தர_எல்லை) எனில் { திரும்பு "நடுத்தரம்"; }
@@ -156,21 +156,21 @@
 }
 
 // =========================================================================
-// பதிலளிப்பு — responses
+// __பதிலளிப்பு — responses__
 // =========================================================================
 //
 // பதிலளிப்பு_சரியா(இடர்_வகை, பதிலளிப்பு)
 //
-// The four responses to a threat are avoid, transfer, mitigate and accept. The
-// four to an opportunity are exploit, share, enhance and accept. They pair up
-// — avoid with exploit, transfer with share, mitigate with enhance — and only
-// acceptance is the same word for both.
+// __The four responses to a threat are avoid, transfer, mitigate and accept. The__
+// __four to an opportunity are exploit, share, enhance and accept. They pair up__
+// __— avoid with exploit, transfer with share, mitigate with enhance — and only__
+// __acceptance is the same word for both.__
 //
-// They are not interchangeable, and "mitigating an opportunity" is not a
-// clumsy phrase but a contradiction: mitigation reduces probability or impact,
-// and reducing an opportunity is the opposite of what is wanted. A register
-// that lets any response attach to any risk collects such entries, and nobody
-// reviewing it notices because every line has a response.
+// __They are not interchangeable, and "mitigating an opportunity" is not a__
+// __clumsy phrase but a contradiction: mitigation reduces probability or impact,__
+// __and reducing an opportunity is the opposite of what is wanted. A register__
+// __that lets any response attach to any risk collects such entries, and nobody__
+// __reviewing it notices because every line has a response.__
 செயல் பதிலளிப்பு_சரியா(இடர்_வகை, பதிலளிப்பு) {
     (பதிலளிப்பு == "ஏற்பு") எனில் { திரும்பு மெய்; }
 
@@ -187,13 +187,13 @@
 
 // எஞ்சிய_இடர்(ஒரு_இடர், புதிய_நிகழ்தகவு, புதிய_தாக்கம்)
 //
-// What is left after a response. A response changes the probability, the
-// impact, or both — avoidance takes the probability to nothing, insurance
-// leaves the probability and moves the impact — and the residual is a risk in
-// its own right that stays on the register.
+// __What is left after a response. A response changes the probability, the__
+// __impact, or both — avoidance takes the probability to nothing, insurance__
+// __leaves the probability and moves the impact — and the residual is a risk in__
+// __its own right that stays on the register.__
 //
-// Answers the residual risk and the reduction in exposure, because the second
-// is what the response has to be judged against.
+// __Answers the residual risk and the reduction in exposure, because the second__
+// __is what the response has to be judged against.__
 செயல் எஞ்சிய_இடர்(ஒரு_இடர், புதிய_நிகழ்தகவு, புதிய_தாக்கம்) {
     மீதி_இடர் = இடர்_ஆக்கு(ஒரு_இடர்["குறி"], ஒரு_இடர்["விவரம்"],
                             புதிய_நிகழ்தகவு, புதிய_தாக்கம்,
@@ -208,15 +208,15 @@
 
 // பதிலளிப்பு_பயனுள்ளதா(நன்மை, பதிலளிப்புச்_செலவு)
 //
-// **A response that costs more than the exposure it removes is not a
-// response.** Spending ten lakh to remove two lakh of expected value has made
-// the project worse by eight, and it is done constantly because the spending
-// is visible, deliberate and feels responsible while the exposure is a
-// probability nobody experiences.
+// __**A response that costs more than the exposure it removes is not a__
+// __response.** Spending ten lakh to remove two lakh of expected value has made__
+// __the project worse by eight, and it is done constantly because the spending__
+// __is visible, deliberate and feels responsible while the exposure is a__
+// __probability nobody experiences.__
 //
-// The comparison is against the *reduction* in exposure, not against the
-// impact. A risk with a 5% chance of costing a crore is worth five lakh of
-// prevention, not a crore of it.
+// __The comparison is against the *reduction* in exposure, not against the__
+// __impact. A risk with a 5% chance of costing a crore is worth five lakh of__
+// __prevention, not a crore of it.__
 செயல் பதிலளிப்பு_பயனுள்ளதா(நன்மை, பதிலளிப்புச்_செலவு) {
     திரும்பு நன்மை > பதிலளிப்புச்_செலவு;
 }
@@ -227,20 +227,20 @@
 }
 
 // =========================================================================
-// இருப்புகள் — sizing the reserves
+// __இருப்புகள் — sizing the reserves__
 // =========================================================================
 //
 // தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்)
 //
-// The contingency reserve: the expected monetary value of the **threats** on
-// the register, as a positive amount to be set aside.
+// __The contingency reserve: the expected monetary value of the **threats** on__
+// __the register, as a positive amount to be set aside.__
 //
-// Opportunities are deliberately excluded. Netting an opportunity against a
-// threat funds a cost that will certainly arise if the threat occurs with a
-// benefit that may not, and the two are different events that will not oblige
-// by happening together.
+// __Opportunities are deliberately excluded. Netting an opportunity against a__
+// __threat funds a cost that will certainly arise if the threat occurs with a__
+// __benefit that may not, and the two are different events that will not oblige__
+// __by happening together.__
 //
-// This is the number qittam/kattuppAtu.qmz's நிதித்_தொகுதி_ஆக்கு wants for its
+// __This is the number qittam/kattuppAtu.qmz's நிதித்_தொகுதி_ஆக்கு wants for its__
 // தற்செயல்_இருப்பு.
 செயல் தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்) {
     அச்சுறுத்தல்_மொத்தம் = வகையால்_எதிர்பார்ப்பு(இடர்கள், "அச்சுறுத்தல்");
@@ -249,24 +249,24 @@
 
 // மேலாண்மை_இருப்பைக்_கணக்கிடு(அடிப்படை_நிதி, கொள்கை_விகிதம்)
 //
-// The management reserve, as a percentage of the baseline.
+// __The management reserve, as a percentage of the baseline.__
 //
-// **It is not computed from the register and cannot be.** It covers what
-// nobody identified, and a figure derived from identified risks is exactly as
-// complete as the risk workshop was — which is the one thing it must not
-// depend on. So it is a policy percentage, set by whoever carries the
-// unknown, and this function takes that percentage rather than inventing one.
+// __**It is not computed from the register and cannot be.** It covers what__
+// __nobody identified, and a figure derived from identified risks is exactly as__
+// __complete as the risk workshop was — which is the one thing it must not__
+// __depend on. So it is a policy percentage, set by whoever carries the__
+// __unknown, and this function takes that percentage rather than inventing one.__
 செயல் மேலாண்மை_இருப்பைக்_கணக்கிடு(அடிப்படை_நிதி, கொள்கை_விகிதம்) {
     திரும்பு வட்டமிடு(சதவீதம்(அடிப்படை_நிதி, கொள்கை_விகிதம்), 2);
 }
 
 // =========================================================================
-// முடிவு மரம் — decision trees
+// __முடிவு மரம் — decision trees__
 // =========================================================================
 //
 // கிளை_ஆக்கு(விவரம், நிகழ்தகவு, விளைவுத்_தொகை)
 //
-// One branch of a decision: what happens, how likely, and what it is worth.
+// __One branch of a decision: what happens, how likely, and what it is worth.__
 செயல் கிளை_ஆக்கு(விவரம், நிகழ்தகவு, விளைவுத்_தொகை) {
     திரும்பு {"விவரம்": விவரம்,
               "நிகழ்தகவு": நிகழ்தகவு,
@@ -275,10 +275,10 @@
 
 // கிளைகளின்_எதிர்பார்ப்பு(கிளைகள்)
 //
-// The expected value of one decision path: each outcome weighted by its
-// probability. The probabilities must total 100, and a set that does not is a
-// தவறு rather than a scaled answer — the same refusal
-// varuvAy/oppanqam.qmz makes, and for the same reason.
+// __The expected value of one decision path: each outcome weighted by its__
+// __probability. The probabilities must total 100, and a set that does not is a__
+// __தவறு rather than a scaled answer — the same refusal__
+// __varuvAy/oppanqam.qmz makes, and for the same reason.__
 செயல் கிளைகளின்_எதிர்பார்ப்பு(கிளைகள்) {
     (நீளம்(கிளைகள்) == 0) எனில் {
         திரும்பு தவறு("கிளைகள் இல்லை  (no branches)");
@@ -300,15 +300,15 @@
 
 // சிறந்த_முடிவு(வாய்ப்புகள்)
 //
-// The choice with the highest expected value. வாய்ப்புகள் is a list of
-// {"பெயர்", "எதிர்பார்ப்பு", "செலவு"} — the cost of taking the option is
-// subtracted, because a decision tree that compares outcomes without the price
-// of entry recommends whichever option has the most expensive upside.
+// __The choice with the highest expected value. வாய்ப்புகள் is a list of__
+// __{"பெயர்", "எதிர்பார்ப்பு", "செலவு"} — the cost of taking the option is__
+// __subtracted, because a decision tree that compares outcomes without the price__
+// __of entry recommends whichever option has the most expensive upside.__
 //
-// Ties go to the first, and the whole ranking is returned so a caller can see
-// how close the second was. A decision taken on an expected value that beats
-// the alternative by one per cent is a decision taken on the estimates rather
-// than on the merits.
+// __Ties go to the first, and the whole ranking is returned so a caller can see__
+// __how close the second was. A decision taken on an expected value that beats__
+// __the alternative by one per cent is a decision taken on the estimates rather__
+// __than on the merits.__
 செயல் சிறந்த_முடிவு(வாய்ப்புகள்) {
     (நீளம்(வாய்ப்புகள்) == 0) எனில் {
         திரும்பு தவறு("ஒப்பிட வாய்ப்புகள் இல்லை  (no options to compare)");

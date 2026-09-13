@@ -1,6 +1,6 @@
-// Status Monitor Server
-// Demonstrates conditional logic
-// Run: ./etamil_compiler --server --port 8080 status_server.qmz
+// __Status Monitor Server__
+// __Demonstrates conditional logic__
+// __Run: ./etamil_compiler --server --port 8080 status_server.qmz__
 
 எண் _cpu_usage;
 எண் _memory_usage;

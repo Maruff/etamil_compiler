@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/vawki/kataZ.qmz — கடன் (loans): the instalment, and the schedule
+// __nUlakam/vawki/kataZ.qmz — கடன் (loans): the instalment, and the schedule__
 //
-// Rates are per annum and written as a number out of a hundred, as everywhere
-// else here: 9.25% is 9.25.
+// __Rates are per annum and written as a number out of a hundred, as everywhere__
+// __else here: 9.25% is 9.25.__
 //
-// The schedule is the part worth getting right. An instalment is rounded to
-// the paisa, twelve or two hundred and forty of them are paid, and the sum of
-// the rounded parts does not equal the loan. Every bank resolves that in the
-// last instalment, and so does this: the final row is whatever actually clears
-// the balance. A schedule that ends owing four paise is not a rounding detail,
-// it is an account that will not close.
+// __The schedule is the part worth getting right. An instalment is rounded to__
+// __the paisa, twelve or two hundred and forty of them are paid, and the sum of__
+// __the rounded parts does not equal the loan. Every bank resolves that in the__
+// __last instalment, and so does this: the final row is whatever actually clears__
+// __the balance. A schedule that ends owing four paise is not a rounding detail,__
+// __it is an account that will not close.__
 
 இறக்கு "vatti.qmz";
 இறக்கு "../kaNiqam.qmz";
 
-// மாத_விகிதம்(ஆண்டு_விகிதம்) — the monthly rate as a fraction
+// __மாத_விகிதம்(ஆண்டு_விகிதம்) — the monthly rate as a fraction__
 செயல் மாத_விகிதம்(ஆண்டு_விகிதம்) {
     திரும்பு ஆண்டு_விகிதம் / 1200;
 }
 
-// மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) — the EMI
+// __மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) — the EMI__
 //
-//        P · i · (1+i)^n
-//   E = ─────────────────
-//         (1+i)^n − 1
+//        __P · i · (1+i)^n__
+//   __E = ─────────────────__
+//         __(1+i)^n − 1__
 //
-// A rate of zero is not a special case anyone writes down, and it is the one
-// that divides by zero: with no interest the instalment is simply the loan
-// spread evenly.
+// __A rate of zero is not a special case anyone writes down, and it is the one__
+// __that divides by zero: with no interest the instalment is simply the loan__
+// __spread evenly.__
 செயல் மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) {
     (எத்தனை_மாதங்கள் <= 0) எனில் { திரும்பு 0; }
 
@@ -43,12 +43,12 @@
 
 // தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்)
 //
-// One record per instalment: {மாதம், தவணை, வட்டி, அசலுக்கு, மீதம்}.
+// __One record per instalment: {மாதம், தவணை, வட்டி, அசலுக்கு, மீதம்}.__
 //
-// Interest is taken on the balance that stood at the start of the month and
-// rounded to the paisa, because that is the figure posted to the account. What
-// is left of the instalment reduces the balance. The last row pays whatever
-// remains, which is why it is rarely equal to the others.
+// __Interest is taken on the balance that stood at the start of the month and__
+// __rounded to the paisa, because that is the figure posted to the account. What__
+// __is left of the instalment reduces the balance. The last row pays whatever__
+// __remains, which is why it is rarely equal to the others.__
 செயல் தவணை_அட்டவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்) {
     தவணை = மாதத்_தவணை(கடன்_தொகை, ஆண்டு_விகிதம், எத்தனை_மாதங்கள்);
     வட்டி_விகிதம் = மாத_விகிதம்(ஆண்டு_விகிதம்);
@@ -61,8 +61,8 @@
         மாத_வட்டி = வட்டமிடு(மீதி_தொகை * வட்டி_விகிதம், 2);
 
         (மாதம் == எத்தனை_மாதங்கள்) எனில் {
-            // The last one closes the account: whatever is owed, plus the
-            // interest on it, and not a paisa more or less.
+            // __The last one closes the account: whatever is owed, plus the__
+            // __interest on it, and not a paisa more or less.__
             இந்தத்_தவணை = மீதி_தொகை + மாத_வட்டி;
             அசலுக்கு = மீதி_தொகை;
         }
@@ -83,7 +83,7 @@
     திரும்பு அட்டவணை;
 }
 
-// மொத்த_வட்டி(அட்டவணை) — what the borrowing cost, over the whole term
+// __மொத்த_வட்டி(அட்டவணை) — what the borrowing cost, over the whole term__
 செயல் மொத்த_வட்டி(அட்டவணை) {
     கூட்டல் = 0;
     ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
@@ -92,7 +92,7 @@
     திரும்பு வட்டமிடு(கூட்டல், 2);
 }
 
-// மொத்தத்_திருப்பி(அட்டவணை) — every instalment added up
+// __மொத்தத்_திருப்பி(அட்டவணை) — every instalment added up__
 செயல் மொத்தத்_திருப்பி(அட்டவணை) {
     கூட்டல் = 0;
     ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
@@ -101,12 +101,12 @@
     திரும்பு வட்டமிடு(கூட்டல், 2);
 }
 
-// முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) — what is owed to settle
-// after that instalment has been paid
+// __முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) — what is owed to settle__
+// __after that instalment has been paid__
 //
-// The balance in that row is what closing the loan then would cost, before any
-// charge the lender adds for the privilege. That charge is a term of the
-// contract, not arithmetic, so it is not here.
+// __The balance in that row is what closing the loan then would cost, before any__
+// __charge the lender adds for the privilege. That charge is a term of the__
+// __contract, not arithmetic, so it is not here.__
 செயல் முன்கூட்டியே_அடைத்தால்(அட்டவணை, எத்தனாவது_மாதம்) {
     ஒவ்வொரு வரிசைப்_பதிவு இல் அட்டவணை {
         (வரிசைப்_பதிவு["மாதம்"] == எத்தனாவது_மாதம்) எனில் {

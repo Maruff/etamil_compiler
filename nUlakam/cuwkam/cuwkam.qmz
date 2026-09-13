@@ -1,59 +1,59 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/cuwkam/cuwkam.qmz — சுங்கம் (customs) and trade documents
+// __nUlakam/cuwkam/cuwkam.qmz — சுங்கம் (customs) and trade documents__
 //
-// The centre of this file is the duty cascade, because the order duties are
-// applied in is the thing implementations get wrong.
+// __The centre of this file is the duty cascade, because the order duties are__
+// __applied in is the thing implementations get wrong.__
 //
-// Basic customs duty is charged on the assessable value. The surcharge is
-// charged on the duty — not on the value. And IGST is charged on the value
-// *plus* the duty and the surcharge, not on the value alone. Compute IGST on
-// the assessable value and every bill of entry understates the tax, by more
-// the higher the duty rate.
+// __Basic customs duty is charged on the assessable value. The surcharge is__
+// __charged on the duty — not on the value. And IGST is charged on the value__
+// __*plus* the duty and the surcharge, not on the value alone. Compute IGST on__
+// __the assessable value and every bill of entry understates the tax, by more__
+// __the higher the duty rate.__
 //
-// No rate is in this file. Duty by tariff heading is set by notification and
-// amended; rates belong in vari_vikiqam, which is effective-dated for exactly
-// this reason.
+// __No rate is in this file. Duty by tariff heading is set by notification and__
+// __amended; rates belong in vari_vikiqam, which is effective-dated for exactly__
+// __this reason.__
 //
-// சரக்கு, கட்டணம் and விலக்கு are keywords, so the words this module wants are
-// unavailable alone.
+// __சரக்கு, கட்டணம் and விலக்கு are keywords, so the words this module wants are__
+// __unavailable alone.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 இறக்கு "../col.qmz";
 
-// --- assessable value -----------------------------------------------------
+// __--- assessable value -----------------------------------------------------__
 //
 // மதிப்பிடத்தக்க_மதிப்பு(பொருள்_விலை, கப்பற்_கட்டணம், காப்பீட்டுக்_கட்டணம்)
 //
-// Duty is charged on the goods delivered to the border, not on the invoice
-// alone: cost, insurance and freight. An importer who computes duty on the
-// invoice value alone underpays on every consignment that had to be shipped.
+// __Duty is charged on the goods delivered to the border, not on the invoice__
+// __alone: cost, insurance and freight. An importer who computes duty on the__
+// __invoice value alone underpays on every consignment that had to be shipped.__
 செயல் மதிப்பிடத்தக்க_மதிப்பு(பொருள்_விலை, கப்பற்_கட்டணம், காப்பீட்டுக்_கட்டணம்) {
     திரும்பு வட்டமிடு(பொருள்_விலை + கப்பற்_கட்டணம் + காப்பீட்டுக்_கட்டணம், 2);
 }
 
-// --- the cascade ----------------------------------------------------------
+// __--- the cascade ----------------------------------------------------------__
 //
 // சுங்கக்_கணக்கு(மதிப்பு, அடிப்படை_விகிதம், மேலதிக_விகிதம், ஜிஎஸ்டி_விகிதம்)
 //
-// Each duty on the base the law gives it, in order:
+// __Each duty on the base the law gives it, in order:__
 //
-//   basic         on the assessable value
-//   surcharge     on the basic duty — not on the value
-//   IGST          on the value plus basic plus surcharge
+//   __basic         on the assessable value__
+//   __surcharge     on the basic duty — not on the value__
+//   __IGST          on the value plus basic plus surcharge__
 //
-// Answers every step, because a bill of entry has to show them separately and
-// because a total nobody can reconstruct is a total nobody can check.
+// __Answers every step, because a bill of entry has to show them separately and__
+// __because a total nobody can reconstruct is a total nobody can check.__
 செயல் சுங்கக்_கணக்கு(மதிப்பு, அடிப்படை_விகிதம், மேலதிக_விகிதம், ஜிஎஸ்டி_விகிதம்) {
     அடிப்படைக்_கட்டணம் = வட்டமிடு(சதவீதம்(மதிப்பு, அடிப்படை_விகிதம்), 2);
 
-    // On the duty, not on the value. This is the step most often written
-    // against the wrong base, and the answer looks plausible either way.
+    // __On the duty, not on the value. This is the step most often written__
+    // __against the wrong base, and the answer looks plausible either way.__
     மேலதிகச்_சுங்கம் = வட்டமிடு(சதவீதம்(அடிப்படைக்_கட்டணம், மேலதிக_விகிதம்), 2);
 
-    // The duty-inclusive value: IGST is charged on what the goods cost to land
-    // including what has already been charged on them.
+    // __The duty-inclusive value: IGST is charged on what the goods cost to land__
+    // __including what has already been charged on them.__
     ஜிஎஸ்டி_அடிப்படை = மதிப்பு + அடிப்படைக்_கட்டணம் + மேலதிகச்_சுங்கம்;
     ஜிஎஸ்டி = வட்டமிடு(சதவீதம்(ஜிஎஸ்டி_அடிப்படை, ஜிஎஸ்டி_விகிதம்), 2);
 
@@ -68,17 +68,17 @@
               "இறங்கு_விலை": வட்டமிடு(மதிப்பு + மொத்தச்_சுங்கம், 2)};
 }
 
-// --- tariff headings ------------------------------------------------------
+// __--- tariff headings ------------------------------------------------------__
 //
-// தலைப்பு_சரியா(குறியீட்டெண்) — is this a well-formed tariff heading?
+// __தலைப்பு_சரியா(குறியீட்டெண்) — is this a well-formed tariff heading?__
 //
-// A heading is digits, and its length says how specific it is: two for the
-// chapter, four for the heading, six for the international subheading, eight
-// for the Indian tariff item. Anything else is not a heading — and a code with
-// a stray space or dash is the ordinary way a spreadsheet mangles one.
+// __A heading is digits, and its length says how specific it is: two for the__
+// __chapter, four for the heading, six for the international subheading, eight__
+// __for the Indian tariff item. Anything else is not a heading — and a code with__
+// __a stray space or dash is the ordinary way a spreadsheet mangles one.__
 //
-// Whether a well-formed code *exists* in the tariff is a question for the
-// tariff, which is data.
+// __Whether a well-formed code *exists* in the tariff is a question for the__
+// __tariff, which is data.__
 செயல் தலைப்பு_சரியா(குறியீட்டெண்) {
     நீளம்_மதிப்பு = நீளம்(குறியீட்டெண்);
     (நீளம்_மதிப்பு != 2 மற்றும் நீளம்_மதிப்பு != 4
@@ -98,41 +98,41 @@
     திரும்பு நீளம்(பாடம்) > 0;
 }
 
-// அத்தியாயம்(குறியீட்டெண்) — the chapter a heading belongs to
+// __அத்தியாயம்(குறியீட்டெண்) — the chapter a heading belongs to__
 செயல் அத்தியாயம்(குறியீட்டெண்) {
     (நீளம்(குறியீட்டெண்) < 2) எனில் { திரும்பு ""; }
     திரும்பு துண்டு(குறியீட்டெண், 0, 2);
 }
 
-// பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) — does a code fall under a heading?
+// __பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) — does a code fall under a heading?__
 //
-// An eight-digit item falls under its six-digit subheading, its four-digit
-// heading and its chapter. This is how a rate stated at chapter level is found
-// for a specific item, and it is a prefix test rather than equality.
+// __An eight-digit item falls under its six-digit subheading, its four-digit__
+// __heading and its chapter. This is how a rate stated at chapter level is found__
+// __for a specific item, and it is a prefix test rather than equality.__
 செயல் பொருந்துமா(குறியீட்டெண், தலைப்புக்_குறி) {
     (நீளம்(தலைப்புக்_குறி) > நீளம்(குறியீட்டெண்)) எனில் { திரும்பு பொய்; }
     திரும்பு தொடங்குகிறதா(குறியீட்டெண், தலைப்புக்_குறி);
 }
 
-// --- the e-way bill -------------------------------------------------------
+// __--- the e-way bill -------------------------------------------------------__
 //
-// தேவையா(மதிப்பு, வரம்புத்_தொகை) — does this consignment need one at all?
+// __தேவையா(மதிப்பு, வரம்புத்_தொகை) — does this consignment need one at all?__
 //
-// Below the threshold there is nothing to generate. The threshold is a state
-// rule and is passed rather than assumed.
+// __Below the threshold there is nothing to generate. The threshold is a state__
+// __rule and is passed rather than assumed.__
 செயல் தேவையா(மதிப்பு, வரம்புத்_தொகை) {
     திரும்பு மதிப்பு > வரம்புத்_தொகை;
 }
 
 // செல்லுபடி_நாட்கள்(தூரம், ஒரு_நாள்_தூரம்)
 //
-// Validity is one day per so many kilometres, and always at least one day.
-// The distance band is a rule and is passed in; what is structural is the
-// rounding — a journey that spills a single kilometre past a band gets the
-// extra day, so this rounds up and never down.
+// __Validity is one day per so many kilometres, and always at least one day.__
+// __The distance band is a rule and is passed in; what is structural is the__
+// __rounding — a journey that spills a single kilometre past a band gets the__
+// __extra day, so this rounds up and never down.__
 //
-// Rounding down is the failure that matters: a bill that expires while the
-// lorry is still moving means the goods are in transit without one.
+// __Rounding down is the failure that matters: a bill that expires while the__
+// __lorry is still moving means the goods are in transit without one.__
 செயல் செல்லுபடி_நாட்கள்(தூரம், ஒரு_நாள்_தூரம்) {
     (ஒரு_நாள்_தூரம் <= 0) எனில் { திரும்பு 1; }
     (தூரம் <= 0) எனில் { திரும்பு 1; }
@@ -141,12 +141,12 @@
     திரும்பு நாட்கள்;
 }
 
-// வழிச்சீட்டு_சரிபார்(விவரங்கள்) — is this complete enough to generate?
+// __வழிச்சீட்டு_சரிபார்(விவரங்கள்) — is this complete enough to generate?__
 //
-// An e-way bill is refused for a missing field, and finding out at the portal
-// with a lorry waiting is worse than finding out here. Answers the list of
-// what is missing rather than a yes or no, because the useful answer to
-// "is this valid" is "no, and here is what to fix".
+// __An e-way bill is refused for a missing field, and finding out at the portal__
+// __with a lorry waiting is worse than finding out here. Answers the list of__
+// __what is missing rather than a yes or no, because the useful answer to__
+// __"is this valid" is "no, and here is what to fix".__
 செயல் வழிச்சீட்டு_சரிபார்(விவரங்கள்) {
     குறைகள் = [];
 
@@ -169,9 +169,9 @@
                                 & "(the value must be positive)");
     }
 
-    // Part B carries the vehicle. Without it the bill exists and the goods
-    // may not move, which is a different thing from an invalid bill — so it
-    // is reported as its own state rather than as an error.
+    // __Part B carries the vehicle. Without it the bill exists and the goods__
+    // __may not move, which is a different thing from an invalid bill — so it__
+    // __is reported as its own state rather than as an error.__
     வாகனம் = புலம்_அல்லது(விவரங்கள், "வாகனம்", "");
 
     திரும்பு {"சரியா": நீளம்(குறைகள்) == 0,
@@ -179,21 +179,21 @@
               "பகுதி_பி_உள்ளதா": நீளம்(வாகனம்) > 0};
 }
 
-// --- GSTIN ----------------------------------------------------------------
+// __--- GSTIN ----------------------------------------------------------------__
 //
-// ஜிஎஸ்டி_எண்_சரியா(எண்) — the shape of a GSTIN
+// __ஜிஎஸ்டி_எண்_சரியா(எண்) — the shape of a GSTIN__
 //
-// Fifteen characters: two digits of state code, ten of PAN, one entity digit,
-// a letter, and a check character. This checks the shape and the state code
-// only. The check digit is a published algorithm and worth adding; claiming to
-// validate a GSTIN without it would be the more dangerous half-measure, so
-// what this does is named honestly — the shape, not the number.
+// __Fifteen characters: two digits of state code, ten of PAN, one entity digit,__
+// __a letter, and a check character. This checks the shape and the state code__
+// __only. The check digit is a published algorithm and worth adding; claiming to__
+// __validate a GSTIN without it would be the more dangerous half-measure, so__
+// __what this does is named honestly — the shape, not the number.__
 செயல் ஜிஎஸ்டி_எண்_சரியா(எண்_மதிப்பு) {
     (நீளம்(எண்_மதிப்பு) != 15) எனில் { திரும்பு பொய்; }
     திரும்பு எண்களே(துண்டு(எண்_மதிப்பு, 0, 2));
 }
 
-// ஜிஎஸ்டி_மாநிலம்(எண்) — the state code a GSTIN begins with
+// __ஜிஎஸ்டி_மாநிலம்(எண்) — the state code a GSTIN begins with__
 செயல் ஜிஎஸ்டி_மாநிலம்(எண்_மதிப்பு) {
     (நீளம்(எண்_மதிப்பு) < 2) எனில் { திரும்பு ""; }
     திரும்பு துண்டு(எண்_மதிப்பு, 0, 2);

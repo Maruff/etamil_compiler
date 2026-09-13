@@ -1,33 +1,33 @@
-// Simple REST API Example
-// எளிய REST API உதாரணம்
+// __Simple REST API Example__
+// __எளிய REST API உதாரணம்__
 
 அச்சு "=== REST API Server ===";
 
-// Define GET route
+// __Define GET route__
 வழி பெறு, "/api/hello" {
     அச்சு "Handling GET /api/hello";
     ஜேசான்_உரை "{\"message\": \"Hello, World!\"}", 200;
 }
 
-// Define POST route
+// __Define POST route__
 வழி பதி, "/api/users" {
     அச்சு "Handling POST /api/users";
     ஜேசான்_உரை "{\"status\": \"User created\"}", 201;
 }
 
-// Define PUT route
+// __Define PUT route__
 வழி இடு, "/api/users/1" {
     அச்சு "Handling PUT /api/users/1";
     பதில் 200, "User updated";
 }
 
-// Define DELETE route
+// __Define DELETE route__
 வழி அழி, "/api/users/1" {
     அச்சு "Handling DELETE /api/users/1";
     பதில் 204, "User deleted";
 }
 
-// Start server
+// __Start server__
 வழங்கி_தொடங்கு "localhost", 8080;
 
 அச்சு "\n=== Server started successfully ===";
@@ -37,5 +37,5 @@
 அச்சு "  PUT    /api/users/1";
 அச்சு "  DELETE /api/users/1";
 
-// Stop server (for testing purposes)
+// __Stop server (for testing purposes)__
 வழங்கி_நிறுத்து;

@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/mElnilY.qmz — மேல்நிலைச் செலவு (overhead absorption)
+// __nUlakam/celavu/mElnilY.qmz — மேல்நிலைச் செலவு (overhead absorption)__
 //
-// Indirect cost cannot be traced to a unit, so it is attached by a rate: pick
-// a base that plausibly drives the cost, divide the overhead by the budgeted
-// base, and charge the result onto actual activity. Three facts follow, and
-// each one is a function here.
+// __Indirect cost cannot be traced to a unit, so it is attached by a rate: pick__
+// __a base that plausibly drives the cost, divide the overhead by the budgeted__
+// __base, and charge the result onto actual activity. Three facts follow, and__
+// __each one is a function here.__
 //
-// The rate uses *budgeted* figures. It has to: a rate computed from actuals is
-// only available after the period ends, and the point of absorption is to cost
-// a job while it is still on the floor.
+// __The rate uses *budgeted* figures. It has to: a rate computed from actuals is__
+// __only available after the period ends, and the point of absorption is to cost__
+// __a job while it is still on the floor.__
 //
-// Because the rate is budgeted and the activity is actual, what is absorbed
-// almost never equals what was spent. The difference is over- or
-// under-absorption, and it is a real amount that has to go somewhere — not an
-// error to be suppressed.
+// __Because the rate is budgeted and the activity is actual, what is absorbed__
+// __almost never equals what was spent. The difference is over- or__
+// __under-absorption, and it is a real amount that has to go somewhere — not an__
+// __error to be suppressed.__
 //
-// The base is chosen, not derived. A machine-intensive shop absorbs on machine
-// hours; a labour-intensive one on wages or labour hours. Choosing the wrong
-// base does not show up as a variance, it shows up as products quietly
-// cross-subsidising each other, which is the argument for activity-based
-// costing and the reason அடிப்படை_வகை is recorded with the rate.
+// __The base is chosen, not derived. A machine-intensive shop absorbs on machine__
+// __hours; a labour-intensive one on wages or labour hours. Choosing the wrong__
+// __base does not show up as a variance, it shows up as products quietly__
+// __cross-subsidising each other, which is the argument for activity-based__
+// __costing and the reason அடிப்படை_வகை is recorded with the rate.__
 
 இறக்கு "../kAcu.qmz";
 
-// --- Which base ---------------------------------------------------------
+// __--- Which base ---------------------------------------------------------__
 
 செயல் அடிப்படை_அலகுகள்()      { திரும்பு "அலகுகள்"; }
 செயல் அடிப்படை_இயந்திர_நேரம்() { திரும்பு "இயந்திர_நேரம்"; }
@@ -41,13 +41,13 @@
     திரும்பு பொய்;
 }
 
-// --- The rate -----------------------------------------------------------
+// __--- The rate -----------------------------------------------------------__
 
 // உள்வாங்கல்_விகிதம்(மதிப்பிட்ட_மேல்நிலை, மதிப்பிட்ட_அடிப்படை, அடிப்படை_வகை)
 //
-// Budgeted overhead over budgeted base. Returned as a record rather than a
-// bare number so the base travels with it: a rate of 40 is meaningless until
-// you know it is 40 per machine hour and not 40 per unit.
+// __Budgeted overhead over budgeted base. Returned as a record rather than a__
+// __bare number so the base travels with it: a rate of 40 is meaningless until__
+// __you know it is 40 per machine hour and not 40 per unit.__
 செயல் உள்வாங்கல்_விகிதம்(மதிப்பிட்ட_மேல்நிலை, மதிப்பிட்ட_அடிப்படை,
                           அடிப்படை_வகை) {
     (இல்லை அடிப்படை_செல்லுபடியா(அடிப்படை_வகை)) எனில் {
@@ -64,8 +64,8 @@
 
 // சதவீத_விகிதம்(மதிப்பிட்ட_மேல்நிலை, மதிப்பிட்ட_அடிப்படை)
 //
-// The same thing expressed as a percentage, which is how overhead on direct
-// wages or direct material is conventionally quoted — "150% of direct wages".
+// __The same thing expressed as a percentage, which is how overhead on direct__
+// __wages or direct material is conventionally quoted — "150% of direct wages".__
 செயல் சதவீத_விகிதம்(மதிப்பிட்ட_மேல்நிலை, மதிப்பிட்ட_அடிப்படை) {
     (மதிப்பிட்ட_அடிப்படை <= 0) எனில் {
         திரும்பு தவறு("மதிப்பிட்ட அடிப்படை பூஜ்யம்: விகிதம் இல்லை");
@@ -73,22 +73,22 @@
     திரும்பு சரி(மதிப்பிட்ட_மேல்நிலை / மதிப்பிட்ட_அடிப்படை * 100);
 }
 
-// --- Applying it --------------------------------------------------------
+// __--- Applying it --------------------------------------------------------__
 
 // உள்வாங்கியது(விகிதத்_தொகுதி, உண்மை_அடிப்படை)
 செயல் உள்வாங்கியது(விகிதத்_தொகுதி, உண்மை_அடிப்படை) {
     திரும்பு விகிதத்_தொகுதி.விகிதப்_பணம் * உண்மை_அடிப்படை;
 }
 
-// --- What the rate got wrong -------------------------------------------
+// __--- What the rate got wrong -------------------------------------------__
 
 // உள்வாங்கல்_வேறுபாடு(உள்வாங்கிய_தொகை, உண்மை_மேல்நிலை)
 //
-// Positive is over-absorption: more was charged to product than was spent, so
-// the period's cost is overstated and the excess is written back. Negative is
-// under-absorption and has to be charged. The sign convention is the same one
-// niyamam.qmz uses for variances — standard less actual — so the two modules
-// read the same way round.
+// __Positive is over-absorption: more was charged to product than was spent, so__
+// __the period's cost is overstated and the excess is written back. Negative is__
+// __under-absorption and has to be charged. The sign convention is the same one__
+// __niyamam.qmz uses for variances — standard less actual — so the two modules__
+// __read the same way round.__
 செயல் உள்வாங்கல்_வேறுபாடு(உள்வாங்கிய_தொகை, உண்மை_மேல்நிலை) {
     திரும்பு உள்வாங்கிய_தொகை - உண்மை_மேல்நிலை;
 }
@@ -101,27 +101,27 @@
     திரும்பு வேறுபாட்டுத்_தொகை < 0;
 }
 
-// --- Splitting overhead across centres ----------------------------------
+// __--- Splitting overhead across centres ----------------------------------__
 
 // நிலையங்களுக்குப்_பகிர்(மொத்த_மேல்நிலை, எடைகள்)
 //
-// Primary apportionment: one pool of overhead spread over cost centres on some
-// measure — floor area for rent, headcount for canteen, machine value for
-// insurance. Delegated to kAcu/விகிதத்தில்_பிரி because splitting money by
-// weights has a rounding problem that has already been solved there: the parts
-// must add back to the whole exactly, and naive division does not guarantee
-// that. Amounts are in paise, as everywhere in kAcu.
+// __Primary apportionment: one pool of overhead spread over cost centres on some__
+// __measure — floor area for rent, headcount for canteen, machine value for__
+// __insurance. Delegated to kAcu/விகிதத்தில்_பிரி because splitting money by__
+// __weights has a rounding problem that has already been solved there: the parts__
+// __must add back to the whole exactly, and naive division does not guarantee__
+// __that. Amounts are in paise, as everywhere in kAcu.__
 செயல் நிலையங்களுக்குப்_பகிர்(மொத்த_மேல்நிலை_பைசா, எடைகள்) {
     திரும்பு விகிதத்தில்_பிரி(மொத்த_மேல்நிலை_பைசா, எடைகள்);
 }
 
 // சேவையை_மறுபகிர்(சேவை_மேல்நிலை_பைசா, உற்பத்தி_எடைகள்)
 //
-// Secondary apportionment: a service centre's total is pushed onto production
-// centres, because only production centres absorb into units. Reciprocal
-// service — two service centres serving each other — needs simultaneous
-// equations and is deliberately not attempted here; apportion it manually or
-// use the step-down order.
+// __Secondary apportionment: a service centre's total is pushed onto production__
+// __centres, because only production centres absorb into units. Reciprocal__
+// __service — two service centres serving each other — needs simultaneous__
+// __equations and is deliberately not attempted here; apportion it manually or__
+// __use the step-down order.__
 செயல் சேவையை_மறுபகிர்(சேவை_மேல்நிலை_பைசா, உற்பத்தி_எடைகள்) {
     திரும்பு விகிதத்தில்_பிரி(சேவை_மேல்நிலை_பைசா, உற்பத்தி_எடைகள்);
 }

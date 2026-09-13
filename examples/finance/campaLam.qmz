@@ -1,12 +1,12 @@
-// சம்பளம் — a payroll run
+// __சம்பளம் — a payroll run__
 //
-// Employees are records; the payroll is an array of them. Amounts are exact
-// decimals and formatted with Indian digit grouping.
+// __Employees are records; the payroll is an array of them. Amounts are exact__
+// __decimals and formatted with Indian digit grouping.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";
 
-// வரி_கணக்கு(மொத்த_சம்பளம்) — slab tax on annual pay
+// __வரி_கணக்கு(மொத்த_சம்பளம்) — slab tax on annual pay__
 செயல் வரி_கணக்கு(ஆண்டு_சம்பளம்) {
     (ஆண்டு_சம்பளம் <= 300000) எனில் { திரும்பு 0; }
     (ஆண்டு_சம்பளம் <= 700000) எனில் {
@@ -18,7 +18,7 @@
     திரும்பு 50000 + சதவீதம்(ஆண்டு_சம்பளம் - 1000000, 30);
 }
 
-// நிகர_சம்பளம்(ஊழியர்) — take-home after tax and PF
+// __நிகர_சம்பளம்(ஊழியர்) — take-home after tax and PF__
 செயல் நிகர_சம்பளம்(ஊழியர்) {
     ஆண்டு = ஊழியர்.மாத_சம்பளம் * 12;
     ஆண்டு_வரி = வரி_கணக்கு(ஆண்டு);

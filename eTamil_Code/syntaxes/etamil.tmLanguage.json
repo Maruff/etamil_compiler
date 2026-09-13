@@ -15,7 +15,13 @@
         "0": {
           "name": "punctuation.definition.comment.etamil"
         }
-      }
+      },
+      "patterns": [
+        {
+          "name": "meta.english.comment.etamil",
+          "match": "__.+?__"
+        }
+      ]
     },
     {
       "name": "string.quoted.double.etamil",
@@ -192,6 +198,10 @@
     {
       "name": "keyword.operator.try.etamil",
       "match": "\\?"
+    },
+    {
+      "name": "variable.other.english.etamil",
+      "match": "(?<![஀-௿\\w])_[஀-௿\\w]+"
     },
     {
       "name": "punctuation.accessor.etamil",

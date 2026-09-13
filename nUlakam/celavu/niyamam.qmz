@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/niyamam.qmz — நியமச் செலவு (standard costing and variances)
+// __nUlakam/celavu/niyamam.qmz — நியமச் செலவு (standard costing and variances)__
 //
-// A standard cost is what a unit ought to cost. The actual cost differs, and
-// the whole value of the technique is in *decomposing* that difference: a
-// material overspend caused by paying too much is a purchasing matter, and one
-// caused by using too much is a production matter, and a single total tells
-// you neither.
+// __A standard cost is what a unit ought to cost. The actual cost differs, and__
+// __the whole value of the technique is in *decomposing* that difference: a__
+// __material overspend caused by paying too much is a purchasing matter, and one__
+// __caused by using too much is a production matter, and a single total tells__
+// __you neither.__
 //
-// Sign convention, used without exception in this module and in mElnilY.qmz:
+// __Sign convention, used without exception in this module and in mElnilY.qmz:__
 //
-//     variance = standard − actual
+//     __variance = standard − actual__
 //
-// so a **positive variance is favourable**. This is worth stating because
-// texts differ — some report the absolute figure with an F or A label — and a
-// mixed convention inside one system produces reports that add up to nothing.
-// சாதகமா() is provided so callers never have to remember which way it runs.
+// __so a **positive variance is favourable**. This is worth stating because__
+// __texts differ — some report the absolute figure with an F or A label — and a__
+// __mixed convention inside one system produces reports that add up to nothing.__
+// __சாதகமா() is provided so callers never have to remember which way it runs.__
 //
-// Every variance here also obeys the reconciliation that gives the technique
-// its name: the sub-variances of a class sum exactly to that class's total.
-// The tests assert this, because a decomposition that does not reconcile is
-// arithmetic with no meaning.
+// __Every variance here also obeys the reconciliation that gives the technique__
+// __its name: the sub-variances of a class sum exactly to that class's total.__
+// __The tests assert this, because a decomposition that does not reconcile is__
+// __arithmetic with no meaning.__
 
-// --- Reading a variance -------------------------------------------------
+// __--- Reading a variance -------------------------------------------------__
 
 செயல் சாதகமா(வேறுபாட்டுத்_தொகை) { திரும்பு வேறுபாட்டுத்_தொகை > 0; }
 செயல் பாதகமா(வேறுபாட்டுத்_தொகை) { திரும்பு வேறுபாட்டுத்_தொகை < 0; }
@@ -38,12 +38,12 @@
     திரும்பு "வேறுபாடு இல்லை";
 }
 
-// --- Material ------------------------------------------------------------
+// __--- Material ------------------------------------------------------------__
 
 // பொருள்_மொத்த_வேறுபாடு(நியம_அளவு, நியம_வீதம், உண்மை_அளவு, உண்மை_வீதம்)
 //
-// What the output should have cost in material, less what it did cost. The two
-// sub-variances below add to this.
+// __What the output should have cost in material, less what it did cost. The two__
+// __sub-variances below add to this.__
 செயல் பொருள்_மொத்த_வேறுபாடு(நியம_அளவு, நியம_வீதம்,
                               உண்மை_அளவு, உண்மை_வீதம்) {
     திரும்பு (நியம_அளவு * நியம_வீதம்) - (உண்மை_அளவு * உண்மை_வீதம்);
@@ -51,24 +51,24 @@
 
 // பொருள்_வீத_வேறுபாடு(உண்மை_அளவு, நியம_வீதம், உண்மை_வீதம்)
 //
-// The price variance: actual quantity × (standard price − actual price). It is
-// weighted on *actual* quantity, not standard, because the overpayment was
-// made on every unit actually bought.
+// __The price variance: actual quantity × (standard price − actual price). It is__
+// __weighted on *actual* quantity, not standard, because the overpayment was__
+// __made on every unit actually bought.__
 செயல் பொருள்_வீத_வேறுபாடு(உண்மை_அளவு, நியம_வீதம், உண்மை_வீதம்) {
     திரும்பு உண்மை_அளவு * (நியம_வீதம் - உண்மை_வீதம்);
 }
 
 // பொருள்_பயன்பாட்டு_வேறுபாடு(நியம_வீதம், நியம_அளவு, உண்மை_அளவு)
 //
-// The usage variance: standard price × (standard quantity − actual quantity).
-// Valued at *standard* price so that a price movement cannot contaminate a
-// measure of physical efficiency — the separation the whole technique exists
-// to provide.
+// __The usage variance: standard price × (standard quantity − actual quantity).__
+// __Valued at *standard* price so that a price movement cannot contaminate a__
+// __measure of physical efficiency — the separation the whole technique exists__
+// __to provide.__
 செயல் பொருள்_பயன்பாட்டு_வேறுபாடு(நியம_வீதம், நியம_அளவு, உண்மை_அளவு) {
     திரும்பு நியம_வீதம் * (நியம_அளவு - உண்மை_அளவு);
 }
 
-// --- Labour --------------------------------------------------------------
+// __--- Labour --------------------------------------------------------------__
 
 செயல் ஊதிய_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம்,
                             உண்மை_நேரம், உண்மை_வீதம்) {
@@ -87,16 +87,16 @@
 
 // ஊதிய_செயலிழப்பு_வேறுபாடு(நியம_வீதம், செயலிழந்த_நேரம்)
 //
-// Idle time, split out of efficiency because it is always adverse and always
-// somebody's decision — a breakdown, a stockout, a power cut. Leaving it
-// inside the efficiency variance blames the operator for a stopped machine.
-// Returned negative, since paid-for hours that produced nothing cannot be
-// favourable.
+// __Idle time, split out of efficiency because it is always adverse and always__
+// __somebody's decision — a breakdown, a stockout, a power cut. Leaving it__
+// __inside the efficiency variance blames the operator for a stopped machine.__
+// __Returned negative, since paid-for hours that produced nothing cannot be__
+// __favourable.__
 செயல் ஊதிய_செயலிழப்பு_வேறுபாடு(நியம_வீதம், செயலிழந்த_நேரம்) {
     திரும்பு 0 - (நியம_வீதம் * செயலிழந்த_நேரம்);
 }
 
-// --- Variable overhead ---------------------------------------------------
+// __--- Variable overhead ---------------------------------------------------__
 
 செயல் மாறும்_மேல்நிலை_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம்,
                                        உண்மை_மேல்நிலை) {
@@ -105,8 +105,8 @@
 
 // மாறும்_மேல்நிலை_செலவு_வேறுபாடு(உண்மை_நேரம், நியம_வீதம், உண்மை_மேல்நிலை)
 //
-// The expenditure element: what the hours actually worked should have cost in
-// overhead, less what was spent.
+// __The expenditure element: what the hours actually worked should have cost in__
+// __overhead, less what was spent.__
 செயல் மாறும்_மேல்நிலை_செலவு_வேறுபாடு(உண்மை_நேரம், நியம_வீதம்,
                                        உண்மை_மேல்நிலை) {
     திரும்பு (உண்மை_நேரம் * நியம_வீதம்) - உண்மை_மேல்நிலை;
@@ -117,14 +117,14 @@
     திரும்பு நியம_வீதம் * (நியம_நேரம் - உண்மை_நேரம்);
 }
 
-// --- Fixed overhead ------------------------------------------------------
+// __--- Fixed overhead ------------------------------------------------------__
 
 // நிலையான_மேல்நிலை_செலவு_வேறுபாடு(மதிப்பிட்ட_மேல்நிலை, உண்மை_மேல்நிலை)
 //
-// Fixed overhead has no usage variance — by definition it does not move with
-// volume — so its decomposition is different: an expenditure variance against
-// budget, and a volume variance measuring under- or over-recovery caused by
-// producing a quantity other than the one the rate assumed.
+// __Fixed overhead has no usage variance — by definition it does not move with__
+// __volume — so its decomposition is different: an expenditure variance against__
+// __budget, and a volume variance measuring under- or over-recovery caused by__
+// __producing a quantity other than the one the rate assumed.__
 செயல் நிலையான_மேல்நிலை_செலவு_வேறுபாடு(மதிப்பிட்ட_மேல்நிலை, உண்மை_மேல்நிலை) {
     திரும்பு மதிப்பிட்ட_மேல்நிலை - உண்மை_மேல்நிலை;
 }
@@ -136,33 +136,33 @@
     திரும்பு நியம_வீதம் * (உண்மை_அலகுகள் - மதிப்பிட்ட_அலகுகள்);
 }
 
-// --- Sales ---------------------------------------------------------------
+// __--- Sales ---------------------------------------------------------------__
 
 // விற்பனை_வீத_வேறுபாடு(உண்மை_அலகுகள், உண்மை_வீதம், நியம_வீதம்)
 //
-// The one variance where the sign flips relative to cost: selling *above*
-// standard price is favourable, so this is actual less standard. Stated
-// explicitly because it is the exception to the module's rule.
+// __The one variance where the sign flips relative to cost: selling *above*__
+// __standard price is favourable, so this is actual less standard. Stated__
+// __explicitly because it is the exception to the module's rule.__
 செயல் விற்பனை_வீத_வேறுபாடு(உண்மை_அலகுகள், உண்மை_வீதம், நியம_வீதம்) {
     திரும்பு உண்மை_அலகுகள் * (உண்மை_வீதம் - நியம_வீதம்);
 }
 
 // விற்பனை_அளவு_வேறுபாடு(நியம_பங்களிப்பு, மதிப்பிட்ட_அலகுகள், உண்மை_அலகுகள்)
 //
-// Volume valued at standard *contribution*, not standard price — selling one
-// more unit does not earn its price, it earns its contribution. Valuing this
-// at price is a common and expensive error.
+// __Volume valued at standard *contribution*, not standard price — selling one__
+// __more unit does not earn its price, it earns its contribution. Valuing this__
+// __at price is a common and expensive error.__
 செயல் விற்பனை_அளவு_வேறுபாடு(நியம_பங்களிப்பு, மதிப்பிட்ட_அலகுகள்,
                               உண்மை_அலகுகள்) {
     திரும்பு நியம_பங்களிப்பு * (உண்மை_அலகுகள் - மதிப்பிட்ட_அலகுகள்);
 }
 
-// --- Putting a report together ------------------------------------------
+// __--- Putting a report together ------------------------------------------__
 
 // பொருள்_வேறுபாட்டுத்_தொகுதி(நியம_அளவு, நியம_வீதம், உண்மை_அளவு, உண்மை_வீதம்)
 //
-// The two material sub-variances and their total, in one record, so a caller
-// can check the reconciliation rather than trusting it.
+// __The two material sub-variances and their total, in one record, so a caller__
+// __can check the reconciliation rather than trusting it.__
 செயல் பொருள்_வேறுபாட்டுத்_தொகுதி(நியம_அளவு, நியம_வீதம்,
                                   உண்மை_அளவு, உண்மை_வீதம்) {
     திரும்பு {

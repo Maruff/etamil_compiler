@@ -1,5 +1,5 @@
-// 100,000 slab-tax calculations. Exact decimal throughout.
-// Must print 249997500.
+// __100,000 slab-tax calculations. Exact decimal throughout.__
+// __Must print 249997500.__
 moqqam = 0;
 i = 0;
 (i < 100000) cuRRu {

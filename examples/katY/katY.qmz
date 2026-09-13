@@ -1,24 +1,24 @@
-// examples/katY/katY.qmz — கடை: an online shop's pricing and GST
+// __examples/katY/katY.qmz — கடை: an online shop's pricing and GST__
 //
-// Definitions only; katY_kAttu.qmz runs them and katY_cEvY.qmz serves them.
+// __Definitions only; katY_kAttu.qmz runs them and katY_cEvY.qmz serves them.__
 //
-// GST is computed **per line**, not on the invoice total, because an order can
-// mix rates — 5% on a saree and 18% on a phone case — and taxing the sum at
-// one rate would be wrong on both. Each line's tax is split into CGST/SGST or
-// IGST and the splits are accumulated, which is what a GST return expects.
+// __GST is computed **per line**, not on the invoice total, because an order can__
+// __mix rates — 5% on a saree and 18% on a phone case — and taxing the sum at__
+// __one rate would be wrong on both. Each line's tax is split into CGST/SGST or__
+// __IGST and the splits are accumulated, which is what a GST return expects.__
 //
-// Note how many of these names are also keywords: விலை, இருப்பு, வரி, சரக்கு,
-// விலைப்பட்டியல். They are the words a shop actually uses, and they keep the
-// spelling written here — before roadmap item 2 they would have been stored as
-// Price, Balance, Tax, Goods and Invoice.
+// __Note how many of these names are also keywords: விலை, இருப்பு, வரி, சரக்கு,__
+// __விலைப்பட்டியல். They are the words a shop actually uses, and they keep the__
+// __spelling written here — before roadmap item 2 they would have been stored as__
+// __Price, Balance, Tax, Goods and Invoice.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";
 இறக்கு "../../nUlakam/col.qmz";
 இறக்கு "../../nUlakam/kaNakkiyal/vari.qmz";
 
-// --- Accounts -------------------------------------------------------------
-// A shop's books. The codes are what the ledger posts against.
+// __--- Accounts -------------------------------------------------------------__
+// __A shop's books. The codes are what the ledger posts against.__
 
 செயல் கணக்கு_வங்கி()          { திரும்பு "1000"; }
 செயல் கணக்கு_வாடிக்கையாளர்() { திரும்பு "1100"; }
@@ -40,9 +40,9 @@
     ];
 }
 
-// --- The cart -------------------------------------------------------------
+// __--- The cart -------------------------------------------------------------__
 
-// வண்டி_ஒரு_வரிசை(...) — one line of a cart
+// __வண்டி_ஒரு_வரிசை(...) — one line of a cart__
 செயல் வண்டி_ஒரு_வரிசை(சரக்கு_குறி, பெயர், அலகு_விலை, அளவு, வரி_விகிதம்) {
     திரும்பு {
         சரக்கு_குறி: சரக்கு_குறி,
@@ -53,17 +53,17 @@
     };
 }
 
-// ஒரு_வரிசை_அடிப்படை(ஒரு_வரிசை) — the line's value before tax
+// __ஒரு_வரிசை_அடிப்படை(ஒரு_வரிசை) — the line's value before tax__
 செயல் ஒரு_வரிசை_அடிப்படை(ஒரு_வரிசை) {
     திரும்பு ஒரு_வரிசை.அலகு_விலை * ஒரு_வரிசை.அளவு;
 }
 
-// வண்டி_கணக்கு(வரிசைகள், உள்_மாநிலமா) — what the customer owes, and how the
-// tax divides.
+// __வண்டி_கணக்கு(வரிசைகள், உள்_மாநிலமா) — what the customer owes, and how the__
+// __tax divides.__
 //
-// உள்_மாநிலமா decides the split, not the amount: within a state the tax is
-// half CGST and half SGST; across states the whole of it is IGST. Getting this
-// wrong misfiles the return even when the total is right.
+// __உள்_மாநிலமா decides the split, not the amount: within a state the tax is__
+// __half CGST and half SGST; across states the whole of it is IGST. Getting this__
+// __wrong misfiles the return even when the total is right.__
 செயல் வண்டி_கணக்கு(வண்டி_வரிசைகள், உள்_மாநிலமா) {
     அடிப்படை_மொத்தம் = 0;
     _cgst_மொத்தம் = 0;
@@ -92,7 +92,7 @@
     };
 }
 
-// --- The invoice ----------------------------------------------------------
+// __--- The invoice ----------------------------------------------------------__
 
 செயல் விலைப்பட்டியல்_அச்சிடு(விலைப்பட்டியல்_எண், வாடிக்கையாளர்_பெயர்,
                                 நாள், வண்டி_வரிசைகள், கணக்கு) {

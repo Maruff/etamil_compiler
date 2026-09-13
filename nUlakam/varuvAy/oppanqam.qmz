@@ -1,41 +1,41 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/varuvAy/oppanqam.qmz — ஒப்பந்தம், the contract and its price
+// __nUlakam/varuvAy/oppanqam.qmz — ஒப்பந்தம், the contract and its price__
 //
-// Ind AS 115 is five steps, and this module is the first four:
+// __Ind AS 115 is five steps, and this module is the first four:__
 //
-//   1. identify the contract with the customer
-//   2. identify the performance obligations in it
-//   3. determine the transaction price
-//   4. allocate that price to the obligations
-//   5. recognise revenue as each obligation is satisfied   → muZZERRam.qmz
+//   __1. identify the contract with the customer__
+//   __2. identify the performance obligations in it__
+//   __3. determine the transaction price__
+//   __4. allocate that price to the obligations__
+//   __5. recognise revenue as each obligation is satisfied   → muZZERRam.qmz__
 //
-// The order is not a presentation choice. Revenue is recognised against an
-// **obligation**, not against a contract and not against an invoice, so a
-// contract whose obligations have not been identified cannot be measured at
-// all — and the step that is skipped in practice is the second one.
+// __The order is not a presentation choice. Revenue is recognised against an__
+// __**obligation**, not against a contract and not against an invoice, so a__
+// __contract whose obligations have not been identified cannot be measured at__
+// __all — and the step that is skipped in practice is the second one.__
 //
-// The old standards asked when the risks and rewards passed. This one asks
-// when **control** passes, and for a project business the two give different
-// answers often enough to matter: work built on a customer's own site
-// transfers control continuously while risk stays with the contractor to the
-// end.
+// __The old standards asked when the risks and rewards passed. This one asks__
+// __when **control** passes, and for a project business the two give different__
+// __answers often enough to matter: work built on a customer's own site__
+// __transfers control continuously while risk stays with the contractor to the__
+// __end.__
 //
-// Money is in rupees to the paisa. **Allocation goes through kAcu.qmz**, which
-// works in paise and guarantees the parts sum to the whole — a transaction
-// price split by rounding each share independently does not add back, and the
-// difference lands in whichever obligation is recognised last.
+// __Money is in rupees to the paisa. **Allocation goes through kAcu.qmz**, which__
+// __works in paise and guarantees the parts sum to the whole — a transaction__
+// __price split by rounding each share independently does not add back, and the__
+// __difference lands in whichever obligation is recognised last.__
 //
-// Record keys are quoted throughout: ஒப்பந்தம், வருவாய், விலை, சொத்து,
-// பொறுப்பு, பங்கு and மதிப்பீடு are all keywords, and a keyword used as a bare
-// key is stored under its token name.
+// __Record keys are quoted throughout: ஒப்பந்தம், வருவாய், விலை, சொத்து,__
+// __பொறுப்பு, பங்கு and மதிப்பீடு are all keywords, and a keyword used as a bare__
+// __key is stored under its token name.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../kAcu.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// படி 1 — the contract
+// __படி 1 — the contract__
 // =========================================================================
 //
 // ஒப்பந்தம்_ஆக்கு(ஒப்பந்தக்_குறி, வாடிக்கையாளர், தொடக்க_நாள்)
@@ -48,14 +48,14 @@
 // ஒப்பந்தம்_உள்ளதா(ஒப்புதல்_உண்டா, உரிமைகள்_தெளிவா, செலுத்தும்_விதிமுறை_உண்டா,
 //                   வணிகப்_பொருள்_உண்டா, வசூல்_வாய்ப்புள்ளதா)
 //
-// A contract exists for accounting purposes only when all five criteria are
-// met. The last is the one that catches people: if collection is not probable
-// there is **no contract**, and nothing is recognised however much work is
-// done — any money received is a liability until it becomes non-refundable.
+// __A contract exists for accounting purposes only when all five criteria are__
+// __met. The last is the one that catches people: if collection is not probable__
+// __there is **no contract**, and nothing is recognised however much work is__
+// __done — any money received is a liability until it becomes non-refundable.__
 //
-// This is not prudence applied loosely. It is the reason a sale to a customer
-// in distress produces no revenue at all rather than revenue with a provision
-// against it, and the two look very different in a margin.
+// __This is not prudence applied loosely. It is the reason a sale to a customer__
+// __in distress produces no revenue at all rather than revenue with a provision__
+// __against it, and the two look very different in a margin.__
 செயல் ஒப்பந்தம்_உள்ளதா(ஒப்புதல்_உண்டா, உரிமைகள்_தெளிவா,
                          செலுத்தும்_விதிமுறை_உண்டா, வணிகப்_பொருள்_உண்டா,
                          வசூல்_வாய்ப்புள்ளதா) {
@@ -67,16 +67,16 @@
 }
 
 // =========================================================================
-// படி 2 — performance obligations
+// __படி 2 — performance obligations__
 // =========================================================================
 //
 // கடமை_ஆக்கு(கடமைக்_குறி, விவரம், தனி_விற்பனை_மதிப்பு, காலப்போக்கிலா)
 //
-// தனி_விற்பனை_மதிப்பு is the standalone selling price — what this good or
-// service would sell for on its own. It is the basis for allocation and it is
-// **not** the price written against the line in the contract. A contract that
-// prices a two-year warranty at one rupee has not thereby made the warranty
-// worth one rupee.
+// __தனி_விற்பனை_மதிப்பு is the standalone selling price — what this good or__
+// __service would sell for on its own. It is the basis for allocation and it is__
+// __**not** the price written against the line in the contract. A contract that__
+// __prices a two-year warranty at one rupee has not thereby made the warranty__
+// __worth one rupee.__
 செயல் கடமை_ஆக்கு(கடமைக்_குறி, விவரம், தனி_விற்பனை_மதிப்பு, காலப்போக்கிலா) {
     திரும்பு {"குறி": கடமைக்_குறி,
               "விவரம்": விவரம்,
@@ -86,37 +86,37 @@
 
 // தனிக்_கடமையா(தனியே_பயன்தருமா, தனியே_அடையாளம்_காணலாமா)
 //
-// A promised good or service is a separate performance obligation only if it
-// is distinct, and distinct means **both**: capable of being distinct — the
-// customer can benefit from it on its own or with resources readily available
-// — *and* distinct within the context of the contract, meaning it is
-// separately identifiable from the other promises.
+// __A promised good or service is a separate performance obligation only if it__
+// __is distinct, and distinct means **both**: capable of being distinct — the__
+// __customer can benefit from it on its own or with resources readily available__
+// __— *and* distinct within the context of the contract, meaning it is__
+// __separately identifiable from the other promises.__
 //
-// Both conditions, and the second is the one that fails. Bricks are capable of
-// being distinct; bricks supplied as part of a contract to build a wall are
-// not separately identifiable from the building service, because the contract
-// is to combine them. Treating every line on the invoice as an obligation is
-// the commonest error in applying this standard, and it spreads revenue across
-// the wrong periods.
+// __Both conditions, and the second is the one that fails. Bricks are capable of__
+// __being distinct; bricks supplied as part of a contract to build a wall are__
+// __not separately identifiable from the building service, because the contract__
+// __is to combine them. Treating every line on the invoice as an obligation is__
+// __the commonest error in applying this standard, and it spreads revenue across__
+// __the wrong periods.__
 செயல் தனிக்_கடமையா(தனியே_பயன்தருமா, தனியே_அடையாளம்_காணலாமா) {
     திரும்பு தனியே_பயன்தருமா மற்றும் தனியே_அடையாளம்_காணலாமா;
 }
 
 // =========================================================================
-// படி 3 — the transaction price
+// __படி 3 — the transaction price__
 // =========================================================================
 //
 // மாறும்_எதிர்பார்ப்பு(விளைவுகள்)
 //
-// Variable consideration by the **expected value** method: each possible
-// outcome weighted by its probability. Suited to a large number of similar
-// contracts, where the portfolio behaves like its average even though no
-// single contract does.
+// __Variable consideration by the **expected value** method: each possible__
+// __outcome weighted by its probability. Suited to a large number of similar__
+// __contracts, where the portfolio behaves like its average even though no__
+// __single contract does.__
 //
-// விளைவுகள் is a list of {"தொகை", "நிகழ்தகவு"}, probabilities as whole numbers
-// out of a hundred. They must sum to 100, and a list that does not is a தவறு
-// rather than a scaled answer: probabilities that sum to 90 mean an outcome
-// was forgotten, and silently scaling the rest hides it.
+// __விளைவுகள் is a list of {"தொகை", "நிகழ்தகவு"}, probabilities as whole numbers__
+// __out of a hundred. They must sum to 100, and a list that does not is a தவறு__
+// __rather than a scaled answer: probabilities that sum to 90 mean an outcome__
+// __was forgotten, and silently scaling the rest hides it.__
 செயல் மாறும்_எதிர்பார்ப்பு(விளைவுகள்) {
     (நீளம்(விளைவுகள்) == 0) எனில் {
         திரும்பு தவறு("விளைவுகள் இல்லை  (no outcomes given)");
@@ -140,13 +140,13 @@
 
 // மிக_வாய்ப்பான_தொகை(விளைவுகள்)
 //
-// The other method: the single most likely outcome. Suited to a contract with
-// only two possible outcomes — a bonus is earned or it is not — where the
-// probability-weighted figure is an amount that cannot actually occur.
+// __The other method: the single most likely outcome. Suited to a contract with__
+// __only two possible outcomes — a bonus is earned or it is not — where the__
+// __probability-weighted figure is an amount that cannot actually occur.__
 //
-// The choice between the two methods is made per contract and applied
-// consistently. It is not a choice to be made afresh each period in whichever
-// direction suits.
+// __The choice between the two methods is made per contract and applied__
+// __consistently. It is not a choice to be made afresh each period in whichever__
+// __direction suits.__
 செயல் மிக_வாய்ப்பான_தொகை(விளைவுகள்) {
     (நீளம்(விளைவுகள்) == 0) எனில் {
         திரும்பு தவறு("விளைவுகள் இல்லை  (no outcomes given)");
@@ -164,19 +164,19 @@
 
 // கட்டுப்பாட்டுடன்(மாறும்_தொகை, சேர்க்கும்_பகுதி)
 //
-// **The constraint**, and it is the half of variable consideration that gets
-// dropped. An estimate is included in the transaction price only to the extent
-// that it is highly probable a significant reversal will not occur later.
+// __**The constraint**, and it is the half of variable consideration that gets__
+// __dropped. An estimate is included in the transaction price only to the extent__
+// __that it is highly probable a significant reversal will not occur later.__
 //
-// So the estimate is computed and then held back. A bonus reckoned at eighty
-// lakh on an expected-value basis may enter the price at forty, or at nothing,
-// depending on how much of it could still be lost — and the judgement is about
-// the *reversal*, not about the estimate. Including the full estimate because
-// it is the best estimate is exactly the error the constraint exists to
-// prevent, because revenue reversed is far more damaging than revenue deferred.
+// __So the estimate is computed and then held back. A bonus reckoned at eighty__
+// __lakh on an expected-value basis may enter the price at forty, or at nothing,__
+// __depending on how much of it could still be lost — and the judgement is about__
+// __the *reversal*, not about the estimate. Including the full estimate because__
+// __it is the best estimate is exactly the error the constraint exists to__
+// __prevent, because revenue reversed is far more damaging than revenue deferred.__
 //
-// சேர்க்கும்_பகுதி is the portion that survives the constraint, out of a
-// hundred. It is a judgement, so it is a parameter, and there is no default.
+// __சேர்க்கும்_பகுதி is the portion that survives the constraint, out of a__
+// __hundred. It is a judgement, so it is a parameter, and there is no default.__
 செயல் கட்டுப்பாட்டுடன்(மாறும்_தொகை, சேர்க்கும்_பகுதி) {
     (சேர்க்கும்_பகுதி <= 0) எனில் { திரும்பு 0; }
     (சேர்க்கும்_பகுதி >= 100) எனில் { திரும்பு வட்டமிடு(மாறும்_தொகை, 2); }
@@ -186,19 +186,19 @@
 // பரிமாற்ற_மதிப்பு(நிலையான_தொகை, கட்டுப்படுத்திய_மாறும்_தொகை,
 //                   வாடிக்கையாளருக்குச்_செலுத்தியது, நிதிக்_கூறு)
 //
-// The transaction price: what the entity expects to be **entitled** to, not
-// what it expects to collect and not what it has invoiced.
+// __The transaction price: what the entity expects to be **entitled** to, not__
+// __what it expects to collect and not what it has invoiced.__
 //
-// Consideration payable to the customer — a listing fee, a slotting
-// allowance, a rebate — is a **reduction of the transaction price**, not a
-// cost, unless it buys a distinct good or service at fair value. Treating it
-// as a marketing expense overstates both revenue and costs by the same amount
-// and leaves the margin percentage wrong in both directions.
+// __Consideration payable to the customer — a listing fee, a slotting__
+// __allowance, a rebate — is a **reduction of the transaction price**, not a__
+// __cost, unless it buys a distinct good or service at fair value. Treating it__
+// __as a marketing expense overstates both revenue and costs by the same amount__
+// __and leaves the margin percentage wrong in both directions.__
 //
-// A significant financing component is stripped out and shown as interest:
-// where payment is due long before or long after delivery, part of the money
-// is for the time and not for the goods. Pass 0 where there is none, which is
-// the usual case and always the case when the gap is under a year.
+// __A significant financing component is stripped out and shown as interest:__
+// __where payment is due long before or long after delivery, part of the money__
+// __is for the time and not for the goods. Pass 0 where there is none, which is__
+// __the usual case and always the case when the gap is under a year.__
 செயல் பரிமாற்ற_மதிப்பு(நிலையான_தொகை, கட்டுப்படுத்திய_மாறும்_தொகை,
                          வாடிக்கையாளருக்குச்_செலுத்தியது, நிதிக்_கூறு) {
     விடை = நிலையான_தொகை + கட்டுப்படுத்திய_மாறும்_தொகை
@@ -208,24 +208,24 @@
 }
 
 // =========================================================================
-// படி 4 — allocation
+// __படி 4 — allocation__
 // =========================================================================
 //
 // கடமைகளுக்கு_ஒதுக்கு(பரிமாற்றத்_தொகை, கடமைகள்)
 //
-// The transaction price is allocated in proportion to **standalone selling
-// prices** — not to the prices stated in the contract, which is the whole
-// point. A contract that bundles a machine at full price with three years of
-// service "free" has sold three years of service, and some of the machine's
-// price belongs to it and will be recognised over three years.
+// __The transaction price is allocated in proportion to **standalone selling__
+// __prices** — not to the prices stated in the contract, which is the whole__
+// __point. A contract that bundles a machine at full price with three years of__
+// __service "free" has sold three years of service, and some of the machine's__
+// __price belongs to it and will be recognised over three years.__
 //
-// The split goes through kAcu.qmz in paise, so the allocated amounts sum to
-// the transaction price exactly. Rounding each share independently leaves a
-// few paise that have to go somewhere, and wherever they go is arbitrary and
-// unexplainable.
+// __The split goes through kAcu.qmz in paise, so the allocated amounts sum to__
+// __the transaction price exactly. Rounding each share independently leaves a__
+// __few paise that have to go somewhere, and wherever they go is arbitrary and__
+// __unexplainable.__
 //
-// Obligations whose standalone selling prices sum to zero are a தவறு: with no
-// basis there is no allocation, and dividing equally would be an invention.
+// __Obligations whose standalone selling prices sum to zero are a தவறு: with no__
+// __basis there is no allocation, and dividing equally would be an invention.__
 செயல் கடமைகளுக்கு_ஒதுக்கு(பரிமாற்றத்_தொகை, கடமைகள்) {
     (நீளம்(கடமைகள்) == 0) எனில் {
         திரும்பு தவறு("கடமைகள் இல்லை  (no performance obligations)");
@@ -234,7 +234,7 @@
     எடைகள் = [];
     எடைக்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_கடமை இல் கடமைகள் {
-        // Weights in paise as well, so the proportions are integers.
+        // __Weights in paise as well, so the proportions are integers.__
         இந்த_எடை = வட்டமிடு(ஒரு_கடமை["தனி_விற்பனை_மதிப்பு"] * 100, 0);
         எடைகள் = இணை(எடைகள், இந்த_எடை);
         எடைக்_கூட்டல் = எடைக்_கூட்டல் + இந்த_எடை;
@@ -263,9 +263,9 @@
 
 // ஒதுக்கியதன்_கூட்டல்(ஒதுக்கிய_கடமைகள்)
 //
-// What the allocation adds back to. Exists so a caller can assert it, because
-// an allocation that does not reconcile to the transaction price is the
-// failure this whole approach is designed to make impossible.
+// __What the allocation adds back to. Exists so a caller can assert it, because__
+// __an allocation that does not reconcile to the transaction price is the__
+// __failure this whole approach is designed to make impossible.__
 செயல் ஒதுக்கியதன்_கூட்டல்(ஒதுக்கிய_கடமைகள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_கடமை இல் ஒதுக்கிய_கடமைகள் {
@@ -276,18 +276,18 @@
 
 // எஞ்சிய_முறை(பரிமாற்றத்_தொகை, அறிந்த_விலைகள்)
 //
-// The residual approach: where one obligation's standalone selling price is
-// highly variable or uncertain, take the observable prices of the others and
-// give it what is left.
+// __The residual approach: where one obligation's standalone selling price is__
+// __highly variable or uncertain, take the observable prices of the others and__
+// __give it what is left.__
 //
-// Permitted only in those two cases, and it is not a general convenience. Used
-// where a price *is* observable it simply moves the whole discount onto one
-// obligation, which changes when revenue is recognised without changing
-// anything real.
+// __Permitted only in those two cases, and it is not a general convenience. Used__
+// __where a price *is* observable it simply moves the whole discount onto one__
+// __obligation, which changes when revenue is recognised without changing__
+// __anything real.__
 //
-// A residual of nothing or less is a தவறு: it means the observable prices
-// already exhaust the transaction price, and an obligation cannot be worth
-// nothing merely because the arithmetic ran out.
+// __A residual of nothing or less is a தவறு: it means the observable prices__
+// __already exhaust the transaction price, and an obligation cannot be worth__
+// __nothing merely because the arithmetic ran out.__
 செயல் எஞ்சிய_முறை(பரிமாற்றத்_தொகை, அறிந்த_விலைகள்) {
     அறிந்தவற்றின்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_விலை இல் அறிந்த_விலைகள் {
@@ -303,16 +303,16 @@
 
 // தள்ளுபடியை_ஒதுக்கு(தள்ளுபடித்_தொகை, கடமைகள், குறிப்பிட்ட_குறிகள்)
 //
-// A discount is allocated **proportionately to every obligation**, unless
-// there is observable evidence that it belongs to only some of them — in which
-// case it is allocated to those.
+// __A discount is allocated **proportionately to every obligation**, unless__
+// __there is observable evidence that it belongs to only some of them — in which__
+// __case it is allocated to those.__
 //
-// Proportionate is the default and the exception has to be evidenced. Putting
-// a discount where it is convenient is how revenue is moved between periods
-// without touching a single real term of the contract.
+// __Proportionate is the default and the exception has to be evidenced. Putting__
+// __a discount where it is convenient is how revenue is moved between periods__
+// __without touching a single real term of the contract.__
 //
-// குறிப்பிட்ட_குறிகள் is the list of obligation codes the evidence points to;
-// an empty list means proportionate across all.
+// __குறிப்பிட்ட_குறிகள் is the list of obligation codes the evidence points to;__
+// __an empty list means proportionate across all.__
 செயல் தள்ளுபடியை_ஒதுக்கு(தள்ளுபடித்_தொகை, கடமைகள், குறிப்பிட்ட_குறிகள்) {
     இலக்குகள் = [];
     ஒவ்வொரு ஒரு_கடமை இல் கடமைகள் {

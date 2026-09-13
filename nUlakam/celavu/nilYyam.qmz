@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/nilYyam.qmz — நிலையம் (cost centres, objects and elements)
+// __nUlakam/celavu/nilYyam.qmz — நிலையம் (cost centres, objects and elements)__
 //
-// Financial accounting asks what was spent. Cost accounting asks where it went
-// and what it attached to, and that needs two structures the ledger does not
-// have: a place that incurs cost (a cost centre) and a thing that carries it
-// (a cost object). Everything else in this directory hangs off them.
+// __Financial accounting asks what was spent. Cost accounting asks where it went__
+// __and what it attached to, and that needs two structures the ledger does not__
+// __have: a place that incurs cost (a cost centre) and a thing that carries it__
+// __(a cost object). Everything else in this directory hangs off them.__
 //
-// Field and parameter names here are compound — நிலைய_வகை, கூறு_தொகை — because
-// செலவு, தொகை, விலை, அளவு and நிலை are all keywords in this language. A bare
-// keyword used as a field name is stored under its token name instead, so the
-// record you read back is not the one you wrote. Compounding is the fix, and
-// the same convention runs through kaNakkiyal/.
+// __Field and parameter names here are compound — நிலைய_வகை, கூறு_தொகை — because__
+// __செலவு, தொகை, விலை, அளவு and நிலை are all keywords in this language. A bare__
+// __keyword used as a field name is stored under its token name instead, so the__
+// __record you read back is not the one you wrote. Compounding is the fix, and__
+// __the same convention runs through kaNakkiyal/.__
 
-// --- What kind of place incurred it -------------------------------------
+// __--- What kind of place incurred it -------------------------------------__
 //
-// The three-way split matters because only the first absorbs cost into
-// product: service and administrative centres have their cost re-apportioned
-// onto production centres before absorption, never onto units directly.
+// __The three-way split matters because only the first absorbs cost into__
+// __product: service and administrative centres have their cost re-apportioned__
+// __onto production centres before absorption, never onto units directly.__
 செயல் வகை_உற்பத்தி()  { திரும்பு "உற்பத்தி"; }
 செயல் வகை_சேவைத்துறை() { திரும்பு "சேவை"; }
 செயல் வகை_நிர்வாகம்()  { திரும்பு "நிர்வாகம்"; }
@@ -29,7 +29,7 @@
     திரும்பு பொய்;
 }
 
-// உற்பத்தி_நிலையமா(நிலையம்) — does cost absorb into units here?
+// __உற்பத்தி_நிலையமா(நிலையம்) — does cost absorb into units here?__
 செயல் உற்பத்தி_நிலையமா(நிலையம்) {
     திரும்பு நிலையம்.நிலைய_வகை == "உற்பத்தி";
 }
@@ -65,14 +65,14 @@
     திரும்பு விடை_பட்டி;
 }
 
-// --- What carries it ----------------------------------------------------
+// __--- What carries it ----------------------------------------------------__
 
 // செலவுப்_பொருள்_ஆக்கு(பொருள்_குறி, பொருள்_பெயர், அலகுகள்)
 //
-// The cost object: a job, a batch, a process, a contract, a product line. The
-// unit count is held with it because per-unit cost is meaningless without it,
-// and a cost sheet that reports a unit cost against the wrong quantity is the
-// most common error in the whole discipline.
+// __The cost object: a job, a batch, a process, a contract, a product line. The__
+// __unit count is held with it because per-unit cost is meaningless without it,__
+// __and a cost sheet that reports a unit cost against the wrong quantity is the__
+// __most common error in the whole discipline.__
 செயல் செலவுப்_பொருள்_ஆக்கு(பொருள்_குறி, பொருள்_பெயர், அலகுகள்) {
     (அலகுகள் < 0) எனில் {
         திரும்பு தவறு("அலகுகள் எதிர்மறையாக இருக்க முடியாது");
@@ -84,17 +84,17 @@
     });
 }
 
-// --- The elements of cost -----------------------------------------------
+// __--- The elements of cost -----------------------------------------------__
 
 // கூறு_ஆக்கு(கூறு_பெயர், கூறு_தொகை, நேரடியா, மாறுபடுமா)
 //
-// Two independent classifications, and keeping them independent is the point.
-// Direct/indirect answers "can this be traced to the object?" and decides
-// whether it is absorbed or apportioned. Variable/fixed answers "does it move
-// with volume?" and decides whether it enters a contribution calculation.
-// Direct cost is usually variable and indirect usually fixed, but the pairs
-// are not the same question and a semi-variable element belongs to neither
-// cleanly — which is why மாறுபடுமா is a fraction, not a flag.
+// __Two independent classifications, and keeping them independent is the point.__
+// __Direct/indirect answers "can this be traced to the object?" and decides__
+// __whether it is absorbed or apportioned. Variable/fixed answers "does it move__
+// __with volume?" and decides whether it enters a contribution calculation.__
+// __Direct cost is usually variable and indirect usually fixed, but the pairs__
+// __are not the same question and a semi-variable element belongs to neither__
+// __cleanly — which is why மாறுபடுமா is a fraction, not a flag.__
 செயல் கூறு_ஆக்கு(கூறு_பெயர், கூறு_தொகை, நேரடியா, மாறுபடுமா) {
     திரும்பு {
         கூறு_பெயர்: கூறு_பெயர்,
@@ -128,11 +128,11 @@
     திரும்பு விடை_பட்டி;
 }
 
-// மாறும்_பகுதி(கூறுகள்) — the volume-sensitive rupees inside a mixed list
+// __மாறும்_பகுதி(கூறுகள்) — the volume-sensitive rupees inside a mixed list__
 //
-// A semi-variable element with மாறுபடுமா 0.6 contributes 60% of itself here
-// and 40% to நிலையான_பகுதி. Splitting a mixed list this way is what makes a
-// contribution figure computable from an absorption cost sheet.
+// __A semi-variable element with மாறுபடுமா 0.6 contributes 60% of itself here__
+// __and 40% to நிலையான_பகுதி. Splitting a mixed list this way is what makes a__
+// __contribution figure computable from an absorption cost sheet.__
 செயல் மாறும்_பகுதி(கூறுகள்) {
     மாறும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {

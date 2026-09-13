@@ -1,48 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/nErativari/kazivukaL.qmz — கழிவுகள், Chapter VI-A
+// __nUlakam/nErativari/kazivukaL.qmz — கழிவுகள், Chapter VI-A__
 //
-// Gross total income comes out of varumAZam.qmz. Total income is what is left
-// after this, and the gap between them is where most of the arithmetic errors
-// in an Indian return live. Not because the sums are hard — they are
-// subtractions — but because the deductions interact, and each interaction is
-// a rule that a spreadsheet does not know about.
+// __Gross total income comes out of varumAZam.qmz. Total income is what is left__
+// __after this, and the gap between them is where most of the arithmetic errors__
+// __in an Indian return live. Not because the sums are hard — they are__
+// __subtractions — but because the deductions interact, and each interaction is__
+// __a rule that a spreadsheet does not know about.__
 //
-// Four shapes cover nearly all of Chapter VI-A, and telling them apart is the
-// whole job:
+// __Four shapes cover nearly all of Chapter VI-A, and telling them apart is the__
+// __whole job:__
 //
-//   A **ceiling**: the lower of what was spent and a stated maximum.
-//   An **aggregate ceiling**: several sections capped *together*, so using one
-//     leaves less of the others. Claiming each to its own limit is the single
-//     commonest overstatement in the chapter.
-//   A section **outside** the aggregate, which looks identical in a rate table
-//     and behaves completely differently.
-//   A **qualifying amount**, where the deduction is a percentage of a figure
-//     that is itself capped by reference to income. Donations work this way,
-//     and the two steps do not commute.
+//   __A **ceiling**: the lower of what was spent and a stated maximum.__
+//   __An **aggregate ceiling**: several sections capped *together*, so using one__
+//     __leaves less of the others. Claiming each to its own limit is the single__
+//     __commonest overstatement in the chapter.__
+//   __A section **outside** the aggregate, which looks identical in a rate table__
+//     __and behaves completely differently.__
+//   __A **qualifying amount**, where the deduction is a percentage of a figure__
+//     __that is itself capped by reference to income. Donations work this way,__
+//     __and the two steps do not commute.__
 //
-// Over all of them sits one hard rule: total deductions cannot exceed the
-// income they are deducted from. Chapter VI-A cannot create a loss and cannot
-// be carried forward. Money spent on a deduction in a year with no income is
-// simply gone, which is worth knowing before December rather than in July.
+// __Over all of them sits one hard rule: total deductions cannot exceed the__
+// __income they are deducted from. Chapter VI-A cannot create a loss and cannot__
+// __be carried forward. Money spent on a deduction in a year with no income is__
+// __simply gone, which is worth knowing before December rather than in July.__
 //
-// Every ceiling, percentage and threshold is a parameter. Pass 0 for a ceiling
-// that does not exist.
+// __Every ceiling, percentage and threshold is a parameter. Pass 0 for a ceiling__
+// __that does not exist.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// ஒரு கழிவு — one deduction
+// __ஒரு கழிவு — one deduction__
 // =========================================================================
 //
 // கழிவு_ஆக்கு(பிரிவுக்_குறி, கோரிய_தொகை, உச்ச_வரம்பு, கூட்டுக்குள்ளா)
 //
-// கூட்டுக்குள்ளா says whether this section counts towards the aggregate
-// ceiling. It is a flag and not an inference, because the two cases are
-// indistinguishable from the outside: a contribution inside the aggregate and
-// an additional contribution outside it can be the same payment, to the same
-// fund, on the same day, claimed under two provisions.
+// __கூட்டுக்குள்ளா says whether this section counts towards the aggregate__
+// __ceiling. It is a flag and not an inference, because the two cases are__
+// __indistinguishable from the outside: a contribution inside the aggregate and__
+// __an additional contribution outside it can be the same payment, to the same__
+// __fund, on the same day, claimed under two provisions.__
 செயல் கழிவு_ஆக்கு(பிரிவுக்_குறி, கோரிய_தொகை, உச்ச_வரம்பு, கூட்டுக்குள்ளா) {
     திரும்பு {"பிரிவு": பிரிவுக்_குறி,
               "கோரியது": வட்டமிடு(கோரிய_தொகை, 2),
@@ -50,12 +50,12 @@
               "கூட்டுக்குள்ளா": கூட்டுக்குள்ளா};
 }
 
-// தனி_வரம்பு(ஒரு_கழிவு) — the section's own ceiling, applied
+// __தனி_வரம்பு(ஒரு_கழிவு) — the section's own ceiling, applied__
 //
-// A deduction is never more than what was actually paid, which is why the
-// claim is the other half of the comparison. A ceiling used as the deduction —
-// "the limit is a lakh and a half, so claim a lakh and a half" — is the
-// error this exists to make impossible.
+// __A deduction is never more than what was actually paid, which is why the__
+// __claim is the other half of the comparison. A ceiling used as the deduction —__
+// __"the limit is a lakh and a half, so claim a lakh and a half" — is the__
+// __error this exists to make impossible.__
 செயல் தனி_வரம்பு(ஒரு_கழிவு) {
     கோரியது = ஒரு_கழிவு["கோரியது"];
     (கோரியது <= 0) எனில் { திரும்பு 0; }
@@ -66,25 +66,25 @@
 }
 
 // =========================================================================
-// கூட்டு வரம்பு — the aggregate ceiling
+// __கூட்டு வரம்பு — the aggregate ceiling__
 // =========================================================================
 //
 // கூட்டுக்_கழிவுகள்(கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு)
 //
-// Sections inside the aggregate are first held to their own ceilings, then to
-// the shared one; sections outside it pass through untouched. Answers
+// __Sections inside the aggregate are first held to their own ceilings, then to__
+// __the shared one; sections outside it pass through untouched. Answers__
 // {"கூட்டுக்குள்", "கூட்டுக்கு_வெளியே", "மொத்தம்"}.
 //
-// Order is not a detail here. Applying the shared ceiling before the
-// individual ones lets a section that has already breached its own limit fill
-// the shared room with an amount it was never entitled to claim, and the total
-// comes out right while both components are wrong.
+// __Order is not a detail here. Applying the shared ceiling before the__
+// __individual ones lets a section that has already breached its own limit fill__
+// __the shared room with an amount it was never entitled to claim, and the total__
+// __comes out right while both components are wrong.__
 //
-// The pass-through for outside sections is the reason this function exists at
-// all rather than a plain sum. An additional retirement contribution stated as
-// "over and above" the aggregate is worth exactly as much as the aggregate
-// room it does not consume, and a library that pools everything silently
-// throws that away.
+// __The pass-through for outside sections is the reason this function exists at__
+// __all rather than a plain sum. An additional retirement contribution stated as__
+// __"over and above" the aggregate is worth exactly as much as the aggregate__
+// __room it does not consume, and a library that pools everything silently__
+// __throws that away.__
 செயல் கூட்டுக்_கழிவுகள்(கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு) {
     உள்ளே_கூட்டல் = 0;
     வெளியே_கூட்டல் = 0;
@@ -109,9 +109,9 @@
 
 // மீதமுள்ள_இடம்(கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு)
 //
-// How much of the aggregate ceiling is still unused. The one number a person
-// deciding what to do with a year-end bonus actually wants, and the one a
-// return never shows because by then the year is over.
+// __How much of the aggregate ceiling is still unused. The one number a person__
+// __deciding what to do with a year-end bonus actually wants, and the one a__
+// __return never shows because by then the year is over.__
 செயல் மீதமுள்ள_இடம்(கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு) {
     (கூட்டு_உச்ச_வரம்பு <= 0) எனில் { திரும்பு 0; }
     பயன்பட்டது = கூட்டுக்_கழிவுகள்(கழிவுப்_பட்டியல்,
@@ -121,24 +121,24 @@
 }
 
 // =========================================================================
-// நன்கொடை — a qualifying amount
+// __நன்கொடை — a qualifying amount__
 // =========================================================================
 //
 // நன்கொடைக்_கழிவு(நன்கொடைத்_தொகை, தகுதி_விகிதம், சரிசெய்த_வருமானம்,
 //                   எல்லை_விகிதம்)
 //
-// Donations to most funds are deductible at a percentage — fifty or a hundred
-// — of a **qualifying amount**, and the qualifying amount is itself limited to
-// a percentage of adjusted gross total income. Two caps and a percentage, in
-// one order only:
+// __Donations to most funds are deductible at a percentage — fifty or a hundred__
+// __— of a **qualifying amount**, and the qualifying amount is itself limited to__
+// __a percentage of adjusted gross total income. Two caps and a percentage, in__
+// __one order only:__
 //
-//   qualifying = min(donation, எல்லை_விகிதம்% of adjusted GTI)
-//   deduction  = தகுதி_விகிதம்% of qualifying
+//   __qualifying = min(donation, எல்லை_விகிதம்% of adjusted GTI)__
+//   __deduction  = தகுதி_விகிதம்% of qualifying__
 //
-// Reversing them — taking half the donation and then capping — gives a larger
-// answer whenever the income limit bites, which is precisely the case where
-// anyone bothers to check. Some funds have no income limit at all; pass 0 as
-// எல்லை_விகிதம் for those.
+// __Reversing them — taking half the donation and then capping — gives a larger__
+// __answer whenever the income limit bites, which is precisely the case where__
+// __anyone bothers to check. Some funds have no income limit at all; pass 0 as__
+// __எல்லை_விகிதம் for those.__
 செயல் நன்கொடைக்_கழிவு(நன்கொடைத்_தொகை, தகுதி_விகிதம், சரிசெய்த_வருமானம்,
                         எல்லை_விகிதம்) {
     (நன்கொடைத்_தொகை <= 0) எனில் { திரும்பு 0; }
@@ -153,20 +153,20 @@
 }
 
 // =========================================================================
-// மொத்த வருமானம் — total income
+// __மொத்த வருமானம் — total income__
 // =========================================================================
 //
 // கழிவுக்குரிய_வருமானம்(மொத்த_வருமானத்_தொகை, சிறப்பு_வீத_வருமானம்)
 //
-// Chapter VI-A cannot be set against income charged at a special rate. Capital
-// gains taxed concessionally are in gross total income but are not available
-// for these deductions, so the figure the deductions are limited by is gross
-// total income *less* that income.
+// __Chapter VI-A cannot be set against income charged at a special rate. Capital__
+// __gains taxed concessionally are in gross total income but are not available__
+// __for these deductions, so the figure the deductions are limited by is gross__
+// __total income *less* that income.__
 //
-// Ignoring this does not change the deduction in most returns and changes it
-// completely in the ones where it matters: an assessee whose income is almost
-// entirely long-term capital gain has a large gross total income and almost no
-// room for Chapter VI-A at all.
+// __Ignoring this does not change the deduction in most returns and changes it__
+// __completely in the ones where it matters: an assessee whose income is almost__
+// __entirely long-term capital gain has a large gross total income and almost no__
+// __room for Chapter VI-A at all.__
 செயல் கழிவுக்குரிய_வருமானம்(மொத்த_வருமானத்_தொகை, சிறப்பு_வீத_வருமானம்) {
     விடை = மொத்த_வருமானத்_தொகை - சிறப்பு_வீத_வருமானம்;
     (விடை < 0) எனில் { திரும்பு 0; }
@@ -175,13 +175,13 @@
 
 // அனுமதிக்கத்தக்க_கழிவு(கோரிய_மொத்தம், கழிவுக்குரியது)
 //
-// Section 80A(2), and it is absolute: the aggregate of Chapter VI-A deductions
-// shall not exceed the gross total income. Deductions cannot produce a loss,
-// and the excess is not carried forward — it is lost.
+// __Section 80A(2), and it is absolute: the aggregate of Chapter VI-A deductions__
+// __shall not exceed the gross total income. Deductions cannot produce a loss,__
+// __and the excess is not carried forward — it is lost.__
 //
-// This is the rule that makes a deduction worthless in a bad year, and the
-// reason a contribution made to save tax on income that then did not arrive
-// saves nothing at all.
+// __This is the rule that makes a deduction worthless in a bad year, and the__
+// __reason a contribution made to save tax on income that then did not arrive__
+// __saves nothing at all.__
 செயல் அனுமதிக்கத்தக்க_கழிவு(கோரிய_மொத்தம், கழிவுக்குரியது) {
     (கோரிய_மொத்தம் <= 0) எனில் { திரும்பு 0; }
     (கோரிய_மொத்தம் > கழிவுக்குரியது) எனில் { திரும்பு வட்டமிடு(கழிவுக்குரியது, 2); }
@@ -190,9 +190,9 @@
 
 // இழந்த_கழிவு(கோரிய_மொத்தம், கழிவுக்குரியது)
 //
-// What 80A(2) took away. Nothing in the return shows it, and it is the number
-// that tells someone their contribution did no work this year and will do none
-// in any other.
+// __What 80A(2) took away. Nothing in the return shows it, and it is the number__
+// __that tells someone their contribution did no work this year and will do none__
+// __in any other.__
 செயல் இழந்த_கழிவு(கோரிய_மொத்தம், கழிவுக்குரியது) {
     அனுமதித்தது = அனுமதிக்கத்தக்க_கழிவு(கோரிய_மொத்தம், கழிவுக்குரியது);
     (கோரிய_மொத்தம் <= அனுமதித்தது) எனில் { திரும்பு 0; }
@@ -201,13 +201,13 @@
 
 // வருமானத்தை_வட்டமிடு(வருமானத்_தொகை)
 //
-// Section 288A: total income is rounded **down** to the nearest ten rupees
-// before tax is computed. Not to the nearest — down.
+// __Section 288A: total income is rounded **down** to the nearest ten rupees__
+// __before tax is computed. Not to the nearest — down.__
 //
-// It is worth at most nine rupees and it is not optional. A computation that
-// skips it disagrees with the department's by a few rupees on most returns,
-// and a few rupees of difference is enough to generate a demand notice, which
-// costs very much more than nine rupees to answer.
+// __It is worth at most nine rupees and it is not optional. A computation that__
+// __skips it disagrees with the department's by a few rupees on most returns,__
+// __and a few rupees of difference is enough to generate a demand notice, which__
+// __costs very much more than nine rupees to answer.__
 செயல் வருமானத்தை_வட்டமிடு(வருமானத்_தொகை) {
     (வருமானத்_தொகை <= 0) எனில் { திரும்பு 0; }
     திரும்பு தரை(வருமானத்_தொகை / 10) * 10;
@@ -217,12 +217,12 @@
 //                             கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு,
 //                             பிற_கழிவுகள்)
 //
-// The whole step in one call: gross total income in, total income out, with
-// the workings kept so they can be shown.
+// __The whole step in one call: gross total income in, total income out, with__
+// __the workings kept so they can be shown.__
 //
-// பிற_கழிவுகள் is the total of deductions computed elsewhere — donations, and
-// anything whose shape is not a simple ceiling. They are added to the capped
-// aggregate and the lot is then held to 80A(2).
+// __பிற_கழிவுகள் is the total of deductions computed elsewhere — donations, and__
+// __anything whose shape is not a simple ceiling. They are added to the capped__
+// __aggregate and the lot is then held to 80A(2).__
 செயல் மொத்த_வரிக்குரிய_வருமானம்(மொத்த_வருமானத்_தொகை, சிறப்பு_வீத_வருமானம்,
                                    கழிவுப்_பட்டியல், கூட்டு_உச்ச_வரம்பு,
                                    பிற_கழிவுகள்) {

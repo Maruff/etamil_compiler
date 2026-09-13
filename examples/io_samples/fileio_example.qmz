@@ -1,10 +1,10 @@
-// பரிவர்த்தனை கோப்பு — writing and counting CSV rows
+// __பரிவர்த்தனை கோப்பு — writing and counting CSV rows__
 //
-// Shows the file and CSV statements together. தரவுரை_படி returns the number
-// of data rows, excluding the header. Self-contained: it creates the file it
-// reads, so it runs from a clean checkout.
+// __Shows the file and CSV statements together. தரவுரை_படி returns the number__
+// __of data rows, excluding the header. Self-contained: it creates the file it__
+// __reads, so it runs from a clean checkout.__
 
-// Build a transactions file
+// __Build a transactions file__
 கோப்பு_திற "transactions.csv", "write";
 தரவுரை_எழுது "transactions.csv", "நாள்,விவரம்,தொகை";
 தரவுரை_எழுது "transactions.csv", "2026-04-01,வாடகை,25000";
@@ -12,12 +12,12 @@
 தரவுரை_எழுது "transactions.csv", "2026-04-11,மின்கட்டணம்,4200";
 கோப்பு_மூடு "transactions.csv";
 
-// Count the data rows
+// __Count the data rows__
 எண் எத்தனை;
 தரவுரை_படி "transactions.csv", எத்தனை;
 அச்சு "பரிவர்த்தனைகள்: " & எத்தனை;
 
-// Read the whole file back as text
+// __Read the whole file back as text__
 கோப்பு_படி "transactions.csv", உள்ளடக்கம்;
 அச்சு "";
 அச்சு உள்ளடக்கம்;

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/aRikkYkaL.qmz — அறிக்கைகள் (financial statements)
+// __nUlakam/kaNakkiyal/aRikkYkaL.qmz — அறிக்கைகள் (financial statements)__
 //
-// Every figure here is derived from the ledger. Nothing is stored twice, so
-// a statement cannot disagree with the postings it came from.
+// __Every figure here is derived from the ledger. Nothing is stored twice, so__
+// __a statement cannot disagree with the postings it came from.__
 
 இறக்கு "pErEtu.qmz";
 இறக்கு "kaNakkukaL.qmz";
@@ -11,11 +11,11 @@
 இறக்கு "../paNam.qmz";
 இறக்கு "../col.qmz";
 
-// --- இருப்பாய்வு (trial balance) ---
+// __--- இருப்பாய்வு (trial balance) ---__
 //
-// Totals every account's raw debits and credits. The two columns must
-// agree; if they do not, the ledger has been damaged, since posting refuses
-// anything unbalanced.
+// __Totals every account's raw debits and credits. The two columns must__
+// __agree; if they do not, the ledger has been damaged, since posting refuses__
+// __anything unbalanced.__
 செயல் இருப்பாய்வு(பேரேடு, கணக்குகள்) {
     வரிகள் = [];
     மொத்த_பற்று_நிரல் = 0;
@@ -56,7 +56,7 @@
     };
 }
 
-// --- வருமான அறிக்கை (income statement) ---
+// __--- வருமான அறிக்கை (income statement) ---__
 செயல் வருமான_அறிக்கை(பேரேடு, கணக்குகள்) {
     மொத்த_வருவாய் = 0;
     மொத்த_செலவு = 0;
@@ -90,10 +90,10 @@
     };
 }
 
-// --- இருப்புநிலை (balance sheet) ---
+// __--- இருப்புநிலை (balance sheet) ---__
 //
-// Retained earnings are the net profit carried in from the income
-// statement, which is what makes the sheet balance.
+// __Retained earnings are the net profit carried in from the income__
+// __statement, which is what makes the sheet balance.__
 செயல் இருப்புநிலை(பேரேடு, கணக்குகள்) {
     மொத்த_சொத்து = 0;
     மொத்த_பொறுப்பு = 0;
@@ -139,11 +139,11 @@
     };
 }
 
-// --- Period-aware entry points ---
+// __--- Period-aware entry points ---__
 //
-// An income statement covers a period; a balance sheet is cumulative as at a
-// date. Calling the plain forms above runs over the whole ledger, which is
-// only right for a first year with no closing.
+// __An income statement covers a period; a balance sheet is cumulative as at a__
+// __date. Calling the plain forms above runs over the whole ledger, which is__
+// __only right for a first year with no closing.__
 
 // கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்)
 செயல் கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்) {
@@ -152,10 +152,10 @@
     திரும்பு அறிக்கை;
 }
 
-// நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், நாள்) — as at a date
+// __நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், நாள்) — as at a date__
 //
-// Retained earnings must accumulate from the beginning of time, not from the
-// start of a period, so the sheet filters only by the closing date.
+// __Retained earnings must accumulate from the beginning of time, not from the__
+// __start of a period, so the sheet filters only by the closing date.__
 செயல் நாள்_இருப்புநிலை(பேரேடு, கணக்குகள், வரம்பு_நாள்) {
     அறிக்கை = இருப்புநிலை(வரை_வடிகட்டு(பேரேடு, வரம்பு_நாள்), கணக்குகள்);
     அறிக்கை.நாள் = வரம்பு_நாள்;
@@ -167,10 +167,10 @@
     திரும்பு இருப்பாய்வு(வரை_வடிகட்டு(பேரேடு, வரம்பு_நாள்), கணக்குகள்);
 }
 
-// --- கணக்கு அறிக்கை (account statement) ---
+// __--- கணக்கு அறிக்கை (account statement) ---__
 //
-// Every line touching one account, with a running balance — what a customer
-// or supplier is sent when they query their account.
+// __Every line touching one account, with a running balance — what a customer__
+// __or supplier is sent when they query their account.__
 செயல் கணக்கு_அறிக்கை(பேரேடு, கணக்கு_குறி, கணக்கு_வகை) {
     வரிகள் = [];
     ஓட்டம் = 0;
@@ -193,10 +193,10 @@
     திரும்பு {வரிகள்: வரிகள், இறுதி_இருப்பு: ஓட்டம்};
 }
 
-// --- பணப்புழக்கம் (cash flow, direct method) ---
+// __--- பணப்புழக்கம் (cash flow, direct method) ---__
 //
-// Movement on the cash and bank accounts over a period, split by whether the
-// other side of each entry was an operating account or not.
+// __Movement on the cash and bank accounts over a period, split by whether the__
+// __other side of each entry was an operating account or not.__
 செயல் பணப்புழக்க_அறிக்கை(பேரேடு, ரொக்க_கணக்குகள், காலம்) {
     உள்ளே = 0;
     வெளியே = 0;
@@ -211,7 +211,7 @@
         }
     }
 
-    // Opening cash is everything before the period began.
+    // __Opening cash is everything before the period began.__
     தொடக்கம் = 0;
     ஒவ்வொரு குறி இல் ரொக்க_கணக்குகள் {
         ஒவ்வொரு பதிவு இல் பேரேடு {
@@ -230,7 +230,7 @@
     };
 }
 
-// --- Printing ---
+// __--- Printing ---__
 
 செயல் இருப்பாய்வு_அச்சிடு(அறிக்கை) {
     அச்சு "இருப்பாய்வு";

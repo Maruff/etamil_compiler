@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/celavu/pawkaLippu.qmz — பங்களிப்பு (marginal costing and CVP)
+// __nUlakam/celavu/pawkaLippu.qmz — பங்களிப்பு (marginal costing and CVP)__
 //
-// Marginal costing asks one question the absorption cost sheet cannot: what
-// does the next unit add? Fixed cost is period cost here, never a per-unit
-// figure, so contribution — price less variable cost — is what covers it.
+// __Marginal costing asks one question the absorption cost sheet cannot: what__
+// __does the next unit add? Fixed cost is period cost here, never a per-unit__
+// __figure, so contribution — price less variable cost — is what covers it.__
 //
-// Every ratio on this page is a whole-number percentage, as everywhere else
-// in nUlakam: 40 means forty per cent. The language has a % literal and 40%
-// is 0.40, so passing 40% to these functions gives an answer a hundred times
-// too small and nothing complains. கணிதம்/சதவீதம் divides by 100 itself.
+// __Every ratio on this page is a whole-number percentage, as everywhere else__
+// __in nUlakam: 40 means forty per cent. The language has a % literal and 40%__
+// __is 0.40, so passing 40% to these functions gives an answer a hundred times__
+// __too small and nothing complains. கணிதம்/சதவீதம் divides by 100 itself.__
 //
-// Break-even divides by contribution, so a product that contributes nothing
-// has no break-even point rather than an infinite one. Those return தவறு.
+// __Break-even divides by contribution, so a product that contributes nothing__
+// __has no break-even point rather than an infinite one. Those return தவறு.__
 
 இறக்கு "../kaNiqam.qmz";
 
-// --- Contribution -------------------------------------------------------
+// __--- Contribution -------------------------------------------------------__
 
-// அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு) — contribution per unit
+// __அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு) — contribution per unit__
 செயல் அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு) {
     திரும்பு விற்பனை_விலை - மாறும்_செலவு;
 }
@@ -30,20 +30,20 @@
 
 // லாபம்(விற்பனை_விலை, மாறும்_செலவு, அலகுகள், நிலையான_செலவு)
 //
-// Contribution less fixed cost. Stated as a function because the order is the
-// whole of marginal costing: fixed cost is deducted once, from the total, and
-// never spread across units.
+// __Contribution less fixed cost. Stated as a function because the order is the__
+// __whole of marginal costing: fixed cost is deducted once, from the total, and__
+// __never spread across units.__
 செயல் லாபம்(விற்பனை_விலை, மாறும்_செலவு, அலகுகள், நிலையான_செலவு) {
     திரும்பு மொத்த_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, அலகுகள்) - நிலையான_செலவு;
 }
 
-// --- The P/V ratio ------------------------------------------------------
+// __--- The P/V ratio ------------------------------------------------------__
 
-// பங்களிப்பு_விகிதம்(விற்பனை_விலை, மாறும்_செலவு) — contribution as % of price
+// __பங்களிப்பு_விகிதம்(விற்பனை_விலை, மாறும்_செலவு) — contribution as % of price__
 //
-// The profit-volume ratio. Because it is a ratio of one unit's figures it is
-// also the ratio of any quantity of them, which is what lets break-even be
-// computed in rupees without knowing the unit count.
+// __The profit-volume ratio. Because it is a ratio of one unit's figures it is__
+// __also the ratio of any quantity of them, which is what lets break-even be__
+// __computed in rupees without knowing the unit count.__
 செயல் பங்களிப்பு_விகிதம்(விற்பனை_விலை, மாறும்_செலவு) {
     (விற்பனை_விலை == 0) எனில் {
         திரும்பு தவறு("விலை பூஜ்யம்: பங்களிப்பு விகிதம் இல்லை");
@@ -51,7 +51,7 @@
     திரும்பு சரி(அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு) / விற்பனை_விலை * 100);
 }
 
-// --- Break-even ---------------------------------------------------------
+// __--- Break-even ---------------------------------------------------------__
 
 // சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு)
 செயல் சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
@@ -62,19 +62,19 @@
     திரும்பு சரி(நிலையான_செலவு / பங்களிப்பு);
 }
 
-// சமநிலை_மதிப்பு(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) — break-even in rupees
+// __சமநிலை_மதிப்பு(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) — break-even in rupees__
 செயல் சமநிலை_மதிப்பு(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
     விடை = சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு);
     (தவறா(விடை)) எனில் { திரும்பு விடை; }
     திரும்பு சரி(மதிப்பு(விடை) * விற்பனை_விலை);
 }
 
-// --- Margin of safety ---------------------------------------------------
+// __--- Margin of safety ---------------------------------------------------__
 
 // பாதுகாப்பு_வரம்பு(அலகுகள், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு)
 //
-// How far sales can fall before the profit goes. Negative when the plan is
-// already below break-even, which is information rather than an error.
+// __How far sales can fall before the profit goes. Negative when the plan is__
+// __already below break-even, which is information rather than an error.__
 செயல் பாதுகாப்பு_வரம்பு(அலகுகள், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
     சமநிலை = சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு);
     (தவறா(சமநிலை)) எனில் { திரும்பு சமநிலை; }
@@ -91,13 +91,13 @@
     திரும்பு சரி(மதிப்பு(பாதுகாப்பு) / அலகுகள் * 100);
 }
 
-// --- Planning backwards from a target -----------------------------------
+// __--- Planning backwards from a target -----------------------------------__
 
 // இலக்கு_அலகுகள்(இலக்கு_லாபம், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு)
 //
-// The question a costing department is actually asked: how many must we sell
-// to earn this? Fixed cost and target profit are recovered from the same
-// contribution, so they add.
+// __The question a costing department is actually asked: how many must we sell__
+// __to earn this? Fixed cost and target profit are recovered from the same__
+// __contribution, so they add.__
 செயல் இலக்கு_அலகுகள்(இலக்கு_லாபம், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
     பங்களிப்பு = அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு);
     (பங்களிப்பு <= 0) எனில் {
@@ -106,15 +106,15 @@
     திரும்பு சரி((நிலையான_செலவு + இலக்கு_லாபம்) / பங்களிப்பு);
 }
 
-// --- Choosing between products under a limit ----------------------------
+// __--- Choosing between products under a limit ----------------------------__
 
 // அலகு_வளத்திற்கு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, வள_அலகுகள்)
 //
-// Contribution per unit of the scarce resource, which is the ranking rule when
-// something other than demand is the constraint — machine hours, a key
-// material, a licence. Ranking by contribution per *product* is the standard
-// mistake; it is right only when every product consumes the constraint
-// equally.
+// __Contribution per unit of the scarce resource, which is the ranking rule when__
+// __something other than demand is the constraint — machine hours, a key__
+// __material, a licence. Ranking by contribution per *product* is the standard__
+// __mistake; it is right only when every product consumes the constraint__
+// __equally.__
 செயல் அலகு_வளத்திற்கு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, வள_அலகுகள்) {
     (வள_அலகுகள் <= 0) எனில் {
         திரும்பு தவறு("வள அலகுகள் பூஜ்யம்: தரவரிசை இல்லை");

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// நாட்காட்டி_சோதனை — tests for the calendar, written in eTamil
+// __நாட்காட்டி_சோதனை — tests for the calendar, written in eTamil__
 //
-// Run it like any other program:  etamil --vm nUlakam/nAtkAtti/nAtkAtti_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/nAtkAtti/nAtkAtti_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// The dates are real and the weekdays are the true ones. In 2026, 2 March is a
-// Monday, 31 January and 1 August are Saturdays, and 31 May is a Sunday; 2024
-// is a leap year and 2100 is not. Every expected value below was computed from
-// the calendar rather than from the code.
+// __The dates are real and the weekdays are the true ones. In 2026, 2 March is a__
+// __Monday, 31 January and 1 August are Saturdays, and 31 May is a Sunday; 2024__
+// __is a leap year and 2100 is not. Every expected value below was computed from__
+// __the calendar rather than from the code.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -18,15 +18,15 @@
 ஓட்டம் = சோதனை_தொடக்கம்("நாட்காட்டி — the calendar");
 
 // =========================================================================
-// செல்லுபடி — validity
+// __செல்லுபடி — validity__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நாள்_செல்லுபடியா("2026-03-14"), "a real date is valid");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நாள்_செல்லுபடியா("2024-02-29"),
                   "29 February exists in a leap year");
 
-// The one the host gets wrong on its own: it accepts 2026-02-31 and answers
-// 2026-03-03. The round trip is what catches it.
+// __The one the host gets wrong on its own: it accepts 2026-02-31 and answers__
+// __2026-03-03. The round trip is what catches it.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நாள்_செல்லுபடியா("2026-02-31"),
                   "31 February is refused, though the host would roll it to 3 March");
 ஓட்டம் = சமம்(ஓட்டம், நாள்_கூட்டு("2026-02-31", 0), "2026-03-03",
@@ -36,8 +36,8 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நாள்_செல்லுபடியா("2026-04-31"),
                   "nor 31 April");
 
-// Shape failures never reach the host, which would stop the program rather
-// than answer.
+// __Shape failures never reach the host, which would stop the program rather__
+// __than answer.__
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நாள்_செல்லுபடியா("2026-13-01"),
                   "a thirteenth month is refused here, not raised as an error");
 ஓட்டம் = உறுதிசெய்(ஓட்டம், இல்லை நாள்_செல்லுபடியா("2026-00-10"),
@@ -65,7 +65,7 @@
                   "and refuses a day the month does not have");
 
 // =========================================================================
-// கூறுகள் — the parts
+// __கூறுகள் — the parts__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், ஆண்டைப்_பெறு("2026-03-14"), 2026, "the year");
@@ -74,7 +74,7 @@
               "the day, with the leading zero gone");
 
 // =========================================================================
-// நெட்டாண்டு — leap years
+// __நெட்டாண்டு — leap years__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், நெட்டாண்டா(2024), "2024 is divisible by four");
@@ -100,7 +100,7 @@
                   "but not in 2024, when the month has one more day");
 
 // =========================================================================
-// மாதங்களைக் கூட்டுதல் — the clamping rule
+// __மாதங்களைக் கூட்டுதல் — the clamping rule__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், மாதங்களைக்_கூட்டு("2026-01-31", 1), "2026-02-28",
@@ -117,8 +117,8 @@
 ஓட்டம் = சமம்(ஓட்டம், மாதங்களைக்_கூட்டு("2026-11-30", 2), "2027-01-30",
               "and forwards");
 
-// Clamping does not reverse, and a schedule built by chaining drifts. This is
-// the reason மாதங்களைக்_கூட்டு says to count from the original.
+// __Clamping does not reverse, and a schedule built by chaining drifts. This is__
+// __the reason மாதங்களைக்_கூட்டு says to count from the original.__
 சங்கிலி = மாதங்களைக்_கூட்டு(மாதங்களைக்_கூட்டு("2026-01-31", 1), 1);
 ஓட்டம் = சமம்(ஓட்டம், சங்கிலி, "2026-03-28",
               "adding one month twice gives 28 March — the drift that "
@@ -132,7 +132,7 @@
               "and four years later the day exists again");
 
 // =========================================================================
-// இடைவெளிகள் — completed and part months
+// __இடைவெளிகள் — completed and part months__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், முடிந்த_மாதங்கள்("2026-01-01", "2026-03-01"), 2,
@@ -161,7 +161,7 @@
 ஓட்டம் = சமம்(ஓட்டம், பகுதி_மாதங்கள்("2026-02-01", "2026-02-02"), 1,
               "and one day is one");
 
-// Where days/30 and the calendar disagree — the reason this module exists.
+// __Where days/30 and the calendar disagree — the reason this module exists.__
 ஓட்டம் = சமம்(ஓட்டம், பகுதி_மாதங்கள்("2026-01-01", "2026-02-01"), 1,
               "January to February is one calendar month");
 ஓட்டம் = சமம்(ஓட்டம், மேல்(நாள்_வேறுபாடு("2026-01-01", "2026-02-01") / 30), 2,
@@ -173,7 +173,7 @@
               & "every year, always against the assessee");
 
 // =========================================================================
-// வாரநாள் — the day of the week
+// __வாரநாள் — the day of the week__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், வாரநாள்("1970-01-01"), 4,
@@ -189,7 +189,7 @@
               "a number that is not a weekday names nothing");
 
 // =========================================================================
-// நிதியாண்டு — the financial year
+// __நிதியாண்டு — the financial year__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், நிதியாண்டின்_தொடக்க_ஆண்டு("2026-03-14", 4), 2025,
@@ -213,10 +213,10 @@
               "and so is the later");
 
 // =========================================================================
-// வேலை நாட்கள் — working days
+// __வேலை நாட்கள் — working days__
 // =========================================================================
 //
-// A five-day week with one holiday: Thursday 5 March 2026.
+// __A five-day week with one holiday: Thursday 5 March 2026.__
 
 நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 6], ["2026-03-05"]);
 
@@ -238,7 +238,7 @@
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(முந்தைய_வேலை_நாள்("2026-03-09", நாட்காட்டி)),
               "2026-03-06", "backwards from Monday is Friday");
 
-// "The next working day" and "this day or the next" are different questions.
+// __"The next working day" and "this day or the next" are different questions.__
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(அடுத்த_வேலை_நாள்("2026-03-02", நாட்காட்டி)),
               "2026-03-03", "the next working day after a Monday is Tuesday");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(நகர்த்தி_வேலை_நாள்("2026-03-02", நாட்காட்டி)),
@@ -263,7 +263,7 @@
               "a backwards range is zero rather than negative");
 
 // =========================================================================
-// அட்டவணை — duration to dates
+// __அட்டவணை — duration to dates__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(முடிவு_நாள்("2026-03-02", 1, நாட்காட்டி)),
@@ -277,8 +277,8 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், தவறா(முடிவு_நாள்("2026-03-02", 0, நாட்காட்டி)),
                   "a duration of nothing is refused");
 
-// Adding the full duration instead of duration − 1 is the classic scheduling
-// error, and it makes every activity a day too long.
+// __Adding the full duration instead of duration − 1 is the classic scheduling__
+// __error, and it makes every activity a day too long.__
 ஓட்டம் = வேறுபடு(ஓட்டம், மதிப்பு(முடிவு_நாள்("2026-03-02", 10, நாட்காட்டி)),
                  மதிப்பு(வேலை_நாட்களைக்_கூட்டு("2026-03-02", 10, நாட்காட்டி)),
                  "which is one working day later than the correct finish");
@@ -293,10 +293,10 @@
               & "Gantt chart shows and a duration does not");
 
 // =========================================================================
-// உருட்டல் மரபுகள் — rolling conventions
+// __உருட்டல் மரபுகள் — rolling conventions__
 // =========================================================================
 //
-// 31 May 2026 is a Sunday, and 1 August 2026 is a Saturday.
+// __31 May 2026 is a Sunday, and 1 August 2026 is a Saturday.__
 
 வங்கி_நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 6], []);
 
@@ -320,7 +320,7 @@
                   "an unknown convention is refused rather than guessed");
 
 // =========================================================================
-// தவறான நாட்காட்டி — a calendar that cannot work
+// __தவறான நாட்காட்டி — a calendar that cannot work__
 // =========================================================================
 
 இயலாத_நாட்காட்டி = நாட்காட்டி_ஆக்கு([0, 1, 2, 3, 4, 5, 6], []);
@@ -333,7 +333,7 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், வேலை_வாரம்_உள்ளதா(வங்கி_நாட்காட்டி),
                   "an ordinary five-day week has one");
 
-// A six-day week, because the weekend is not universal.
+// __A six-day week, because the weekend is not universal.__
 ஆலை = நாட்காட்டி_ஆக்கு([0], []);
 ஓட்டம் = உறுதிசெய்(ஓட்டம், வேலை_நாளா("2026-03-07", ஆலை),
                   "a factory working Saturdays treats 7 March as a working day");

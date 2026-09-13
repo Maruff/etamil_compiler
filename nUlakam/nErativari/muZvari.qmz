@@ -1,54 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/nErativari/muZvari.qmz — முன்வரி, advance tax and the interest for
-// getting it wrong
+// __nUlakam/nErativari/muZvari.qmz — முன்வரி, advance tax and the interest for__
+// __getting it wrong__
 //
-// Tax is due before the year it is charged on has finished. Four instalments,
-// each a cumulative percentage of the year's liability, estimated in advance —
-// which means estimated wrongly, because June does not know what March will
-// bring. The interest sections are the price of that, and they are designed so
-// that a reasonable estimate revised honestly costs very little and a
-// deliberate deferral costs a lot.
+// __Tax is due before the year it is charged on has finished. Four instalments,__
+// __each a cumulative percentage of the year's liability, estimated in advance —__
+// __which means estimated wrongly, because June does not know what March will__
+// __bring. The interest sections are the price of that, and they are designed so__
+// __that a reasonable estimate revised honestly costs very little and a__
+// __deliberate deferral costs a lot.__
 //
-// Three sections charge interest and they are constantly confused:
+// __Three sections charge interest and they are constantly confused:__
 //
-//   **234A** — the return was filed late. On the tax still unpaid, from the
-//     due date of filing to the date of filing.
-//   **234B** — not enough advance tax was paid at all: less than ninety per
-//     cent of the year's liability. From the 1st of April after the year ends
-//     to the date of assessment.
-//   **234C** — enough was paid in total, but not on time. Instalment by
-//     instalment, three months' interest on each of the first three
-//     shortfalls and one month on the last.
+//   __**234A** — the return was filed late. On the tax still unpaid, from the__
+//     __due date of filing to the date of filing.__
+//   __**234B** — not enough advance tax was paid at all: less than ninety per__
+//     __cent of the year's liability. From the 1st of April after the year ends__
+//     __to the date of assessment.__
+//   __**234C** — enough was paid in total, but not on time. Instalment by__
+//     __instalment, three months' interest on each of the first three__
+//     __shortfalls and one month on the last.__
 //
-// 234B and 234C are not alternatives and both can apply to the same year. One
-// asks whether enough arrived; the other asks whether it arrived when it was
-// supposed to.
+// __234B and 234C are not alternatives and both can apply to the same year. One__
+// __asks whether enough arrived; the other asks whether it arrived when it was__
+// __supposed to.__
 //
-// Two arithmetic rules apply to all three and both are easy to miss:
+// __Two arithmetic rules apply to all three and both are easy to miss:__
 //
-//   Interest runs for a month "or part of a month", so one day into a new
-//     month is a whole month's interest.
-//   Rule 119A rounds the amount interest is computed on **down** to the
-//     nearest hundred rupees. Not to the nearest — down.
+//   __Interest runs for a month "or part of a month", so one day into a new__
+//     __month is a whole month's interest.__
+//   __Rule 119A rounds the amount interest is computed on **down** to the__
+//     __nearest hundred rupees. Not to the nearest — down.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// கடமை — who has to pay, and on what
+// __கடமை — who has to pay, and on what__
 // =========================================================================
 //
 // மதிப்பிட்ட_வரி(மொத்த_வரி, மூலப்_பிடித்தம், நிவாரணங்கள்)
 //
-// "Assessed tax" — the year's tax less tax already deducted at source and less
-// any relief. It is the base for every computation in this module, and using
-// the gross tax instead overstates all of them.
+// __"Assessed tax" — the year's tax less tax already deducted at source and less__
+// __any relief. It is the base for every computation in this module, and using__
+// __the gross tax instead overstates all of them.__
 //
-// Tax deducted at source is credited even if the deductor has not deposited
-// it. The payee's liability is reduced by what was deducted, and recovering an
-// undeposited deduction is the department's problem with the deductor, not the
-// payee's with the department.
+// __Tax deducted at source is credited even if the deductor has not deposited__
+// __it. The payee's liability is reduced by what was deducted, and recovering an__
+// __undeposited deduction is the department's problem with the deductor, not the__
+// __payee's with the department.__
 செயல் மதிப்பிட்ட_வரி(மொத்த_வரி, மூலப்_பிடித்தம், நிவாரணங்கள்) {
     விடை = மொத்த_வரி - மூலப்_பிடித்தம் - நிவாரணங்கள்;
     (விடை < 0) எனில் { திரும்பு 0; }
@@ -57,22 +57,22 @@
 
 // கடமை_உள்ளதா(மதிப்பிட்ட_வரித்_தொகை, குறைந்த_எல்லை)
 //
-// Advance tax is payable only where the assessed tax reaches a threshold.
-// Below it there is no liability and therefore no interest under 234B or 234C
-// — which makes this the first question to ask, not the last.
+// __Advance tax is payable only where the assessed tax reaches a threshold.__
+// __Below it there is no liability and therefore no interest under 234B or 234C__
+// __— which makes this the first question to ask, not the last.__
 செயல் கடமை_உள்ளதா(மதிப்பிட்ட_வரித்_தொகை, குறைந்த_எல்லை) {
     திரும்பு மதிப்பிட்ட_வரித்_தொகை >= குறைந்த_எல்லை;
 }
 
 // மூத்தவர்_விலக்கு(வயது, வயது_எல்லை, தொழில்_வருமானம்_உள்ளதா, குடியிருப்பாளரா)
 //
-// A resident senior citizen with no business or professional income is not
-// liable to advance tax at all — section 207(2). Three conditions, and the
-// middle one is the one that gets dropped: a retired person with consultancy
-// receipts has business income and the exemption is gone entirely.
+// __A resident senior citizen with no business or professional income is not__
+// __liable to advance tax at all — section 207(2). Three conditions, and the__
+// __middle one is the one that gets dropped: a retired person with consultancy__
+// __receipts has business income and the exemption is gone entirely.__
 //
-// The exemption is from advance tax, which means from 234B and 234C. It is not
-// an exemption from the tax itself, and it is not an exemption from 234A.
+// __The exemption is from advance tax, which means from 234B and 234C. It is not__
+// __an exemption from the tax itself, and it is not an exemption from 234A.__
 செயல் மூத்தவர்_விலக்கு(வயது, வயது_எல்லை, தொழில்_வருமானம்_உள்ளதா,
                          குடியிருப்பாளரா) {
     (இல்லை குடியிருப்பாளரா) எனில் { திரும்பு பொய்; }
@@ -81,36 +81,36 @@
 }
 
 // =========================================================================
-// தவணைகள் — the instalments
+// __தவணைகள் — the instalments__
 // =========================================================================
 //
-// முன்வரித்_தவணைகள்() — the schedule for a non-corporate assessee
+// __முன்வரித்_தவணைகள்() — the schedule for a non-corporate assessee__
 //
-// Each record holds:
-//   "தவணை_எண்"        which instalment
-//   "விகிதம்"          the cumulative percentage due by that date
-//   "நிவாரண_விகிதம்"   the percentage below which 234C bites, where the
-//                       statute is lenient about the first two dates
-//   "மாதங்கள்"         months of 234C interest on a shortfall at that date
+// __Each record holds:__
+//   __"தவணை_எண்"        which instalment__
+//   __"விகிதம்"          the cumulative percentage due by that date__
+//   __"நிவாரண_விகிதம்"   the percentage below which 234C bites, where the__
+//                       __statute is lenient about the first two dates__
+//   __"மாதங்கள்"         months of 234C interest on a shortfall at that date__
 //
-// Two things about it are worth stating.
+// __Two things about it are worth stating.__
 //
-// The percentages are **cumulative**: fifteen, forty-five, seventy-five, a
-// hundred. The amount payable on the second date is thirty per cent, and
-// reading the table as four separate instalments of 15/30/30/25 gets the
-// payments right and the shortfall computations wrong, because a shortfall is
-// always measured against the cumulative figure.
+// __The percentages are **cumulative**: fifteen, forty-five, seventy-five, a__
+// __hundred. The amount payable on the second date is thirty per cent, and__
+// __reading the table as four separate instalments of 15/30/30/25 gets the__
+// __payments right and the shortfall computations wrong, because a shortfall is__
+// __always measured against the cumulative figure.__
 //
-// The **relief band** applies only to the first two dates: pay at least twelve
-// per cent by the first and thirty-six by the second and no interest is
-// charged, even though fifteen and forty-five were due. The third and fourth
-// dates have no such latitude, which is why their relief percentage equals
-// their required percentage here rather than being absent.
+// __The **relief band** applies only to the first two dates: pay at least twelve__
+// __per cent by the first and thirty-six by the second and no interest is__
+// __charged, even though fifteen and forty-five were due. The third and fourth__
+// __dates have no such latitude, which is why their relief percentage equals__
+// __their required percentage here rather than being absent.__
 //
-// This is a default, not a constant. An assessee taxed on presumptive income
-// pays the whole liability in one instalment on the last date, and the dates
-// and percentages have been amended before. Every function below takes the
-// schedule as an argument so another one can be passed.
+// __This is a default, not a constant. An assessee taxed on presumptive income__
+// __pays the whole liability in one instalment on the last date, and the dates__
+// __and percentages have been amended before. Every function below takes the__
+// __schedule as an argument so another one can be passed.__
 செயல் முன்வரித்_தவணைகள்() {
     திரும்பு [
         {"தவணை_எண்": 1, "விகிதம்": 15,  "நிவாரண_விகிதம்": 12, "மாதங்கள்": 3},
@@ -120,12 +120,12 @@
     ];
 }
 
-// ஒற்றைத்_தவணை_அட்டவணை() — the presumptive-income schedule
+// __ஒற்றைத்_தவணை_அட்டவணை() — the presumptive-income schedule__
 //
-// The whole liability on the last date, and nothing before it. Kept here
-// because it is the other schedule that actually exists, and because writing
-// it out makes clear that the instalment machinery is a table and not a
-// hard-coded four.
+// __The whole liability on the last date, and nothing before it. Kept here__
+// __because it is the other schedule that actually exists, and because writing__
+// __it out makes clear that the instalment machinery is a table and not a__
+// __hard-coded four.__
 செயல் ஒற்றைத்_தவணை_அட்டவணை() {
     திரும்பு [
         {"தவணை_எண்": 4, "விகிதம்": 100, "நிவாரண_விகிதம்": 100, "மாதங்கள்": 1}
@@ -134,7 +134,7 @@
 
 // தவணை_வரை_தேவை(மதிப்பிட்ட_வரித்_தொகை, அட்டவணை, தவணை_எண்)
 //
-// The cumulative amount that should have been paid by one instalment date.
+// __The cumulative amount that should have been paid by one instalment date.__
 செயல் தவணை_வரை_தேவை(மதிப்பிட்ட_வரித்_தொகை, அட்டவணை, தவணை_எண்) {
     ஒவ்வொரு ஒரு_தவணை இல் அட்டவணை {
         (ஒரு_தவணை["தவணை_எண்"] == தவணை_எண்) எனில் {
@@ -148,12 +148,12 @@
 
 // தவணை_அட்டவணையை_ஆக்கு(மதிப்பிட்ட_வரித்_தொகை, அட்டவணை)
 //
-// The full plan: what is cumulatively due by each date, and what that means
-// paying on the date itself.
+// __The full plan: what is cumulatively due by each date, and what that means__
+// __paying on the date itself.__
 //
-// The two are different numbers and both are wanted. The cumulative figure is
-// what the interest is measured against; the difference is what leaves the
-// bank account.
+// __The two are different numbers and both are wanted. The cumulative figure is__
+// __what the interest is measured against; the difference is what leaves the__
+// __bank account.__
 செயல் தவணை_அட்டவணையை_ஆக்கு(மதிப்பிட்ட_வரித்_தொகை, அட்டவணை) {
     விடை = [];
     முந்தையது = 0;
@@ -170,19 +170,19 @@
 }
 
 // =========================================================================
-// வட்டிக்கான அடிப்படை — Rule 119A
+// __வட்டிக்கான அடிப்படை — Rule 119A__
 // =========================================================================
 //
 // வட்டிக்குரிய_அடிப்படை(தொகை_மதிப்பு)
 //
-// Rule 119A: the amount interest is computed on is rounded off to a multiple
-// of one hundred rupees and any fraction of a hundred is **ignored** — so it
-// rounds down, always, and in the assessee's favour.
+// __Rule 119A: the amount interest is computed on is rounded off to a multiple__
+// __of one hundred rupees and any fraction of a hundred is **ignored** — so it__
+// __rounds down, always, and in the assessee's favour.__
 //
-// It is worth at most ninety-nine rupees of base, and it is the difference
-// between a computation that agrees with the department's and one that does
-// not. Note that it rounds the *base*, not the interest: the interest itself
-// is not rounded by this rule.
+// __It is worth at most ninety-nine rupees of base, and it is the difference__
+// __between a computation that agrees with the department's and one that does__
+// __not. Note that it rounds the *base*, not the interest: the interest itself__
+// __is not rounded by this rule.__
 செயல் வட்டிக்குரிய_அடிப்படை(தொகை_மதிப்பு) {
     (தொகை_மதிப்பு <= 0) எனில் { திரும்பு 0; }
     திரும்பு தரை(தொகை_மதிப்பு / 100) * 100;
@@ -190,33 +190,33 @@
 
 // மாதங்களாக(நாட்களின்_எண்ணிக்கை)
 //
-// Part of a month is a whole month. Same rule as in mUlavari.qmz, and the same
-// caveat: a caller with real dates should count calendar months itself.
+// __Part of a month is a whole month. Same rule as in mUlavari.qmz, and the same__
+// __caveat: a caller with real dates should count calendar months itself.__
 செயல் மாதங்களாக(நாட்களின்_எண்ணிக்கை) {
     (நாட்களின்_எண்ணிக்கை <= 0) எனில் { திரும்பு 0; }
     திரும்பு மேல்(நாட்களின்_எண்ணிக்கை / 30);
 }
 
 // =========================================================================
-// 234C — paid late
+// __234C — paid late__
 // =========================================================================
 //
 // தவணை_வட்டி(மதிப்பிட்ட_வரித்_தொகை, செலுத்தியவை, அட்டவணை, மாத_வீதம்)
 //
-// செலுத்தியவை is the **cumulative** advance tax paid by each instalment date,
-// in the schedule's order. Interest is charged instalment by instalment, on
-// the shortfall against the cumulative requirement, for the months that
-// instalment attracts.
+// __செலுத்தியவை is the **cumulative** advance tax paid by each instalment date,__
+// __in the schedule's order. Interest is charged instalment by instalment, on__
+// __the shortfall against the cumulative requirement, for the months that__
+// __instalment attracts.__
 //
-// The relief band is what makes this bearable. Pay at least the relief
-// percentage by the first two dates and nothing is charged, even though the
-// required percentage was higher — the statute's acknowledgement that an
-// estimate made in June is an estimate. Miss it by a rupee and the interest is
-// on the whole shortfall against the *required* percentage, not against the
-// relief band. The band decides whether interest applies; it never reduces it.
+// __The relief band is what makes this bearable. Pay at least the relief__
+// __percentage by the first two dates and nothing is charged, even though the__
+// __required percentage was higher — the statute's acknowledgement that an__
+// __estimate made in June is an estimate. Miss it by a rupee and the interest is__
+// __on the whole shortfall against the *required* percentage, not against the__
+// __relief band. The band decides whether interest applies; it never reduces it.__
 //
-// Answers each instalment's working and the total, because 234C is the
-// computation most often disputed and a bare total cannot be argued with.
+// __Answers each instalment's working and the total, because 234C is the__
+// __computation most often disputed and a bare total cannot be argued with.__
 செயல் தவணை_வட்டி(மதிப்பிட்ட_வரித்_தொகை, செலுத்தியவை, அட்டவணை, மாத_வீதம்) {
     வரிசைகள் = [];
     மொத்த_வட்டி = 0;
@@ -235,8 +235,8 @@
 
         இந்த_வட்டி = 0;
         குறை = 0;
-        // The band is a gate, not a reduction: below it, the shortfall is
-        // measured against the full requirement.
+        // __The band is a gate, not a reduction: below it, the shortfall is__
+        // __measured against the full requirement.__
         (செலுத்தியது < நிவாரண_எல்லை) எனில் {
             குறை = வட்டமிடு(தேவை - செலுத்தியது, 2);
             (குறை > 0) எனில் {
@@ -261,21 +261,21 @@
 }
 
 // =========================================================================
-// 234B — not enough paid
+// __234B — not enough paid__
 // =========================================================================
 //
 // குறைபாட்டு_வட்டி(மதிப்பிட்ட_வரித்_தொகை, செலுத்திய_முன்வரி,
 //                    குறைந்த_விகிதம், மாத_வீதம், மாதங்கள்)
 //
-// Where the advance tax paid is less than a stated percentage of the assessed
-// tax, interest runs on the **whole** shortfall from the 1st of April
-// following the year to the date of assessment.
+// __Where the advance tax paid is less than a stated percentage of the assessed__
+// __tax, interest runs on the **whole** shortfall from the 1st of April__
+// __following the year to the date of assessment.__
 //
-// The percentage is a gate exactly like 234C's relief band, and it works the
-// same counter-intuitive way: pay eighty-nine per cent and interest is charged
-// on the full eleven per cent shortfall, not on the one per cent by which the
-// gate was missed. Pay ninety and it is nothing. There is no proportioning
-// anywhere in this section.
+// __The percentage is a gate exactly like 234C's relief band, and it works the__
+// __same counter-intuitive way: pay eighty-nine per cent and interest is charged__
+// __on the full eleven per cent shortfall, not on the one per cent by which the__
+// __gate was missed. Pay ninety and it is nothing. There is no proportioning__
+// __anywhere in this section.__
 செயல் குறைபாட்டு_வட்டி(மதிப்பிட்ட_வரித்_தொகை, செலுத்திய_முன்வரி,
                           குறைந்த_விகிதம், மாத_வீதம், மாதங்கள்) {
     எல்லை = சதவீதம்(மதிப்பிட்ட_வரித்_தொகை, குறைந்த_விகிதம்);
@@ -297,20 +297,20 @@
 }
 
 // =========================================================================
-// 234A — filed late
+// __234A — filed late__
 // =========================================================================
 //
 // தாமதத்_தாக்கல்_வட்டி(மொத்த_வரி, செலுத்தியவை, மாத_வீதம், மாதங்கள்)
 //
-// Interest for filing the return after its due date, on the tax unpaid at that
-// point. செலுத்தியவை is everything already credited — advance tax, tax
-// deducted at source, self-assessment tax paid before filing.
+// __Interest for filing the return after its due date, on the tax unpaid at that__
+// __point. செலுத்தியவை is everything already credited — advance tax, tax__
+// __deducted at source, self-assessment tax paid before filing.__
 //
-// This is the one that surprises people who file late with nothing to pay: if
-// the tax was already settled there is no interest here at all, because the
-// section charges interest on an amount and not a penalty for a date. A late
-// return with tax outstanding is expensive; a late return with tax paid costs
-// nothing under this section.
+// __This is the one that surprises people who file late with nothing to pay: if__
+// __the tax was already settled there is no interest here at all, because the__
+// __section charges interest on an amount and not a penalty for a date. A late__
+// __return with tax outstanding is expensive; a late return with tax paid costs__
+// __nothing under this section.__
 செயல் தாமதத்_தாக்கல்_வட்டி(மொத்த_வரி, செலுத்தியவை, மாத_வீதம், மாதங்கள்) {
     நிலுவைத்_தொகை = மொத்த_வரி - செலுத்தியவை;
     (நிலுவைத்_தொகை <= 0 அல்லது மாதங்கள் <= 0) எனில் {
@@ -324,17 +324,17 @@
 }
 
 // =========================================================================
-// இறுதிக் கணக்கு — what is actually owed
+// __இறுதிக் கணக்கு — what is actually owed__
 // =========================================================================
 //
 // செலுத்த_வேண்டியது(மொத்த_வரி, மூலப்_பிடித்தம், செலுத்திய_முன்வரி,
 //                     சுய_மதிப்பீட்டு_வரி, வட்டிகள்)
 //
-// The bottom line of a return: tax, plus every interest charge, less
-// everything already paid. A negative answer is a refund and is returned
-// signed rather than as a separate field, because a computation that reports
-// "amount payable: 0" for a refund of forty thousand rupees is worse than
-// useless.
+// __The bottom line of a return: tax, plus every interest charge, less__
+// __everything already paid. A negative answer is a refund and is returned__
+// __signed rather than as a separate field, because a computation that reports__
+// __"amount payable: 0" for a refund of forty thousand rupees is worse than__
+// __useless.__
 செயல் செலுத்த_வேண்டியது(மொத்த_வரி, மூலப்_பிடித்தம், செலுத்திய_முன்வரி,
                            சுய_மதிப்பீட்டு_வரி, வட்டிகள்) {
     செலுத்தியவை = மூலப்_பிடித்தம் + செலுத்திய_முன்வரி + சுய_மதிப்பீட்டு_வரி;

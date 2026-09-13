@@ -1,43 +1,43 @@
-// Student Management System Example
-// Demonstrates database operations with eTamil
+// __Student Management System Example__
+// __Demonstrates database operations with eTamil__
 // 
-// This program shows:
-// 1. Creating tables for students
-// 2. Inserting student records
-// 3. Querying student data
-// 4. Updating grades
-// 5. Reading/writing encrypted data
+// __This program shows:__
+// __1. Creating tables for students__
+// __2. Inserting student records__
+// __3. Querying student data__
+// __4. Updating grades__
+// __5. Reading/writing encrypted data__
 
 எண் student_id = 0;
 எண் total_students = 0;
 எண் _total_score = 0;
 
-// Create students database
+// __Create students database__
 கோப்பு_திற "students.csv", "write";
 கோப்பு_எழுது "students.csv", 1001;
 கோப்பு_எழுது "students.csv", 1002;
 கோப்பு_எழுது "students.csv", 1003;
 கோப்பு_மூடு "students.csv";
 
-// Write student data
+// __Write student data__
 தரவுரை_எழுது "students.csv", "student_id,name,score";
 தரவுரை_எழுது "students.csv", "1001,ராஜா,95";
 தரவுரை_எழுது "students.csv", "1002,தேவி,88";
 தரவுரை_எழுது "students.csv", "1003,குமார்,92";
 
-// Read student data
+// __Read student data__
 கோப்பு_திற "students.csv", "read";
 தரவுரை_படி "students.csv", total_students;
 
-// Calculate total
+// __Calculate total__
 _total_score = 95 + 88 + 92;
 
-// Display results
+// __Display results__
 அச்சு "Total Students: ";
 அச்சு total_students;
 
 அச்சு "Total Score: ";
 அச்சு _total_score;
 
-// Close file
+// __Close file__
 கோப்பு_மூடு "students.csv";

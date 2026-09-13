@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/vawki/coqqu.qmz — சொத்து வகைப்பாடு (asset classification)
+// __nUlakam/vawki/coqqu.qmz — சொத்து வகைப்பாடு (asset classification)__
 //
-// Which bucket a loan falls into, and what has to be set aside against it.
+// __Which bucket a loan falls into, and what has to be set aside against it.__
 //
-// Not one number in this file. The day counts that make an account
-// sub-standard, and the percentages provisioned against each class, are
-// regulatory figures: they are set by circular, they change, and a library
-// that hardcoded them would be quietly wrong from the first amendment. They
-// live in a table — see coqqu_viqimuRY.sql — and this reads it.
+// __Not one number in this file. The day counts that make an account__
+// __sub-standard, and the percentages provisioned against each class, are__
+// __regulatory figures: they are set by circular, they change, and a library__
+// __that hardcoded them would be quietly wrong from the first amendment. They__
+// __live in a table — see coqqu_viqimuRY.sql — and this reads it.__
 //
-// So this file holds the *shape* of the rule and never the rule itself:
-//   - a loan is classified by how many days it has been overdue
-//   - a class carries a provisioning percentage
-//   - both are read as they stood on a given date, because a review is done
-//     against the rules in force then, not the rules in force now
+// __So this file holds the *shape* of the rule and never the rule itself:__
+//   __- a loan is classified by how many days it has been overdue__
+//   __- a class carries a provisioning percentage__
+//   __- both are read as they stood on a given date, because a review is done__
+//     __against the rules in force then, not the rules in force now__
 //
-// விதிமுறைகளை_ஏற்று reads them. வகைப்படுத்து and ஒதுக்கீடு apply them.
+// __விதிமுறைகளை_ஏற்று reads them. வகைப்படுத்து and ஒதுக்கீடு apply them.__
 
 இறக்கு "../poruL.qmz";
 இறக்கு "../kaNiqam.qmz";
 
-// விதிமுறைகளை_ஏற்று(நாள்) — the rules in force on that date
+// __விதிமுறைகளை_ஏற்று(நாள்) — the rules in force on that date__
 //
-// Requires a database to be connected already, which is the caller's business:
-// a library that opens its own connection decides for the program where its
-// data lives.
+// __Requires a database to be connected already, which is the caller's business:__
+// __a library that opens its own connection decides for the program where its__
+// __data lives.__
 செயல் விதிமுறைகளை_ஏற்று(நாள்) {
     தளம்_வினா "SELECT vakY, nAtkaL_muqal, nAtkaL_varY, oqukkItu_vikiqam, mUlam
                  FROM coqqu_viqimuRY
@@ -36,24 +36,24 @@
     திரும்பு கிடைத்தவை;
 }
 
-// வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) — the class this account is in
+// __வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) — the class this account is in__
 //
-// The rules are ordered by the day they start at, so the last one whose start
-// this account has reached is the one that applies. An account with no rule
-// matching it is not silently called standard: that would be the most
-// dangerous possible default, since standard is the class that provisions
-// least. It answers a தவறு instead.
+// __The rules are ordered by the day they start at, so the last one whose start__
+// __this account has reached is the one that applies. An account with no rule__
+// __matching it is not silently called standard: that would be the most__
+// __dangerous possible default, since standard is the class that provisions__
+// __least. It answers a தவறு instead.__
 செயல் வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்) {
     பொருத்தம் = 0;
     கிடைத்ததா = பொய்;
 
     ஒவ்வொரு விதிமுறை இல் விதிமுறைகள் {
         முடிவு = விதிமுறை["nAtkaL_varY"];
-        // The last class has no upper bound, written NULL in the table. A SQL
-        // NULL arrives as nil, and nil compares equal to nothing — including
-        // to a number — so it has to be recognised by வகை rather than by
-        // testing the value. Comparing it against 0 or "" looked right and
-        // quietly put every very old account outside every rule.
+        // __The last class has no upper bound, written NULL in the table. A SQL__
+        // __NULL arrives as nil, and nil compares equal to nothing — including__
+        // __to a number — so it has to be recognised by வகை rather than by__
+        // __testing the value. Comparing it against 0 or "" looked right and__
+        // __quietly put every very old account outside every rule.__
         மேல்_எல்லை_உள்ளதா = வகை(முடிவு) != "nil";
 
         (தாமத_நாட்கள் >= விதிமுறை["nAtkaL_muqal"]) எனில் {
@@ -73,9 +73,9 @@
 
 // ஒதுக்கீடு(விதிமுறைகள், தாமத_நாட்கள், நிலுவைத்_தொகை)
 //
-// What must be set aside against this account: the outstanding amount times
-// the percentage its class carries. Answers {வகை, விழுக்காடு, ஒதுக்கீடு}, so
-// a report can show why the figure is what it is rather than only the figure.
+// __What must be set aside against this account: the outstanding amount times__
+// __the percentage its class carries. Answers {வகை, விழுக்காடு, ஒதுக்கீடு}, so__
+// __a report can show why the figure is what it is rather than only the figure.__
 செயல் ஒதுக்கீடு(விதிமுறைகள், தாமத_நாட்கள், நிலுவைத்_தொகை) {
     வகைப்பாடு = வகைப்படுத்து(விதிமுறைகள், தாமத_நாட்கள்);
     (தவறா(வகைப்பாடு)) எனில் { திரும்பு வகைப்பாடு; }
@@ -87,12 +87,12 @@
                   "ஒதுக்கீடு": சதவீதம்(நிலுவைத்_தொகை, விழுக்காடு)});
 }
 
-// சரிபார்க்கப்படாதவை(விதிமுறைகள்) — the rows nobody has vouched for yet
+// __சரிபார்க்கப்படாதவை(விதிமுறைகள்) — the rows nobody has vouched for yet__
 //
-// The table ships with placeholder figures so that the shape can be tested,
-// and a placeholder provisioning percentage in a live return is worse than no
-// figure at all. This lists what is still marked as one, so a program can
-// refuse to run rather than report a number it should not.
+// __The table ships with placeholder figures so that the shape can be tested,__
+// __and a placeholder provisioning percentage in a live return is worse than no__
+// __figure at all. This lists what is still marked as one, so a program can__
+// __refuse to run rather than report a number it should not.__
 செயல் சரிபார்க்கப்படாதவை(விதிமுறைகள்) {
     விடை = [];
     ஒவ்வொரு விதிமுறை இல் விதிமுறைகள் {
@@ -103,7 +103,7 @@
     திரும்பு விடை;
 }
 
-// A local prefix test, so this module needs nothing from col.qmz.
+// __A local prefix test, so this module needs nothing from col.qmz.__
 செயல் தொடங்குகிறதா_எளிது(பாடம், முன்னொட்டு) {
     கூறுகள் = பிரி(பாடம், முன்னொட்டு);
     (நீளம்(கூறுகள்) < 2) எனில் { திரும்பு பொய்; }

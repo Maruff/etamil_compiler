@@ -1,32 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/cOqaZY.qmz — சோதனை (tests), written in eTamil
+// __nUlakam/cOqaZY.qmz — சோதனை (tests), written in eTamil__
 //
-// Until now a library written in this language could only be tested from Rust,
-// or by running an example and seeing whether it exited 0. Neither says which
-// assertion failed, and neither is something the author of a Tamil accounting
-// module should have to write Rust to get.
+// __Until now a library written in this language could only be tested from Rust,__
+// __or by running an example and seeing whether it exited 0. Neither says which__
+// __assertion failed, and neither is something the author of a Tamil accounting__
+// __module should have to write Rust to get.__
 //
-// The state is threaded rather than kept in a module variable, because a
-// function cannot change a global: assigning to a name inside a செயல் makes a
-// local, so a counter incremented there would be lost on return. So each
-// assertion takes the run so far and answers with the run after it:
+// __The state is threaded rather than kept in a module variable, because a__
+// __function cannot change a global: assigning to a name inside a செயல் makes a__
+// __local, so a counter incremented there would be lost on return. So each__
+// __assertion takes the run so far and answers with the run after it:__
 //
 //     ஓட்டம் = சோதனை_தொடக்கம்("வரி");
-//     ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(1000, 18%), 180, "18% of 1000");
-//     ஓட்டம் = உறுதிசெய்(ஓட்டம், நீளம்(பட்டியல்) > 0, "the list is not empty");
+//     __ஓட்டம் = சமம்(ஓட்டம், வரி_தொகை(1000, 18%), 180, "18% of 1000");__
+//     __ஓட்டம் = உறுதிசெய்(ஓட்டம், நீளம்(பட்டியல்) > 0, "the list is not empty");__
 //     சோதனை_முடிவு(ஓட்டம்);
 //
-// சோதனை_முடிவு exits non-zero when anything failed, so a suite that reports a
-// failure also fails the process running it.
+// __சோதனை_முடிவு exits non-zero when anything failed, so a suite that reports a__
+// __failure also fails the process running it.__
 
-// சோதனை_தொடக்கம்(பெயர்) — an empty run
+// __சோதனை_தொடக்கம்(பெயர்) — an empty run__
 செயல் சோதனை_தொடக்கம்(பெயர்) {
     அச்சு "── " & பெயர் & " ──";
     திரும்பு {"பெயர்": பெயர், "வெற்றி": 0, "தோல்வி": 0};
 }
 
-// உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) — the condition must hold
+// __உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) — the condition must hold__
 செயல் உறுதிசெய்(ஓட்டம், நிபந்தனை, விவரம்) {
     (நிபந்தனை) எனில் {
         அச்சு "  ✓ " & விவரம்;
@@ -42,8 +42,8 @@
 
 // சமம்(ஓட்டம், கிடைத்தது, எதிர்பார்த்தது, விவரம்)
 //
-// Separate from உறுதிசெய் because a failure that says only "false" makes the
-// reader run the calculation again by hand. This one shows both numbers.
+// __Separate from உறுதிசெய் because a failure that says only "false" makes the__
+// __reader run the calculation again by hand. This one shows both numbers.__
 செயல் சமம்(ஓட்டம், கிடைத்தது, எதிர்பார்த்தது, விவரம்) {
     (கிடைத்தது == எதிர்பார்த்தது) எனில் {
         அச்சு "  ✓ " & விவரம்;
@@ -59,7 +59,7 @@
               "தோல்வி": ஓட்டம்["தோல்வி"] + 1};
 }
 
-// வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) — these must differ
+// __வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) — these must differ__
 செயல் வேறுபடு(ஓட்டம், கிடைத்தது, தவிர்க்கப்பட்டது, விவரம்) {
     (கிடைத்தது == தவிர்க்கப்பட்டது) எனில் {
         அச்சு "  ✗ " & விவரம்;
@@ -74,17 +74,17 @@
               "தோல்வி": ஓட்டம்["தோல்வி"]};
 }
 
-// சேர்_ஓட்டம்(முதல், இரண்டாவது) — two runs as one, for a suite of suites
+// __சேர்_ஓட்டம்(முதல், இரண்டாவது) — two runs as one, for a suite of suites__
 செயல் சேர்_ஓட்டம்(முதல், இரண்டாவது) {
     திரும்பு {"பெயர்": முதல்["பெயர்"],
               "வெற்றி": முதல்["வெற்றி"] + இரண்டாவது["வெற்றி"],
               "தோல்வி": முதல்["தோல்வி"] + இரண்டாவது["தோல்வி"]};
 }
 
-// சோதனை_முடிவு(ஓட்டம்) — the summary, and the exit status
+// __சோதனை_முடிவு(ஓட்டம்) — the summary, and the exit status__
 //
-// Reporting a failure and exiting 0 tells the truth to a reader and a lie to
-// everything else that runs this.
+// __Reporting a failure and exiting 0 tells the truth to a reader and a lie to__
+// __everything else that runs this.__
 செயல் சோதனை_முடிவு(ஓட்டம்) {
     மொத்தம் = ஓட்டம்["வெற்றி"] + ஓட்டம்["தோல்வி"];
     அச்சு "";

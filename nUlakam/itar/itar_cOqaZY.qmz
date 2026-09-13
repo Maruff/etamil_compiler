@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// இடர்_சோதனை — tests for risk and three-point estimation
+// __இடர்_சோதனை — tests for risk and three-point estimation__
 //
-// Run it like any other program:  etamil --vm nUlakam/itar/itar_cOqaZY.qmz
-// It exits non-zero if anything fails, so it works as a CI step.
+// __Run it like any other program:  etamil --vm nUlakam/itar/itar_cOqaZY.qmz__
+// __It exits non-zero if anything fails, so it works as a CI step.__
 //
-// The estimation figures are chosen so the variances are exact: ranges of 4,
-// 10 and 8 give variances of 16/36, 100/36 and 64/36, which sum to 180/36 — a
-// path variance of exactly 5. The standard deviation is then √5, asserted to
-// four places because it is irrational.
+// __The estimation figures are chosen so the variances are exact: ranges of 4,__
+// __10 and 8 give variances of 16/36, 100/36 and 64/36, which sum to 180/36 — a__
+// __path variance of exactly 5. The standard deviation is then √5, asserted to__
+// __four places because it is irrational.__
 
 இறக்கு "../cOqaZY.qmz";
 இறக்கு "../kaNiqam.qmz";
@@ -18,7 +18,7 @@
 ஓட்டம் = சோதனை_தொடக்கம்("இடர் — risk and estimation");
 
 // =========================================================================
-// வர்க்கமூலம் — the root added to kaNiqam.qmz
+// __வர்க்கமூலம் — the root added to kaNiqam.qmz__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(வர்க்கமூலம்(144)), 12, "an exact root is exact");
@@ -35,7 +35,7 @@
               "and the root squared comes back to what went in");
 
 // =========================================================================
-// ஒரு இடர் — the register
+// __ஒரு இடர் — the register__
 // =========================================================================
 
 இடர்கள் = [
@@ -58,7 +58,7 @@
                       இடர்_ஆக்கு("X", "", 30, 1000, "ஏதோ", ""))),
                   "an unknown kind is refused rather than treated as a threat");
 
-// --- expected monetary value ---------------------------------------------
+// __--- expected monetary value ---------------------------------------------__
 
 ஓட்டம் = சமம்(ஓட்டம், எதிர்பார்ப்பு(இடர்கள்[0]), 0 - 150000,
               "a threat's expected value is negative: 30% of 5,00,000");
@@ -74,14 +74,14 @@
 ஓட்டம் = சமம்(ஓட்டம், மொத்த_எதிர்பார்ப்பு([]), 0,
               "an empty register has no exposure");
 
-// A certainty is still a risk: probability 100 makes the expected value the
-// whole impact, which is the case where a reserve is not a reserve at all.
+// __A certainty is still a risk: probability 100 makes the expected value the__
+// __whole impact, which is the case where a reserve is not a reserve at all.__
 ஓட்டம் = சமம்(ஓட்டம், எதிர்பார்ப்பு(
                   இடர்_ஆக்கு("R9", "நிச்சயம்", 100, 400000, "அச்சுறுத்தல்", "")),
               0 - 400000, "a certainty carries its whole impact");
 
 // =========================================================================
-// தரவரிசை — and why the score is not a quantity
+// __தரவரிசை — and why the score is not a quantity__
 // =========================================================================
 
 உயர்_நிகழ்வு = இடர்_மதிப்பெண்(5, 1);
@@ -100,7 +100,7 @@
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பெண்_நிலைமை(4, 15, 8), "தாழ்", "and 4 low");
 
 // =========================================================================
-// பதிலளிப்பு — responses
+// __பதிலளிப்பு — responses__
 // =========================================================================
 
 ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("அச்சுறுத்தல்", "தணிப்பு"),
@@ -122,7 +122,7 @@
 ஓட்டம் = உறுதிசெய்(ஓட்டம், பதிலளிப்பு_சரியா("வாய்ப்பு", "ஏற்பு"),
                   "in both directions");
 
-// A response that halves the probability, leaving the impact alone.
+// __A response that halves the probability, leaving the impact alone.__
 மீதி = எஞ்சிய_இடர்(இடர்கள்[0], 10, 500000);
 ஓட்டம் = சமம்(ஓட்டம், மீதி["முன்பு"], 0 - 150000, "exposure before the response");
 ஓட்டம் = சமம்(ஓட்டம், மீதி["பின்பு"], 0 - 50000, "and after");
@@ -139,13 +139,13 @@
 ஓட்டம் = சமம்(ஓட்டம், பதிலளிப்பு_நிகரம்(மீதி["நன்மை"], 150000), 0 - 50000,
               "priced exactly");
 
-// Avoidance takes the probability to nothing, and the risk leaves the register.
+// __Avoidance takes the probability to nothing, and the risk leaves the register.__
 முற்றிலும் = எஞ்சிய_இடர்(இடர்கள்[1], 0, 300000);
 ஓட்டம் = சமம்(ஓட்டம், முற்றிலும்["பின்பு"], 0, "avoidance removes the exposure");
 ஓட்டம் = சமம்(ஓட்டம், முற்றிலும்["நன்மை"], 60000, "worth the whole 60,000");
 
 // =========================================================================
-// இருப்புகள் — sizing them
+// __இருப்புகள் — sizing them__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், தற்செயல்_இருப்பைக்_கணக்கிடு(இடர்கள்), 210000,
@@ -163,7 +163,7 @@
               & "exactly why the management reserve cannot be derived from it");
 
 // =========================================================================
-// முடிவு மரம் — decision trees
+// __முடிவு மரம் — decision trees__
 // =========================================================================
 
 கிளைகள் = [கிளை_ஆக்கு("வெற்றி", 60, 1000000),
@@ -190,7 +190,7 @@
                   "with no options there is no decision");
 
 // =========================================================================
-// மூன்றுப் புள்ளி — three-point estimation
+// __மூன்றுப் புள்ளி — three-point estimation__
 // =========================================================================
 
 அ = மதிப்பு(முப்புள்ளி_ஆக்கு(2, 4, 6));
@@ -218,7 +218,7 @@
 ஓட்டம் = சமம்(ஓட்டம், நியம_விலகல்(ஆ), 1.6667, "the deviation is the range over six");
 ஓட்டம் = சமம்(ஓட்டம், பரவல்(அ), 0.444444, "and the variance its square");
 
-// --- the rule: variances add, deviations do not ---------------------------
+// __--- the rule: variances add, deviations do not ---------------------------__
 
 ஓட்டம் = சமம்(ஓட்டம், பாதை_சராசரி(பாதை), 13, "expected durations add to 13");
 ஓட்டம் = சமம்(ஓட்டம், பாதை_பரவல்(பாதை), 5,
@@ -234,7 +234,7 @@
                   & "less certain than it is, and nobody queries that");
 
 // =========================================================================
-// நிகழ்தகவு — the normal curve
+// __நிகழ்தகவு — the normal curve__
 // =========================================================================
 
 ஓட்டம் = சமம்(ஓட்டம், _நிகழ்தகவு_Z(0), 50, "half the curve lies below the mean");
@@ -272,7 +272,7 @@
               & "schedule contingency, the same idea as a contingency reserve "
               & "applied to time");
 
-// A path with no spread at all is certain, and the curve degenerates.
+// __A path with no spread at all is certain, and the curve degenerates.__
 உறுதியானது = [மதிப்பு(முப்புள்ளி_ஆக்கு(5, 5, 5))];
 ஓட்டம் = சமம்(ஓட்டம், பாதை_பரவல்(உறுதியானது), 0, "no range, no variance");
 ஓட்டம் = சமம்(ஓட்டம், மதிப்பு(இலக்கு_நிகழ்தகவு(5, உறுதியானது)), 100,

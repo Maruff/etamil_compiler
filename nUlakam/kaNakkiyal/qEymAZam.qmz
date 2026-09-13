@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/kaNakkiyal/qEymAZam.qmz — தேய்மானம் (depreciation)
+// __nUlakam/kaNakkiyal/qEymAZam.qmz — தேய்மானம் (depreciation)__
 //
-// Two methods, because Indian accounts need both and they disagree. Straight
-// line spreads the cost evenly and is what the Companies Act expects of the
-// books. Written-down value takes a percentage of what is left each year and
-// is what the Income Tax Act computes on. The same asset is depreciated twice,
-// differently, for two readers — that is not a mistake to be reconciled but
-// the arrangement.
+// __Two methods, because Indian accounts need both and they disagree. Straight__
+// __line spreads the cost evenly and is what the Companies Act expects of the__
+// __books. Written-down value takes a percentage of what is left each year and__
+// __is what the Income Tax Act computes on. The same asset is depreciated twice,__
+// __differently, for two readers — that is not a mistake to be reconciled but__
+// __the arrangement.__
 //
-// No useful life and no rate is written here. Schedule II lives and the Income
-// Tax block rates are set by statute and amended; they belong in a table, the
-// way the asset classification rules do. Everything below takes them as
-// arguments.
+// __No useful life and no rate is written here. Schedule II lives and the Income__
+// __Tax block rates are set by statute and amended; they belong in a table, the__
+// __way the asset classification rules do. Everything below takes them as__
+// __arguments.__
 //
-// Rates are a number out of a hundred: 15% is 15, as everywhere else here.
+// __Rates are a number out of a hundred: 15% is 15, as everywhere else here.__
 //
-// A note on names: தேய்மானம், சொத்து, விலை and செலவு are all keywords, so the
-// obvious word for each is unavailable alone. Compounds read a little longer
-// and lex as ordinary identifiers.
+// __A note on names: தேய்மானம், சொத்து, விலை and செலவு are all keywords, so the__
+// __obvious word for each is unavailable alone. Compounds read a little longer__
+// __and lex as ordinary identifiers.__
 
 இறக்கு "../kaNiqam.qmz";
 
-// --- straight line --------------------------------------------------------
+// __--- straight line --------------------------------------------------------__
 //
 // நேர்கோட்டு_ஆண்டு(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)
 //
-// The same amount every year, so what the asset cost is spread over what it is
-// used for. A residual value is what you expect to sell it for at the end; it
-// is not depreciated, because you expect to get it back.
+// __The same amount every year, so what the asset cost is spread over what it is__
+// __used for. A residual value is what you expect to sell it for at the end; it__
+// __is not depreciated, because you expect to get it back.__
 செயல் நேர்கோட்டு_ஆண்டு(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்) {
     (பயன்_ஆண்டுகள் <= 0) எனில் { திரும்பு 0; }
     திரும்பு வட்டமிடு((கொள்முதல்_மதிப்பு - எஞ்சிய_மதிப்பு) / பயன்_ஆண்டுகள், 2);
@@ -36,20 +36,20 @@
 
 // நேர்கோட்டு_விகிதம்(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)
 //
-// The same thing as a percentage of cost, which is how Schedule II states it.
+// __The same thing as a percentage of cost, which is how Schedule II states it.__
 செயல் நேர்கோட்டு_விகிதம்(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்) {
     (கொள்முதல்_மதிப்பு <= 0 அல்லது பயன்_ஆண்டுகள் <= 0) எனில் { திரும்பு 0; }
     ஆண்டுத்_தொகை = (கொள்முதல்_மதிப்பு - எஞ்சிய_மதிப்பு) / பயன்_ஆண்டுகள்;
     திரும்பு வட்டமிடு(ஆண்டுத்_தொகை * 100 / கொள்முதல்_மதிப்பு, 2);
 }
 
-// --- written-down value ---------------------------------------------------
+// __--- written-down value ---------------------------------------------------__
 //
 // குறையும்_ஆண்டு(திறப்பு_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு)
 //
-// A percentage of what is left, so the charge falls every year and never quite
-// reaches nothing — which is why the residual has to stop it. Without that
-// floor an asset depreciates for ever in ever smaller amounts.
+// __A percentage of what is left, so the charge falls every year and never quite__
+// __reaches nothing — which is why the residual has to stop it. Without that__
+// __floor an asset depreciates for ever in ever smaller amounts.__
 செயல் குறையும்_ஆண்டு(திறப்பு_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு) {
     கணக்கிட்டது = வட்டமிடு(சதவீதம்(திறப்பு_மதிப்பு, ஆண்டு_விகிதம்), 2);
     தாழ்வு = திறப்பு_மதிப்பு - எஞ்சிய_மதிப்பு;
@@ -59,13 +59,13 @@
     திரும்பு கணக்கிட்டது;
 }
 
-// --- part of a year -------------------------------------------------------
+// __--- part of a year -------------------------------------------------------__
 //
 // பகுதி_ஆண்டு(ஆண்டுத்_தொகை, வைத்திருந்த_நாட்கள், ஆண்டு_நாட்கள்)
 //
-// An asset bought in August is not depreciated for a full year. The Companies
-// Act wants this by days held, which is why the days are passed rather than a
-// number of months.
+// __An asset bought in August is not depreciated for a full year. The Companies__
+// __Act wants this by days held, which is why the days are passed rather than a__
+// __number of months.__
 செயல் பகுதி_ஆண்டு(ஆண்டுத்_தொகை, வைத்திருந்த_நாட்கள், ஆண்டு_நாட்கள்) {
     (ஆண்டு_நாட்கள் <= 0) எனில் { திரும்பு 0; }
     (வைத்திருந்த_நாட்கள் >= ஆண்டு_நாட்கள்) எனில் { திரும்பு ஆண்டுத்_தொகை; }
@@ -73,15 +73,15 @@
     திரும்பு வட்டமிடு(ஆண்டுத்_தொகை * வைத்திருந்த_நாட்கள் / ஆண்டு_நாட்கள், 2);
 }
 
-// --- the schedule ---------------------------------------------------------
+// __--- the schedule ---------------------------------------------------------__
 //
 // நேர்கோட்டு_அட்டவணை(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்)
 //
-// One record per year: {ஆண்டெண், திறப்பு, தேய்வு, முடிவு}. The last year
-// takes whatever is left, for the same reason the last instalment of a loan
-// does: a charge rounded to the paisa and taken five times does not equal the
-// amount to be written off, and a schedule that leaves eight paise on the
-// books never closes the asset.
+// __One record per year: {ஆண்டெண், திறப்பு, தேய்வு, முடிவு}. The last year__
+// __takes whatever is left, for the same reason the last instalment of a loan__
+// __does: a charge rounded to the paisa and taken five times does not equal the__
+// __amount to be written off, and a schedule that leaves eight paise on the__
+// __books never closes the asset.__
 செயல் நேர்கோட்டு_அட்டவணை(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்) {
     ஆண்டுத்_தொகை = நேர்கோட்டு_ஆண்டு(கொள்முதல்_மதிப்பு, எஞ்சிய_மதிப்பு, பயன்_ஆண்டுகள்);
     அட்டவணை = [];
@@ -126,7 +126,7 @@
     திரும்பு அட்டவணை;
 }
 
-// மொத்தத்_தேய்வு(அட்டவணை) — everything written off across the schedule
+// __மொத்தத்_தேய்வு(அட்டவணை) — everything written off across the schedule__
 செயல் மொத்தத்_தேய்வு(அட்டவணை) {
     கூட்டல் = 0;
     ஒவ்வொரு ஆண்டுப்_பதிவு இல் அட்டவணை {
@@ -135,28 +135,28 @@
     திரும்பு வட்டமிடு(கூட்டல், 2);
 }
 
-// --- a block of assets ----------------------------------------------------
+// __--- a block of assets ----------------------------------------------------__
 //
 // தொகுதி_தேய்வு(திறப்பு_மதிப்பு, சேர்த்தவை, விற்றவை, ஆண்டு_விகிதம்,
 //                 குறைந்த_நாட்கள்_சேர்ப்பு, பாதி_விகித_எல்லை)
 //
-// Income tax depreciates a block, not an asset: everything at one rate is
-// pooled, purchases are added, sale proceeds are taken out, and the rate
-// applies to what is left. An individual asset has no written-down value of
-// its own inside a block.
+// __Income tax depreciates a block, not an asset: everything at one rate is__
+// __pooled, purchases are added, sale proceeds are taken out, and the rate__
+// __applies to what is left. An individual asset has no written-down value of__
+// __its own inside a block.__
 //
-// Something bought late in the year gets half the rate. The threshold that
-// decides "late" is a statutory number, so it is a parameter — pass the one in
-// force rather than trusting a default written here.
+// __Something bought late in the year gets half the rate. The threshold that__
+// __decides "late" is a statutory number, so it is a parameter — pass the one in__
+// __force rather than trusting a default written here.__
 //
-// குறைந்த_நாட்கள்_சேர்ப்பு is what was added while used for fewer days than
-// the threshold; சேர்த்தவை is everything else added.
+// __குறைந்த_நாட்கள்_சேர்ப்பு is what was added while used for fewer days than__
+// __the threshold; சேர்த்தவை is everything else added.__
 செயல் தொகுதி_தேய்வு(திறப்பு_மதிப்பு, சேர்த்தவை, விற்றவை, ஆண்டு_விகிதம்,
                      குறைந்த_நாட்கள்_சேர்ப்பு) {
     முழு_விகிதப்_பகுதி = திறப்பு_மதிப்பு + சேர்த்தவை - விற்றவை;
 
-    // Sales can empty a block, and a negative base is not depreciated — it is
-    // a balancing charge, which is a different computation and not this one.
+    // __Sales can empty a block, and a negative base is not depreciated — it is__
+    // __a balancing charge, which is a different computation and not this one.__
     (முழு_விகிதப்_பகுதி < 0) எனில் { முழு_விகிதப்_பகுதி = 0; }
 
     முழு = வட்டமிடு(சதவீதம்(முழு_விகிதப்_பகுதி, ஆண்டு_விகிதம்), 2);

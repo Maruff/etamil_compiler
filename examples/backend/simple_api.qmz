@@ -1,6 +1,6 @@
-// Simple API Server
-// Demonstrates basic HTTP server capabilities
-// Run: ./etamil_compiler --server --port 8080 simple_api.qmz
+// __Simple API Server__
+// __Demonstrates basic HTTP server capabilities__
+// __Run: ./etamil_compiler --server --port 8080 simple_api.qmz__
 
 எண் _api_version;
 எண் _uptime_seconds;

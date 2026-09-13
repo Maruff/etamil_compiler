@@ -1,22 +1,22 @@
-// கோப்பு உள்ளீடு/வெளியீடு — file input and output
+// __கோப்பு உள்ளீடு/வெளியீடு — file input and output__
 //
-// Self-contained: it writes the file it later reads, so it runs from a
-// clean checkout without needing any data file to be present.
+// __Self-contained: it writes the file it later reads, so it runs from a__
+// __clean checkout without needing any data file to be present.__
 
 கோப்பு_திற "data.txt", "write";
 கோப்பு_எழுது "data.txt", "125000";
 கோப்பு_மூடு "data.txt";
 
-// Read it back
+// __Read it back__
 எண் வருவாய்;
 கோப்பு_படி "data.txt", வருவாய்;
 அச்சு "கோப்பிலிருந்து வருவாய்: " & வருவாய்;
 
-// Text read from a file is coerced when used as a number
+// __Text read from a file is coerced when used as a number__
 வரி = வருவாய் * 10%;
 அச்சு "வரி (10%): " & வரி;
 
-// Write a result out
+// __Write a result out__
 கோப்பு_திற "output.txt", "write";
 கோப்பு_எழுது "output.txt", "வரி = " & வரி;
 கோப்பு_மூடு "output.txt";

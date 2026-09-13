@@ -1,48 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
-// nUlakam/varuvAy/mARRam.qmz — மாற்றம், contract modifications
+// __nUlakam/varuvAy/mARRam.qmz — மாற்றம், contract modifications__
 //
-// A variation order is the commonest event in a project and the least
-// consistently accounted for. Ind AS 115 gives it **three** treatments, they
-// produce materially different revenue in the period of the change, and which
-// one applies is decided by two questions of fact rather than by preference.
+// __A variation order is the commonest event in a project and the least__
+// __consistently accounted for. Ind AS 115 gives it **three** treatments, they__
+// __produce materially different revenue in the period of the change, and which__
+// __one applies is decided by two questions of fact rather than by preference.__
 //
-//   **A separate contract.** The scope grows by distinct goods or services
-//     *and* the price grows by their standalone selling price. The original
-//     contract is untouched and the addition stands alone.
+//   __**A separate contract.** The scope grows by distinct goods or services__
+//     __*and* the price grows by their standalone selling price. The original__
+//     __contract is untouched and the addition stands alone.__
 //
-//   **A termination and a new contract.** The remaining goods are distinct
-//     from those already transferred, but the price does not reflect their
-//     standalone selling price. Revenue already recognised is **not** touched;
-//     what is left of the original price, plus the modification, is spread
-//     over what is left to do. Prospective.
+//   __**A termination and a new contract.** The remaining goods are distinct__
+//     __from those already transferred, but the price does not reflect their__
+//     __standalone selling price. Revenue already recognised is **not** touched;__
+//     __what is left of the original price, plus the modification, is spread__
+//     __over what is left to do. Prospective.__
 //
-//   **A cumulative catch-up.** The remaining goods are not distinct — the
-//     modification lands inside a single performance obligation that is part
-//     satisfied. The whole contract is remeasured and the difference is taken
-//     **now**, which can be negative.
+//   __**A cumulative catch-up.** The remaining goods are not distinct — the__
+//     __modification lands inside a single performance obligation that is part__
+//     __satisfied. The whole contract is remeasured and the difference is taken__
+//     __**now**, which can be negative.__
 //
-// The three are not a spectrum and there is no discretion between them. The
-// first question is whether the added goods are distinct and priced at
-// standalone value; the second is whether what remains is distinct from what
-// has gone. மூன்று_வழியும் computes all three so the difference can be seen
-// rather than argued about — it is not an invitation to choose.
+// __The three are not a spectrum and there is no discretion between them. The__
+// __first question is whether the added goods are distinct and priced at__
+// __standalone value; the second is whether what remains is distinct from what__
+// __has gone. மூன்று_வழியும் computes all three so the difference can be seen__
+// __rather than argued about — it is not an invitation to choose.__
 
 இறக்கு "../kaNiqam.qmz";
 இறக்கு "../poruL.qmz";
 
 // =========================================================================
-// ஒரு மாற்றம் — the modification
+// __ஒரு மாற்றம் — the modification__
 // =========================================================================
 //
 // மாற்றம்_ஆக்கு(மாற்றக்_குறி, கூடுதல்_மதிப்பு, கூடுதல்_தனி_மதிப்பு,
 //                தனிப்_பொருட்களா, ஒப்புதல்_உண்டா)
 //
-// கூடுதல்_மதிப்பு is what the customer agreed to pay for the change.
-// கூடுதல்_தனி_மதிப்பு is what those added goods or services would sell for on
-// their own. The two being equal is what makes a modification a separate
-// contract, and they are almost never equal — a variation is usually priced
-// off the original contract's rates rather than off today's.
+// __கூடுதல்_மதிப்பு is what the customer agreed to pay for the change.__
+// __கூடுதல்_தனி_மதிப்பு is what those added goods or services would sell for on__
+// __their own. The two being equal is what makes a modification a separate__
+// __contract, and they are almost never equal — a variation is usually priced__
+// __off the original contract's rates rather than off today's.__
 செயல் மாற்றம்_ஆக்கு(மாற்றக்_குறி, கூடுதல்_மதிப்பு, கூடுதல்_தனி_மதிப்பு,
                      தனிப்_பொருட்களா, ஒப்புதல்_உண்டா) {
     திரும்பு {"குறி": மாற்றக்_குறி,
@@ -54,34 +54,34 @@
 
 // மாற்றம்_ஏற்கப்பட்டதா(ஒரு_மாற்றம்)
 //
-// A modification exists for accounting only when the parties have **approved**
-// it — in writing, orally or by customary practice. Until then the work may be
-// being done and the money may be expected, and neither makes a modification.
+// __A modification exists for accounting only when the parties have **approved**__
+// __it — in writing, orally or by customary practice. Until then the work may be__
+// __being done and the money may be expected, and neither makes a modification.__
 //
-// Unapproved work is not simply ignored, though. Where the entity has an
-// enforceable right to *something* it is a claim, and a claim is **variable
-// consideration** in the original contract, subject to the constraint in
-// oppanqam.qmz. That is a different treatment and a much more cautious one,
-// and treating an unapproved variation as an approved modification is the way
-// a contractor recognises revenue for work the customer has not agreed to pay
-// for.
+// __Unapproved work is not simply ignored, though. Where the entity has an__
+// __enforceable right to *something* it is a claim, and a claim is **variable__
+// __consideration** in the original contract, subject to the constraint in__
+// __oppanqam.qmz. That is a different treatment and a much more cautious one,__
+// __and treating an unapproved variation as an approved modification is the way__
+// __a contractor recognises revenue for work the customer has not agreed to pay__
+// __for.__
 செயல் மாற்றம்_ஏற்கப்பட்டதா(ஒரு_மாற்றம்) {
     திரும்பு ஒரு_மாற்றம்["ஒப்புதல்_உண்டா"];
 }
 
 // =========================================================================
-// எந்த வகை — which of the three
+// __எந்த வகை — which of the three__
 // =========================================================================
 //
 // தனி_ஒப்பந்தமா(ஒரு_மாற்றம்)
 //
-// Both conditions, and the second is the one that fails. The added goods must
-// be distinct, **and** the price must increase by their standalone selling
-// price.
+// __Both conditions, and the second is the one that fails. The added goods must__
+// __be distinct, **and** the price must increase by their standalone selling__
+// __price.__
 //
-// A variation priced at the original contract's rates when those rates are no
-// longer what the work would fetch is not at standalone selling price, and it
-// is not a separate contract however cleanly it could be invoiced separately.
+// __A variation priced at the original contract's rates when those rates are no__
+// __longer what the work would fetch is not at standalone selling price, and it__
+// __is not a separate contract however cleanly it could be invoiced separately.__
 செயல் தனி_ஒப்பந்தமா(ஒரு_மாற்றம்) {
     (இல்லை ஒரு_மாற்றம்["தனிப்_பொருட்களா"]) எனில் { திரும்பு பொய்; }
     திரும்பு ஒரு_மாற்றம்["கூடுதல்_மதிப்பு"]
@@ -90,15 +90,15 @@
 
 // மாற்ற_வகை(ஒரு_மாற்றம், எஞ்சியவை_தனியா)
 //
-// The decision, in the order the standard asks it.
+// __The decision, in the order the standard asks it.__
 //
-// எஞ்சியவை_தனியா is whether what remains to be done is distinct from what has
-// already been transferred. It is a different question from whether the *added*
-// goods are distinct, and conflating the two is what sends a modification down
-// the wrong branch.
+// __எஞ்சியவை_தனியா is whether what remains to be done is distinct from what has__
+// __already been transferred. It is a different question from whether the *added*__
+// __goods are distinct, and conflating the two is what sends a modification down__
+// __the wrong branch.__
 //
-// Answers a தவறு for an unapproved modification rather than a kind, because
-// there is nothing to account for yet.
+// __Answers a தவறு for an unapproved modification rather than a kind, because__
+// __there is nothing to account for yet.__
 செயல் மாற்ற_வகை(ஒரு_மாற்றம், எஞ்சியவை_தனியா) {
     (இல்லை மாற்றம்_ஏற்கப்பட்டதா(ஒரு_மாற்றம்)) எனில் {
         திரும்பு தவறு("மாற்றம் ஒப்புக்கொள்ளப்படவில்லை  "
@@ -112,18 +112,18 @@
 }
 
 // =========================================================================
-// எதிர்நோக்கு — termination and a new contract
+// __எதிர்நோக்கு — termination and a new contract__
 // =========================================================================
 //
 // எஞ்சிய_மதிப்பு(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், கூடுதல்_மதிப்பு)
 //
-// The consideration to spread over what is left: the unrecognised part of the
-// original transaction price, plus the modification.
+// __The consideration to spread over what is left: the unrecognised part of the__
+// __original transaction price, plus the modification.__
 //
-// Revenue already recognised is **not** adjusted. The old contract is treated
-// as ended, so everything about it up to that date stands — which is what
-// makes this treatment prospective, and what makes it so much less disruptive
-// than the third one.
+// __Revenue already recognised is **not** adjusted. The old contract is treated__
+// __as ended, so everything about it up to that date stands — which is what__
+// __makes this treatment prospective, and what makes it so much less disruptive__
+// __than the third one.__
 செயல் எஞ்சிய_மதிப்பு(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், கூடுதல்_மதிப்பு) {
     விடை = மூல_மதிப்பு - அங்கீகரித்த_வருவாய் + கூடுதல்_மதிப்பு;
     (விடை < 0) எனில் { திரும்பு 0; }
@@ -132,11 +132,11 @@
 
 // எஞ்சிய_அலகு_மதிப்பு(எஞ்சிய_மொத்தம், எஞ்சிய_அலகுகள்)
 //
-// The blended rate the rest of the contract is delivered at. It is neither the
-// original rate nor the modification's, which is the arithmetic consequence of
-// the treatment and the thing project managers find hardest to accept: after a
-// discounted variation, every remaining unit earns less than the contract said
-// it would, including the units that were never part of the variation.
+// __The blended rate the rest of the contract is delivered at. It is neither the__
+// __original rate nor the modification's, which is the arithmetic consequence of__
+// __the treatment and the thing project managers find hardest to accept: after a__
+// __discounted variation, every remaining unit earns less than the contract said__
+// __it would, including the units that were never part of the variation.__
 செயல் எஞ்சிய_அலகு_மதிப்பு(எஞ்சிய_மொத்தம், எஞ்சிய_அலகுகள்) {
     (எஞ்சிய_அலகுகள் <= 0) எனில் {
         திரும்பு தவறு("எஞ்சிய அலகுகள் இல்லை  "
@@ -146,20 +146,20 @@
 }
 
 // =========================================================================
-// கூட்டுப் பிடிப்பு — the cumulative catch-up
+// __கூட்டுப் பிடிப்பு — the cumulative catch-up__
 // =========================================================================
 //
 // பிடிப்புத்_தொகை(புதிய_மொத்த_மதிப்பு, புதிய_முன்னேற்றம், அங்கீகரித்த_வருவாய்)
 //
-// Remeasure the whole contract at the new price and the new progress, and take
-// the difference now.
+// __Remeasure the whole contract at the new price and the new progress, and take__
+// __the difference now.__
 //
-// **It is routinely negative**, and that catches people. A modification that
-// adds both price and cost usually adds proportionally more cost, so progress
-// falls — the same work is now a smaller fraction of a larger job — and
-// revenue to date falls with it. A variation order can therefore *reduce* this
-// period's revenue while increasing the contract's value, and both facts are
-// true at once.
+// __**It is routinely negative**, and that catches people. A modification that__
+// __adds both price and cost usually adds proportionally more cost, so progress__
+// __falls — the same work is now a smaller fraction of a larger job — and__
+// __revenue to date falls with it. A variation order can therefore *reduce* this__
+// __period's revenue while increasing the contract's value, and both facts are__
+// __true at once.__
 செயல் பிடிப்புத்_தொகை(புதிய_மொத்த_மதிப்பு, புதிய_முன்னேற்றம்,
                        அங்கீகரித்த_வருவாய்) {
     பயன்படும்_முன்னேற்றம் = புதிய_முன்னேற்றம்;
@@ -173,25 +173,25 @@
 }
 
 // =========================================================================
-// மூன்று வழியும் — the same modification, three ways
+// __மூன்று வழியும் — the same modification, three ways__
 // =========================================================================
 //
 // மூன்று_வழியும்(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், ஒரு_மாற்றம்,
 //                 புதிய_முன்னேற்றம்)
 //
-// What each treatment would recognise in the period of the modification, side
-// by side.
+// __What each treatment would recognise in the period of the modification, side__
+// __by side.__
 //
-// **This is not a menu.** The treatment is decided by மாற்ற_வகை from facts
-// about the goods, and the only reason to compute the other two is to see how
-// much turns on those facts. In the tests the same variation is worth nothing
-// now under two treatments and minus two thousand under the third, and a
-// business that has not noticed which one applies to it has not noticed a
-// swing it cannot explain afterwards.
+// __**This is not a menu.** The treatment is decided by மாற்ற_வகை from facts__
+// __about the goods, and the only reason to compute the other two is to see how__
+// __much turns on those facts. In the tests the same variation is worth nothing__
+// __now under two treatments and minus two thousand under the third, and a__
+// __business that has not noticed which one applies to it has not noticed a__
+// __swing it cannot explain afterwards.__
 //
-// A separate contract and a prospective modification both recognise **nothing
-// extra in the period of the change** — they differ in what happens to every
-// period after it.
+// __A separate contract and a prospective modification both recognise **nothing__
+// __extra in the period of the change** — they differ in what happens to every__
+// __period after it.__
 செயல் மூன்று_வழியும்(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், ஒரு_மாற்றம்,
                       புதிய_முன்னேற்றம்) {
     புதிய_மொத்தம் = வட்டமிடு(மூல_மதிப்பு + ஒரு_மாற்றம்["கூடுதல்_மதிப்பு"], 2);
@@ -216,9 +216,9 @@
 // மாற்றத்தைப்_பயன்படுத்து(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், ஒரு_மாற்றம்,
 //                          எஞ்சியவை_தனியா, புதிய_முன்னேற்றம்)
 //
-// The decision and its consequence together: work out which treatment applies,
-// then report only that one. This is what a caller should use;
-// மூன்று_வழியும் is for understanding the choice, not for making it.
+// __The decision and its consequence together: work out which treatment applies,__
+// __then report only that one. This is what a caller should use;__
+// __மூன்று_வழியும் is for understanding the choice, not for making it.__
 செயல் மாற்றத்தைப்_பயன்படுத்து(மூல_மதிப்பு, அங்கீகரித்த_வருவாய், ஒரு_மாற்றம்,
                                 எஞ்சியவை_தனியா, புதிய_முன்னேற்றம்) {
     வகை_விடை = மாற்ற_வகை(ஒரு_மாற்றம், எஞ்சியவை_தனியா);

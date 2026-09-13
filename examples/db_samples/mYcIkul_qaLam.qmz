@@ -1,16 +1,16 @@
-// மைசீகுல் தளம் — a ledger in MySQL / MariaDB
+// __மைசீகுல் தளம் — a ledger in MySQL / MariaDB__
 //
-// Placeholders are `?`, as in SQLite, not PostgreSQL's `$1`. Queries are
-// always parameterised: values are bound by the driver, never spliced into
-// the SQL text.
+// __Placeholders are `?`, as in SQLite, not PostgreSQL's `$1`. Queries are__
+// __always parameterised: values are bound by the driver, never spliced into__
+// __the SQL text.__
 //
-// Needs a build with the driver and a reachable server:
+// __Needs a build with the driver and a reachable server:__
 //
-//   cargo build --release --features mysql
-//   mysql -u root -e "CREATE DATABASE IF NOT EXISTS kaNakku"
-//   etamil --vm examples/db_samples/mYcIkul_qaLam.qmz
+//   __cargo build --release --features mysql__
+//   __mysql -u root -e "CREATE DATABASE IF NOT EXISTS kaNakku"__
+//   __etamil --vm examples/db_samples/mYcIkul_qaLam.qmz__
 //
-// The URL is written into the இணை line below; edit it for your server.
+// __The URL is written into the இணை line below; edit it for your server.__
 
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";
@@ -20,8 +20,8 @@
 
 தளம்_செய் "DROP TABLE IF EXISTS pativukaL", [];
 
-// DECIMAL, not DOUBLE: a ledger has to balance to the paisa, and MySQL's
-// DOUBLE is binary floating point.
+// __DECIMAL, not DOUBLE: a ledger has to balance to the paisa, and MySQL's__
+// __DOUBLE is binary floating point.__
 தளம்_செய் "CREATE TABLE pativukaL (
               id INT AUTO_INCREMENT PRIMARY KEY,
               peyar VARCHAR(64) NOT NULL,
@@ -65,12 +65,12 @@
 அச்சு "மொத்த செலவு: " & ரூபாய்(மொத்த_செலவு);
 அச்சு "நிகர இருப்பு: " & ரூபாய்(மொத்த_வரவு - மொத்த_செலவு);
 
-// --- The things worth checking on a real server -------------------------
+// __--- The things worth checking on a real server -------------------------__
 
 அச்சு "";
 அச்சு "=== சரிபார்ப்பு (checks) ===";
 
-// DECIMAL keeps its precision: these must be exact, not 0.30000000000000004.
+// __DECIMAL keeps its precision: these must be exact, not 0.30000000000000004.__
 தளம்_செய் "DROP TABLE IF EXISTS qacamam", [];
 தளம்_செய் "CREATE TABLE qacamam (மதிப்பு DECIMAL(20,4))", [];
 தளம்_செய் "INSERT INTO qacamam VALUES (?)", [0.1];
@@ -79,26 +79,26 @@
 அச்சு "0.1 + 0.2 = " & கூட்டல்[0].மொத்தம்
       & " — exactly 0.3? " & (கூட்டல்[0].மொத்தம் == 0.3);
 
-// A number bound to an INT key: MySQL coerces the text, so this must find it.
+// __A number bound to an INT key: MySQL coerces the text, so this must find it.__
 தளம்_வினா "SELECT peyar FROM pativukaL WHERE id = ?", [1], முதலாவது;
 அச்சு "int key by number: " & நீளம்(முதலாவது) & " row(s)";
 
-// A VARCHAR holding digits stays a string; a DECIMAL comes back a number.
+// __A VARCHAR holding digits stays a string; a DECIMAL comes back a number.__
 தளம்_வினா "SELECT CAST('1500' AS CHAR) AS உரையானது,
                   CAST(1500 AS DECIMAL(10,2)) AS எண்ணானது", [], வகைகள்;
 அச்சு "varchar -> " & வகை(வகைகள்[0].உரையானது)
       & ", decimal -> " & வகை(வகைகள்[0].எண்ணானது);
 
-// NULL round trips as இன்மை rather than as an empty string.
+// __NULL round trips as இன்மை rather than as an empty string.__
 தளம்_வினா "SELECT NULL AS ஒன்றுமில்லை", [], காலி;
 அச்சு "null -> " & வகை(காலி[0].ஒன்றுமில்லை);
 
-// A DATE column arrives as ISO text, which sorts chronologically.
+// __A DATE column arrives as ISO text, which sorts chronologically.__
 தளம்_வினா "SELECT nAL FROM pativukaL WHERE id = ?", [1], நாளது;
 அச்சு "date -> " & நாளது[0].nAL & " (" & வகை(நாளது[0].nAL) & ")";
 
-// The injection payload reaches the driver bound, so it matches nothing and
-// the table is still there afterwards.
+// __The injection payload reaches the driver bound, so it matches nothing and__
+// __the table is still there afterwards.__
 தளம்_வினா "SELECT peyar FROM pativukaL WHERE peyar = ?",
           ["'; DROP TABLE pativukaL; --"], தாக்குதல்;
 தளம்_வினா "SELECT COUNT(*) AS எண்ணிக்கை FROM pativukaL", [], எஞ்சியது;

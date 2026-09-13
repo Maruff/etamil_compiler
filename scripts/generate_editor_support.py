@@ -369,6 +369,22 @@ def read_builtins() -> list[dict]:
     return builtins
 
 
+def unmark(text: str) -> str:
+    """Drop the `__` marks an English comment carries.
+
+    A comment written in English is wrapped `// __like this__` so that an
+    editor showing the file in the eTamil font knows to draw those letters as
+    Latin rather than as Tamil — `docs/reference/SCRIPT_RULES.md`. The marks
+    are addressed to the editor, not to whoever reads a tooltip, so they come
+    off here. Without this every hover in the extension grew a `__` at each
+    end.
+    """
+    text = text.strip()
+    if text.startswith("__") and text.endswith("__") and len(text) > 4:
+        return text[2:-2].strip()
+    return text
+
+
 def pick_doc(doc_lines: list[str], name: str) -> str:
     """The line of a comment block that describes `name`, else the first."""
     for line in doc_lines:
@@ -418,7 +434,7 @@ def read_stdlib() -> list[dict]:
                 stripped = lines[cursor].strip()
                 if not stripped.startswith("//"):
                     break
-                doc.append(stripped.lstrip("/").strip())
+                doc.append(unmark(stripped.lstrip("/").strip()))
                 cursor -= 1
             doc.reverse()
 
@@ -499,6 +515,19 @@ def build_grammar(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) 
             "begin": "//",
             "end": "$",
             "beginCaptures": {"0": {"name": "punctuation.definition.comment.etamil"}},
+            # `__ … __` around a comment written in English, so that a reader
+            # — and an editor showing the file in the eTamil font, where an
+            # unmarked `c` draws ச — can tell it from a comment written in
+            # ezuqqu. docs/reference/SCRIPT_RULES.md. Non-greedy, and a line
+            # at a time: the lexer has no block comment, so a mark cannot
+            # span lines and a greedy match would swallow two marked comments
+            # on one line into one.
+            "patterns": [
+                {
+                    "name": "meta.english.comment.etamil",
+                    "match": r"__.+?__",
+                }
+            ],
         },
         # Only double quotes. eTamil has no single-quoted string, and the old
         # grammar's `'...'` rule turned any stray apostrophe into a phantom
@@ -626,6 +655,14 @@ def build_grammar(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) 
             {"name": "keyword.operator.arithmetic.etamil", "match": r"[+\-*/]"},
             # `?` — unwrap a சரி or hand the தவறு to the caller.
             {"name": "keyword.operator.try.etamil", "match": r"\?"},
+            # A name marked English by Rule 1. Last of the name rules, so a
+            # keyword (`_length`), a builtin and an nUlakam function keep the
+            # scope that says what they are; what is left is the variables and
+            # parameters people write.
+            {
+                "name": "variable.other.english.etamil",
+                "match": rf"(?<![{TAMIL}\w])_[{TAMIL}\w]+",
+            },
             {"name": "punctuation.accessor.etamil", "match": r"\."},
             {"name": "punctuation.terminator.etamil", "match": r";"},
             {"name": "punctuation.separator.etamil", "match": r","},

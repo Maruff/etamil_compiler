@@ -1,19 +1,19 @@
-// examples/katY/katY_kAttu.qmz — a shop's whole day, end to end
+// __examples/katY/katY_kAttu.qmz — a shop's whole day, end to end__
 //
-// Catalogue in SQLite, a cart priced with per-line GST, an order placed
-// atomically against stock, the same order posted into a double-entry ledger,
-// and the three statements that come out of it.
+// __Catalogue in SQLite, a cart priced with per-line GST, an order placed__
+// __atomically against stock, the same order posted into a double-entry ledger,__
+// __and the three statements that come out of it.__
 //
-//   etamil --vm examples/katY/katY_kAttu.qmz
+//   __etamil --vm examples/katY/katY_kAttu.qmz__
 //
-// Self-contained: it creates its own katY.db in the working directory.
+// __Self-contained: it creates its own katY.db in the working directory.__
 
 இறக்கு "katY.qmz";
 இறக்கு "../../nUlakam/kaNakkiyal/aRikkYkaL.qmz";
 
 தளம்_இணை சீகுலைட், "katY.db";
 
-// --- The catalogue --------------------------------------------------------
+// __--- The catalogue --------------------------------------------------------__
 
 தளம்_செய் "DROP TABLE IF EXISTS carakkukaL", [];
 தளம்_செய் "CREATE TABLE carakkukaL (
@@ -36,20 +36,20 @@
           & "  வரி " & ஒரு_சரக்கு.vari_viqam & "%   இருப்பு " & ஒரு_சரக்கு.iruppu;
 }
 
-// --- Order placement ------------------------------------------------------
+// __--- Order placement ------------------------------------------------------__
 
 // ஆணை_இடு(ஆணை_எண், வாடிக்கையாளர், வரிசைகள்)
 //
-// Wrapped in a transaction, because two things have to happen together: stock
-// comes down and the order goes in. Driven as plain SQL through தளம்_செய் —
-// the VM holds one connection across statements, so BEGIN and COMMIT mean what
-// they say. Without this an order could be recorded against stock that was
-// never reserved, or stock could vanish with no order to show for it.
+// __Wrapped in a transaction, because two things have to happen together: stock__
+// __comes down and the order goes in. Driven as plain SQL through தளம்_செய் —__
+// __the VM holds one connection across statements, so BEGIN and COMMIT mean what__
+// __they say. Without this an order could be recorded against stock that was__
+// __never reserved, or stock could vanish with no order to show for it.__
 செயல் ஆணை_இடு(ஆணை_எண், வாடிக்கையாளர்_பெயர், நாள், ஆணை_வரிசைகள், செலுத்தவேண்டியது) {
     தளம்_செய் "BEGIN", [];
 
-    // Every line is checked before anything is written: a partial order is
-    // worse than a refused one.
+    // __Every line is checked before anything is written: a partial order is__
+    // __worse than a refused one.__
     ஒவ்வொரு ஒரு_வரிசை இல் ஆணை_வரிசைகள் {
         தளம்_வினா "SELECT iruppu FROM carakkukaL WHERE kuRi = ?",
                   [ஒரு_வரிசை.சரக்கு_குறி], கிடைப்பு;
@@ -92,14 +92,14 @@
               aLavu INTEGER NOT NULL, alaku_vilY TEXT NOT NULL,
               vari_viqam TEXT NOT NULL)", [];
 
-// --- A customer buys something -------------------------------------------
+// __--- A customer buys something -------------------------------------------__
 
 வண்டி = [
     வண்டி_ஒரு_வரிசை("P1", "பட்டுப் புடவை", 4500, 2, 5),
     வண்டி_ஒரு_வரிசை("P2", "கைப்பேசி உறை", 349.50, 3, 18)
 ];
 
-கணக்கு = வண்டி_கணக்கு(வண்டி, மெய்);      // மெய் = within the state
+கணக்கு = வண்டி_கணக்கு(வண்டி, மெய்);      // __மெய் = within the state__
 
 அச்சு "";
 விலைப்பட்டியல்_அச்சிடு("INV-001", "ரவி குமார்", "2026-08-20", வண்டி, கணக்கு);
@@ -108,39 +108,39 @@
 அச்சு "";
 அச்சு "ஆணை: " & இயல்பு(விளைவு, "மறுக்கப்பட்டது");
 
-// --- And one that cannot be filled ---------------------------------------
+// __--- And one that cannot be filled ---------------------------------------__
 
 பெரிய_வண்டி = [வண்டி_ஒரு_வரிசை("P3", "வெண்கல விளக்கு", 1250, 10, 12)];
 மறுப்பு = ஆணை_இடு("ORD-002", "பிரியா", "2026-08-20", பெரிய_வண்டி, 14000);
 அச்சு "மறுக்கப்பட்டதா: " & தவறா(மறுப்பு);
 
-// The rollback has to have put the stock back exactly as it was.
+// __The rollback has to have put the stock back exactly as it was.__
 தளம்_வினா "SELECT iruppu FROM carakkukaL WHERE kuRi = ?", ["P3"], மீதி;
 அச்சு "P3 இருப்பு: " & மீதி[0].iruppu & "  (3 = rollback restored it)";
 
 தளம்_வினா "SELECT COUNT(*) AS எண்ணிக்கை FROM ANYkaL", [], ஆணைகள்;
 அச்சு "பதிந்த ஆணைகள்: " & ஆணைகள்[0].எண்ணிக்கை & "  (1 = the refused one left nothing)";
 
-// --- The books ------------------------------------------------------------
-// The same order, posted as double entry. This is the part a shop usually
-// bolts on afterwards.
+// __--- The books ------------------------------------------------------------__
+// __The same order, posted as double entry. This is the part a shop usually__
+// __bolts on afterwards.__
 
 கணக்குகள் = கடை_கணக்குகள்();
 பேரேடு = [];
 
-// Opening capital.
+// __Opening capital.__
 தொடக்கம் = பரிவர்த்தனை_ஆக்கு("JV-000", "2026-04-01", "தொடக்க மூலதனம்", [
     பற்று_வரிசை(கணக்கு_வங்கி(), 200000),
     வரவு_வரிசை(கணக்கு_மூலதனம்(), 200000)
 ]);
 பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, தொடக்கம்));
 
-// The sale: the customer owes the gross, revenue takes the net, and the tax
-// sits in a liability until it is paid over.
-// Posted with பரிவர்த்தனை_ஆக்கு rather than விற்பனை_பரிவர்த்தனை: that helper
-// applies one rate to the whole invoice, and the tax here was already worked
-// out per line, so recomputing it would disagree with what the customer was
-// charged.
+// __The sale: the customer owes the gross, revenue takes the net, and the tax__
+// __sits in a liability until it is paid over.__
+// __Posted with பரிவர்த்தனை_ஆக்கு rather than விற்பனை_பரிவர்த்தனை: that helper__
+// __applies one rate to the whole invoice, and the tax here was already worked__
+// __out per line, so recomputing it would disagree with what the customer was__
+// __charged.__
 விற்பனை = பரிவர்த்தனை_ஆக்கு("INV-001", "2026-08-20", "ரவி குமார் — INV-001", [
     பற்று_வரிசை(கணக்கு_வாடிக்கையாளர்(), கணக்கு.செலுத்தவேண்டியது),
     வரவு_வரிசை(கணக்கு_விற்பனை(), கணக்கு.அடிப்படை),
@@ -148,7 +148,7 @@
 ]);
 பேரேடு = மதிப்பு(பதிவிடு(பேரேடு, விற்பனை));
 
-// The customer pays.
+// __The customer pays.__
 வரவு_பணம் = பணம்_பெறு("RCT-001", "2026-08-21", "ரவி குமார் — INV-001",
                         கணக்கு_வங்கி(), கணக்கு_வாடிக்கையாளர்(),
                         கணக்கு.செலுத்தவேண்டியது);

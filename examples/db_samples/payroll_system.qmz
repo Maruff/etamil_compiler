@@ -1,11 +1,11 @@
-// Payroll Management Example
-// Demonstrates financial calculations with database operations
+// __Payroll Management Example__
+// __Demonstrates financial calculations with database operations__
 //
-// This program shows:
-// 1. Employee salary management
-// 2. Tax calculations
-// 3. Deduction processing
-// 4. Net salary computation
+// __This program shows:__
+// __1. Employee salary management__
+// __2. Tax calculations__
+// __3. Deduction processing__
+// __4. Net salary computation__
 
 எண் employee_id = 0;
 எண் _gross_salary = 0;
@@ -13,7 +13,7 @@
 எண் _deduction = 0;
 எண் _net_salary = 0;
 
-// Employee salary data
+// __Employee salary data__
 கோப்பு_திற "payroll.csv", "write";
 
 தரவுரை_எழுது "payroll.csv", "emp_id,name,department,salary";
@@ -22,19 +22,19 @@
 தரவுரை_எழுது "payroll.csv", "E1003,குமார்,HR,35000";
 தரவுரை_எழுது "payroll.csv", "E1004,ஆனந்தி,Finance,45000";
 
-// Tax and deduction calculation for first employee
+// __Tax and deduction calculation for first employee__
 _gross_salary = 50000;
 
-// Tax: 10% of gross salary
+// __Tax: 10% of gross salary__
 _tax_amount = 5000;
 
-// Deductions: Insurance, PF, etc
+// __Deductions: Insurance, PF, etc__
 _deduction = 2000;
 
-// Net salary = Gross - Tax - Deductions
+// __Net salary = Gross - Tax - Deductions__
 _net_salary = 50000 - 5000 - 2000;
 
-// Write payroll summary
+// __Write payroll summary__
 கோப்பு_திற "payroll_summary.csv", "write";
 
 தரவுரை_எழுது "payroll_summary.csv", "emp_id,gross_salary,tax,deduction,net_salary";
@@ -43,17 +43,17 @@ _net_salary = 50000 - 5000 - 2000;
 தரவுரை_எழுது "payroll_summary.csv", "E1003,35000,3500,1400,30100";
 தரவுரை_எழுது "payroll_summary.csv", "E1004,45000,4500,1800,38700";
 
-// Display payroll information
+// __Display payroll information__
 அச்சு "Payroll Management System";
 அச்சு "=======================";
 
-// Read payroll data
+// __Read payroll data__
 கோப்பு_திற "payroll_summary.csv", "read";
 தரவுரை_படி "payroll_summary.csv", _net_salary;
 
 அச்சு "Employee E1001 Net Salary: ";
 அச்சு _net_salary;
 
-// Close files
+// __Close files__
 கோப்பு_மூடு "payroll.csv";
 கோப்பு_மூடு "payroll_summary.csv";

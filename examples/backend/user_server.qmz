@@ -1,6 +1,6 @@
-// User Management Server
-// Demonstrates calculation and variable management
-// Run: ./etamil_compiler --server --port 8080 user_server.qmz
+// __User Management Server__
+// __Demonstrates calculation and variable management__
+// __Run: ./etamil_compiler --server --port 8080 user_server.qmz__
 
 எண் _total_users;
 எண் _active_users;

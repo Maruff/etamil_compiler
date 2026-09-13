@@ -133,6 +133,20 @@ the rules depends on which font is in use; the marks are in the file either
 way. That is deliberate — a file must not read differently on a machine that
 does not have the eTamil font installed.
 
+### Where the extension has got to
+
+The grammar names both regions, which is what any highlighter needs to act on
+them:
+
+    meta.english.comment.etamil      the text between `__` and `__`
+    variable.other.english.etamil    a name marked by Rule 1
+
+A theme can colour those today. **Switching the font family cannot be done from
+a theme** — VS Code's token colours carry `fontStyle` and not `fontFamily` — so
+the two-font rendering above needs the extension to draw the marked ranges
+itself with a decoration, and that is not written yet. Until it is, work in the
+standard ISO font, where the marks cost nothing and still say what they say.
+
 ## What the rules do not cover
 
 **String literals.** A string is data. `"Total"` is what the program prints,
