@@ -115,7 +115,10 @@ function readNames(file) {
 }
 
 describe('the carried font', { skip: available ? false : 'run npm run build' }, () => {
-  const FONT = path.join(__dirname, '..', 'fonts', 'ican_qamiz-Regular.ttf');
+  // Read from the extension rather than restated, for the same reason the
+  // packaging table is: a rename that updates one of the two and not the other
+  // is the failure this file exists to catch.
+  const FONT = path.join(__dirname, '..', 'fonts', bundle.FONT_FILE);
 
   test('it ships', () => {
     assert.ok(fs.existsSync(FONT), `${FONT} is missing`);

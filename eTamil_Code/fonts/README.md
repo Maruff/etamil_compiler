@@ -1,9 +1,15 @@
 # The eTamil font
 
-`ican_qamiz-Regular.ttf` — `ican qamiz`, the font in which the ASCII letters
-carry Tamil glyphs. `c` draws ச, `q` draws த, `Z` draws ன: the ezuqqu mapping,
-one glyph per letter, so that Tamil can be typed on an ASCII keyboard and read
-back as Tamil.
+`ican_qamiz-Regular-2.1.1.ttf` — `ican qamiz`, the font in which the ASCII
+letters carry Tamil glyphs. `c` draws ச, `q` draws த, `Z` draws ன: the ezuqqu
+mapping, one glyph per letter, so that Tamil can be typed on an ASCII keyboard
+and read back as Tamil.
+
+`ican_qamiz-Regular.ttf`, version 2.1.0, is kept beside it. The two differ in
+the `name` table and nowhere else — every outline, the cmap and all sixteen
+other tables are byte-identical. `src/bundle.ts` names which one ships, and
+`test/bundle.test.js` reads that name rather than repeating it, so only the
+named file is installed on a machine.
 
 It ships inside the VSIX. **eTamil: Install the eTamil font** copies it to the
 per-user font directory of the machine — `~/Library/Fonts`, `~/.local/share/
@@ -25,7 +31,7 @@ Read from the font's own tables, not from anywhere else:
 |---|---|
 | family | `ican qamiz` |
 | subfamily | Regular |
-| version | 2.1.0 |
+| version | 2.1.1 |
 | units per em | 1000 |
 | glyphs | 132 |
 | `isFixedPitch` | 0 — **proportional, not monospaced** |

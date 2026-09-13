@@ -123,8 +123,13 @@ export function installLayout(
  */
 export const FONT_FAMILY = 'ican qamiz';
 
-/** The file, inside `fonts/`. */
-export const FONT_FILE = 'ican_qamiz-Regular.ttf';
+/**
+ * The file, inside `fonts/`.
+ *
+ * Carries the version, because `fonts/` keeps the earlier build beside it and
+ * a name that does not say which is which would make the pair unreadable.
+ */
+export const FONT_FILE = 'ican_qamiz-Regular-2.1.1.ttf';
 
 /** Where the font sits inside the extension. */
 export function fontSource(extensionPath: string): string {

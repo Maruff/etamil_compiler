@@ -1,5 +1,50 @@
 # Changelog
 
+## 1.0.2
+
+The carried font, which said two contradictory things about its own licence.
+Nothing in the language, the compiler or the extension's behaviour changes.
+
+### Fixed
+
+- **`ican qamiz` claimed all rights reserved while declaring the OFL.** The
+  font's `name[0]` read `Copyright (c) 2026, eTamil.in. All rights reserved.`
+  while `name[13]` and `name[14]` named the SIL Open Font License 1.1, and the
+  `OFL.txt` shipped beside it read `Copyright (c) 2026, eTamil.in.` with no
+  reservation at all. A font offered under the OFL cannot also reserve every
+  right. `name[0]` now matches `OFL.txt` exactly.
+
+  The font was not regenerated from `ican_qmz.sfd` to do it. That source holds
+  201 glyphs, some seventy of them encoded at Tamil codepoints, against the 132
+  and the empty Tamil block this build ships — the divergence `fonts/README.md`
+  already warns about. Rebuilding would have produced a different font. Only
+  the `name` table was rewritten: the other sixteen tables are byte-identical,
+  all eighteen table checksums verify, and `head.checksumAdjustment` was
+  recomputed.
+
+- **The codepoint count in `fonts/README.md` was wrong.** It said 143, which is
+  the union of all three cmap subtable key sets. The Mac subtable is keyed by
+  MacRoman bytes rather than Unicode, so those keys are not codepoints and do
+  not add to the total. Both Unicode subtables map the same 129.
+
+### Changed
+
+- **The font is now `fonts/ican_qamiz-Regular-2.1.1.ttf`.** Version 2.1.0 is
+  kept beside it under its old name so that the binary 1.0.1 shipped is still
+  in the tree; the two differ in the `name` table and nowhere else. The name
+  carries the version because two files that differ only in metadata are
+  unreadable otherwise.
+
+  `src/bundle.ts` names the file that ships, and `test/bundle.test.js` now
+  reads that name instead of repeating it, so a future rename cannot leave the
+  test asserting against a file the extension no longer installs.
+
+  Anyone who ran **eTamil: Install the eTamil font** under 1.0.1 has the 2.1.0
+  file in their per-user font directory already. Running it again installs
+  2.1.1 beside it rather than replacing it, because the filename changed and
+  both declare the family `ican qamiz`. Deleting `ican_qamiz-Regular.ttf` from
+  that directory leaves the corrected one.
+
 ## 1.0.1
 
 The listing, which 1.0.0 shipped without. Nothing in the language, the compiler
