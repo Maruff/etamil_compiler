@@ -56,6 +56,14 @@ jobs:
       - name: Romanized name check
         run: python ../scripts/check_names.py --check
 
+      # The `_` and `__` marks that say which ASCII is English and which is
+      # Tamil spelled in ASCII. `sum` and `col` are the same kind of word to
+      # everything else in this build; under the eTamil font one of them draws
+      # as ஸும் and the other as சொல், and only the mark tells them apart.
+      # docs/reference/SCRIPT_RULES.md.
+      - name: Script mark check
+        run: python ../scripts/check_script_rules.py --check
+
       - name: Build (release)
         run: cargo build --release
 
