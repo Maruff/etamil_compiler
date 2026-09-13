@@ -22,9 +22,12 @@ not already know the scheme cannot tell.
 This is not only a reading problem. There is an **eTamil font**, optional, in
 which the ASCII letters carry Tamil glyphs — `c` draws ச, `q` draws த, `Z`
 draws ன, one glyph per letter, exactly the ezuqqu mapping. A developer who
-turns it on sees `ceyal` as செயல் and writes Tamil on an ASCII keyboard. The
-same font draws Unicode Tamil as Tamil, so both spellings of a Tamil word look
-alike, which is the point.
+turns it on sees `ceyal` as செயல் and writes Tamil on an ASCII keyboard.
+
+Such a font need not have any Tamil of its own, and the one shipped with the VS
+Code extension has none: `ican qamiz` maps 129 codepoints, all of them ASCII,
+and not one character of U+0B80–U+0BFF. So it can only ever be **part** of the
+font a file is drawn in, over a base that does have Tamil.
 
 An English word under that font is unreadable. `sum` draws as ஸும். `status`
 draws as ஸ்டடுஸ். The font has no way to know that those particular ASCII
@@ -120,19 +123,26 @@ only what to do with the ASCII.
 
 ## What the marks mean to an editor
 
-An editor showing eTamil with the eTamil font renders, in that font:
+An editor keeps the **standard ISO font** as the base and draws in the eTamil
+font only:
 
 - ASCII identifiers with no leading `_`
 - ASCII in comments outside `__ … __`
 
-and falls back to the **standard ISO font** for:
+Everything else stays in the base font:
 
 - any identifier beginning with `_`, including keywords
 - any comment text between `__` and `__`
 - the licence header lines (below)
 - string literals, always — see below
-- Unicode Tamil, which either font draws correctly, so the choice does not
-  matter
+- **Unicode Tamil**, which the eTamil font may not have at all
+
+That last one decides the direction, and it is not a detail. An eTamil font
+exists to give the ASCII letters Tamil shapes; covering the Tamil block as well
+is optional and `ican qamiz` does not. So the base font has to be the one with
+Tamil in it, and the eTamil face is painted over the ASCII that wants it —
+never the other way round, which would leave every Tamil letter in every file
+falling back to whatever the machine offered.
 
 An editor using only standard fonts renders everything in them and ignores the
 marks, which then do nothing but tell the reader the same thing. Nothing about
@@ -143,7 +153,9 @@ does not have the eTamil font installed.
 ### What the extension does
 
 Set `etamil.eTamilFont` to the eTamil font's family name and the VS Code
-extension renders exactly the division above, from version 0.5.0.
+extension renders exactly the division above, from version 2.0.0. The
+extension carries such a font, `ican qamiz`, and **eTamil: Install the eTamil
+font** puts it where the operating system can see it.
 
 The grammar names both regions, which is what any highlighter needs to act on
 them, and a theme can colour them:

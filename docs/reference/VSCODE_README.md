@@ -94,7 +94,21 @@ for use outside the editor**: it copies both out to `~/.local`, or to
 `%LOCALAPPDATA%\Programs\eTamil` on Windows, and shows you the `PATH` and
 `ETAMIL_PATH` lines to add.
 
-To run a compiler of your own instead, point `etamil.compilerPath` at it. An
+### The eTamil font
+The extension also carries **`ican qamiz`**, the font in which the ASCII letters
+carry Tamil glyphs — `c` draws ச, `q` draws த. Run **eTamil: Install the eTamil
+font**: it copies the file into your own font directory, registers it where the
+platform needs registering, and offers to set `etamil.eTamilFont`. No
+administrator rights. Restart VS Code afterwards — the font list is read when
+the window starts.
+
+Shipping a font is not installing one: VS Code's editor is not a webview and
+has no API that registers a font, so it has to reach the operating system's
+font list before anything can name it. That is the whole reason for the
+command.
+
+### A compiler of your own
+Point `etamil.compilerPath` at it. An
 explicit path always wins over the carried one. Building that compiler needs
 Rust:
 ```bash

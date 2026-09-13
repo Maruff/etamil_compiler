@@ -29,6 +29,8 @@
 
 import * as vscode from 'vscode';
 
+import { FONT_FAMILY } from './bundle';
+import { fontInstalled } from './fontinstall';
 import { scanETamilScript } from './marks';
 
 const LANGUAGE = 'etamil';
@@ -47,6 +49,26 @@ const FONT_STACK = /^[A-Za-z0-9 _'",-]+$/;
 
 /** How long to wait after a keystroke before repainting. */
 const REPAINT_DEBOUNCE_MS = 120;
+
+/** Say so, once, when the setting names a font that is not on the machine. */
+let offered = false;
+
+async function offerToInstall(output: vscode.LogOutputChannel): Promise<void> {
+  if (offered) {
+    return;
+  }
+  offered = true;
+  output.warn(`${FONT_FAMILY} is not installed on this machine`);
+  const install = 'Install it';
+  const picked = await vscode.window.showWarningMessage(
+    `eTamil: etamil.eTamilFont names ${FONT_FAMILY}, which is not installed, ` +
+      'so nothing will look any different.',
+    install
+  );
+  if (picked === install) {
+    await vscode.commands.executeCommand('etamil.installFont');
+  }
+}
 
 export function registerScriptFont(
   context: vscode.ExtensionContext,
@@ -89,6 +111,14 @@ export function registerScriptFont(
       textDecoration: `none; font-family: ${setting}`,
     });
     output.info(`eTamil script font: ${setting}`);
+
+    // A font family naming a font the machine does not have resolves to
+    // nothing and the decoration draws in the editor's font — which looks
+    // exactly like the setting having no effect, with no error anywhere. The
+    // one case that can be checked is the font this extension carries.
+    if (setting === FONT_FAMILY && !fontInstalled()) {
+      void offerToInstall(output);
+    }
   };
 
   const paint = (editor: vscode.TextEditor | undefined) => {

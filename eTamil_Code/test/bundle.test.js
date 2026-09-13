@@ -70,6 +70,93 @@ describe('the carried toolchain', { skip: available ? false : 'run npm run build
   });
 });
 
+/**
+ * The `name` table of a TrueType file, as {nameId: string}.
+ *
+ * Forty lines of struct reading rather than a dependency, because the one
+ * question worth asking of the shipped font is what family it calls itself,
+ * and the answer has to come out of the file rather than out of a constant
+ * that agrees with another constant.
+ */
+function readNames(file) {
+  const data = fs.readFileSync(file);
+  const tableCount = data.readUInt16BE(4);
+  let nameTable = -1;
+  for (let i = 0; i < tableCount; i += 1) {
+    const entry = 12 + i * 16;
+    if (data.toString('latin1', entry, entry + 4) === 'name') {
+      nameTable = data.readUInt32BE(entry + 8);
+    }
+  }
+  assert.notEqual(nameTable, -1, 'no name table');
+
+  const records = data.readUInt16BE(nameTable + 2);
+  const strings = nameTable + data.readUInt16BE(nameTable + 4);
+  const names = {};
+  for (let i = 0; i < records; i += 1) {
+    const record = nameTable + 6 + i * 12;
+    const platform = data.readUInt16BE(record);
+    const nameId = data.readUInt16BE(record + 6);
+    const length = data.readUInt16BE(record + 8);
+    const offset = data.readUInt16BE(record + 10);
+    const raw = data.subarray(strings + offset, strings + offset + length);
+    const text = platform === 0 || platform === 3 ? raw.swap16().toString('utf16le') : raw.toString('latin1');
+    if (names[nameId] === undefined) {
+      names[nameId] = text;
+    }
+  }
+  return names;
+}
+
+describe('the carried font', { skip: available ? false : 'run npm run build' }, () => {
+  const FONT = path.join(__dirname, '..', 'fonts', 'ican_qamiz-Regular.ttf');
+
+  test('it ships', () => {
+    assert.ok(fs.existsSync(FONT), `${FONT} is missing`);
+  });
+
+  test('the family the extension names is the family the file declares', () => {
+    // The failure this catches is silent from end to end. Replace the font
+    // with a build that calls itself something else and everything still
+    // installs, the setting still takes the value, the decoration is still
+    // created — and the family resolves to nothing, so the editor draws in its
+    // own font and the feature appears to do nothing at all.
+    const names = readNames(FONT);
+    assert.equal(names[1], bundle.FONT_FAMILY);
+  });
+
+  test('it says it is under a licence we ship', () => {
+    const names = readNames(FONT);
+    assert.match(names[13] || '', /SIL Open Font License/);
+    assert.ok(
+      fs.existsSync(path.join(__dirname, '..', 'fonts', 'OFL.txt')),
+      'the font declares the OFL and OFL.txt is not beside it'
+    );
+  });
+
+  test('the registry value name is built from the family', () => {
+    assert.equal(bundle.fontRegistryName(), `${bundle.FONT_FAMILY} (TrueType)`);
+  });
+
+  test('each platform gets its own per-user font directory', () => {
+    assert.equal(
+      bundle.fontInstallDir('darwin', '/Users/ada'),
+      path.join('/Users/ada', 'Library', 'Fonts')
+    );
+    assert.equal(
+      bundle.fontInstallDir('linux', '/home/ada'),
+      path.join('/home/ada', '.local', 'share', 'fonts')
+    );
+    const windows = bundle.fontInstallDir('win32', 'C:\\Users\\Ada', 'C:\\Users\\Ada\\AppData\\Local');
+    assert.ok(windows.endsWith(path.join('Microsoft', 'Windows', 'Fonts')), windows);
+  });
+
+  test('the file it installs is the file it carries', () => {
+    assert.equal(path.basename(bundle.fontSource('/ext')), bundle.FONT_FILE);
+    assert.equal(path.basename(FONT), bundle.FONT_FILE);
+  });
+});
+
 describe('installing it', { skip: available ? false : 'run npm run build' }, () => {
   test('Unix installs beside what packaging/install.sh installs', () => {
     const layout = bundle.installLayout('linux', '/home/ada');

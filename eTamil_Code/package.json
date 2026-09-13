@@ -2,7 +2,7 @@
   "name": "etamil-support",
   "displayName": "eTamil",
   "description": "Language support for eTamil, the Tamil-vocabulary FinTech DSL: syntax, completions, hover, and errors from the compiler itself.",
-  "version": "0.5.0",
+  "version": "2.0.0",
   "publisher": "etamil",
   "author": {
     "name": "Esan Maruff",
@@ -95,6 +95,11 @@
         "category": "eTamil"
       },
       {
+        "command": "etamil.installFont",
+        "title": "Install the eTamil font",
+        "category": "eTamil"
+      },
+      {
         "command": "etamil.showOutput",
         "title": "Show the log",
         "category": "eTamil"
@@ -132,7 +137,7 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nA CSS font stack: `eTamil Mono`, or `'eTamil Mono', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
+          "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nThe extension carries one such font, **`ican qamiz`**. Run **eTamil: Install the eTamil font** and it will offer to set this for you; VS Code has to be restarted afterwards, because the font list is read when the window starts.\n\nA CSS font stack: `ican qamiz`, or `'ican qamiz', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
         },
         "etamil.checkOnType": {
           "type": "boolean",

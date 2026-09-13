@@ -1,8 +1,53 @@
 # Changelog
 
-## 0.5.0
+## 2.0.0
+
+A major version because the answer to "how do I start?" changes completely. The
+Marketplace has been serving 0.2.0, which could highlight eTamil and nothing
+else — everything below had to be installed by hand first, or was not possible
+at all. Installing this one is the whole setup.
 
 ### Added
+
+- **The eTamil font travels with the extension.** `ican qamiz`, under the SIL
+  Open Font License, is the face in which the ASCII letters carry Tamil glyphs:
+  `c` draws ச, `q` draws த, `Z` draws ன. It is in `fonts/`, with `OFL.txt`
+  beside it and `fonts/README.md` recording what the file declares about
+  itself.
+
+  **eTamil: Install the eTamil font** puts it where the operating system can
+  see it — `~/Library/Fonts`, `~/.local/share/fonts` followed by `fc-cache`, or
+  `%LOCALAPPDATA%\Microsoft\Windows\Fonts` plus the `HKCU` value Windows needs
+  to list a font for one user — and then offers to set `etamil.eTamilFont`. Per
+  user throughout, so no administrator rights, and behind a dialog that names
+  the files and the registry value before writing either.
+
+  There is an install command because shipping a font is not installing one.
+  VS Code's editor is not a webview, no API registers a font with it, and both
+  `editor.fontFamily` and a decoration's `font-family` resolve against the
+  fonts the operating system knows. A font inside an extension is a file. VS
+  Code has to be restarted afterwards: the font list is read when the window
+  starts.
+
+  Setting `etamil.eTamilFont` to a font that is not installed used to be
+  indistinguishable from the setting doing nothing — no error anywhere, the
+  editor simply drawing in its own font. For the font the extension carries
+  that is now noticed, and the offer to install it is made.
+
+- The font is the reason to state plainly something the rules doc had wrong:
+  **`ican qamiz` has no Tamil glyphs at all.** It maps 129 codepoints, every
+  one of them ASCII, and nothing in U+0B80–U+0BFF. The extension paints the
+  eTamil face over eTamil-script ASCII and leaves everything else in the
+  editor's own font, so the base font is the one carrying every `மொத்தம்` in
+  the file, and this works. Painted the other way — the editor set to the
+  eTamil font, English painted back to ISO — every Tamil letter in every file
+  would have fallen back to an arbitrary face. A design decision that was made
+  for a different reason turns out to have been the only workable one.
+
+  One caveat, in the file rather than in the code: `ican qamiz` is
+  proportional. A painted run does not sit on the monospace grid, so text after
+  it on the same line shifts. A monospaced build of the face would make it
+  exact with no change here.
 
 - **The extension carries the compiler.** The `etamil` binary for your platform
   and the whole nUlakam standard library now travel inside the VSIX, so error

@@ -54,7 +54,7 @@ standard library. Error checking, **eTamil: Run this file** and Go to Definition
 into the library all work the moment the extension finishes installing — no
 Rust, no download, no `PATH`. The Marketplace sends you the build for your
 machine; installing a `.vsix` by hand means picking the one whose name ends in
-your platform, `etamil-support-0.5.0-win32-x64.vsix`.
+your platform, `etamil-support-2.0.0-win32-x64.vsix`.
 
 Three things are worth knowing about it.
 
@@ -116,7 +116,7 @@ Either way the binary has to be on your `PATH` — the installers do that — or
 | Setting | Default | |
 |---|---|---|
 | `etamil.compilerPath` | *(carried, then PATH)* | Path to the `etamil` binary. Machine-scoped, because it names an executable the extension runs |
-| `etamil.eTamilFont` | *(off)* | Font for ASCII that is eTamil rather than English — see below |
+| `etamil.eTamilFont` | *(off)* | Font for ASCII that is eTamil rather than English — `ican qamiz` ships with the extension, see below |
 | `etamil.checkOnType` | `true` | Report errors while you type |
 | `etamil.intelliSense` | `true` | Completions and signature help |
 
@@ -139,17 +139,37 @@ So the file says which is which, and the extension reads what it says:
 _sum = moqqam;
 ```
 
-Set `etamil.eTamilFont` to the font's family name and `moqqam` is drawn in it,
-while `_sum`, the comment between its `__` marks, every string literal and the
-licence header stay in your ordinary editor font. **The editor's font is not
-changed.** It stays the ISO stack, and only the eTamil-script ASCII is painted
-over the top — so a span the extension fails to recognise renders eTamil as
-plain Latin, which is just the usual view of the file, rather than rendering
-English in Tamil glyphs, which would be unreadable.
+**The extension carries such a font**, `ican qamiz`, under the SIL Open Font
+License. Run **eTamil: Install the eTamil font** and it copies the file to your
+own font directory — `~/Library/Fonts`, `~/.local/share/fonts`, or
+`%LOCALAPPDATA%\Microsoft\Windows\Fonts` with the registry value Windows needs
+— then offers to set `etamil.eTamilFont` for you. No administrator rights, a
+dialog that says what it will write before it writes it, and a restart of VS
+Code afterwards, because the font list is read when the window starts.
+
+The install command exists because shipping a font is not installing one. VS
+Code's editor is not a webview and has no API that registers a font, so a
+`font-family` only resolves against fonts the operating system already knows.
+
+With the setting in place, `moqqam` is drawn in the eTamil face while `_sum`,
+the comment between its `__` marks, every string literal and the licence header
+stay in your ordinary editor font. **The editor's font is not changed.** It
+stays the ISO stack and only the eTamil-script ASCII is painted over the top,
+which matters more than it sounds: `ican qamiz` has no Tamil glyphs at all — it
+maps ASCII and nothing else — so the base font is the one that has to carry
+every `மொத்தம்` in the file. A span the extension fails to recognise then
+renders eTamil as plain Latin, the usual view of the file, rather than English
+in Tamil glyphs.
+
+One caveat. `ican qamiz` is proportional, not monospaced, so a painted run does
+not sit on the same grid as the code around it and text after it on the same
+line shifts. A monospaced build of the face would make that exact and nothing
+in the extension would change.
 
 The two marks are the language's, not the extension's:
-[SCRIPT_RULES.md](../docs/reference/SCRIPT_RULES.md) specifies them and
-`scripts/check_script_rules.py` gates them.
+[SCRIPT_RULES.md](../docs/reference/SCRIPT_RULES.md) specifies them,
+`scripts/check_script_rules.py` gates them, and `fonts/README.md` records what
+is in the font file.
 
 ## Tamil rendering
 

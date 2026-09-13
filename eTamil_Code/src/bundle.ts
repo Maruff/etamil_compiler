@@ -19,6 +19,16 @@
 // source, identical everywhere, and `ETAMIL_PATH` is what points the compiler
 // at it.
 //
+// A third thing travels with them and is committed rather than staged, because
+// it is a source asset and not a build product:
+//
+//     fonts/ican_qamiz-Regular.ttf
+//
+// That is the eTamil font, in which the ASCII letters carry Tamil glyphs. It
+// cannot be loaded from here — VS Code's editor is not a webview and no API
+// registers a font — so it has to be copied into the operating system's own
+// per-user font directory before any `font-family` naming it resolves.
+//
 // Nothing here imports the vscode API or touches the filesystem — it computes
 // paths and nothing else, so test/bundle.test.js can load it and assert the
 // layout on every platform rather than only on the one running the tests.
@@ -91,13 +101,79 @@ export function installLayout(
   };
 }
 
+// ---------------------------------------------------------------------------
+// The font
+// ---------------------------------------------------------------------------
+
+/**
+ * The family name the font declares, read from its own `name` table.
+ *
+ * Lower case, with a space: that is what is in the file, and a font family is
+ * matched by what the file says rather than by what the file is called.
+ * `test/bundle.test.js` reads the shipped `.ttf` and asserts this, so replacing
+ * the font with one that calls itself something else fails a test instead of
+ * silently naming a family no machine has.
+ */
+export const FONT_FAMILY = 'ican qamiz';
+
+/** The file, inside `fonts/`. */
+export const FONT_FILE = 'ican_qamiz-Regular.ttf';
+
+/** Where the font sits inside the extension. */
+export function fontSource(extensionPath: string): string {
+  return path.join(extensionPath, 'fonts', FONT_FILE);
+}
+
+/**
+ * The per-user font directory of this machine.
+ *
+ * Per-user on all three, so nothing asks for administrator rights. macOS and
+ * Linux read these directories directly — Linux after `fc-cache`. Windows
+ * needs the file *and* a registry value under HKCU; the directory alone
+ * installs nothing, which is the part that looks like it worked and has not.
+ */
+export function fontInstallDir(
+  platform: string,
+  home: string,
+  localAppData?: string
+): string {
+  if (platform === 'win32') {
+    return path.join(
+      localAppData || path.join(home, 'AppData', 'Local'),
+      'Microsoft',
+      'Windows',
+      'Fonts'
+    );
+  }
+  if (platform === 'darwin') {
+    return path.join(home, 'Library', 'Fonts');
+  }
+  return path.join(home, '.local', 'share', 'fonts');
+}
+
+/**
+ * The value name Windows lists a font under.
+ *
+ * The convention is the face's full name followed by the format in
+ * parentheses, and the family is what a `font-family` will later ask for, so
+ * the two are derived from the same constant rather than typed twice.
+ */
+export function fontRegistryName(): string {
+  return `${FONT_FAMILY} (TrueType)`;
+}
+
 /**
  * The line that puts the install on `PATH`, for the user to paste.
  *
- * The extension does not edit shell profiles or the registry. `install.sh`
- * does, because a person ran it on purpose and can read it first; an editor
- * extension changing the login environment of a machine is a different thing,
- * and it would be doing it on behalf of a VSIX rather than a person.
+ * The extension does not edit shell profiles, and does not touch the
+ * environment: changing how every program on a machine starts is not a thing
+ * to do on a VSIX's behalf. `install.sh` may, because a person ran it on
+ * purpose and could read it first.
+ *
+ * The font install is the one place a registry value is written, and it is not
+ * an exception to this. It adds a face to the user's own font list, which is
+ * the only mechanism Windows has for installing a font without administrator
+ * rights, and it happens behind a dialog that says so.
  */
 export function pathAdvice(platform: string, layout: InstallLayout): string {
   if (platform === 'win32') {

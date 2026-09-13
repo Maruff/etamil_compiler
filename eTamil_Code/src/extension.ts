@@ -27,11 +27,14 @@
 //
 // 5. `src/fonts.ts` draws the ASCII that is eTamil script in the eTamil font,
 //    leaving the editor's ISO font everywhere the `_` and `__` marks say
-//    English. docs/reference/SCRIPT_RULES.md.
+//    English. docs/reference/SCRIPT_RULES.md. The font itself travels in the
+//    VSIX and `src/fontinstall.ts` puts it where the operating system can see
+//    it, which VS Code has no API to do for us.
 
 import * as vscode from 'vscode';
 
 import { check, toPosition } from './compiler';
+import { installFont } from './fontinstall';
 import { registerScriptFont } from './fonts';
 import {
   COVERAGE,
@@ -293,6 +296,9 @@ function registerCommands(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('etamil.run', () => runCurrentFile('--vm')),
     vscode.commands.registerCommand('etamil.serve', () => runCurrentFile('--async')),
     vscode.commands.registerCommand('etamil.install', () => offerInstall(context)),
+    vscode.commands.registerCommand('etamil.installFont', () =>
+      installFont(output, context.extensionPath)
+    ),
     vscode.commands.registerCommand('etamil.showOutput', () => output.show())
   );
 }

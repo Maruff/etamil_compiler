@@ -8,6 +8,7 @@ node_modules/**
 out/**/*.map
 **/*.tsbuildinfo
 
-# bin/ and runtime/ are deliberately absent from this list: the compiler and
-# the standard library are what the VSIX carries, and excluding them would
-# ship an extension that still has to ask for a compiler to be installed.
+# bin/, runtime/ and fonts/ are deliberately absent from this list: the
+# compiler, the standard library and the eTamil font are what the VSIX carries,
+# and excluding any of them would ship an extension that still has to ask for
+# something to be installed before it works.
