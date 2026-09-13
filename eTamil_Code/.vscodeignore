@@ -19,3 +19,8 @@ out/**/*.map
 .gitignore
 kw.txt
 kw-tamil.txt
+
+# Belt and braces. The release archives are extracted to a temp directory
+# outside the repository now, but this directory shipped 576 files inside every
+# VSIX once and the cost of naming it here is nothing.
+.package-downloads

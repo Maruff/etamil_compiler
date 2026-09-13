@@ -63,6 +63,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -259,7 +260,13 @@ def main() -> int:
     stage_library()
     stage_examples()
 
-    scratch = EXT / ".package-downloads"
+    # Outside the extension directory, and outside the repository. It used to
+    # be `EXT / ".package-downloads"`, which put four extracted release
+    # archives *inside* the thing vsce packages: 576 extra files and 36 MB in
+    # every VSIX, on the one code path a real release takes. `--binary` and
+    # `--from-dist` never touch it, so it packaged clean every time it was
+    # tested by hand.
+    scratch = Path(tempfile.mkdtemp(prefix="etamil-vsix-"))
     try:
         sources = collect(options, scratch)
         if not sources:
@@ -300,7 +307,6 @@ def collect(options, scratch: Path) -> dict[str, Path]:
         return {here(): options.binary}
 
     if options.from_release:
-        scratch.mkdir(exist_ok=True)
         found = {}
         for key in TARGETS:
             binary = from_release(key, options.from_release, scratch)
