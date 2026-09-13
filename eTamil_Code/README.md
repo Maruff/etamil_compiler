@@ -1,36 +1,52 @@
+# eTamil for VS Code
+
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/eTamil.etamil-support?label=Marketplace&color=002140)](https://marketplace.visualstudio.com/items?itemName=eTamil.etamil-support)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/eTamil.etamil-support?label=installs&color=002140)](https://marketplace.visualstudio.com/items?itemName=eTamil.etamil-support)
+[![Licence](https://img.shields.io/badge/licence-AGPL--3.0-002140)](https://www.gnu.org/licenses/agpl-3.0.html)
+
+**Write Indian finance software in Tamil.**
+
+[eTamil](https://etamil.in) is a programming language whose keywords and standard
+library are Tamil, built for the work Indian finance and commerce actually
+involves — ledgers, GST, income tax, payroll, costing, project accounting. Money
+is decimal and exact, the tax rules are in the library rather than in a framework
+you find later, and every keyword can be written in Tamil script or in ASCII.
+
+**This extension carries the whole toolchain.** The compiler for your platform,
+the 691-function `nUlakam` standard library, twenty-nine example programs and the
+eTamil font all travel inside it, so installing it is the entire installation —
+no Rust, no download, nothing to put on your `PATH`.
+
 > 📖 New to eTamil? Start with the
 > **[user manual at etamil.in/manual](https://etamil.in/manual/)**
 > ([தமிழ்](https://etamil.in/ta/manual/)), or the
 > [keyword reference](https://etamil.in/keywords/).
 
-# eTamil for VS Code
+---
 
-Language support for **[eTamil](https://etamil.in)** — and the compiler, the
-standard library, the example programs and the eTamil font, all carried inside
-this extension. Installing it is the whole installation.
+## What you get
+
+| | |
+|---|---|
+| **Syntax highlighting** | All 202 keywords across 541 spellings — Tamil script, romanized, and the English aliases |
+| **Errors as you type** | From the compiler's own front end, so they are the errors you will actually get |
+| **Completions** | Keywords with correct statement templates, 62 host builtins, and all 691 `செயல்` functions in the `nUlakam` standard library |
+| **Hover** | Every spelling of a word, whether it is reserved, and the doc comment from its definition |
+| **Signature help** | Parameter names, read from the library's own source |
+| **Go to Definition** | Jumps into `nUlakam`, and to functions in the current file |
+| **Outline** | Every `செயல்` in the file |
+| **Run** | Run or serve the current file in a terminal |
+| **Examples** | **eTamil: Open an example** — twenty-nine working programs, carried in the extension |
+| **Documentation** | **eTamil: Documentation…** — the manual, the playground and the reference on [etamil.in](https://etamil.in) |
+
+Both spellings are first-class. Type `eZil` and you get a romanized template;
+type `எனில்` and you get a Tamil one.
 
 ## What eTamil is
 
-A programming language whose keywords and standard library are **Tamil**, built
-for the work Indian finance and commerce actually involves — ledgers, GST,
-income tax, payroll, costing, project accounting — rather than adapted to it
-afterwards.
-
-```etamil
-எண் வருவாய்;
-அச்சு "Enter income: ";
-உள்ளிடு வருவாய்;
-வரி_வீதம் = 20%;
-
-(வருவாய் > 800000) எனில் {
-    அச்சு "Tax payable: " & வட்டமிடு((வருவாய் - 800000) * வரி_வீதம், 2);
-}
-இன்றேல் {
-    அச்சு "No tax payable";
-}
-```
-
-Three things follow from that aim.
+A language for a domain that punishes approximation. Three things follow from
+building one for Indian finance rather than adapting a general-purpose language
+to it.
 
 **Money is exact.** `0.1 + 0.2` is `0.3`, not `0.30000000000000004`. Amounts are
 decimal end to end, rounded to the paisa where the law says to, and `₹1,234.50`
@@ -48,31 +64,25 @@ the critical path; banking, UPI, customs and insurance.
 spellings — `செயல்`, `ceyal`, `_fn` — and all three compile to the same token, so
 a team uses whichever suits the keyboard in front of it.
 
+Income tax, in the language:
+
+```etamil
+எண் வருவாய்;
+அச்சு "Enter income: ";
+உள்ளிடு வருவாய்;
+வரி_வீதம் = 20%;
+
+(வருவாய் > 800000) எனில் {
+    அச்சு "Tax payable: " & வட்டமிடு((வருவாய் - 800000) * வரி_வீதம், 2);
+}
+இன்றேல் {
+    அச்சு "No tax payable";
+}
+```
+
 It is not a teaching language. Programs run on a bytecode VM, talk to SQLite,
 PostgreSQL and MySQL, serve concurrent HTTP with routing, JSON, bcrypt and JWT,
 and compile to WebAssembly to run in a browser.
-
-## What this extension does
-
-Everything below works the moment the extension finishes installing. There is no
-compiler to download and nothing to put on your `PATH`.
-
-
-| | |
-|---|---|
-| **Syntax highlighting** | All 202 keywords across 541 spellings — Tamil script, romanized, and the English aliases |
-| **Errors as you type** | From the compiler's own front end, so they are the errors you will actually get |
-| **Completions** | Keywords with correct statement templates, 62 host builtins, and all 691 `செயல்` functions in the `nUlakam` standard library |
-| **Hover** | Every spelling of a word, whether it is reserved, and the doc comment from its definition |
-| **Signature help** | Parameter names, read from the library's own source |
-| **Go to Definition** | Jumps into `nUlakam`, and to functions in the current file |
-| **Outline** | Every `செயல்` in the file |
-| **Run** | Run or serve the current file in a terminal |
-| **Examples** | **eTamil: Open an example** — twenty-nine working programs, carried in the extension |
-| **Documentation** | **eTamil: Documentation…** — the manual, the playground and the reference on [etamil.in](https://etamil.in) |
-
-Both spellings are first-class. Type `eZil` and you get a romanized template;
-type `எனில்` and you get a Tamil one.
 
 ## Learning eTamil
 

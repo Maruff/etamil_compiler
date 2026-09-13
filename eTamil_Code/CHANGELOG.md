@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.0.1
+
+The listing, which 1.0.0 shipped without. Nothing in the language, the compiler
+or the extension's behaviour changes; 1.0.0 is a working package and stays
+installable.
+
+### Fixed
+
+- **`.qmz` files had no icon.** The extension's own icon was always correct, but
+  `contributes.languages` carried no `icon` of its own, so every eTamil file
+  drew the generic blank sheet — in the explorer, in tabs, in Open Editors and
+  in Quick Open. The same mark now serves both themes: it has its own dark
+  ground rather than being a white glyph on transparency, which would disappear
+  into a light theme.
+
+  This shows where no file icon theme is active, or where the active theme does
+  not claim `.qmz`. Seti, the VS Code default, claims unknown extensions and
+  keeps drawing its own; winning there needs an icon theme contribution, which
+  this is not.
+
+### Added
+
+- **The listing says what eTamil is.** It opened with one sentence and a feature
+  table, so a reader learned what the extension does and nothing about what the
+  language is for: money that is exact rather than binary floating point, a
+  standard library that is the domain rather than a framework found later, and
+  three spellings for every keyword.
+
+- A `galleryBanner` in the project's navy, `#002140`, instead of the default
+  grey.
+
 ## 1.0.0
 
 The first release numbered with the language: eTamil 1.0, and the extension that
