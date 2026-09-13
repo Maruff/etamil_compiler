@@ -2,6 +2,12 @@
 out/
 *.vsix
 
+# The toolchain the VSIX carries, staged by scripts/package_extension.py.
+# A compiled binary and a copy of nUlakam: build output, not source, and
+# the source of both is already in this repository.
+bin/
+runtime/
+
 # Dependencies
 node_modules/
 

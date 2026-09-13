@@ -17,10 +17,22 @@
 //    being asked. The previous version activated in every window through
 //    `onStartupFinished` and immediately offered to run a shell command that a
 //    workspace's own settings could supply.
+//
+// 4. The compiler travels inside the VSIX. `src/toolchain.ts` resolves it —
+//    setting, then carried, then PATH — so a fresh install checks and runs a
+//    file with nothing else installed, and `eTamil: Install the compiler`
+//    copies what is already here rather than sending anyone to a download
+//    page. The download and build routes remain, for a platform this VSIX was
+//    not built for.
+//
+// 5. `src/fonts.ts` draws the ASCII that is eTamil script in the eTamil font,
+//    leaving the editor's ISO font everywhere the `_` and `__` marks say
+//    English. docs/reference/SCRIPT_RULES.md.
 
 import * as vscode from 'vscode';
 
-import { check, compilerPath, toPosition } from './compiler';
+import { check, toPosition } from './compiler';
+import { registerScriptFont } from './fonts';
 import {
   COVERAGE,
   completionProvider,
@@ -29,6 +41,14 @@ import {
   hoverProvider,
   signatureHelpProvider,
 } from './language';
+import {
+  bundledLibrary,
+  carried,
+  compilerPath,
+  initialise,
+  installCarried,
+  terminalCommandLine,
+} from './toolchain';
 
 const LANGUAGE = 'etamil';
 const SKIP_INSTALL_PROMPT = 'etamil.skipInstallPrompt';
@@ -104,14 +124,22 @@ export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel('eTamil', { log: true });
   diagnostics = vscode.languages.createDiagnosticCollection(LANGUAGE);
   context.subscriptions.push(output, diagnostics);
+  initialise(context);
 
   output.info(
     `eTamil support ready: ${COVERAGE.keywords} keywords across ` +
       `${COVERAGE.spellings} spellings, ${COVERAGE.builtins} builtins, ` +
       `${COVERAGE.stdlib} standard library functions.`
   );
+  output.info(
+    carried()
+      ? `compiler: ${compilerPath()} (carried in this extension)`
+      : `compiler: ${compilerPath()} — nothing carried for ` +
+          `${process.platform}-${process.arch}`
+  );
 
   registerLanguageFeatures(context);
+  registerScriptFont(context, output);
   registerDiagnostics(context);
   registerCommands(context);
 }
@@ -287,14 +315,26 @@ async function runCurrentFile(mode: '--vm' | '--async'): Promise<void> {
     await editor.document.save();
   }
 
+  // A terminal started by us carries ETAMIL_PATH, so an இறக்கு of a standard
+  // library module resolves against the carried nUlakam. One the author opened
+  // themselves does not, which is why this looks for ours by name.
+  const library = bundledLibrary();
   const terminal =
     vscode.window.terminals.find((candidate) => candidate.name === 'eTamil') ??
-    vscode.window.createTerminal({ name: 'eTamil' });
+    vscode.window.createTerminal({
+      name: 'eTamil',
+      env: library && !process.env.ETAMIL_PATH ? { ETAMIL_PATH: library } : undefined,
+    });
   terminal.show(true);
 
-  // The file path is quoted; nothing else in the command line comes from the
-  // workspace. `compilerPath` is machine-scoped for the same reason.
-  terminal.sendText(`${compilerPath()} ${mode} "${editor.document.uri.fsPath}"`, true);
+  // Every part is quoted, and quoted the way this shell wants — the carried
+  // binary sits under the user's home directory, which may have a space in it.
+  // Nothing else in the command line comes from the workspace; `compilerPath`
+  // is machine-scoped for the same reason.
+  terminal.sendText(
+    terminalCommandLine(compilerPath(), [mode, editor.document.uri.fsPath]),
+    true
+  );
 }
 
 /**
@@ -312,6 +352,13 @@ async function runCurrentFile(mode: '--vm' | '--async'): Promise<void> {
  * clipboard. It does not fetch the archive, and it does not pipe anything
  * remote into a shell — the author downloads, sees what they have, and runs the
  * installer themselves.
+ *
+ * Since the extension began carrying the compiler, the first option is neither
+ * a download nor a build: it copies the binary and the standard library that
+ * are already on the disk, inside this VSIX, to `~/.local` or
+ * `%LOCALAPPDATA%\Programs\eTamil`. Nothing is fetched and nothing is
+ * compiled, so it is the one route that cannot fail for a reason outside the
+ * machine. The others stay for the platforms no VSIX was built for.
  */
 async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
   const clone = 'git clone https://github.com/Maruff/etamil_compiler.git';
@@ -322,7 +369,20 @@ async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
 
   const download = downloadFor(process.platform, process.arch);
 
-  const choices: Array<vscode.QuickPickItem & { command?: string; url?: string }> = [
+  const choices: Array<
+    vscode.QuickPickItem & { command?: string; url?: string; copy?: boolean }
+  > = [];
+
+  if (carried()) {
+    choices.push({
+      label: 'Install the carried compiler',
+      detail: 'Copies the binary and nUlakam out of this extension — nothing to download',
+      description: 'already on this machine',
+      copy: true,
+    });
+  }
+
+  choices.push(
     download
       ? {
           label: 'Download the installer',
@@ -349,8 +409,8 @@ async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
     {
       label: "Don't ask again",
       detail: 'Silence the missing-compiler warning in this workspace',
-    },
-  ];
+    }
+  );
 
   const choice = await vscode.window.showQuickPick(choices, {
     title: 'Install the eTamil compiler',
@@ -363,6 +423,11 @@ async function offerInstall(context: vscode.ExtensionContext): Promise<void> {
 
   if (choice.label === "Don't ask again") {
     await context.workspaceState.update(SKIP_INSTALL_PROMPT, true);
+    return;
+  }
+
+  if (choice.copy) {
+    await installCarried(output);
     return;
   }
 

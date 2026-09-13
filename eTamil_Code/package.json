@@ -2,7 +2,7 @@
   "name": "etamil-support",
   "displayName": "eTamil",
   "description": "Language support for eTamil, the Tamil-vocabulary FinTech DSL: syntax, completions, hover, and errors from the compiler itself.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "etamil",
   "author": {
     "name": "Esan Maruff",
@@ -91,7 +91,7 @@
       },
       {
         "command": "etamil.install",
-        "title": "Install the compiler",
+        "title": "Install the compiler for use outside the editor",
         "category": "eTamil"
       },
       {
@@ -126,7 +126,13 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "Path to the `etamil` binary. Empty means look on the `PATH`.\n\nMachine-scoped on purpose: this names an executable the extension runs, so a workspace must not be able to set it."
+          "markdownDescription": "Path to the `etamil` binary. Empty means use the compiler carried in this extension, falling back to `etamil` on the `PATH` when this build carries none for your platform.\n\nSet it to run a compiler of your own — a `cargo build` of the repository, say. An explicit path always wins.\n\nMachine-scoped on purpose: this names an executable the extension runs, so a workspace must not be able to set it."
+        },
+        "etamil.eTamilFont": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nA CSS font stack: `eTamil Mono`, or `'eTamil Mono', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
         },
         "etamil.checkOnType": {
           "type": "boolean",
@@ -146,7 +152,7 @@
       "[etamil]": {
         "editor.insertSpaces": true,
         "editor.tabSize": 4,
-        "//comment": "Tamil renders poorly in most monospace faces, which have no Tamil glyphs at all and fall back mid-line. A stack that names Tamil faces first keeps a line of source visually even.",
+        "//comment": "Tamil renders poorly in most monospace faces, which have no Tamil glyphs at all and fall back mid-line. A stack that names Tamil faces first keeps a line of source visually even. It stays an ISO stack even for an author using the eTamil font: the base font is the one English has to be legible in, and etamil.eTamilFont paints the eTamil-script ASCII over the top of it.",
         "editor.fontFamily": "'Nirmala UI', 'Latha', 'Tamil Sangam MN', 'Noto Sans Tamil', Consolas, 'Courier New', monospace",
         "editor.wordBasedSuggestions": "currentDocument"
       }
@@ -158,9 +164,11 @@
     "build": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext .ts",
-    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js",
+    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js",
     "verify": "npm run check:generated && npm run build && npm run lint && npm run test",
+    "stage": "python ../scripts/package_extension.py --stage",
     "package": "vsce package",
+    "package:all": "python ../scripts/package_extension.py",
     "vscode:prepublish": "npm run build"
   },
   "devDependencies": {

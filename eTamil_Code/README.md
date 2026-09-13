@@ -47,12 +47,33 @@ editor should not do any of that.
 
 ## Setup
 
-The extension needs the `etamil` binary for error checking. Highlighting,
-completions and hover work without it.
+There isn't any. **The extension carries the compiler.**
 
-**eTamil: Install the compiler** in the Command Palette is the short way — it
-offers the prebuilt package for your platform, or the source build. It opens the
-download in a browser rather than fetching and running anything itself.
+Inside it are the `etamil` binary for your platform and the whole nUlakam
+standard library. Error checking, **eTamil: Run this file** and Go to Definition
+into the library all work the moment the extension finishes installing — no
+Rust, no download, no `PATH`. The Marketplace sends you the build for your
+machine; installing a `.vsix` by hand means picking the one whose name ends in
+your platform, `etamil-support-0.5.0-win32-x64.vsix`.
+
+Three things are worth knowing about it.
+
+**Your own compiler wins.** Set `etamil.compilerPath` and that is what runs — a
+`cargo build` of the repository, say, or a release you installed yourself. The
+carried one is only the default.
+
+**A terminal cannot see inside an extension.** The editor runs the carried
+binary where it lies, but `etamil` at a shell prompt is a different question,
+and the extension directory is replaced wholesale on every update, so pointing
+at it would break. **eTamil: Install the compiler for use outside the editor**
+copies the binary and the library to `~/.local` — `%LOCALAPPDATA%\Programs\eTamil`
+on Windows — and shows you the two lines that put them on `PATH` and
+`ETAMIL_PATH`. It shows them rather than writing them: how every program on your
+machine starts is not something an extension should change on its own.
+
+**A platform with no build falls back.** If this VSIX carries nothing for your
+platform and architecture, the extension looks for `etamil` on the `PATH` and
+the install command offers the release package and the source build, as before.
 
 By hand, the prebuilt package needs no Rust and no C toolchain:
 
@@ -94,9 +115,41 @@ Either way the binary has to be on your `PATH` — the installers do that — or
 
 | Setting | Default | |
 |---|---|---|
-| `etamil.compilerPath` | *(PATH)* | Path to the `etamil` binary. Machine-scoped, because it names an executable the extension runs |
+| `etamil.compilerPath` | *(carried, then PATH)* | Path to the `etamil` binary. Machine-scoped, because it names an executable the extension runs |
+| `etamil.eTamilFont` | *(off)* | Font for ASCII that is eTamil rather than English — see below |
 | `etamil.checkOnType` | `true` | Report errors while you type |
 | `etamil.intelliSense` | `true` | Completions and signature help |
+
+## Two scripts in one file
+
+eTamil is written three ways and two of them are the same bytes. `செயல்` is
+Tamil. `ceyal` is the same word spelled under the ezuqqu scheme, where one Latin
+letter stands for one Tamil letter. `_length` is English. The last two are both
+ASCII, and nothing in the bytes separates them.
+
+There is an **eTamil font** in which the ASCII letters carry Tamil glyphs — `c`
+draws ச, `q` draws த, `Z` draws ன. It lets you write Tamil on an ASCII keyboard
+and read it back as Tamil. Under it an English word is nonsense: `sum` draws as
+ஸும்.
+
+So the file says which is which, and the extension reads what it says:
+
+```etamil
+// __Rounded to paise once, at the end.__
+_sum = moqqam;
+```
+
+Set `etamil.eTamilFont` to the font's family name and `moqqam` is drawn in it,
+while `_sum`, the comment between its `__` marks, every string literal and the
+licence header stay in your ordinary editor font. **The editor's font is not
+changed.** It stays the ISO stack, and only the eTamil-script ASCII is painted
+over the top — so a span the extension fails to recognise renders eTamil as
+plain Latin, which is just the usual view of the file, rather than rendering
+English in Tamil glyphs, which would be unreadable.
+
+The two marks are the language's, not the extension's:
+[SCRIPT_RULES.md](../docs/reference/SCRIPT_RULES.md) specifies them and
+`scripts/check_script_rules.py` gates them.
 
 ## Tamil rendering
 

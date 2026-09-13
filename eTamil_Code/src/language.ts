@@ -17,6 +17,7 @@ import {
   type FunctionEntry,
   type KeywordEntry,
 } from './generated/language-data';
+import { bundledLibrary } from './toolchain';
 
 const IDENTIFIER = new RegExp(IDENTIFIER_SOURCE, 'u');
 
@@ -431,9 +432,12 @@ export function documentSymbolProvider(): vscode.DocumentSymbolProvider {
  * Go to Definition, for the standard library and for this file.
  *
  * The library's location comes from the generated data, which recorded the
- * file and line of every செயல் in nUlakam. Resolving it needs the repository
- * root, which is only knowable when the workspace contains the compiler
- * checkout — so this degrades to nothing rather than guessing.
+ * file and line of every செயல் in nUlakam. Three places are tried: the open
+ * workspace folders, the directory above the document — for a program that
+ * sits inside the compiler checkout but is opened as a single file — and the
+ * standard library carried in this extension, which is the only one of the
+ * three a reader with no checkout has. Failing all three it does nothing
+ * rather than guessing.
  */
 export function definitionProvider(): vscode.DefinitionProvider {
   return {
@@ -467,15 +471,24 @@ export function definitionProvider(): vscode.DefinitionProvider {
       }
 
       // Also try beside the document, for a program that sits inside the
-      // compiler checkout but is opened as a single file.
-      const guess = path.resolve(path.dirname(document.uri.fsPath), '..', fn.module);
-      try {
-        const uri = vscode.Uri.file(guess);
-        await vscode.workspace.fs.stat(uri);
-        return new vscode.Location(uri, new vscode.Position(fn.line - 1, 0));
-      } catch {
-        return undefined;
+      // compiler checkout but is opened as a single file, and then the copy
+      // carried in the extension — the same files the carried compiler
+      // imports, so what is shown is what would run.
+      const library = bundledLibrary();
+      const guesses = [
+        path.resolve(path.dirname(document.uri.fsPath), '..', fn.module),
+        ...(library ? [path.join(library, ...fn.module.split('/'))] : []),
+      ];
+      for (const guess of guesses) {
+        try {
+          const uri = vscode.Uri.file(guess);
+          await vscode.workspace.fs.stat(uri);
+          return new vscode.Location(uri, new vscode.Position(fn.line - 1, 0));
+        } catch {
+          // Not there; try the next.
+        }
       }
+      return undefined;
     },
   };
 }

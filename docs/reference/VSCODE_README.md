@@ -85,7 +85,18 @@ eN varuvAy = 50000;
 ```
 
 ### Compiler Installation
-Build from source with Rust:
+None needed. **The extension carries the compiler** — the binary for your
+platform and the whole nUlakam standard library travel inside the VSIX, so
+error checking and **eTamil: Run this file** work as soon as it installs.
+
+To use `etamil` at a shell prompt as well, run **eTamil: Install the compiler
+for use outside the editor**: it copies both out to `~/.local`, or to
+`%LOCALAPPDATA%\Programs\eTamil` on Windows, and shows you the `PATH` and
+`ETAMIL_PATH` lines to add.
+
+To run a compiler of your own instead, point `etamil.compilerPath` at it. An
+explicit path always wins over the carried one. Building that compiler needs
+Rust:
 ```bash
 git clone https://github.com/Maruff/etamil_compiler.git
 cd etamil_compiler/etamil_compiler
@@ -100,7 +111,7 @@ cargo build --release
 - Open VS Code Extension Marketplace
 - Search for "eTamil Support"
 - Click Install
-- On activation, the extension will prompt to install the eTamil compiler (optional)
+- That is the whole installation: the compiler comes with it
 
 ### 2. Create Your First Program
 - Create a file: `hello.qmz`

@@ -7,3 +7,7 @@ tsconfig.json
 node_modules/**
 out/**/*.map
 **/*.tsbuildinfo
+
+# bin/ and runtime/ are deliberately absent from this list: the compiler and
+# the standard library are what the VSIX carries, and excluding them would
+# ship an extension that still has to ask for a compiler to be installed.

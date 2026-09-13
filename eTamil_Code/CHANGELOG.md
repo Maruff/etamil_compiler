@@ -1,5 +1,70 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- **The extension carries the compiler.** The `etamil` binary for your platform
+  and the whole nUlakam standard library now travel inside the VSIX, so error
+  checking, **eTamil: Run this file** and Go to Definition into the library all
+  work the moment the extension finishes installing. No Rust, no release
+  download, no `PATH`.
+
+  One VSIX per platform, built with `vsce package --target`, so a Windows user
+  never downloads a macOS binary. `scripts/package_extension.py` stages the
+  files and drives it.
+
+  The order of resolution is `etamil.compilerPath`, then the carried binary,
+  then `etamil` on the `PATH`. An explicit setting always wins, so a developer
+  working on the compiler runs their own build; a platform this VSIX was not
+  built for falls back to the `PATH` and to the download and source-build
+  routes, which are unchanged.
+
+  `ETAMIL_PATH` is set to the carried library whenever you have not set one
+  yourself, which is what makes `இறக்கு "nUlakam/paNam.qmz"` resolve. A
+  terminal opened by **eTamil: Run this file** gets it too.
+
+- **eTamil: Install the compiler for use outside the editor** copies the
+  carried binary and library to `~/.local`, or `%LOCALAPPDATA%\Programs\eTamil`
+  on Windows, and shows the two lines that put them on `PATH` and
+  `ETAMIL_PATH`. Nothing is downloaded and nothing is compiled, so it is the
+  one install route that cannot fail for a reason outside the machine. It
+  shows the lines rather than writing them: how every program on a machine
+  starts is not something an extension should change on its own.
+
+- **`etamil.eTamilFont`** renders a file in two fonts at once. eTamil is
+  written three ways and two of them are the same bytes — `செயல்` is Tamil,
+  `ceyal` is the same word under the ezuqqu scheme, `_length` is English — and
+  there is an eTamil font in which the ASCII letters carry Tamil glyphs, under
+  which an English word is nonsense: `sum` draws as ஸும்.
+
+  Set this to that font's family name and the ASCII that is eTamil is drawn in
+  it, while a name marked `_english`, a comment wrapped in `__ … __`, every
+  string literal and the licence header stay in your ordinary editor font. The
+  marks are the language's own, specified in `docs/reference/SCRIPT_RULES.md`
+  and gated by `scripts/check_script_rules.py`.
+
+  The editor's font is not changed — it stays the ISO stack, and only the
+  eTamil-script ASCII is painted over the top. That direction is deliberate. A
+  span the scanner fails to recognise then renders eTamil as plain Latin,
+  which is the ordinary view of the file; painted the other way round, the same
+  miss would render English in Tamil glyphs, which is unreadable.
+
+- The grammar scopes both marks — `meta.english.comment.etamil` for the text
+  between `__` and `__`, and `variable.other.english.etamil` for a name marked
+  with a leading underscore — so a theme can colour them whether or not the
+  eTamil font is in use.
+
+### Changed
+
+- Go to Definition falls back to the carried standard library, so it works for
+  a reader who has the extension and no checkout of the repository.
+
+- The command line **eTamil: Run this file** types into the terminal is now
+  quoted for the shell that terminal runs. The carried binary lives under the
+  user's home directory, which may contain a space, and PowerShell needs the
+  call operator in front of a quoted path where `cmd` must not have it.
+
 ## 0.4.0
 
 ### Added

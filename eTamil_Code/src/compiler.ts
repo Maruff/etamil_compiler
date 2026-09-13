@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { parseErrors, type CompilerError } from './errors';
+import { compilerEnv, compilerPath } from './toolchain';
 
 export type { CompilerError };
 
@@ -20,27 +21,17 @@ export interface CheckResult {
 }
 
 /**
- * The compiler command, from settings or the PATH.
- *
- * Read at machine scope only. A repository that could point this at an
- * arbitrary executable through its own `.vscode/settings.json` would be a
- * remote code execution vector, which is exactly the shape of the
- * `installCommand` problem this extension used to have.
- */
-export function compilerPath(): string {
-  const configured = vscode.workspace
-    .getConfiguration('etamil')
-    .get<string>('compilerPath');
-  return configured && configured.trim().length > 0 ? configured.trim() : 'etamil';
-}
-
-/**
  * Check `source` as though it lived at `documentPath`.
  *
  * The text is piped in rather than read from disk so unsaved edits are what
  * gets checked, and the working directory is the document's own so that
  * `இறக்கு "nUlakam/col.qmz"` — a path relative to the importing file —
  * resolves the way it will when the file is run.
+ *
+ * The environment comes from `compilerEnv`, which names the carried standard
+ * library on `ETAMIL_PATH`. Without it a carried compiler refuses every import
+ * in nUlakam, and every file that imports one reports an error that is not in
+ * the file.
  */
 export function check(
   source: string,
@@ -51,6 +42,7 @@ export function check(
     const command = compilerPath();
     const child = spawn(command, ['--check'], {
       cwd: path.dirname(documentPath),
+      env: compilerEnv(),
       // `shell: false` is the default and must stay that way: the command is
       // machine-scoped, but there is no reason to hand it to a shell.
       shell: false,
