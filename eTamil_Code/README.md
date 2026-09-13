@@ -5,8 +5,16 @@
 
 # eTamil for VS Code
 
-Language support for [eTamil](https://etamil.in) — a programming language whose
-vocabulary is Tamil, aimed at Indian FinTech.
+Language support for **[eTamil](https://etamil.in)** — and the compiler, the
+standard library, the example programs and the eTamil font, all carried inside
+this extension. Installing it is the whole installation.
+
+## What eTamil is
+
+A programming language whose keywords and standard library are **Tamil**, built
+for the work Indian finance and commerce actually involves — ledgers, GST,
+income tax, payroll, costing, project accounting — rather than adapted to it
+afterwards.
 
 ```etamil
 எண் வருவாய்;
@@ -22,7 +30,33 @@ vocabulary is Tamil, aimed at Indian FinTech.
 }
 ```
 
-## What you get
+Three things follow from that aim.
+
+**Money is exact.** `0.1 + 0.2` is `0.3`, not `0.30000000000000004`. Amounts are
+decimal end to end, rounded to the paisa where the law says to, and `₹1,234.50`
+is simply how a number prints. A tax calculator built on binary floating point
+is wrong in a way nobody notices until an audit.
+
+**The domain is in the standard library, not in a framework you find later.**
+`nUlakam` is 691 functions: double-entry ledgers and trial balances; GST with
+CGST, SGST and IGST; the income-tax ladder with rebate, surcharge, marginal
+relief and cess; TDS and advance tax; depreciation; revenue recognition under
+Ind AS 115; deferred tax under Ind AS 12; project costing with earned value and
+the critical path; banking, UPI, customs and insurance.
+
+**You can write it in Tamil script, or in ASCII.** Every keyword has up to three
+spellings — `செயல்`, `ceyal`, `_fn` — and all three compile to the same token, so
+a team uses whichever suits the keyboard in front of it.
+
+It is not a teaching language. Programs run on a bytecode VM, talk to SQLite,
+PostgreSQL and MySQL, serve concurrent HTTP with routing, JSON, bcrypt and JWT,
+and compile to WebAssembly to run in a browser.
+
+## What this extension does
+
+Everything below works the moment the extension finishes installing. There is no
+compiler to download and nothing to put on your `PATH`.
+
 
 | | |
 |---|---|

@@ -21,6 +21,10 @@
   "license": "AGPL-3.0-or-later",
   "//icon": "512x512, the same mark as etamil.in. Without one the Marketplace shows a grey placeholder.",
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#002140",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.84.0"
   },
@@ -64,6 +68,11 @@
         "extensions": [
           ".qmz"
         ],
+        "//icon": "The file icon for .qmz, which is a separate thing from the extension's own icon. Without it every eTamil file draws the generic blank sheet. The same mark serves both themes: it carries its own dark ground, so it does not vanish into a light one.",
+        "icon": {
+          "light": "./icon.png",
+          "dark": "./icon.png"
+        },
         "configuration": "./language-configuration.json"
       }
     ],
