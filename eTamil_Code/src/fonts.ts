@@ -29,7 +29,7 @@
 
 import * as vscode from 'vscode';
 
-import { FONT_FAMILY } from './bundle';
+import { FONT_FAMILY, FONT_FEATURES, isFontFeatureSettings } from './bundle';
 import { fontInstalled } from './fontinstall';
 import { scanETamilScript } from './marks';
 
@@ -46,6 +46,23 @@ const LANGUAGE = 'etamil';
  * question entirely.
  */
 const FONT_STACK = /^[A-Za-z0-9 _'",-]+$/;
+
+// Why the OpenType features are declared here and not in `editor.fontLigatures`.
+//
+// A smart build of the eTamil font carries contextual rules in `calt` — the
+// pulli appears on a consonant that no vowel follows, a vowel after a consonant
+// shrinks to its sign, the inherent `a` draws nothing. VS Code's
+// `editor.fontLigatures` is `false` by default, and while it is false the
+// editor emits `font-feature-settings: "liga" 0, "calt" 0`, which turns those
+// rules off.
+//
+// Setting that option would switch ligatures on for every font in every file
+// the user opens, which is not this extension's business and is not something
+// it should do to a machine-wide setting on their behalf. The font here is
+// already applied through a decoration whose CSS this module writes, so the
+// features ride in the same declaration: a declared value beats an inherited
+// one, the editor's own setting is left alone, and nothing outside the
+// eTamil-script spans is touched.
 
 /** How long to wait after a keystroke before repainting. */
 const REPAINT_DEBOUNCE_MS = 120;
@@ -76,21 +93,33 @@ export function registerScriptFont(
 ): void {
   let decoration: vscode.TextEditorDecorationType | undefined;
   let family: string | undefined;
+  let applied: string | undefined;
   let timer: NodeJS.Timeout | undefined;
 
   const configure = () => {
-    const setting = vscode.workspace
-      .getConfiguration('etamil')
-      .get<string>('eTamilFont', '')
-      .trim();
+    const config = vscode.workspace.getConfiguration('etamil');
+    const setting = config.get<string>('eTamilFont', '').trim();
+    const requested = config.get<string>('eTamilFontFeatures', FONT_FEATURES).trim();
 
-    if (setting === family) {
+    // Either half changing means the decoration has to be rebuilt.
+    let features = requested;
+    if (!isFontFeatureSettings(features)) {
+      output.warn(
+        `etamil.eTamilFontFeatures: '${features}' is not a ` +
+          "font-feature-settings value — 'normal', or quoted four-letter tags " +
+          "each optionally followed by on, off or a number. Ignored."
+      );
+      features = '';
+    }
+
+    if (setting === family && features === applied) {
       return;
     }
 
     decoration?.dispose();
     decoration = undefined;
     family = setting;
+    applied = features;
 
     if (!setting) {
       return;
@@ -107,10 +136,17 @@ export function registerScriptFont(
     // `textDecoration` is emitted into the decoration's CSS verbatim. The
     // leading `none` closes the property it was meant for and leaves the font
     // family as a second declaration. Unofficial, and the only way there is.
+    // The features follow as a third, for the reason given above FONT_STACK.
+    const css =
+      `none; font-family: ${setting}` +
+      (features && features !== 'normal' ? `; font-feature-settings: ${features}` : '');
     decoration = vscode.window.createTextEditorDecorationType({
-      textDecoration: `none; font-family: ${setting}`,
+      textDecoration: css,
     });
-    output.info(`eTamil script font: ${setting}`);
+    output.info(
+      `eTamil script font: ${setting}` +
+        (features && features !== 'normal' ? ` (features ${features})` : '')
+    );
 
     // A font family naming a font the machine does not have resolves to
     // nothing and the decoration draws in the editor's font — which looks
@@ -159,7 +195,10 @@ export function registerScriptFont(
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration('etamil.eTamilFont')) {
+      if (
+        event.affectsConfiguration('etamil.eTamilFont') ||
+        event.affectsConfiguration('etamil.eTamilFontFeatures')
+      ) {
         configure();
         paintAll();
       }

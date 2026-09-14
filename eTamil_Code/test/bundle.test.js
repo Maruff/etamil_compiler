@@ -147,6 +147,55 @@ describe('the carried font', { skip: available ? false : 'run npm run build' }, 
     assert.equal(bundle.fontRegistryName(), `${bundle.FONT_FAMILY} (TrueType)`);
   });
 
+  test('the default features ask for the two the smart font uses', () => {
+    // A smart build puts its contextual rules in calt, with rlig for the
+    // shapers that will not apply calt. Asking for neither would leave the
+    // rules dormant and look exactly like a font that has none.
+    assert.match(bundle.FONT_FEATURES, /"calt"/);
+    assert.match(bundle.FONT_FEATURES, /"rlig"/);
+    assert.ok(bundle.isFontFeatureSettings(bundle.FONT_FEATURES));
+  });
+
+  test('a feature setting that could break out of the CSS is refused', () => {
+    // The value is interpolated into the decoration's CSS beside the font
+    // family, so anything that could close the declaration has to be rejected
+    // rather than trusted, exactly as the font stack is.
+    for (const bad of [
+      '"calt" 1; color: red',
+      '"calt" 1 } body {',
+      'url(x)',
+      '"toolongatag" 1',
+      '"cal" 1',
+      'calt 1',
+      '"calt" maybe',
+    ]) {
+      assert.equal(
+        bundle.isFontFeatureSettings(bad),
+        false,
+        `should have been refused: ${bad}`
+      );
+    }
+  });
+
+  test('the shapes CSS allows are accepted', () => {
+    for (const good of [
+      '',
+      'normal',
+      '"calt"',
+      '"calt" 1',
+      '"calt" on',
+      '"calt" off',
+      "'calt' 1, 'rlig' 1",
+      '"calt" 1, "rlig" 1, "liga" 0',
+      '  "calt" 1 ,  "rlig" 1  ',
+    ]) {
+      assert.ok(
+        bundle.isFontFeatureSettings(good),
+        `should have been accepted: ${good}`
+      );
+    }
+  });
+
   test('each platform gets its own per-user font directory', () => {
     assert.equal(
       bundle.fontInstallDir('darwin', '/Users/ada'),

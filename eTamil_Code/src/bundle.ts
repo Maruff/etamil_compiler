@@ -124,6 +124,46 @@ export function installLayout(
 export const FONT_FAMILY = 'ican qamiz';
 
 /**
+ * The OpenType features the eTamil face is drawn with.
+ *
+ * A smart build of the font carries contextual rules — a consonant drops its
+ * pulli before a vowel, a vowel after a consonant shrinks to its sign, the
+ * inherent `a` draws nothing — and those rules live in `calt`, with `rlig` as
+ * the fallback for shapers that will not apply `calt`.
+ *
+ * They have to be asked for. VS Code's `editor.fontLigatures` is `false` by
+ * default, and when it is false the editor emits
+ * `font-feature-settings: "liga" 0, "calt" 0`, which switches the rules off.
+ * Setting that option would turn ligatures on for every font in every file the
+ * user opens, which is not this extension's business.
+ *
+ * So the features are declared on the decoration instead. `src/fonts.ts`
+ * already injects a font family through the decoration's CSS; the same
+ * declaration carries the features, and a declared value beats an inherited
+ * one, so the editor's global setting does not have to change and nothing
+ * outside the eTamil-script spans is affected.
+ */
+export const FONT_FEATURES = '"calt" 1, "rlig" 1';
+
+/**
+ * Whether a string is a `font-feature-settings` value this may emit.
+ *
+ * The value is interpolated into CSS, so it is checked rather than trusted,
+ * exactly as the font stack is: a `;` or a `}` would let it close the
+ * declaration and open another. Accepted is `normal`, or a comma-separated
+ * list of four-character tags in quotes, each optionally followed by `on`,
+ * `off` or a number — which is the grammar CSS defines and nothing else.
+ */
+export function isFontFeatureSettings(value: string): boolean {
+  const text = value.trim();
+  if (!text || text === 'normal') {
+    return true;
+  }
+  const feature = /^["'][A-Za-z0-9]{4}["'](\s+(on|off|\d+))?$/;
+  return text.split(',').every((part) => feature.test(part.trim()));
+}
+
+/**
  * The file, inside `fonts/`.
  *
  * Carries the version, because `fonts/` keeps the earlier build beside it and

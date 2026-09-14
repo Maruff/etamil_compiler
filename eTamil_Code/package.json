@@ -112,7 +112,7 @@
       },
       {
         "command": "etamil.documentation",
-        "title": "Documentation\u2026",
+        "title": "Documentation…",
         "category": "eTamil"
       },
       {
@@ -159,6 +159,12 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nThe extension carries one such font, **`ican qamiz`**. Run **eTamil: Install the eTamil font** and it will offer to set this for you; VS Code has to be restarted afterwards, because the font list is read when the window starts.\n\nA CSS font stack: `ican qamiz`, or `'ican qamiz', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
+        },
+        "etamil.eTamilFontFeatures": {
+          "type": "string",
+          "default": "\"calt\" 1, \"rlig\" 1",
+          "scope": "machine",
+          "markdownDescription": "OpenType features to ask the **eTamil** font for, where `#etamil.eTamilFont#` is set. Empty or `normal` asks for none.\n\nA *smart* build of the font carries contextual rules in `calt`: the pulli appears on a consonant that no vowel follows, a vowel after a consonant shrinks to its sign, and the inherent `a` draws nothing, so `vaNakkam` is read as வணக்கம். The plain `ican qamiz` has no such rules and is unaffected by this setting.\n\nThese are declared on the eTamil spans themselves, not through `#editor.fontLigatures#`. That option is off by default and, while it is off, VS Code disables `calt` for every font; turning it on would change how every other file in the editor is drawn. This setting changes nothing outside eTamil-script ASCII.\n\nA `font-feature-settings` value: quoted four-letter tags, each optionally followed by `on`, `off` or a number. Checked before use, because it is interpolated into the decoration's CSS."
         },
         "etamil.checkOnType": {
           "type": "boolean",
