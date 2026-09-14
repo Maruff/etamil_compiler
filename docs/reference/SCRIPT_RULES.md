@@ -24,10 +24,11 @@ which the ASCII letters carry Tamil glyphs — `c` draws ச, `q` draws த, `Z`
 draws ன, one glyph per letter, exactly the ezuqqu mapping. A developer who
 turns it on sees `ceyal` as செயல் and writes Tamil on an ASCII keyboard.
 
-Such a font need not have any Tamil of its own, and the one shipped with the VS
-Code extension has none: `ican qamiz` maps 129 codepoints, all of them ASCII,
-and not one character of U+0B80–U+0BFF. So it can only ever be **part** of the
-font a file is drawn in, over a base that does have Tamil.
+Such a font need not have any Tamil of its own. Of the two shipped with the VS
+Code extension, `ican qamiz` has none — it maps 129 codepoints, all of them
+ASCII and Latin-1, and not one character of U+0B80–U+0BFF — while `ican qamiz
+Smart` maps 72 characters of that block. Either way the eTamil face is only ever
+**part** of the font a file is drawn in, over a base that carries the rest.
 
 An English word under that font is unreadable. `sum` draws as ஸும். `status`
 draws as ஸ்டடுஸ். The font has no way to know that those particular ASCII
@@ -137,12 +138,15 @@ Everything else stays in the base font:
 - string literals, always — see below
 - **Unicode Tamil**, which the eTamil font may not have at all
 
-That last one decides the direction, and it is not a detail. An eTamil font
-exists to give the ASCII letters Tamil shapes; covering the Tamil block as well
-is optional and `ican qamiz` does not. So the base font has to be the one with
-Tamil in it, and the eTamil face is painted over the ASCII that wants it —
-never the other way round, which would leave every Tamil letter in every file
-falling back to whatever the machine offered.
+That last one decides the direction, and it is not a detail. The eTamil face is
+painted over the ASCII that wants it, never the other way round. The reason is
+English: a word like `sum` drawn in either eTamil face is unreadable, and
+nothing outside the two marks says which ASCII letters were English, so painting
+the whole editor in an eTamil face would make every English run in every file
+unreadable. That `ican qamiz Smart` covers the Tamil block does not change it —
+the difficulty is Latin text, not Tamil. Painting the other way would also leave
+every Tamil letter in a file that used the plain face falling back to whatever
+the machine offered.
 
 An editor using only standard fonts renders everything in them and ignores the
 marks, which then do nothing but tell the reader the same thing. Nothing about
@@ -154,8 +158,9 @@ does not have the eTamil font installed.
 
 Set `etamil.eTamilFont` to the eTamil font's family name and the VS Code
 extension renders exactly the division above, from version 1.0.0. The
-extension carries such a font, `ican qamiz`, and **eTamil: Install the eTamil
-font** puts it where the operating system can see it.
+extension carries two such fonts, `ican qamiz` and `ican qamiz Smart`, and
+**eTamil: Install the eTamil font** puts both where the operating system can see
+them.
 
 The grammar names both regions, which is what any highlighter needs to act on
 them, and a theme can colour them:

@@ -187,7 +187,7 @@ Either way the binary has to be on your `PATH` — the installers do that — or
 | Setting | Default | |
 |---|---|---|
 | `etamil.compilerPath` | *(carried, then PATH)* | Path to the `etamil` binary. Machine-scoped, because it names an executable the extension runs |
-| `etamil.eTamilFont` | *(off)* | Font for ASCII that is eTamil rather than English — `ican qamiz` ships with the extension, see below |
+| `etamil.eTamilFont` | *(off)* | Font for ASCII that is eTamil rather than English — `ican qamiz` and `ican qamiz Smart` ship with the extension, see below |
 | `etamil.checkOnType` | `true` | Report errors while you type |
 | `etamil.intelliSense` | `true` | Completions and signature help |
 
@@ -210,13 +210,22 @@ So the file says which is which, and the extension reads what it says:
 _sum = moqqam;
 ```
 
-**The extension carries such a font**, `ican qamiz`, under the SIL Open Font
-License. Run **eTamil: Install the eTamil font** and it copies the file to your
+**The extension carries two such fonts**, `ican qamiz` and `ican qamiz Smart`,
+both under the SIL Open Font License. The plain face gives the ASCII letters
+Tamil shapes and nothing else; the Smart face does the same, and adds 72
+characters of the Tamil block and three contextual rules, so that one face sets
+both a program and the prose about it. Those rules belong to the font and not to
+the language — the compiler does not accept them in keywords, function names or
+variables, because it requires the canonical form in which every vowel is
+written. `fonts/README.md` records them.
+
+Run **eTamil: Install the eTamil font** and it copies both files to your
 own font directory — `~/Library/Fonts`, `~/.local/share/fonts`, or
 `%LOCALAPPDATA%\Microsoft\Windows\Fonts` with the registry value Windows needs
-— then offers to set `etamil.eTamilFont` for you. No administrator rights, a
-dialog that says what it will write before it writes it, and a restart of VS
-Code afterwards, because the font list is read when the window starts.
+— then offers to set `etamil.eTamilFont` to `ican qamiz Smart` for you. No
+administrator rights, a dialog that says what it will write before it writes it,
+and a restart of VS Code afterwards, because the font list is read when the
+window starts.
 
 The install command exists because shipping a font is not installing one. VS
 Code's editor is not a webview and has no API that registers a font, so a
@@ -226,13 +235,15 @@ With the setting in place, `moqqam` is drawn in the eTamil face while `_sum`,
 the comment between its `__` marks, every string literal and the licence header
 stay in your ordinary editor font. **The editor's font is not changed.** It
 stays the ISO stack and only the eTamil-script ASCII is painted over the top,
-which matters more than it sounds: `ican qamiz` has no Tamil glyphs at all — it
-maps ASCII and nothing else — so the base font is the one that has to carry
-every `மொத்தம்` in the file. A span the extension fails to recognise then
-renders eTamil as plain Latin, the usual view of the file, rather than English
-in Tamil glyphs.
+which matters more than it sounds. An English word drawn in either eTamil face
+is unreadable — `sum` draws as ஸும் — and nothing outside the two marks says
+which ASCII letters were English, so painting the whole editor in an eTamil face
+would make every English run unreadable. A span the extension fails to recognise
+then renders eTamil as plain Latin, the usual view of the file, rather than
+English in Tamil glyphs. It also leaves the base font carrying every `மொத்தம்`
+in the file, which the plain face could not draw at all.
 
-One caveat. `ican qamiz` is proportional, not monospaced, so a painted run does
+One caveat. Both faces are proportional, not monospaced, so a painted run does
 not sit on the same grid as the code around it and text after it on the same
 line shifts. A monospaced build of the face would make that exact and nothing
 in the extension would change.

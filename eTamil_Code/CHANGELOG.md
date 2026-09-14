@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased
+
+A second face, which draws Tamil where the first drew none, and reads a
+consonant cluster the way Tamil is written. The language is unchanged: the
+compiler accepts exactly what it accepted before.
+
+### Added
+
+- **`ican qamiz Smart` ships beside the plain face.** It carries the same 95
+  printable ASCII characters, adds 72 characters of the Tamil block, and applies
+  three contextual rules in OpenType: a consonant that no vowel follows takes
+  the pulli, a vowel that no consonant precedes is drawn at full size upon the
+  baseline in its own advance, and the inherent `a` after a consonant draws
+  nothing. `vaNakkam` sets as வணக்கம் while the eight bytes on disk are
+  unchanged.
+
+  **These are the font's conventions and not the language's.** The compiler does
+  not accept them in keywords, function names or variables; it requires the
+  canonical form, in which every vowel is written, because that is what keeps
+  the encoding reversible. They are for setting Tamil in a document.
+
+  Every encoded glyph keeps the outline the plain face gives it. The alternative
+  forms live in unencoded glyphs that only the substitutions reach, so a
+  renderer that does not apply `calt` shows exactly the plain rendering, and the
+  two faces are interchangeable for anyone who wants the old behaviour.
+
+- **`src/bundle.ts` now holds a `FACES` table** rather than a single font name,
+  and `fontinstall.ts` installs every face in it. **eTamil: Install the eTamil
+  font** copies both, registers both on Windows, and offers to set
+  `etamil.eTamilFont` to `ican qamiz Smart`.
+
+- **`etamil.eTamilFontFeatures`** turns the contextual rules on or off. The
+  features are injected into the decoration CSS for eTamil spans alone, so
+  nothing outside those spans and no global editor setting is touched — in
+  particular `editor.fontLigatures` is left alone.
+
+### Fixed
+
+- **The Tamil coverage of the Smart face was reported as 87 characters.** It is
+  72. The higher figure came from counting the code points a cmap format 4
+  segment spans without resolving each to a glyph id; fifteen of them resolve to
+  glyph 0. 201 mapped code points minus 72 Tamil leaves the 129 the plain face
+  maps, which is the cross-check. `fonts/README.md` lists the fifteen.
+
 ## 1.0.2
 
 The carried font, which said two contradictory things about its own licence.

@@ -94,13 +94,16 @@ for use outside the editor**: it copies both out to `~/.local`, or to
 `%LOCALAPPDATA%\Programs\eTamil` on Windows, and shows you the `PATH` and
 `ETAMIL_PATH` lines to add.
 
-### The eTamil font
+### The eTamil fonts
 The extension also carries **`ican qamiz`**, the font in which the ASCII letters
-carry Tamil glyphs — `c` draws ச, `q` draws த. Run **eTamil: Install the eTamil
-font**: it copies the file into your own font directory, registers it where the
-platform needs registering, and offers to set `etamil.eTamilFont`. No
-administrator rights. Restart VS Code afterwards — the font list is read when
-the window starts.
+carry Tamil glyphs — `c` draws ச, `q` draws த — and **`ican qamiz Smart`**,
+which adds 72 characters of the Tamil block and three contextual rules, so one
+face sets both a program and the prose about it. Those rules are the font's own
+and the compiler does not accept them; `fonts/README.md` says what they are.
+Run **eTamil: Install the eTamil font**: it copies both files into your own font
+directory, registers them where the platform needs registering, and offers to
+set `etamil.eTamilFont` to `ican qamiz Smart`. No administrator rights. Restart
+VS Code afterwards — the font list is read when the window starts.
 
 Shipping a font is not installing one: VS Code's editor is not a webview and
 has no API that registers a font, so it has to reach the operating system's
