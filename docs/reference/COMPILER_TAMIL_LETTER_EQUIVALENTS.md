@@ -1,393 +1,205 @@
-# eTamil Compiler - Tamil Letter Equivalents Documentation
+# Tamil letter equivalents — the ezuqqu scheme
 
-**Version**: 2.0 (Corrected - eTamil Standard Only)  
-**Date**: February 1, 2026  
-**Reference**: `ezuqqu.pdf` Tamil letter romanization system
+How each Tamil letter is written in ASCII, and how to read a romanized eTamil
+name back as Tamil.
 
----
+**Status**: descriptive. The scheme itself lives in
+`scripts/transliterate.py`, which `--check` audits the lexer against, and is
+specified in [EZUQQU_TRANSLITERATION_STANDARD.pdf](EZUQQU_TRANSLITERATION_STANDARD.pdf).
+Where this document and that script disagree, the script is right.
 
-## Overview
-
-The eTamil compiler supports bilingual programming - you can write code using either Tamil characters or romanized (Latin character) equivalents. This document explains the Tamil letter system and how it maps to romanized forms used throughout the compiler.
-
-**IMPORTANT**: This guide uses ONLY the eTamil standard from `ezuqqu.pdf`, NOT standard transliteration (ISO 15919). The two systems are fundamentally different and NOT compatible.
-
----
-
-## Tamil Alphabet System
-
-### Core Consonants (மெய் எழுத்து) - eTamil Standard ONLY
-
-The Tamil alphabet has 18 consonants with these eTamil romanized equivalents:
-
-| Tamil | eTamil | Sound | Example | Meaning | Note |
-|-------|--------|-------|---------|---------|------|
-| க | k | /ka/ | கோப்பு | file | - |
-| ங | w | /ŋa/ | சங்கு | conch | **NOT 'ng'** |
-| ச | c | /cha/ | சுற்று | loop | - |
-| ஞ | W | /ña/ | ஞாணம் | cord | **NOT 'nj'** |
-| ட | t | /ṭa/ | ஒட்டு | attach | - |
-| ண | N | /ṇa/ | கணம் | moment | **Retroflex N** |
-| த | q | /tha/ | தளம் | platform | **NOT 'th'** |
-| ந | N | /na/ | நிலை | status | Same as ண் |
-| ப | p | /pa/ | பணம் | money | - |
-| ம | m | /ma/ | மாறி | variable | - |
-| ய | y | /ya/ | யாழ் | harp | - |
-| ர | r | /ra/ | வரி | tax | - |
-| ல | l | /la/ | நிலை | status | - |
-| வ | v | /va/ | வரவு | credit | **NOT 'w'** |
-| ழ | z | /ḻa/ | பழம் | fruit | **NOT 'zh'** |
-| ள | L | /ḷa/ | சூள் | list | **Retroflex L** |
-| ற | R | /ṟa/ | கற் | stone | **Retroflex R** |
-| ன | n | /na/ | சொன் | said | **Dental n** |
-
-### Core Vowels (உயிர் எழுத்து) - eTamil Standard ONLY
-
-Tamil has 12 vowels + 2 special vowels (14 total):
-
-| Tamil | eTamil | Sound | Example | Meaning | Note |
-|-------|--------|-------|---------|---------|------|
-| அ | a | /a/ | அச்சு | print | Short a |
-| ஆ | A | /aː/ | - | - | Long a |
-| இ | i | /i/ | இருப்பு | balance | Short i |
-| ஈ | I | /iː/ | நீ | you | Long i |
-| உ | u | /u/ | உள்ளிடு | input | Short u |
-| ஊ | U | /uː/ | கூ | coo | Long u |
-| எ | e | /e/ | எண் | number | Short e |
-| ஏ | E | /eː/ | தேதி | date | Long e |
-| ஐ | Y | /ai/ | வைப்பு | storage | Diphthong (ai) |
-| ஒ | o | /o/ | கோப்பு | file | Short o |
-| ஓ | O | /oː/ | தோ | till | Long o |
-| ஔ | V | /au/ | கௌ | caste | Diphthong (au) **NOT 'O'** |
-| ஃ | h | /h/ | - | - | Archaic |
+This is a guide to the **letters**. For the list of keywords see
+[KEYWORDS.md](KEYWORDS.md), which is generated from the lexer and is the
+authority on what the compiler accepts.
 
 ---
 
-## eTamil Keyword Categories & Tamil Breakdown
+## The idea
 
-### 1. Control Flow Keywords
+One Latin letter stands for one Tamil letter. Case carries a letter
+distinction rather than emphasis, which is what lets the scheme keep apart the
+letters English writes the same way: Tamil has three nasals where English has
+one `n`, and two rhotics and two laterals where English has one of each.
 
-#### If/Else
-```
-Tamil:      எனில் | இன்றேல்
-Romanized:  eZil | iZREl
-Breakdown:  e+n+i+l | i+n+R+E+l
-```
+**The three nasals are the ones that get confused, so they come first:**
 
-#### Loop
-```
-Tamil:      சுற்று
-Romanized:  cuRRu
-Breakdown:  c+u+RR+u (double 'r' indicates gemination)
-```
+| Tamil | eTamil | Which nasal |
+|---|---|---|
+| ண | `N` | retroflex |
+| ந | `n` | dental |
+| ன | `Z` | alveolar |
 
-#### Print/Input
-```
-Tamil:      அச்சு | உள்ளிடு
-Romanized:  accu | uLLitu
-Breakdown:  a+c+c+u | u+LL+i+t+u
-```
+`ண` and `ன` are different letters and different sounds, and neither is `n`.
+Writing `n` for `ன` merges it with `ந` and the compiler then cannot tell
+`பின்னம்` from a word spelled with `ந`.
 
-### 2. Data Type Keywords
+---
 
-#### Number/Float
-```
-Tamil:      எண் | பின்னம்
-Romanized:  eN | piZZam
-Breakdown:  e+N | p+i+nn+a+m
-Notes:      'ண்' (geminated n) = N, 'ன்' = n
-```
+## Consonants (மெய் எழுத்து)
 
-#### String/Text
-```
-Tamil:      சொல் | உரை
-Romanized:  col | urY
-Breakdown:  c+o+l | u+r+Y
-Notes:      'ை' (ai vowel) = Y
-```
+The eighteen native consonants, in the traditional order:
 
-#### Boolean
-```
-Tamil:      ஈர்ம
-Romanized:  Irma
-Breakdown:  I+r+m+a
-Notes:      'ீ' (long i) = I
-```
+| Tamil | eTamil | Class | Sound |
+|---|---|---|---|
+| க | `k` | vallinam | velar stop |
+| ங | `w` | mellinam | velar nasal |
+| ச | `c` | vallinam | palatal stop |
+| ஞ | `W` | mellinam | palatal nasal |
+| ட | `t` | vallinam | retroflex stop |
+| ண | `N` | mellinam | retroflex nasal |
+| த | `q` | vallinam | dental stop |
+| ந | `n` | mellinam | dental nasal |
+| ப | `p` | vallinam | labial stop |
+| ம | `m` | mellinam | labial nasal |
+| ய | `y` | idaiyinam | palatal approximant |
+| ர | `r` | idaiyinam | alveolar tap |
+| ல | `l` | idaiyinam | alveolar lateral |
+| வ | `v` | idaiyinam | labial approximant |
+| ழ | `z` | idaiyinam | retroflex approximant |
+| ள | `L` | idaiyinam | retroflex lateral |
+| ற | `R` | vallinam | alveolar trill |
+| ன | `Z` | mellinam | alveolar nasal |
 
-#### Array
-```
-Tamil:      அணி
-Romanized:  aNi
-Breakdown:  a+N+i
-```
+### Grantha letters, for borrowed sounds
 
-### 3. File Operation Keywords
+These are in everyday Tamil use and the compiler accepts them:
 
-#### File Open (கோப்பு_திற)
-```
-Tamil Part 1:  கோப்பு
-Romanized:     kOppu
-Breakdown:     k+O+p+p+u
-Notes:         'ோ' (long o) = O, double 'p' = pp
+| Tamil | eTamil |
+|---|---|
+| ஜ | `j` |
+| ஷ | `S` |
+| ஸ | `s` |
+| ஹ | `H` |
+| க்ஷ | `x` |
 
-Tamil Part 2:  திற
-Romanized:     qiRa
-Breakdown:     q+i+R+a
-Notes:         'த' = q (retrofit t), 'ற' = R
-```
+---
 
-#### File Close (கோப்பு_மூடு)
-```
-Tamil Part 1:  கோப்பு (same as above)
-Tamil Part 2:  மூடு
-Romanized:     mUtu
-Breakdown:     m+U+t+u
-Notes:         'ூ' (long u) = U
-```
+## Vowels (உயிர் எழுத்து)
 
-#### File Read (கோப்பு_படி)
-```
-Tamil:      படி
-Romanized:  pati
-Breakdown:  p+a+t+i
-```
+Twelve vowels, plus the aytham. A vowel has two written forms: the independent
+letter that begins a word, and the sign it takes after a consonant.
 
-#### File Write (கோப்பு_எழுது)
-```
-Tamil:      எழுது
-Romanized:  ezuqu
-Breakdown:  e+z+u+qu
-Notes:      'ழ' = z, 'து' = qu
-```
+| Vowel | eTamil | Sign after a consonant | Length |
+|---|---|---|---|
+| அ | `a` | (none — inherent) | short |
+| ஆ | `A` | ா | long |
+| இ | `i` | ி | short |
+| ஈ | `I` | ீ | long |
+| உ | `u` | ு | short |
+| ஊ | `U` | ூ | long |
+| எ | `e` | ெ | short |
+| ஏ | `E` | ே | long |
+| ஐ | `Y` | ை | diphthong |
+| ஒ | `o` | ொ | short |
+| ஓ | `O` | ோ | long |
+| ஔ | `V` | ௌ | diphthong |
+| ஃ | `h` | — | aytham |
 
-### 4. Database Operation Keywords
+Short vowels are lower case and long vowels are the upper case of the same
+letter. `ஐ` and `ஔ` are `Y` and `V`, one character each — **never `ai` or
+`au`**. A two-character vowel would be a digraph, and a lexer reading `ai`
+could not tell one long vowel from two short ones.
 
-#### DB Connect (தளம்_இணை)
-```
-Tamil Part 1:  தளம்
-Romanized:     qaLam
-Breakdown:     q+a+L+a+m
-Notes:         'ள' = L (retroflex l)
+---
 
-Tamil Part 2:  இணை
-Romanized:     iNY
-Breakdown:     i+NN+Y
-Notes:         'ண்' = NN (doubled), 'ை' = Y
-```
+## The pulli, and why every vowel is written
 
-#### DB Query (தளம்_வினா)
-```
-Tamil:      வினா
-Romanized:  viZA
-Breakdown:  v+i+Z+A
-Notes:      'ன' = Z (the ன-family letter), 'ா' = A (long a)
-```
+A bare consonant symbol carries the inherent `a`. The pulli `்` strips it:
 
-#### DB Insert (தளம்_செருக)
-```
-Tamil:      செருக
-Romanized:  ceruka
-Breakdown:  c+e+r+u+k+a
-```
+| Tamil | eTamil | Reads as |
+|---|---|---|
+| க | `ka` | க with its inherent vowel |
+| க் | `k` | bare consonant, no vowel |
 
-#### DB Update (தளம்_புதுப்பி)
-```
-Tamil:      புதுப்பி
-Romanized:  puquppi
-Breakdown:  p+u+qu+pp+i
-Notes:      'த' = q, double 'p' = pp
-```
+So the romanized form always writes the vowel. `k` is the bare consonant and
+`ka` is the consonant with `a`; they are two different things and never
+interchangeable. This is what makes the scheme reversible — if `k` could mean
+either one, a romanized name could not be read back to a single Tamil spelling.
 
-#### DB Delete (தளம்_நீக்கு)
-```
-Tamil:      நீக்கு
-Romanized:  nIkku
-Breakdown:  n+I+k+k+u
-Notes:      'ீ' = I (long i), double 'k' = kk
-```
+---
 
-### 5. Financial & Accounting Keywords
+## Worked examples
 
-#### Credit/Debit (வரவு | பற்று)
-```
-Tamil Part 1:  வரவு
-Romanized:     varavu
-Breakdown:     w+a+r+a+w+u
-Notes:         'வ' = w (appears twice)
+Each of these is a real keyword. The breakdown splits the word into the units
+the scheme consumes: an independent vowel, or a consonant carrying either the
+pulli or a vowel sign.
 
-Tamil Part 2:  பற்று
-Romanized:     paRRu
-Breakdown:     p+a+RR+u
-Notes:         'ற்ற' = RR (doubled retroflex r)
-```
+| Tamil | eTamil | Letter by letter | Meaning | The letter to notice |
+|---|---|---|---|---|
+| எண் | `eN` | எ + ண் → `e + N` | number | ண் is N, the retroflex nasal |
+| பின்னம் | `piZZam` | பி + ன் + ன + ம் → `pi + Z + Za + m` | fraction | ன்ன is ZZ, not nn |
+| நிகர | `nikara` | நி + க + ர → `ni + ka + ra` | net | ந is n, the dental nasal |
+| வினா | `viZA` | வி + னா → `vi + ZA` | query | ன is Z, the alveolar nasal |
+| வங்கி | `vawki` | வ + ங் + கி → `va + w + ki` | bank | வ is v and ங் is w |
+| மொத்த | `moqqa` | மொ + த் + த → `mo + q + qa` | gross | த்த is qq |
+| உள்ளிடு | `uLLitu` | உ + ள் + ளி + டு → `u + L + Li + tu` | input | ள்ள is LL |
+| பற்று | `paRRu` | ப + ற் + று → `pa + R + Ru` | debit | ற்ற is RR |
+| தொகை | `qokY` | தொ + கை → `qo + kY` | amount | ை is Y |
+| கோப்பு | `kOppu` | கோ + ப் + பு → `kO + p + pu` | file | ோ is O and ப்ப is pp |
+| வருமானம் | `varumAZam` | வ + ரு + மா + ன + ம் → `va + ru + mA + Za + m` | income | ன is Z inside a long word |
+| எழுது | `ezuqu` | எ + ழு + து → `e + zu + qu` | write | ழ is z and து is qu |
 
-#### Balance (இருப்பு)
-```
-Tamil:      இருப்பு
-Romanized:  iruppu
-Breakdown:  i+r+u+pp+u
-Notes:      double 'p' = pp
-```
+To check any word yourself:
 
-#### Revenue (வருவாய்)
-```
-Tamil:      வருவாய்
-Romanized:  varuvAy
-Breakdown:  w+a+r+u+w+A+y
-Notes:      'ா' = A (long a), 'ய்' = y
-```
-
-#### Expense (செலவு)
-```
-Tamil:      செலவு
-Romanized:  celavu
-Breakdown:  c+e+l+a+w+u
-```
-
-#### Income (வருமானம்)
-```
-Tamil:      வருமானம்
-Romanized:  varumAZam
-Breakdown:  w+a+r+u+m+A+n+a+m
-```
-
-#### Profit (பயன்)
-```
-Tamil:      பயன்
-Romanized:  payaZ
-Breakdown:  p+a+y+a+n
-```
-
-#### Loss (இழப்பு)
-```
-Tamil:      இழப்பு
-Romanized:  izappu
-Breakdown:  i+z+a+pp+u
-Notes:      'ழ' = z, double 'p' = pp
-```
-
-#### Tax (வரி)
-```
-Tamil:      வரி
-Romanized:  vari
-Breakdown:  w+a+r+i
-Notes:      'வ' = w
-```
-
-#### Amount (தொகை)
-```
-Tamil:      தொகை
-Romanized:  qokY
-Breakdown:  q+o+k+Y
-Notes:      'த' = q, 'க' = k, 'ை' = Y
-```
-
-#### Bank (வங்கி)
-```
-Tamil:      வங்கி
-Romanized:  vawki
-Breakdown:  w+a+N+k+i
-Notes:      'ங்' = N (nasal n)
-```
-
-#### Cash (பணம்)
-```
-Tamil:      பணம்
-Romanized:  paNam
-Breakdown:  p+a+N+a+m
-Notes:      'ண்' = N (retroflex n)
-```
-
-#### Interest (வட்டி)
-```
-Tamil:      வட்டி
-Romanized:  vatti
-Breakdown:  w+a+tt+i
-Notes:      'ட்ட' = tt (doubled dental t)
-```
-
-#### Ledger (பேரேடு)
-```
-Tamil:      பேரேடு
-Romanized:  pErEtu
-Breakdown:  p+E+r+E+t+u
-Notes:      'ே' = E (long e) appears twice
-```
-
-#### Net (நிகர)
-```
-Tamil:      நிகர
-Romanized:  nikara
-Breakdown:  n+i+k+a+r+a
-```
-
-#### Gross (மொத்த)
-```
-Tamil:      மொத்த
-Romanized:  moqqa
-Breakdown:  m+o+qq+a
-Notes:      'த்த' = qq (doubled dental t)
+```bash
+python scripts/transliterate.py வருமானம்
 ```
 
 ---
 
-## Romanization Rules Summary
+## Gemination
 
-### ⚠️ CRITICAL: eTamil vs. Standard Transliteration
+A doubled consonant doubles its letter. The two to watch are the nasals whose
+single forms are already easy to confuse:
 
-**DO NOT use standard transliteration (ISO 15919) - it is DIFFERENT from eTamil.**
-
-| Consonant | eTamil | Standard | ❌ **WRONG** |
-|-----------|--------|----------|-------------|
-| ங் | **w** | ng | Using 'ng' is WRONG |
-| ஞ் | **W** | nj | Using 'nj' is WRONG |
-| த் | **q** | th | Using 'th' is WRONG |
-| வ் | **v** | v | Using 'w' is WRONG |
-| ழ் | **z** | zh | Using 'zh' is WRONG |
-| ற் | **R** | r/rr | Using lowercase 'r' is WRONG |
-| ஔ | **V** | au | Using 'o' or 'O' is WRONG |
-| ஐ | **Y** | ai | Can be written 'ai' but eTamil prefers 'Y' |
-
-### 1. **Vowel Mapping (eTamil Standard)**
-- Short vowels: lowercase (a, e, i, o, u)
-- Long vowels: uppercase (A, E, I, O, U)
-- Diphthong ai: **Y** (NOT 'ai')
-- Diphthong au: **V** (NOT 'au')
-
-### 2. **Consonant Types (eTamil Standard)**
-- **Velar**: க=k, ங=**w** (NOT N)
-- **Palatal**: ச=c, ஞ=**W** (NOT J)
-- **Retroflex**: ட=t, ண=**N**, ல=l, ற=**R** (NOT r)
-- **Dental**: த=**q** (NOT th), ந=**N**, ப=p, ம=m
-- **Semi-vowels**: ய=y, ர=r, ல=l, வ=**v** (NOT w)
-- **Fricative**: ழ=**z** (NOT zh)
-- **Lateral**: ள=**L** (NOT l)
-
-### 3. **Gemination (Double Consonants) - eTamil Standard**
-- க்க = kk
-- ங்ங = **ww** (NOT ng+ng)
-- ச்ச = cc
-- ஞ்ஞ = **WW** (NOT nj+nj)
-- ட்ட = tt
-- ண்ண = NN
-- த்த = **qq** (NOT th+th)
-- ந்ந = NN
-- ப்ப = pp
-- ம்ம = mm
-- ய்ய = yy
-- ர்ர = rr
-- ல்ல = ll
-- வ்வ = **vv** (NOT ww)
-- ழ்ழ = **zz** (NOT zh+zh)
-- ள்ள = LL
-- ற்ற = **RR** (NOT rr)
-- ன்ன = nn
+| Tamil | eTamil | | Tamil | eTamil |
+|---|---|---|---|---|
+| க்க | `kk` | | ப்ப | `pp` |
+| ங்ங | `ww` | | ம்ம | `mm` |
+| ச்ச | `cc` | | ய்ய | `yy` |
+| ஞ்ஞ | `WW` | | ர்ர | `rr` |
+| ட்ட | `tt` | | ல்ல | `ll` |
+| ண்ண | `NN` | | வ்வ | `vv` |
+| த்த | `qq` | | ழ்ழ | `zz` |
+| **ந்ந** | **`nn`** | | ள்ள | `LL` |
+| | | | ற்ற | `RR` |
+| | | | **ன்ன** | **`ZZ`** |
 
 ---
 
-## Usage in Code
+## This is not ISO 15919
 
-### Example 1: Using Tamil Keywords
+ISO 15919 is the international transliteration standard, and it is a different
+system built for a different purpose. It reaches its letter distinctions with
+diacritics — `ṇ`, `ṉ`, `ḷ`, `ḻ`, `ṟ` — which are outside ASCII and have no key
+on an ordinary keyboard. The ezuqqu scheme reaches the same distinctions with
+case, so every letter is one keystroke.
+
+Mixing the two produces names the compiler rejects or, worse, accepts as a
+different name:
+
+| Tamil | ezuqqu | ISO 15919 | A common mistake |
+|---|---|---|---|
+| ங் | `w` | `ṅ` | writing `ng` |
+| ஞ் | `W` | `ñ` | writing `nj` |
+| த் | `q` | `t` | writing `th` |
+| வ் | `v` | `v` | writing `w` |
+| ழ் | `z` | `ḻ` | writing `zh` |
+| ற் | `R` | `ṟ` | writing lower-case `r` |
+| ன் | `Z` | `ṉ` | writing `n`, which is ந |
+| ஐ | `Y` | `ai` | writing `ai` |
+| ஔ | `V` | `au` | writing `au` |
+
+---
+
+## Using it in code
+
+A name is stored exactly as you typed it, so the Tamil spelling and the
+romanized spelling are **different names**. `வருவாய்` and `varuvAy` are two
+variables, not one. Pick one spelling for a program and keep to it.
+
+### Tamil script
+
 ```etamil
 எண் வருவாய் = 100000;
 எண் செலவு = 30000;
@@ -395,7 +207,8 @@ Notes:      'த்த' = qq (doubled dental t)
 அச்சு பயன்;
 ```
 
-### Example 2: Using Romanized Keywords
+### The same program romanized
+
 ```etamil
 eN varuvAy = 100000;
 eN celavu = 30000;
@@ -403,69 +216,30 @@ eN payaZ = varuvAy - celavu;
 accu payaZ;
 ```
 
-### Example 3: Mixed Usage
+### English names carry a leading underscore
+
+An English word written in ASCII is indistinguishable from a romanized Tamil
+word, and under the eTamil font it renders as nonsense — `sum` draws as ஸும்.
+So an identifier containing English begins with `_`, and an English comment is
+wrapped in `__ … __`. Both rules are normative and are enforced by
+`scripts/check_script_rules.py`; see [SCRIPT_RULES.md](SCRIPT_RULES.md).
+
 ```etamil
-எண் income = 50000;
-செலவு = 15000;
-eN profit = income - செலவு;
-accu "Profit: " & profit;
+// __Mixed Tamil and English names__
+எண் _income = 50000;
+எண் செலவு = 15000;
+எண் _profit = _income - செலவு;
+அச்சு "Profit: " & _profit;
 ```
 
 ---
 
-## Reference Tables
+## Related documentation
 
-### Quick Consonant Lookup (eTamil Standard)
-
-| Category | Tamil | eTamil | Note |
-|----------|-------|--------|------|
-| **Velars** | க ங | k **w** | ங = w NOT 'ng' |
-| **Palatals** | ச ஞ | c **W** | ஞ = W NOT 'nj' |
-| **Retroflex** | ட ண ல ற | t **N** l **R** | ற = R (capital) |
-| **Dental** | த ந ப ம | **q** **N** p m | த = q NOT 'th' |
-| **Approximants** | ய ர ல வ | y r l **v** | வ = v NOT 'w' |
-| **Fricative** | ழ | **z** | z NOT 'zh' |
-| **Lateral** | ள | **L** | L (capital) |
-
-### Quick Vowel Lookup (eTamil Standard)
-
-| Type | Tamil | eTamil | Example | Note |
-|------|-------|--------|---------|------|
-| **Short a** | அ | a | அச்சு (accu) | - |
-| **Long a** | ஆ | A | - | Uppercase |
-| **Short i** | இ | i | இருப்பு (iruppu) | - |
-| **Long i** | ஈ | I | நீ (nI) | Uppercase |
-| **Short u** | உ | u | உள்ளிடு (uLLitu) | - |
-| **Long u** | ஊ | U | - | Uppercase |
-| **Short e** | எ | e | எண் (eN) | - |
-| **Long e** | ஏ | E | தேதி (qEti) | Uppercase |
-| **Diphthong ai** | ஐ | Y | வைப்பு (vYppu) | Y (NOT 'ai') |
-| **Short o** | ஒ | o | கோப்பு (kOppu) | - |
-| **Long o** | ஓ | O | - | Uppercase |
-| **Diphthong au** | ஔ | V | - | V (NOT 'au') |
-
----
-
-## Integration Notes
-
-1. **Parser Integration**: The lexer (`src/lexer.rs`) uses the `logos` crate with regex patterns supporting both Tamil and romanized forms
-2. **Standard Used**: ONLY eTamil standard from `ezuqqu.pdf` - NOT ISO 15919 or any other transliteration
-3. **Dual Support**: Both Tamil script and eTamil romanized forms are accepted interchangeably in code
-4. **Documentation**: All examples and error messages use Tamil forms with eTamil romanized equivalents in parentheses
-5. **Consistency**: All romanization must follow the eTamil standard exclusively
-
----
-
-## Related Documentation
-
-- [ACTUAL_KEYWORDS.md](KEYWORDS.md) - Complete keyword reference
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Quick syntax guide
-- [HOW_TO_USE.md](../getting-started/QUICKSTART.md) - Getting started guide
-- [src/lexer.rs](../../etamil_compiler/src/lexer.rs) - Source code with all token definitions
-
----
-
-**Last Updated**: February 1, 2026  
-**Version**: 2.0 (Corrected to eTamil Standard Only)  
-**Maintained by**: eTamil Development Team  
-**Reference**: ezuqqu.pdf Tamil Letter Equivalents (eTamil Standard ONLY)
+- [KEYWORDS.md](KEYWORDS.md) — every keyword, generated from the lexer
+- [SCRIPT_RULES.md](SCRIPT_RULES.md) — the `_` and `__` marks, normative
+- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) — quick syntax guide
+- [QUICKSTART.md](../getting-started/QUICKSTART.md) — getting started
+- [scripts/transliterate.py](../../scripts/transliterate.py) — the scheme, and
+  the checker that audits the lexer against it
+- [lexer.rs](../../etamil_compiler/src/lexer.rs) — the token definitions
