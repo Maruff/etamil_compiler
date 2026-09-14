@@ -164,16 +164,56 @@ export function isFontFeatureSettings(value: string): boolean {
 }
 
 /**
- * The file, inside `fonts/`.
+ * The faces the extension carries.
  *
- * Carries the version, because `fonts/` keeps the earlier build beside it and
- * a name that does not say which is which would make the pair unreadable.
+ * Two, and they are not interchangeable. `ican qamiz` maps the 95 printable
+ * ASCII characters onto Tamil glyphs and nothing else; `ican qamiz Smart` maps
+ * the same 95, adds 87 characters of the Tamil block, and carries the
+ * contextual rules of `calt` — the pulli appears on a consonant that no vowel
+ * follows, a vowel not preceded by a consonant is drawn at full size on the
+ * baseline, and the inherent `a` draws nothing.
+ *
+ * They are separate families rather than two styles of one, so that both can
+ * be installed at once and a user who has already set `ican qamiz` keeps
+ * exactly the rendering they chose.
+ *
+ * The version is in each file name because `fonts/` keeps earlier builds
+ * beside the current one, and a name that does not say which is which makes
+ * the directory unreadable.
  */
-export const FONT_FILE = 'ican_qamiz-Regular-2.1.1.ttf';
+export interface Face {
+  /** What the file's `name` table calls itself; what a font stack must ask for. */
+  readonly family: string;
+  /** The file, inside `fonts/`. */
+  readonly file: string;
+  /** Whether it carries the contextual rules. */
+  readonly smart: boolean;
+}
 
-/** Where the font sits inside the extension. */
-export function fontSource(extensionPath: string): string {
-  return path.join(extensionPath, 'fonts', FONT_FILE);
+export const FACES: readonly Face[] = [
+  { family: 'ican qamiz', file: 'ican_qamiz-Regular-2.1.1.ttf', smart: false },
+  {
+    family: 'ican qamiz Smart',
+    file: 'ican_qamiz_Smart-Regular-2.1.0.ttf',
+    smart: true,
+  },
+];
+
+/** The face whose rules the editor is meant to show, where one is wanted. */
+export const SMART_FACE: Face = FACES[1];
+
+/**
+ * The file of the plain face.
+ *
+ * Kept as its own export because it is what earlier versions installed, and
+ * what `fontInstalled()` looks for when deciding whether the setting names
+ * something the machine actually has.
+ */
+export const FONT_FILE = FACES[0].file;
+
+/** Where a face sits inside the extension. */
+export function fontSource(extensionPath: string, file: string = FONT_FILE): string {
+  return path.join(extensionPath, 'fonts', file);
 }
 
 /**
@@ -210,8 +250,8 @@ export function fontInstallDir(
  * parentheses, and the family is what a `font-family` will later ask for, so
  * the two are derived from the same constant rather than typed twice.
  */
-export function fontRegistryName(): string {
-  return `${FONT_FAMILY} (TrueType)`;
+export function fontRegistryName(family: string = FONT_FAMILY): string {
+  return `${family} (TrueType)`;
 }
 
 /**

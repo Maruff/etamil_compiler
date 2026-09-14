@@ -25,6 +25,29 @@ const bundle = available ? require(BUILT) : null;
 
 const PACKAGER = path.join(__dirname, '..', '..', 'scripts', 'package_extension.py');
 
+/** The GSUB feature tags a font declares, read out of the table directory. */
+function gsubFeatures(file) {
+  const data = fs.readFileSync(file);
+  const tables = data.readUInt16BE(4);
+  let gsub = null;
+  for (let i = 0; i < tables; i += 1) {
+    const rec = 12 + i * 16;
+    if (data.toString('latin1', rec, rec + 4) === 'GSUB') {
+      gsub = data.readUInt32BE(rec + 8);
+    }
+  }
+  const found = new Set();
+  if (gsub === null) {
+    return found;
+  }
+  const list = gsub + data.readUInt16BE(gsub + 6);
+  const count = data.readUInt16BE(list);
+  for (let i = 0; i < count; i += 1) {
+    found.add(data.toString('latin1', list + 2 + i * 6, list + 6 + i * 6));
+  }
+  return found;
+}
+
 describe('the carried toolchain', { skip: available ? false : 'run npm run build' }, () => {
   test('the binary is named for the platform that runs it', () => {
     assert.equal(
@@ -145,6 +168,39 @@ describe('the carried font', { skip: available ? false : 'run npm run build' }, 
 
   test('the registry value name is built from the family', () => {
     assert.equal(bundle.fontRegistryName(), `${bundle.FONT_FAMILY} (TrueType)`);
+  });
+
+  test('both carried faces exist and declare the family the table claims', () => {
+    // The failure this catches is the same silent one as for the single face,
+    // twice over: a file renamed, or a face rebuilt under a different family,
+    // and the setting resolves to nothing while everything still installs.
+    for (const face of bundle.FACES) {
+      const file = path.join(__dirname, '..', 'fonts', face.file);
+      assert.ok(fs.existsSync(file), `fonts/${face.file} is not there`);
+      assert.equal(readNames(file)[1], face.family);
+      assert.equal(
+        bundle.fontRegistryName(face.family),
+        `${face.family} (TrueType)`
+      );
+    }
+  });
+
+  test('only the smart face carries the contextual rules', () => {
+    // calt is what makes the smart face smart. If a rebuild drops it the font
+    // still installs, still resolves, and quietly renders like the plain one.
+    for (const face of bundle.FACES) {
+      const features = gsubFeatures(path.join(__dirname, '..', 'fonts', face.file));
+      if (face.smart) {
+        assert.ok(features.has('calt'), `${face.file} has lost calt`);
+      } else {
+        assert.ok(!features.has('calt'), `${face.file} should not carry calt`);
+      }
+    }
+  });
+
+  test('the smart face is the one the installer offers', () => {
+    assert.equal(bundle.SMART_FACE.smart, true);
+    assert.equal(bundle.FONT_FILE, bundle.FACES[0].file);
   });
 
   test('the default features ask for the two the smart font uses', () => {

@@ -35,8 +35,9 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 
 import {
-  FONT_FAMILY,
+  FACES,
   FONT_FILE,
+  SMART_FACE,
   fontInstallDir,
   fontRegistryName,
   fontSource,
@@ -61,17 +62,21 @@ function run(command: string, args: string[]): Promise<string | undefined> {
 
 /** What the confirmation dialog says will happen, before it happens. */
 function plan(platform: string, directory: string): string {
-  const copy = `${FONT_FILE} will be copied to ${directory}.`;
+  const files = FACES.map((face) => face.file).join(' and ');
+  const copy = `${files} will be copied to ${directory}.`;
   if (platform === 'win32') {
+    const values = FACES.map((face) => `"${fontRegistryName(face.family)}"`).join(
+      ' and '
+    );
     return (
-      `${copy}\n\nA value named "${fontRegistryName()}" will be added under ` +
+      `${copy}\n\nValues named ${values} will be added under ` +
       'HKEY_CURRENT_USER\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts, ' +
       'which is how Windows installs a font for one user without administrator ' +
       'rights. Nothing else on the machine is changed.'
     );
   }
   if (platform === 'linux') {
-    return `${copy}\n\nThen fc-cache is run so applications notice it.`;
+    return `${copy}\n\nThen fc-cache is run so applications notice them.`;
   }
   return copy;
 }
@@ -86,23 +91,28 @@ export async function installFont(
   output: vscode.LogOutputChannel,
   extensionPath: string
 ): Promise<boolean> {
-  const source = fontSource(extensionPath);
-  if (!existsSync(source)) {
+  const absent = FACES.filter(
+    (face) => !existsSync(fontSource(extensionPath, face.file))
+  );
+  if (absent.length === FACES.length) {
     void vscode.window.showErrorMessage(
       `eTamil: this build does not carry ${FONT_FILE}.`
     );
     return false;
   }
+  for (const face of absent) {
+    output.warn(`font: this build does not carry ${face.file}; skipping it`);
+  }
+  const carried = FACES.filter((face) => !absent.includes(face));
 
   const directory = fontInstallDir(
     process.platform,
     os.homedir(),
     process.env.LOCALAPPDATA
   );
-  const destination = path.join(directory, FONT_FILE);
 
   const proceed = await vscode.window.showInformationMessage(
-    `Install the eTamil font, ${FONT_FAMILY}?`,
+    `Install the eTamil fonts, ${carried.map((f) => f.family).join(' and ')}?`,
     {
       modal: true,
       detail: plan(process.platform, directory),
@@ -116,43 +126,48 @@ export async function installFont(
   return vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: 'Installing the eTamil font' },
     async () => {
-      try {
-        await fs.mkdir(directory, { recursive: true });
-        await fs.copyFile(source, destination);
-        output.info(`font: wrote ${destination}`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        output.error(`font: ${message}`);
-        void vscode.window.showErrorMessage(
-          `eTamil: could not write the font — ${message}`
-        );
-        return false;
-      }
-
-      if (process.platform === 'win32') {
-        // The copy is not the install. Without this value the file sits in the
-        // correct directory and no application lists the family.
-        const failure = await run('reg', [
-          'add',
-          'HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts',
-          '/v',
-          fontRegistryName(),
-          '/t',
-          'REG_SZ',
-          '/d',
-          destination,
-          '/f',
-        ]);
-        if (failure) {
-          output.error(`font: registration failed — ${failure}`);
+      for (const face of carried) {
+        const destination = path.join(directory, face.file);
+        try {
+          await fs.mkdir(directory, { recursive: true });
+          await fs.copyFile(fontSource(extensionPath, face.file), destination);
+          output.info(`font: wrote ${destination}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          output.error(`font: ${message}`);
           void vscode.window.showErrorMessage(
-            'eTamil: the font was copied but could not be registered — ' +
-              `${failure}. Double-click ${destination} to install it by hand.`
+            `eTamil: could not write ${face.file} — ${message}`
           );
           return false;
         }
-        output.info(`font: registered "${fontRegistryName()}"`);
-      } else if (process.platform === 'linux') {
+
+        if (process.platform === 'win32') {
+          // The copy is not the install. Without this value the file sits in
+          // the correct directory and no application lists the family.
+          const failure = await run('reg', [
+            'add',
+            'HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts',
+            '/v',
+            fontRegistryName(face.family),
+            '/t',
+            'REG_SZ',
+            '/d',
+            destination,
+            '/f',
+          ]);
+          if (failure) {
+            output.error(`font: registration failed — ${failure}`);
+            void vscode.window.showErrorMessage(
+              `eTamil: ${face.file} was copied but could not be registered — ` +
+                `${failure}. Double-click ${destination} to install it by hand.`
+            );
+            return false;
+          }
+          output.info(`font: registered "${fontRegistryName(face.family)}"`);
+        }
+      }
+
+      if (process.platform === 'linux') {
         // Best effort. fontconfig picks the directory up on its own eventually,
         // and a machine without fc-cache is not a machine that failed to
         // install the font.
@@ -181,9 +196,9 @@ async function offerToUseIt(output: vscode.LogOutputChannel): Promise<void> {
   const configuration = vscode.workspace.getConfiguration('etamil');
   const current = configuration.get<string>('eTamilFont', '').trim();
 
-  if (current === FONT_FAMILY) {
+  if (current === SMART_FACE.family) {
     void vscode.window.showInformationMessage(
-      `eTamil: ${FONT_FAMILY} is installed. Restart VS Code to see it — the ` +
+      `eTamil: ${SMART_FACE.family} is installed. Restart VS Code to see it — the ` +
         'font list is read when the window starts.'
     );
     return;
@@ -191,7 +206,7 @@ async function offerToUseIt(output: vscode.LogOutputChannel): Promise<void> {
 
   const use = 'Use it for eTamil files';
   const picked = await vscode.window.showInformationMessage(
-    `eTamil: ${FONT_FAMILY} is installed. Use it to draw the ASCII that is ` +
+    `eTamil: ${SMART_FACE.family} is installed. Use it to draw the ASCII that is ` +
       'eTamil rather than English?',
     use,
     'Not now'
@@ -202,10 +217,10 @@ async function offerToUseIt(output: vscode.LogOutputChannel): Promise<void> {
 
   await configuration.update(
     'eTamilFont',
-    FONT_FAMILY,
+    SMART_FACE.family,
     vscode.ConfigurationTarget.Global
   );
-  output.info(`font: etamil.eTamilFont set to ${FONT_FAMILY}`);
+  output.info(`font: etamil.eTamilFont set to ${SMART_FACE.family}`);
   void vscode.window.showInformationMessage(
     'eTamil: restart VS Code to pick the font up. The font list is read when ' +
       'the window starts, so it will not appear until then.'
@@ -213,11 +228,16 @@ async function offerToUseIt(output: vscode.LogOutputChannel): Promise<void> {
 }
 
 /** Whether the font is already in the user's font directory. */
-export function fontInstalled(): boolean {
+export function fontInstalled(file: string = FONT_FILE): boolean {
   return existsSync(
     path.join(
       fontInstallDir(process.platform, os.homedir(), process.env.LOCALAPPDATA),
-      FONT_FILE
+      file
     )
   );
+}
+
+/** The face a family name refers to, if the extension carries it. */
+export function faceFor(family: string): (typeof FACES)[number] | undefined {
+  return FACES.find((face) => face.family === family);
 }
