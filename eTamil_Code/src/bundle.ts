@@ -168,7 +168,7 @@ export function isFontFeatureSettings(value: string): boolean {
  *
  * Two, and they are not interchangeable. `ican qamiz` maps the 95 printable
  * ASCII characters onto Tamil glyphs and nothing else; `ican qamiz Smart` maps
- * the same 95, adds 87 characters of the Tamil block, and carries the
+ * the same 95, adds 72 characters of the Tamil block, and carries the
  * contextual rules of `calt` — the pulli appears on a consonant that no vowel
  * follows, a vowel not preceded by a consonant is drawn at full size on the
  * baseline, and the inherent `a` draws nothing.

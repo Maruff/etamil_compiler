@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.3
 
 A second face, which draws Tamil where the first drew none, and reads a
 consonant cluster the way Tamil is written. The language is unchanged: the

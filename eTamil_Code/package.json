@@ -2,7 +2,7 @@
   "name": "etamil-support",
   "displayName": "eTamil",
   "description": "eTamil, the Tamil-vocabulary FinTech DSL — with the compiler, the nUlakam standard library and the eTamil font included. Syntax, completions, hover, Go to Definition and errors as you type.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "etamil",
   "author": {
     "name": "Esan Maruff",
@@ -158,7 +158,7 @@
           "type": "string",
           "default": "",
           "scope": "machine",
-          "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nThe extension carries two. **`ican qamiz`** maps the 95 printable ASCII characters onto Tamil glyphs. **`ican qamiz Smart`** maps those, adds 87 characters of the Tamil block, and carries contextual rules: the pulli appears on a consonant that no vowel follows, a vowel that no consonant precedes is drawn full size on the baseline, and the inherent `a` draws nothing — so `vaNakkam` reads as வணக்கம். Those rules are asked for through `#etamil.eTamilFontFeatures#`.\n\nRun **eTamil: Install the eTamil font** and it installs both, then offers to set this to `ican qamiz Smart`; VS Code has to be restarted afterwards, because the font list is read when the window starts.\n\nA CSS font stack: `ican qamiz`, or `'ican qamiz', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
+          "markdownDescription": "Font family for the ASCII that is **eTamil**, not English — `ceyal`, `moqqam`, the ezuqqu spellings in which one Latin letter stands for one Tamil letter. Empty, the default, draws everything in the editor font and changes nothing.\n\nThe editor keeps its ISO font as the base. Only eTamil-script ASCII is drawn in this face, so a name marked `_english`, a comment wrapped in `__ … __`, a string literal and the licence header all stay Latin. The rules are in `docs/reference/SCRIPT_RULES.md`.\n\nThe extension carries two. **`ican qamiz`** maps the 95 printable ASCII characters onto Tamil glyphs. **`ican qamiz Smart`** maps those, adds 72 characters of the Tamil block, and carries contextual rules: the pulli appears on a consonant that no vowel follows, a vowel that no consonant precedes is drawn full size on the baseline, and the inherent `a` draws nothing — so `vaNakkam` reads as வணக்கம். Those rules are asked for through `#etamil.eTamilFontFeatures#`.\n\nRun **eTamil: Install the eTamil font** and it installs both, then offers to set this to `ican qamiz Smart`; VS Code has to be restarted afterwards, because the font list is read when the window starts.\n\nA CSS font stack: `ican qamiz`, or `'ican qamiz', monospace`. Machine-scoped, and checked before use, because the value is interpolated into the decoration's CSS."
         },
         "etamil.eTamilFontFeatures": {
           "type": "string",
