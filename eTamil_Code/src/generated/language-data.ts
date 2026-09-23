@@ -1359,12 +1359,27 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Const",
     "forms": [
       "நிலை",
-      "nilY"
+      "nilY",
+      "_const"
     ],
     "group": "Variables & Data Types",
     "scope": "support.type.domain.etamil",
     "reserved": false,
-    "noSyntax": true,
+    "noSyntax": false,
+    "snippetTamil": null,
+    "snippetLatin": null
+  },
+  {
+    "token": "Shape",
+    "forms": [
+      "வடிவம்",
+      "vativam",
+      "_shape"
+    ],
+    "group": "Variables & Data Types",
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
+    "noSyntax": false,
     "snippetTamil": null,
     "snippetLatin": null
   },
@@ -3846,7 +3861,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "உள்ளதா(அணி, மதிப்பு) — membership",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 9
+    "line": 10
   },
   {
     "name": "இடம்_காண்",
@@ -3861,7 +3876,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "இடம்_காண்(அணி, மதிப்பு) — first position, or -1",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 17
+    "line": 18
   },
   {
     "name": "தலைகீழ்",
@@ -3875,7 +3890,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "தலைகீழ்(அணி) — reversed copy",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 28
+    "line": 29
   },
   {
     "name": "வெட்டு",
@@ -3891,7 +3906,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "வெட்டு(அணி, தொடக்கம், அளவு) — slice",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 39
+    "line": 40
   },
   {
     "name": "புலம்_எடு",
@@ -3906,7 +3921,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "புலம்_எடு(வரிசைகள், புலம்) — pluck one field from every record.",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 53
+    "line": 54
   },
   {
     "name": "காலியா",
@@ -3920,7 +3935,7 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "காலியா(அணி)",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 62
+    "line": 63
   },
   {
     "name": "புலத்தால்_வடிகட்டு",
@@ -3936,7 +3951,82 @@ export const FUNCTIONS: readonly FunctionEntry[] = [
     "doc": "புலத்தால்_வடிகட்டு(பட்டியல், புலம், மதிப்பு) — the records whose புலம் is மதிப்பு",
     "kind": "stdlib",
     "module": "nUlakam/aNi.qmz",
-    "line": 71
+    "line": 72
+  },
+  {
+    "name": "ஒவ்வொன்றுக்கும்",
+    "forms": [
+      "ஒவ்வொன்றுக்கும்"
+    ],
+    "params": [
+      "அணி பட்டியல்",
+      "செயல் மாற்றம்"
+    ],
+    "arity": 2,
+    "doc": "ஒவ்வொன்றுக்கும்(அணி, செயல்) — map: the செயல் applied to every item, in order",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 83
+  },
+  {
+    "name": "வடிகட்டு",
+    "forms": [
+      "வடிகட்டு"
+    ],
+    "params": [
+      "அணி பட்டியல்",
+      "செயல் ஏற்பது"
+    ],
+    "arity": 2,
+    "doc": "வடிகட்டு(அணி, செயல்) — filter: the items the செயல் answers true for",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 92
+  },
+  {
+    "name": "மடி",
+    "forms": [
+      "மடி"
+    ],
+    "params": [
+      "அணி பட்டியல்",
+      "தொடக்கம்",
+      "செயல் சேர்ப்பது"
+    ],
+    "arity": 3,
+    "doc": "மடி(அணி, தொடக்கம், செயல்) — fold: combine every item into one value,",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi.qmz",
+    "line": 103
+  },
+  {
+    "name": "இரட்டி",
+    "forms": [
+      "இரட்டி"
+    ],
+    "params": [
+      "எ"
+    ],
+    "arity": 1,
+    "doc": "",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi_cOqaZY.qmz",
+    "line": 12
+  },
+  {
+    "name": "மேல்_உள்ளவை",
+    "forms": [
+      "மேல்_உள்ளவை"
+    ],
+    "params": [
+      "பட்டியல்",
+      "எல்லை"
+    ],
+    "arity": 2,
+    "doc": "A rule that carries a value from where it was made",
+    "kind": "stdlib",
+    "module": "nUlakam/aNi_cOqaZY.qmz",
+    "line": 30
   },
   {
     "name": "சோதனை_தொடக்கம்",

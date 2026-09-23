@@ -88,7 +88,11 @@ describe('the README', { skip: available ? false : 'run npm run build' }, () => 
       'thirty-two': 32,
     };
     const examples = countExamples();
-    const claimed = Object.keys(WORDS).filter((word) => readme.includes(word));
+    // Whole words: "thirty-two" contains "thirty", and a substring match
+    // read that as a second, wrong, claim.
+    const claimed = Object.keys(WORDS).filter((word) =>
+      new RegExp(`(?<![A-Za-z0-9_-])${word}(?![A-Za-z0-9_-])`).test(readme)
+    );
     assert.ok(
       claimed.length > 0,
       `the README claims no example count near ${examples} — ` +

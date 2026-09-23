@@ -17,13 +17,114 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Array(Vec<Value>),
-    Map(HashMap<String, Value>),
+    Map(Record),
     /// சரி — a successful result, as in Rust's Ok.
     Ok(Box<Value>),
     /// தவறு — a failed result, as in Rust's Err. Failure is a value that
     /// must be handled, not an exception that unwinds silently.
     Err(Box<Value>),
+    /// A செயல் held as a value: `ச = இரட்டி;`, or `செயல்(x) { … }` written
+    /// where a value goes.
+    Function(Box<FunctionValue>),
     Null,
+}
+
+/// A பொருள்: fields by name, and the வடிவம் it was made as, if any.
+///
+/// It dereferences to the map, so everything that reads or writes a record as
+/// a map still does — indexing, iterating its field names, the drivers, the
+/// JSON encoder. What the shape adds is a promise about which fields there are
+/// and what they hold, kept by `vm::shape` at the few places a record can be
+/// changed. A record read from a database or built from a literal has none.
+#[derive(Debug, Clone, Default)]
+pub struct Record {
+    pub fields: HashMap<String, Value>,
+    pub shape: Option<String>,
+}
+
+impl Record {
+    pub fn shaped(shape: &str, fields: HashMap<String, Value>) -> Self {
+        Record {
+            fields,
+            shape: Some(shape.to_string()),
+        }
+    }
+}
+
+impl std::ops::Deref for Record {
+    type Target = HashMap<String, Value>;
+    fn deref(&self) -> &Self::Target {
+        &self.fields
+    }
+}
+
+impl std::ops::DerefMut for Record {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.fields
+    }
+}
+
+impl From<HashMap<String, Value>> for Record {
+    fn from(fields: HashMap<String, Value>) -> Self {
+        Record {
+            fields,
+            shape: None,
+        }
+    }
+}
+
+impl FromIterator<(String, Value)> for Record {
+    fn from_iter<I: IntoIterator<Item = (String, Value)>>(pairs: I) -> Self {
+        HashMap::from_iter(pairs).into()
+    }
+}
+
+impl<'a> IntoIterator for &'a Record {
+    type Item = (&'a String, &'a Value);
+    type IntoIter = std::collections::hash_map::Iter<'a, String, Value>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.fields.iter()
+    }
+}
+
+/// Two records are the same record when they hold the same fields and were
+/// made as the same shape. A `கடன்` and a plain record with the same fields
+/// are two different things, as two Rust structs with the same fields are.
+impl PartialEq for Record {
+    fn eq(&self, other: &Self) -> bool {
+        self.shape == other.shape && self.fields == other.fields
+    }
+}
+
+/// What a function value refers to, and what it carried away with it.
+///
+/// `name` is the function to run — one the program defined, one of the
+/// builtins, or the hidden name an anonymous செயல் was compiled under.
+/// `captured` holds the values of the enclosing function's locals it uses, taken
+/// when the value was made. They are copies, like every other value here, so a
+/// function value cannot see or change the variables it was made beside after
+/// the fact: the same thing Rust's `move` closures promise.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FunctionValue {
+    pub name: String,
+    pub captured: Vec<Value>,
+}
+
+impl FunctionValue {
+    /// The name an anonymous செயல் is compiled under starts with `#`, which no
+    /// source identifier can, so it can never collide with the author's own.
+    pub fn is_anonymous(name: &str) -> bool {
+        name.starts_with('#')
+    }
+
+    /// How an error message names this function.
+    pub fn shown(name: &str) -> String {
+        if Self::is_anonymous(name) {
+            "பெயரில்லா செயல் (an anonymous function)".to_string()
+        } else {
+            format!("'{}'", name)
+        }
+    }
 }
 
 impl Value {
@@ -50,6 +151,7 @@ impl Value {
             // way you would expect without unwrapping first.
             Value::Ok(_) => true,
             Value::Err(_) => false,
+            Value::Function(_) => true,
         }
     }
 
@@ -85,6 +187,10 @@ impl PartialEq for Value {
             // the same record — so this compares by field rather than by
             // sequence, which is what HashMap's own equality does.
             (Value::Map(a), Value::Map(b)) => a == b,
+
+            // The same function with the same captured values. Two anonymous
+            // செயல்s written identically are still two functions.
+            (Value::Function(a), Value::Function(b)) => a == b,
 
             _ => false,
         }
@@ -137,10 +243,21 @@ impl std::fmt::Display for Value {
                     .iter()
                     .map(|k| format!("{}: {}", k, fields[*k]))
                     .collect();
-                format!("{{{}}}", inner.join(", "))
+                // A shaped record prints as it is written: `கடன்{அசல்: 1}`.
+                match &fields.shape {
+                    Some(shape) => format!("{}{{{}}}", shape, inner.join(", ")),
+                    None => format!("{{{}}}", inner.join(", ")),
+                }
             }
             Value::Ok(inner) => format!("சரி({inner})"),
             Value::Err(inner) => format!("தவறு({inner})"),
+            Value::Function(function) => {
+                if FunctionValue::is_anonymous(&function.name) {
+                    "<செயல்>".to_string()
+                } else {
+                    format!("<செயல் {}>", function.name)
+                }
+            }
         })
     }
 }

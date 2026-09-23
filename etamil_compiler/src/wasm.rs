@@ -7,11 +7,15 @@
 //! diagnostic `etamil` prints on the command line -- including the bilingual
 //! message text, which comes straight from each error type's `Display`.
 //!
-//! Only `lexer` -> `parser` -> `check` is reachable from here. Running a
-//! program needs `vm`, which reads and writes files and is gated out of a wasm
-//! build; see lib.rs.
+//! Two things are reachable from here: `lexer` -> `parser` -> `check`, for
+//! diagnostics and the symbol queries, and `vm`, for `run` and
+//! `run_with_input`. What the VM cannot do in a browser it refuses explicitly
+//! rather than silently: the modules behind databases, sockets and `உள்ளிடு`
+//! are gated out of a wasm build, so a program that reaches for one gets a
+//! message saying it needs a machine of its own. See lib.rs.
 //!
-//! Both entry points return JSON strings rather than `JsValue`. That keeps the
+//! Every entry point returns a `String` rather than a `JsValue` -- JSON for the
+//! five that carry structure, plain text for `version`. That keeps the
 //! dependency list at `wasm-bindgen` alone -- no `serde-wasm-bindgen`, no
 //! `js-sys` -- and the payloads are small enough that one `JSON.parse` on the
 //! JavaScript side costs nothing measurable.
@@ -556,4 +560,256 @@ fn execute(source: &str, input: &str) -> RunResult {
 #[wasm_bindgen]
 pub fn version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Script spans
+// ---------------------------------------------------------------------------
+
+/// One run of eTamil-script ASCII on one line.
+///
+/// Offsets are UTF-16 code units from the start of the line, which is what
+/// both editors count in: VS Code positions and CodeMirror document offsets
+/// are both UTF-16. For Tamil it makes no difference -- the block is entirely
+/// BMP -- but a stray emoji in a comment would shift every span after it if
+/// this counted characters instead.
+#[derive(Serialize)]
+struct ScriptSpan {
+    line: usize,
+    start: usize,
+    end: usize,
+}
+
+/// Every span of ASCII that should be drawn in the eTamil font.
+///
+/// This exists because the rule was being implemented twice -- once in
+/// `eTamil_Code/src/marks.ts` for VS Code and once in
+/// `eTamil_site/ide/src/etamil-font.js` for the browser -- with nothing making
+/// the two agree. `docs/reference/SCRIPT_RULES.md` is normative and the
+/// compiler is where it should be read from, beside the diagnostics and the
+/// symbols that already come from here.
+///
+/// **What is returned is the eTamil-script ASCII, not the English.** An editor
+/// keeps its ordinary ISO font as the base and paints only these spans. The
+/// direction is deliberate: a span this misses renders eTamil as plain Latin,
+/// which is the ordinary view of the file, where painting the other way round
+/// would render English in Tamil glyphs, which is unreadable.
+///
+/// Left out, and so drawn in the ISO font:
+///
+///   - anything inside a string literal, which is data and carries no marks
+///   - an identifier beginning with `_`, in whole (Rule 1)
+///   - a name immediately preceded by `.` -- a field name, an extension
+///   - comment text between `__` and `__` (Rule 2), across as many comment
+///     lines as the sentence takes
+///   - the licence header
+///   - Unicode Tamil, which both fonts draw as Tamil, so the choice is moot
+#[wasm_bindgen]
+pub fn script_spans(source: &str) -> String {
+    let mut spans: Vec<ScriptSpan> = Vec::new();
+    // Both states outlive a line. A string may span lines because the lexer's
+    // pattern does not exclude a newline, and an English comment may span them
+    // because Rule 2's marks go at the ends of the sentence.
+    let mut in_string = false;
+    let mut in_english = false;
+
+    for (number, raw) in source.split('\n').enumerate() {
+        let line = raw.strip_suffix('\r').unwrap_or(raw);
+        let chars: Vec<char> = line.chars().collect();
+
+        // char index -> UTF-16 offset, one longer than `chars`.
+        let mut utf16 = Vec::with_capacity(chars.len() + 1);
+        let mut running = 0usize;
+        utf16.push(0usize);
+        for character in &chars {
+            running += character.len_utf16();
+            utf16.push(running);
+        }
+
+        // A block is contiguous `//` lines, so a line that is not a comment
+        // ends any open region: one unclosed `__` cannot make the rest of the
+        // file English.
+        if !in_string && !starts_a_comment(&chars) {
+            in_english = false;
+        }
+
+        let mut found: Vec<(usize, usize)> = Vec::new();
+        let mut index = 0usize;
+
+        while index < chars.len() {
+            if in_string {
+                if chars[index] == '\\' {
+                    index += 2;
+                    continue;
+                }
+                if chars[index] == '"' {
+                    in_string = false;
+                }
+                index += 1;
+                continue;
+            }
+
+            let character = chars[index];
+
+            if character == '"' {
+                in_string = true;
+                index += 1;
+                continue;
+            }
+
+            if character == '/' && chars.get(index + 1) == Some(&'/') {
+                in_english = comment_spans(&mut found, &chars, index + 2, in_english);
+                break;
+            }
+
+            if is_ident_start(character) {
+                let mut end = index;
+                while end < chars.len() && is_ident_part(chars[end]) {
+                    end += 1;
+                }
+                // Rule 1 puts the mark on the identifier, so the whole of a
+                // marked name stays ISO -- including a mixed one, where only
+                // part of it is Latin. A name reached through `.` stays ISO
+                // for the reason a string does: it is data.
+                let after_dot = index > 0 && chars[index - 1] == '.';
+                if character != '_' && !after_dot {
+                    latin_runs(&mut found, &chars[index..end], index);
+                }
+                index = end;
+                continue;
+            }
+
+            index += 1;
+        }
+
+        for (start, end) in found {
+            spans.push(ScriptSpan {
+                line: number,
+                start: utf16[start],
+                end: utf16[end],
+            });
+        }
+    }
+
+    serde_json::to_string(&spans).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Whether a line is a comment, ignoring leading blanks.
+fn starts_a_comment(chars: &[char]) -> bool {
+    let mut index = 0;
+    while index < chars.len() && (chars[index] == ' ' || chars[index] == '\t') {
+        index += 1;
+    }
+    chars.get(index) == Some(&'/') && chars.get(index + 1) == Some(&'/')
+}
+
+fn is_ident_start(character: char) -> bool {
+    character.is_ascii_alphabetic() || character == '_' || is_tamil(character)
+}
+
+fn is_ident_part(character: char) -> bool {
+    is_ident_start(character) || character.is_ascii_digit()
+}
+
+fn is_tamil(character: char) -> bool {
+    ('\u{0B80}'..='\u{0BFF}').contains(&character)
+}
+
+/// The Latin letters inside one unmarked identifier. Digits are not remapped
+/// by the font and are left alone.
+fn latin_runs(found: &mut Vec<(usize, usize)>, token: &[char], offset: usize) {
+    let mut index = 0;
+    while index < token.len() {
+        if token[index].is_ascii_alphabetic() {
+            let start = index;
+            while index < token.len() && token[index].is_ascii_alphabetic() {
+                index += 1;
+            }
+            found.push((offset + start, offset + index));
+            continue;
+        }
+        index += 1;
+    }
+}
+
+/// The eTamil-script part of one comment, and whether English is still open.
+///
+/// `in_english` comes in as the state the previous comment line left and goes
+/// out as the state this one leaves, so `__` opens a region that survives to
+/// the line carrying the closing mark.
+fn comment_spans(
+    found: &mut Vec<(usize, usize)>,
+    chars: &[char],
+    from: usize,
+    in_english: bool,
+) -> bool {
+    let body = &chars[from.min(chars.len())..];
+
+    // Exempt, and deliberately state-neutral: the header sits above everything
+    // and must not open or close a region for the code below it. A licence
+    // scanner reads the SPDX expression to the end of the line, so a closing
+    // `__` would become part of the licence name.
+    if is_licence_header(body) {
+        return in_english;
+    }
+
+    let mut english: Vec<(usize, usize)> = Vec::new();
+    let mut inside = in_english;
+    let mut opened_at = 0usize;
+    let mut index = 0usize;
+
+    while index < body.len() {
+        if body[index] == '_' && body.get(index + 1) == Some(&'_') {
+            if inside {
+                english.push((opened_at, index + 2));
+                inside = false;
+            } else {
+                opened_at = index;
+                inside = true;
+            }
+            index += 2;
+            continue;
+        }
+        index += 1;
+    }
+    if inside {
+        english.push((opened_at, body.len()));
+    }
+
+    let mut index = 0usize;
+    while index < body.len() {
+        if body[index].is_ascii_alphabetic() {
+            let start = index;
+            while index < body.len() && body[index].is_ascii_alphabetic() {
+                index += 1;
+            }
+            let is_english = english
+                .iter()
+                .any(|(open, close)| start >= *open && index <= *close);
+            let after_dot = start > 0 && body[start - 1] == '.';
+            if !is_english && !after_dot {
+                found.push((from + start, from + index));
+            }
+            continue;
+        }
+        index += 1;
+    }
+
+    inside
+}
+
+/// `SPDX-…:` or `Copyright (C)`, the two lines Rule 2 exempts.
+fn is_licence_header(body: &[char]) -> bool {
+    let text: String = body.iter().collect();
+    let text = text.trim();
+    if let Some(rest) = text.strip_prefix("SPDX-") {
+        let tag = rest.split(':').next().unwrap_or("");
+        return rest.contains(':')
+            && !tag.is_empty()
+            && tag.chars().all(|c| c.is_ascii_alphabetic() || c == '-');
+    }
+    match text.strip_prefix("Copyright") {
+        Some(rest) => rest.trim_start().starts_with("(C)"),
+        None => false,
+    }
 }

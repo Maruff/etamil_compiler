@@ -52,11 +52,30 @@
 //! integers, so `codegen.rs` needs no knowledge of `Value`'s layout.
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
 use crate::vm::VM;
-use crate::vm::value::Value;
+use crate::vm::shape::{self, Shapes, Target};
+use crate::vm::value::{FunctionValue, Value};
+
+/// How a compiled function is entered when it is called as a value: its
+/// arguments as one array of handles, captures first. `codegen.rs` emits one of
+/// these beside every function, because a call through a value cannot know the
+/// function's arity at compile time and the C ABI has no other way to say
+/// "some number of handles".
+pub type Entry = unsafe extern "C" fn(*const i64) -> i64;
+
+/// A compiled function, as the program registered it at startup.
+#[derive(Clone, Copy)]
+struct Compiled {
+    entry: Entry,
+    /// Handles taken from the function value before the arguments.
+    captures: usize,
+    /// Arguments the caller must supply.
+    params: usize,
+}
 
 thread_local! {
     /// Index 0 is `இன்மை`, so a zeroed handle is a valid value rather than a
@@ -66,6 +85,14 @@ thread_local! {
     /// Kept only for its builtin dispatch and its stack. Nothing here executes
     /// bytecode; the compiled program is the program.
     static HOST: RefCell<VM> = RefCell::new(VM::new());
+
+    /// Every function in the program, by the name a function value carries.
+    /// The VM's equivalent is `Bytecode::functions`.
+    static FUNCTIONS: RefCell<HashMap<String, Compiled>> = RefCell::new(HashMap::new());
+
+    /// Every வடிவம் the program declares, registered at startup. The VM's
+    /// equivalent is `Bytecode::shapes`, and both are read by `vm::shape`.
+    static SHAPES: RefCell<Shapes> = RefCell::new(Shapes::new());
 }
 
 /// A runtime error, reported the way the VM reports one and with the same
@@ -175,7 +202,7 @@ pub extern "C" fn etamil_array_push(array: i64, value: i64) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn etamil_record() -> i64 {
-    put(Value::Map(std::collections::HashMap::new()))
+    put(Value::Map(std::collections::HashMap::new().into()))
 }
 
 /// Put a field on a record.
@@ -363,30 +390,36 @@ pub extern "C" fn etamil_index(base: i64, index: i64) -> i64 {
 
 /// Indexed assignment: `a[0] = x` on an array, `r[k] = x` on a record.
 ///
+/// Answers a **new** handle, which the IR stores back into the variable. This
+/// used to change the value in place, and a handle is shared by every name it
+/// was assigned to: after `நகல் = அசல்; நகல்[0] = 9;` the compiled program's
+/// `அசல்` had changed too, and so had a caller's array after a function set an
+/// element of its parameter. The VM copies — a name holds a value, not a
+/// reference to one — and `நிலை`'s promise that a copy cannot reach the
+/// original rests on that. The parity job found it in examples/language/nilY.qmz.
+///
 /// # Safety
 ///
 /// `name` must be a valid, NUL-terminated C string that stays alive for
 /// the call. The generated code passes a pointer to a constant in its own
 /// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *const c_char) {
+pub unsafe extern "C" fn etamil_index_set(
+    base: i64,
+    index: i64,
+    value: i64,
+    name: *const c_char,
+) -> i64 {
     let name = unsafe { borrow_str(name) };
     let index = get(index);
     let value = get(value);
-    ARENA.with(|arena| {
-        let mut arena = arena.borrow_mut();
-        match arena.get_mut(base.max(0) as usize) {
-            Some(slot) => {
-                if let Err(why) = VM::index_assign(slot, &index, value, &name) {
-                    fail(&why);
-                }
-            }
-            None => fail(&format!(
-                "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
-                name, name
-            )),
-        }
-    })
+    let mut updated = get(base);
+    let done = SHAPES
+        .with(|shapes| VM::index_assign(&mut updated, &index, value, &name, &shapes.borrow()));
+    match done {
+        Ok(()) => put(updated),
+        Err(why) => fail(&why),
+    }
 }
 
 /// # Safety
@@ -412,24 +445,31 @@ pub unsafe extern "C" fn etamil_field(base: i64, key: *const c_char) -> i64 {
     }
 }
 
+/// `r.f = x`. A new handle, for the reason `etamil_index_set` gives one.
+///
 /// # Safety
 ///
 /// `key` must be a valid, NUL-terminated C string that stays alive for
 /// the call. The generated code passes a pointer to a constant in its own
 /// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) {
+pub unsafe extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) -> i64 {
     let key = unsafe { borrow_str(key) };
     let value = get(value);
-    ARENA.with(|arena| {
-        let mut arena = arena.borrow_mut();
-        match arena.get_mut(base.max(0) as usize) {
-            Some(Value::Map(fields)) => {
-                fields.insert(key, value);
+    match get(base) {
+        Value::Map(mut fields) => {
+            // A shaped record takes only its own fields — the check the VM's
+            // SetField makes, through the same function.
+            let checked =
+                SHAPES.with(|shapes| shape::check_set(&shapes.borrow(), &fields, &key, &value));
+            if let Err(why) = checked {
+                fail(&why);
             }
-            _ => fail("பொருள் எதிர்பார்க்கப்பட்டது  (expected a record)"),
+            fields.insert(key, value);
+            put(Value::Map(fields))
         }
-    })
+        _ => fail("பொருள் எதிர்பார்க்கப்பட்டது  (expected a record)"),
+    }
 }
 
 /// How many times a `ஒவ்வொரு` goes round. Separate from the `நீளம்` builtin
@@ -457,6 +497,319 @@ pub extern "C" fn etamil_nth_or_key(base: i64, position: i64) -> i64 {
     let index = Value::Number(rust_decimal::Decimal::from(position));
     match VM::nth_or_key(&get(base), &index) {
         Ok(value) => put(value),
+        Err(why) => fail(&why),
+    }
+}
+
+// --- Functions as values --------------------------------------------------
+//
+// The emitted IR calls a function it can name directly, as it always has. It
+// comes here only when what is being called is a *value*: a parameter holding
+// a function, an array element, `f(1)(2)`. Then the name is not known until the
+// program runs, so the registry below answers it — exactly the lookup the VM's
+// `Call` makes in `Bytecode::functions`, with builtins behind it in the same
+// order.
+
+/// The handles an array of `count` holds, read before anything else borrows
+/// the arena.
+///
+/// # Safety
+///
+/// `argv` must point to `count` handles, or be null with `count` zero.
+unsafe fn handles(argv: *const i64, count: i64) -> Vec<i64> {
+    let count = count.max(0) as usize;
+    (0..count)
+        .map(|position| {
+            if argv.is_null() {
+                0
+            } else {
+                unsafe { *argv.add(position) }
+            }
+        })
+        .collect()
+}
+
+/// Called once per function when the program starts, before anything else.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call, and `entry` a function taking `captures + params` handles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_register_function(
+    name: *const c_char,
+    entry: Entry,
+    captures: i64,
+    params: i64,
+) {
+    let name = unsafe { borrow_str(name) };
+    let compiled = Compiled {
+        entry,
+        captures: captures.max(0) as usize,
+        params: params.max(0) as usize,
+    };
+    FUNCTIONS.with(|functions| functions.borrow_mut().insert(name, compiled));
+}
+
+/// A function value: the function's name, and the values it carries.
+///
+/// `ச = இரட்டி;` carries nothing. `செயல்(x) { … }` inside a function carries
+/// the locals it reads, loaded by the IR from their slots at this moment — the
+/// same copies the VM's `MakeFunction` takes from its frame.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call, and `argv` must point to `count` handles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_function(name: *const c_char, argv: *const i64, count: i64) -> i64 {
+    let name = unsafe { borrow_str(name) };
+    let captured = unsafe { handles(argv, count) }
+        .into_iter()
+        .map(get)
+        .collect();
+    put(Value::Function(Box::new(FunctionValue { name, captured })))
+}
+
+/// Run a function value against these argument handles.
+fn call(function: FunctionValue, args: Vec<i64>) -> i64 {
+    let compiled = FUNCTIONS.with(|functions| functions.borrow().get(&function.name).copied());
+
+    if let Some(compiled) = compiled {
+        if args.len() != compiled.params {
+            let shown = FunctionValue::shown(&function.name);
+            fail(&format!(
+                "செயல் {} {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
+                 (function {} expects {} argument(s), got {})",
+                shown,
+                compiled.params,
+                args.len(),
+                shown,
+                compiled.params,
+                args.len()
+            ));
+        }
+        // Captures first, then arguments: the order the function's own
+        // parameters were declared in by codegen.rs. A missing capture is
+        // இன்மை, as it is in the VM's frame.
+        let mut carried = function.captured.into_iter();
+        let mut argv: Vec<i64> = (0..compiled.captures)
+            .map(|_| carried.next().map(put).unwrap_or(0))
+            .collect();
+        argv.extend(args);
+        // No borrow of the arena or the registry is held here: the function
+        // being entered will want both.
+        return unsafe { (compiled.entry)(argv.as_ptr()) };
+    }
+
+    if crate::vm::is_builtin(&function.name) {
+        let arguments: Vec<Value> = args.into_iter().map(get).collect();
+        let answer = HOST.with(|host| host.borrow_mut().invoke_builtin(&function.name, arguments));
+        return match answer {
+            Ok(value) => put(value),
+            Err(why) => fail(&why),
+        };
+    }
+
+    let shown = FunctionValue::shown(&function.name);
+    fail(&format!(
+        "அறியப்படாத செயல் {}  (unknown function {})",
+        shown, shown
+    ))
+}
+
+/// `f(x)` where `f` is not a name but a value: `விதிகள்[0](x)`, `f(1)(2)`.
+///
+/// # Safety
+///
+/// `argv` must point to `argc` handles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_call_value(callee: i64, argv: *const i64, argc: i64) -> i64 {
+    let args = unsafe { handles(argv, argc) };
+    match get(callee) {
+        Value::Function(function) => call(*function, args),
+        other => fail(&format!(
+            "இது ஒரு செயல் அல்ல  (this is not a function: it is {})",
+            VM::type_name(&other)
+        )),
+    }
+}
+
+/// `f(x)` where `f` is also a variable. What the VM's `Call` does: a variable
+/// holding a function value is called, and any other value leaves the call to
+/// the function of that name.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call, and `argv` must point to `argc` handles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_call_named(
+    held: i64,
+    name: *const c_char,
+    argv: *const i64,
+    argc: i64,
+) -> i64 {
+    let args = unsafe { handles(argv, argc) };
+    match get(held) {
+        Value::Function(function) => call(*function, args),
+        _ => {
+            let name = unsafe { borrow_str(name) };
+            call(
+                FunctionValue {
+                    name,
+                    captured: Vec::new(),
+                },
+                args,
+            )
+        }
+    }
+}
+
+// --- Shapes ---------------------------------------------------------------
+//
+// Registered at startup, a field at a time, because a declared type crosses
+// the ABI as a code and a shape name rather than as a value. The codes are
+// `vm::shape::type_code`'s, so both sides of the boundary number them alike.
+
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_shape_begin(name: *const c_char) {
+    let name = unsafe { borrow_str(name) };
+    SHAPES.with(|shapes| {
+        shapes.borrow_mut().insert(
+            name.clone(),
+            shape::Shape {
+                name,
+                ..Default::default()
+            },
+        )
+    });
+}
+
+/// One field, with its declared type's code and — for a field that is itself
+/// a shape — that shape's name. `of` may be null otherwise.
+///
+/// # Safety
+///
+/// `owner` and `field` must be valid, NUL-terminated C strings, and `of`
+/// one too or null, all alive for the call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_shape_field(
+    owner: *const c_char,
+    field: *const c_char,
+    code: i32,
+    of: *const c_char,
+) {
+    let owner = unsafe { borrow_str(owner) };
+    let field = unsafe { borrow_str(field) };
+    let declared = shape::from_code(code, unsafe { borrow_str(of) });
+    SHAPES.with(|shapes| {
+        if let Some(entry) = shapes.borrow_mut().get_mut(&owner) {
+            entry.fields.push((field, declared));
+        }
+    });
+}
+
+/// One method, and whether it takes இது.
+///
+/// # Safety
+///
+/// `owner` and `method` must be valid, NUL-terminated C strings that stay
+/// alive for the call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_shape_method(
+    owner: *const c_char,
+    method: *const c_char,
+    takes_self: i32,
+) {
+    let owner = unsafe { borrow_str(owner) };
+    let method = unsafe { borrow_str(method) };
+    SHAPES.with(|shapes| {
+        if let Some(entry) = shapes.borrow_mut().get_mut(&owner) {
+            entry.methods.insert(method, takes_self != 0);
+        }
+    });
+}
+
+/// `வடிவம்{…}`: the fields were put on a fresh plain record by the IR, and
+/// this checks them against the shape and makes the record that shape.
+/// `base` is the `..` record when `has_base` says there is one.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_shape_make(
+    record: i64,
+    name: *const c_char,
+    base: i64,
+    has_base: i32,
+) -> i64 {
+    let name = unsafe { borrow_str(name) };
+    let given: Vec<(String, Value)> = match get(record) {
+        Value::Map(fields) => fields.fields.into_iter().collect(),
+        _ => fail("பொருள் எதிர்பார்க்கப்பட்டது  (expected a record)"),
+    };
+    let base = (has_base != 0).then(|| get(base));
+    let made = SHAPES.with(|shapes| shape::build(&shapes.borrow(), &name, given, base));
+    match made {
+        Ok(value) => put(value),
+        Err(why) => fail(&why),
+    }
+}
+
+/// `கடன்(பதிவு)`: a plain record checked and made into the shape, as a result.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_shape_convert(name: *const c_char, value: i64) -> i64 {
+    let name = unsafe { borrow_str(name) };
+    let value = get(value);
+    let made = SHAPES.with(|shapes| shape::convert(&shapes.borrow(), &name, value));
+    match made {
+        Ok(value) => put(value),
+        Err(why) => fail(&why),
+    }
+}
+
+/// `r.m(…)`: the method of r's shape with r as its இது, or a function r holds
+/// in that field — decided by `vm::shape::method_target`, as the VM decides it.
+///
+/// # Safety
+///
+/// `name` must be a valid, NUL-terminated C string that stays alive for the
+/// call, and `argv` must point to `argc` handles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn etamil_call_method(
+    receiver: i64,
+    name: *const c_char,
+    argv: *const i64,
+    argc: i64,
+) -> i64 {
+    let name = unsafe { borrow_str(name) };
+    let mut args = unsafe { handles(argv, argc) };
+    let target =
+        SHAPES.with(|shapes| shape::method_target(&shapes.borrow(), &get(receiver), &name));
+    match target {
+        Ok(Target::Method(function)) => {
+            args.insert(0, receiver);
+            call(
+                FunctionValue {
+                    name: function,
+                    captured: Vec::new(),
+                },
+                args,
+            )
+        }
+        Ok(Target::Held(function)) => call(function, args),
         Err(why) => fail(&why),
     }
 }
@@ -530,6 +883,12 @@ pub extern "C" fn etamil_read_line() -> i64 {
 /// to overwrite the first silently: the count stayed at one, nothing looked
 /// wrong, and every query after it went to the second database while the
 /// program still believed it was talking to the first.
+///
+/// # Safety
+///
+/// `db_type` and `handle` must be valid, NUL-terminated C strings that stay
+/// alive for the call. The generated code passes pointers to constants in its
+/// own module, which satisfies both.
 #[cfg(not(target_family = "wasm"))]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn etamil_db_connect(
@@ -577,6 +936,12 @@ pub unsafe extern "C" fn etamil_db_connect(
 /// The row count goes nowhere, which is the VM's behaviour and not an
 /// oversight here: `தளம்_செய்` is the statement form and the count is reachable
 /// through `தளம்_செய்_முயற்சி`, which returns a result.
+///
+/// # Safety
+///
+/// `handle` must be null, or a valid NUL-terminated C string that stays alive
+/// for the call. Null is how the generated code says "the only connection
+/// open"; anything else is a pointer to a constant in its own module.
 #[cfg(not(target_family = "wasm"))]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn etamil_db_execute(sql: i64, params: i64, handle: *const c_char) {
@@ -617,6 +982,12 @@ pub unsafe extern "C" fn etamil_db_execute(sql: i64, params: i64, handle: *const
 /// **Nothing in a compiled program opens a connection yet** — `தரவுசேமி_இணை`
 /// is still refused by the backend — so today this can only report that there
 /// is none. That report is the VM's own message, for the same program.
+///
+/// # Safety
+///
+/// `handle` must be null, or a valid NUL-terminated C string that stays alive
+/// for the call. Null is how the generated code says "the only connection
+/// open"; anything else is a pointer to a constant in its own module.
 #[cfg(not(target_family = "wasm"))]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn etamil_db_query(sql: i64, params: i64, handle: *const c_char) -> i64 {
@@ -683,7 +1054,8 @@ mod tests {
         HOST.with(|host| {
             let mut host = host.borrow_mut();
             let db = host.connection_for(Some(name)).expect("just opened");
-            db.execute("CREATE TABLE t (x INTEGER, y TEXT)", &[]).unwrap();
+            db.execute("CREATE TABLE t (x INTEGER, y TEXT)", &[])
+                .unwrap();
             db.execute("INSERT INTO t VALUES (1, 'a')", &[]).unwrap();
             db.execute("INSERT INTO t VALUES (2, 'b')", &[]).unwrap();
         });
@@ -744,13 +1116,20 @@ mod tests {
         unsafe { etamil_db_connect(driver.as_ptr(), text(":memory:"), driver.as_ptr()) };
 
         unsafe {
-            etamil_db_execute(text("CREATE TABLE t (x INTEGER)"), etamil_array(), std::ptr::null());
-            etamil_db_execute(text("INSERT INTO t VALUES (7)"), etamil_array(), std::ptr::null());
+            etamil_db_execute(
+                text("CREATE TABLE t (x INTEGER)"),
+                etamil_array(),
+                std::ptr::null(),
+            );
+            etamil_db_execute(
+                text("INSERT INTO t VALUES (7)"),
+                etamil_array(),
+                std::ptr::null(),
+            );
         }
 
-        let rows = unsafe {
-            etamil_db_query(text("SELECT x FROM t"), etamil_array(), std::ptr::null())
-        };
+        let rows =
+            unsafe { etamil_db_query(text("SELECT x FROM t"), etamil_array(), std::ptr::null()) };
         assert_eq!(shown(rows), "[{x: 7}]");
     }
 
@@ -765,8 +1144,16 @@ mod tests {
         let named = c("again");
         unsafe {
             etamil_db_connect(driver.as_ptr(), text(":memory:"), named.as_ptr());
-            etamil_db_execute(text("CREATE TABLE t (x INTEGER)"), etamil_array(), named.as_ptr());
-            etamil_db_execute(text("INSERT INTO t VALUES (3)"), etamil_array(), named.as_ptr());
+            etamil_db_execute(
+                text("CREATE TABLE t (x INTEGER)"),
+                etamil_array(),
+                named.as_ptr(),
+            );
+            etamil_db_execute(
+                text("INSERT INTO t VALUES (3)"),
+                etamil_array(),
+                named.as_ptr(),
+            );
             etamil_db_connect(driver.as_ptr(), text(":memory:"), named.as_ptr());
         }
 
@@ -930,8 +1317,28 @@ mod tests {
         assert_eq!(shown(etamil_index(array, number("1"))), "20");
 
         let name = std::ffi::CString::new("aNi").unwrap();
-        unsafe { etamil_index_set(array, number("0"), number("99"), name.as_ptr()) };
-        assert_eq!(shown(etamil_index(array, number("0"))), "99");
+        let updated = unsafe { etamil_index_set(array, number("0"), number("99"), name.as_ptr()) };
+        assert_eq!(shown(etamil_index(updated, number("0"))), "99");
+    }
+
+    #[test]
+    fn setting_an_element_leaves_every_other_holder_of_the_value_alone() {
+        // `நகல் = அசல்; நகல்[0] = 9;` — both names held the same handle, and
+        // the original must not change. It did, until the parity job caught
+        // examples/language/nilY.qmz disagreeing with the VM.
+        let original = etamil_array();
+        etamil_array_push(original, number("1"));
+        let name = std::ffi::CString::new("நகல்").unwrap();
+        let copy = unsafe { etamil_index_set(original, number("0"), number("9"), name.as_ptr()) };
+        assert_eq!(shown(copy), "[9]");
+        assert_eq!(shown(original), "[1]");
+
+        let record = etamil_record();
+        let key = std::ffi::CString::new("அ").unwrap();
+        unsafe { etamil_record_put(record, key.as_ptr(), number("1")) };
+        let changed = unsafe { etamil_field_set(record, key.as_ptr(), number("2")) };
+        assert_eq!(shown(changed), "{அ: 2}");
+        assert_eq!(shown(record), "{அ: 1}");
     }
 
     /// The bug the parity job caught: this aborted the compiled program with
@@ -944,8 +1351,9 @@ mod tests {
         let record = etamil_record();
         let name = std::ffi::CString::new("vitY").unwrap();
 
-        unsafe { etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr()) };
-        unsafe { etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr()) };
+        let record =
+            unsafe { etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr()) };
+        let record = unsafe { etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr()) };
 
         assert_eq!(shown(etamil_index(record, text("pa"))), "shop@okhdfcbank");
         assert_eq!(shown(etamil_index(record, text("tr"))), "INV-9");
@@ -1020,6 +1428,146 @@ mod tests {
             shown(unsafe { etamil_call(ceil.as_ptr(), argv.as_ptr(), 1) }),
             "334"
         );
+    }
+
+    // --- functions as values ----------------------------------------------
+
+    /// Stands in for what codegen.rs emits beside a function: the arguments
+    /// as one array. This one is `செயல்(வீதம்; தொகை) { திரும்பு தொகை * வீதம்; }`
+    /// with one capture.
+    unsafe extern "C" fn times_captured(argv: *const i64) -> i64 {
+        let (rate, amount) = unsafe { (*argv, *argv.add(1)) };
+        etamil_multiply(amount, rate)
+    }
+
+    #[test]
+    fn a_function_value_carries_its_captures_into_the_call() {
+        let name = std::ffi::CString::new("#செயல்_test_rate").unwrap();
+        unsafe { etamil_register_function(name.as_ptr(), times_captured, 1, 1) };
+
+        let captured = [number("0.18")];
+        let function = unsafe { etamil_function(name.as_ptr(), captured.as_ptr(), 1) };
+        assert_eq!(shown(function), "<செயல்>");
+
+        let argv = [number("1000")];
+        assert_eq!(
+            shown(unsafe { etamil_call_value(function, argv.as_ptr(), 1) }),
+            "180"
+        );
+    }
+
+    #[test]
+    fn a_builtin_can_be_called_through_a_value() {
+        let name = std::ffi::CString::new("நீளம்").unwrap();
+        let function = unsafe { etamil_function(name.as_ptr(), std::ptr::null(), 0) };
+        let array = etamil_array();
+        etamil_array_push(array, number("1"));
+        etamil_array_push(array, number("2"));
+        let argv = [array];
+        assert_eq!(
+            shown(unsafe { etamil_call_value(function, argv.as_ptr(), 1) }),
+            "2"
+        );
+    }
+
+    #[test]
+    fn a_variable_that_holds_no_function_leaves_the_call_to_the_name() {
+        // What `நீளம்(x)` compiles to when a variable called நீளம் exists and
+        // holds a number: the builtin, as the VM calls it.
+        let name = std::ffi::CString::new("நீளம்").unwrap();
+        let array = etamil_array();
+        etamil_array_push(array, number("7"));
+        let argv = [array];
+        assert_eq!(
+            shown(unsafe { etamil_call_named(number("5"), name.as_ptr(), argv.as_ptr(), 1) }),
+            "1"
+        );
+    }
+
+    // --- shapes and methods -----------------------------------------------
+
+    /// What codegen.rs registers for `வடிவம் கடன் { எண் அசல், செயல் இரட்டி(இது) }`.
+    fn loan_shape() -> std::ffi::CString {
+        let shape = std::ffi::CString::new("கடன்_rt").unwrap();
+        let field = std::ffi::CString::new("அசல்").unwrap();
+        let method = std::ffi::CString::new("இரட்டி").unwrap();
+        unsafe {
+            etamil_shape_begin(shape.as_ptr());
+            etamil_shape_field(
+                shape.as_ptr(),
+                field.as_ptr(),
+                shape::type_code(&Some(crate::parser::DeclaredType::Number)),
+                std::ptr::null(),
+            );
+            etamil_shape_method(shape.as_ptr(), method.as_ptr(), 1);
+        }
+        shape
+    }
+
+    fn loan(shape: &std::ffi::CString, principal: i64) -> i64 {
+        let record = etamil_record();
+        let key = std::ffi::CString::new("அசல்").unwrap();
+        unsafe {
+            etamil_record_put(record, key.as_ptr(), principal);
+            etamil_shape_make(record, shape.as_ptr(), 0, 0)
+        }
+    }
+
+    #[test]
+    fn a_shaped_literal_is_checked_and_tagged() {
+        let shape = loan_shape();
+        let made = loan(&shape, number("1000"));
+        assert_eq!(shown(made), "கடன்_rt{அசல்: 1000}");
+    }
+
+    #[test]
+    fn a_plain_record_converts_to_a_shape_as_a_result() {
+        let shape = loan_shape();
+        let key = std::ffi::CString::new("அசல்").unwrap();
+        let record = etamil_record();
+        unsafe { etamil_record_put(record, key.as_ptr(), number("5")) };
+        let converted = unsafe { etamil_shape_convert(shape.as_ptr(), record) };
+        assert_eq!(shown(converted), "சரி(கடன்_rt{அசல்: 5})");
+
+        let wrong = etamil_record();
+        unsafe { etamil_record_put(wrong, key.as_ptr(), text("ஐந்து")) };
+        let refused = unsafe { etamil_shape_convert(shape.as_ptr(), wrong) };
+        assert!(shown(refused).starts_with("தவறு("), "{}", shown(refused));
+    }
+
+    /// Stands in for `கடன்_rt.இரட்டி`'s array entry: இது first.
+    unsafe extern "C" fn doubled_principal(argv: *const i64) -> i64 {
+        let this = unsafe { *argv };
+        let key = std::ffi::CString::new("அசல்").unwrap();
+        let principal = unsafe { etamil_field(this, key.as_ptr()) };
+        etamil_add(principal, principal)
+    }
+
+    #[test]
+    fn a_method_is_found_on_the_record_and_given_it_first() {
+        let shape = loan_shape();
+        let function = std::ffi::CString::new(shape::method_function("கடன்_rt", "இரட்டி")).unwrap();
+        unsafe { etamil_register_function(function.as_ptr(), doubled_principal, 0, 1) };
+
+        let made = loan(&shape, number("21"));
+        let method = std::ffi::CString::new("இரட்டி").unwrap();
+        let answer = unsafe { etamil_call_method(made, method.as_ptr(), std::ptr::null(), 0) };
+        assert_eq!(shown(answer), "42");
+    }
+
+    #[test]
+    fn a_function_held_in_a_plain_record_is_called_by_its_field() {
+        let record = etamil_record();
+        let key = std::ffi::CString::new("அளவு").unwrap();
+        let builtin = std::ffi::CString::new("நீளம்").unwrap();
+        let function = unsafe { etamil_function(builtin.as_ptr(), std::ptr::null(), 0) };
+        unsafe { etamil_record_put(record, key.as_ptr(), function) };
+
+        let array = etamil_array();
+        etamil_array_push(array, number("1"));
+        let argv = [array];
+        let answer = unsafe { etamil_call_method(record, key.as_ptr(), argv.as_ptr(), 1) };
+        assert_eq!(shown(answer), "1");
     }
 
     #[test]

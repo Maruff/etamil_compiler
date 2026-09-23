@@ -134,7 +134,12 @@ pub enum Token {
     #[regex("பொய்|poy|_false")] False,
     #[regex("இன்மை|iZmY|_null")] Null,
     #[regex("மாறி|mARi")] Let,
-    #[regex("நிலை|nilY")] Const,
+    // An immutable binding: `நிலை எல்லை = 250000;`. A keyword only there — see
+    // Parser::starts_fixed_binding — so `நிலை = …` is still an ordinary name.
+    #[regex("நிலை|nilY|_const")] Const,
+    // A record shape: `வடிவம் கடன் { எண் அசல், … }`. Contextual like நிலை —
+    // see Parser::starts_shape — because nUlakam names a parameter வடிவம்.
+    #[regex("வடிவம்|vativam|_shape")] Shape,
 
     // --- Control Flow (Your Updated Syntax) ---
     #[regex("எனில்|eZil|_if")] If,
@@ -439,6 +444,19 @@ pub fn tokenize(source: &str) -> Result<Vec<Spanned>, Vec<LexError>> {
     // cannot see. Tamil source is exactly the kind of file that gets saved
     // that way, so the mark is skipped rather than reported.
     let source = source.strip_prefix('\u{FEFF}').unwrap_or(source);
+
+    // The same editors end lines with CRLF, and the `\r` was not whitespace
+    // to the lexer: every line of such a file was an "unrecognized input"
+    // error. Normalised rather than skipped, so a multi-line string literal —
+    // SQL, mostly — holds the same text whichever way the file was saved. A
+    // `\r` removed from before a newline moves no token's line or column.
+    let normalised;
+    let source = if source.contains("\r\n") {
+        normalised = source.replace("\r\n", "\n");
+        normalised.as_str()
+    } else {
+        source
+    };
 
     let mut tokens = Vec::new();
     let mut errors = Vec::new();

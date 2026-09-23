@@ -1,0 +1,54 @@
+// __செயல் மதிப்புகள் — functions as values__
+//
+// __A செயல் is a value like any other: it can be put in a variable, passed to__
+// __another செயல், kept in an array or a record, and returned. One can also be__
+// __written where a value goes, with no name. Inside a function it carries__
+// __copies of the local values it uses, taken when it was made — the way a__
+// __Rust `move` closure does.__
+
+செயல் இரட்டி(எண் எ) எண் { திரும்பு எ * 2; }
+
+// __A named function, held and called through a variable__
+மாற்று = இரட்டி;
+அச்சு "மாற்று(21) = " & மாற்று(21);
+அச்சு "அது: " & மாற்று;
+
+// __Higher-order functions: map, filter and fold, from the standard library.__
+// __Each takes the rule it applies as a செயல்.__
+இறக்கு "../../nUlakam/aNi.qmz";
+
+விலைகள் = [1200, 450, 3100, 80, 999];
+அச்சு "இரட்டிப்பு: " & ஒவ்வொன்றுக்கும்(விலைகள், இரட்டி);
+
+// __Anonymous functions, written where a value goes__
+பெரியவை = வடிகட்டு(விலைகள், செயல்(எ) { திரும்பு எ >= 1000; });
+அச்சு "1000 க்கு மேல்: " & பெரியவை;
+அச்சு "மொத்தம்: " & மடி(விலைகள், 0, செயல்(அ, ஆ) { திரும்பு அ + ஆ; });
+
+// __A builtin is a value too__
+அச்சு "நீளங்கள்: " & ஒவ்வொன்றுக்கும்(["வரி", "கணக்கு"], நீளம்);
+
+// __A function that makes functions: each one carries its own rate__
+செயல் வரி_விதி(வீதம்) செயல் {
+    திரும்பு செயல்(தொகை) { திரும்பு தொகை * வீதம்; };
+}
+ஜிஎஸ்டி = வரி_விதி(18%);
+டிடிஎஸ் = வரி_விதி(10%);
+அச்சு "ஜிஎஸ்டி(5000) = " & ஜிஎஸ்டி(5000);
+அச்சு "டிடிஎஸ்(5000) = " & டிடிஎஸ்(5000);
+
+// __A capture is a copy, taken when the function was made__
+செயல் பிடிப்பு_சோதனை() {
+    அளவு = 1;
+    பார் = செயல்() { திரும்பு அளவு; };
+    அளவு = 2;
+    திரும்பு பார்();
+}
+அச்சு "பிடிக்கப்பட்ட மதிப்பு: " & பிடிப்பு_சோதனை();
+
+// __Functions kept in data, and called straight out of it__
+விதிகள் = [இரட்டி, செயல்(எ) { திரும்பு எ + 1; }];
+அச்சு "விதிகள்[1](9) = " & விதிகள்[1](9);
+கருவிகள் = {முழுமை: செயல்(எ) { திரும்பு வட்டமிடு(எ, 0); }};
+அச்சு "கருவிகள்.முழுமை(2.6) = " & கருவிகள்.முழுமை(2.6);
+அச்சு "வரி_விதி(5%)(200) = " & வரி_விதி(5%)(200);

@@ -75,6 +75,64 @@ function scopeOf(line, text) {
   return token.scopes[token.scopes.length - 1];
 }
 
+/**
+ * Whether each line's text is scoped English, tokenizing the lines in
+ * sequence so a rule that spans them keeps its state — which is the whole
+ * point of the block rule for Rule 2's marks.
+ *
+ * Returns one string per line: `E` where the character is inside
+ * `meta.english.comment.etamil`, `.` where it is not.
+ */
+function englishMap(lines) {
+  let stack = vsctm.INITIAL;
+  return lines.map((line) => {
+    const result = grammar.tokenizeLine(line, stack);
+    stack = result.ruleStack;
+    return result.tokens
+      .map((token) => {
+        const english = token.scopes.some((scope) => scope.includes('meta.english'));
+        return (english ? 'E' : '.').repeat(token.endIndex - token.startIndex);
+      })
+      .join('');
+  });
+}
+
+describe('an English comment across lines', () => {
+  // The marks go at the ends of the sentence, not of each line. The previous
+  // grammar nested a single-line `__.+?__` inside the line-comment rule, so a
+  // sentence spanning two lines left each line holding one unmatched mark and
+  // the English between them was coloured as ezuqqu.
+  test('the example SCRIPT_RULES.md prints for Rule 2 is English on both lines', () => {
+    const [first, second] = englishMap([
+      '// __Rounded to paise once, at the end.',
+      '// computed adds money that was never there.__',
+    ]);
+    assert.ok(first.includes('E'), 'nothing on the opening line was English');
+    assert.ok(second.startsWith('E'), 'the continuation line was not English');
+  });
+
+  test('the region closes, and code after it is not English', () => {
+    const map = englishMap(['// __English from here', '// to here.__', 'moqqam = 5;']);
+    assert.ok(map[1].includes('E'));
+    assert.equal(map[2].includes('E'), false);
+  });
+
+  test('an unclosed mark stops at the first line that is not a comment', () => {
+    // Otherwise one stray `__` would colour the remainder of the file English.
+    const map = englishMap(['// __opened and never closed', 'moqqam = 5;', '// kaZakku']);
+    assert.ok(map[0].includes('E'));
+    assert.equal(map[1].includes('E'), false);
+    assert.equal(map[2].includes('E'), false, 'the comment after the code was English');
+  });
+
+  test('a marked run that does not start the comment still works', () => {
+    assert.equal(
+      scopeOf('// kaZakku __two words__ mudivu', '__two words__'),
+      'meta.english.comment.etamil'
+    );
+  });
+});
+
 describe('keywords', () => {
   test('Tamil control flow', () => {
     assert.equal(

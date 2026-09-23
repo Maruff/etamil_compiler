@@ -8,6 +8,65 @@ GitHub's generated notes list the commits; this file says what they add up to.
 
 ---
 
+## Unreleased
+
+Four additions to the language, each on both backends — the VM, and LLVM
+through the runtime — and each an opt-in that leaves every existing program
+meaning what it meant.
+
+### `நிலை` — bindings that do not change
+
+`நிலை எல்லை = 250000;` is bound once. Assigning it again, or changing an element
+or a field of it, is refused before the program runs; a parameter can be fixed
+the same way. Values are copied rather than shared, so fixing the name fixes the
+whole value, as Rust's `let` does. `நிலை` remains an ordinary name everywhere
+it does not begin a binding — two examples use it as a variable.
+
+### Functions are values
+
+A `செயல்` can be held in a variable, passed, kept in an array or a record, and
+returned; a builtin can too. `செயல்(x) { … }` writes one where a value goes, and
+inside a function it carries copies of the locals it reads. Calls through a
+value, `f(1)(2)` and `விதிகள்[0](x)`, parse and run. A parameter can be declared
+`செயல்` and is held to it. The REPL keeps a function value working from one
+line to the next.
+
+### `வடிவம்` — record shapes
+
+`வடிவம் கடன் { எண் அசல், எண் வீதம் }` declares which fields a record has and what
+each holds. A shaped literal must give every field and no other; a mistyped
+field on a declared or `நிலை` name is refused before the program runs, with the
+fields the shape does have; a value only known at runtime is checked when the
+record is made or a field set. `..பழையது` fills in the rest from another record
+of the shape, and `கடன்(பதிவு)` makes a plain record into one as a result.
+
+### Methods
+
+A `செயல்` written inside a `வடிவம்` is attached to it. With `இது` first it is
+called on a record and cannot change it — Rust's `&self`; without, it is called
+on the shape. No inheritance.
+
+### Map, filter and fold
+
+`nUlakam/aNi.qmz` gains `ஒவ்வொன்றுக்கும்`, `வடிகட்டு` and `மடி`, each taking the
+rule it applies as a `செயல்`, with a test suite in `aNi_cOqaZY.qmz`.
+
+### Also
+
+- A program saved with CRLF line endings runs. Every line of one used to be an
+  "unrecognized input" error; `\r\n` is now read as `\n`, inside strings too,
+  so a file means the same thing however an editor saved it.
+- The Windows build artifacts of the tree-sitter grammar are no longer tracked.
+- The checker now also looks inside conditions, loop collections and returned
+  values, where it used to skip calls. Nothing in `examples/` or `nUlakam/`
+  was newly refused.
+- A compiled program's top-level loop variables and query results are globals,
+  as they are on the VM, so a `செயல்` can read them.
+- `eTamil_Code/test/counts.test.js` matched count words as substrings, so
+  "thirty-two" also claimed "thirty"; it now matches whole words.
+
+---
+
 ## 1.0.0 — 2026-09-13
 
 Sixty commits since 0.4.0. The headline is not a feature: it is that the

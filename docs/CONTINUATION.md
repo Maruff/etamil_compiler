@@ -11,14 +11,26 @@ Everything below is committed to `main` locally and **not pushed** — the user
 pushes by hand.
 
 ```bash
-cd etamil_compiler && cargo test          # 373 tests
-cd .. && bash scripts/run_examples.sh     # 66 as expected, 1 skipped
+cd etamil_compiler && cargo test          # 431 tests
+cd .. && bash scripts/run_examples.sh     # 68 as expected, 1 skipped
 ```
+
+**The standard library now lives inside the binary.** `build.rs` compiles
+`nUlakam/` in and `module::locate` tries it last, after every filesystem
+lookup, so a checkout or `ETAMIL_PATH` still overrides it. This is what makes
+`cargo install` — and every other package manager, which places an executable
+and nothing else — produce a working compiler rather than one whose first
+import fails. Adding a file to `nUlakam/` needs no build change; `build.rs`
+reruns on any change under it.
 
 ## What was built recently, newest first
 
 | Area | Where |
 |---|---|
+| Recognition as a language: status, gates, order | `docs/RECOGNITION.md` |
+| Standard library compiled into the binary | `etamil_compiler/build.rs`, `src/stdlib.rs`, `tests/installed_binary.rs` |
+| Crate publishable to crates.io | `etamil_compiler/Cargo.toml` (`include`, keywords), `etamil_compiler/README.md`, `scripts/vendor_for_publish.py` |
+| Citable — `CITATION.cff` | repository root |
 | LLVM: whole numbers as `i64`, exact division, globals | `src/codegen.rs`, `src/codegen_limits.rs`, `examples/finance/pYcA_kaNakku.qmz` |
 | Money as whole paise | `nUlakam/kAcu.qmz` |
 | LLVM refusal for f64 arithmetic | `etamil_compiler/src/codegen_limits.rs`, `docs/llvm-backend-gaps.md` |

@@ -96,9 +96,16 @@ declaration. `_if`, `_else`, `_loop`, `_true`, `_false`, `_null`, `_print` and
 // computed adds money that was never there.__
 ```
 
-eTamil has one comment form, `//` to the end of the line, so a comment is a
-line and the marks go at both ends of that line's text. A comment block is
-marked by marking its lines; `__` does not span lines.
+eTamil has one comment form, `//` to the end of the line. **The marks go at
+the ends of the sentence, not of each line.** The opening `__` starts an
+English region and the next `__` ends it, however many comment lines lie
+between them — which is what the example above does, and what an author writing
+a sentence does without thinking about it. A sentence that fits on one line
+opens and closes on that line; nothing about the rule changes.
+
+The region ends at the first line that is not a comment, so one unclosed `__`
+cannot make the remainder of a file English. Two marked runs on one line are
+still two: `// kaZakku __two words__ mudivu` marks only the middle.
 
 A comment with no ASCII letters needs no marks — a rule separator, a Tamil
 sentence, a line of Tamil identifiers:
@@ -127,18 +134,27 @@ only what to do with the ASCII.
 An editor keeps the **standard ISO font** as the base and draws in the eTamil
 font only:
 
-- ASCII identifiers with no leading `_`
-- ASCII in comments outside `__ … __`
+- ASCII identifiers with no leading `_`, and not reached through `.`
+- ASCII in comments outside `__ … __`, and not preceded by `.`
 
 Everything else stays in the base font:
 
 - any identifier beginning with `_`, including keywords
+- any name immediately preceded by `.` — a field name, an extension
 - any comment text between `__` and `__`
 - the licence header lines (below)
 - string literals, always — see below
 - **Unicode Tamil**, which the eTamil font may not have at all
 
-That last one decides the direction, and it is not a detail. The eTamil face is
+Two entries in that list are not rules and add nothing to a file. A string
+literal is data, and so is a name reached through `.` — a field name, or the
+extension in `paNam.qmz`, which is English whatever the words around it are
+spelled in. Neither carries a mark, neither is required to, and the checker
+asks nothing of them. They are here because an editor still has to decide what
+to draw them in, and the answer is the ISO font, in either direction of the
+`etamil.eTamilFont` switch.
+
+The Unicode Tamil entry decides the direction, and it is not a detail. The eTamil face is
 painted over the ASCII that wants it, never the other way round. The reason is
 English: a word like `sum` drawn in either eTamil face is unreadable, and
 nothing outside the two marks says which ASCII letters were English, so painting

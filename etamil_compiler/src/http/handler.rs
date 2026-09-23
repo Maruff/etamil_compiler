@@ -70,7 +70,7 @@ pub fn bind_request(vm: &mut VM, request: &HttpRequest, path_params: &HashMap<St
                         "அளவு".to_string(),
                         Value::Number(rust_decimal::Decimal::from(part.data.len())),
                     );
-                    files.push(Value::Map(described));
+                    files.push(Value::Map(described.into()));
 
                     vm.uploads.push(crate::vm::Upload {
                         name: part.name,
@@ -93,21 +93,21 @@ pub fn bind_request(vm: &mut VM, request: &HttpRequest, path_params: &HashMap<St
     }
 
     vm.variables
-        .insert("request_fields".to_string(), Value::Map(fields));
+        .insert("request_fields".to_string(), Value::Map(fields.into()));
     vm.variables
         .insert("request_files".to_string(), Value::Array(files));
 
     vm.variables.insert(
         "query_params".to_string(),
-        Value::Map(as_value_map(&request.query_params)),
+        Value::Map(as_value_map(&request.query_params).into()),
     );
     vm.variables.insert(
         "headers".to_string(),
-        Value::Map(as_value_map(&request.headers)),
+        Value::Map(as_value_map(&request.headers).into()),
     );
     vm.variables.insert(
         "path_params".to_string(),
-        Value::Map(as_value_map(path_params)),
+        Value::Map(as_value_map(path_params).into()),
     );
 
     // Also as param_<name>, which is how path parameters have always been

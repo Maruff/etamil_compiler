@@ -24,6 +24,31 @@ description = "Bilingual (Tamil/Latin) FinTech DSL Compiler for Indian Regulator
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/Maruff/etamil_compiler"
 homepage = "https://etamil.in"
+documentation = "https://etamil.in/manual/"
+readme = "README.md"
+
+# crates.io indexes on these, and they are how someone looking for a Tamil or
+# an Indian-tax language finds this at all. Five keywords is the cap.
+keywords = ["tamil", "dsl", "fintech", "compiler", "gst"]
+# Both apply: it is a language implementation, and it is used from the shell.
+categories = ["compilers", "command-line-utilities"]
+
+# `cargo package` takes what git tracks, and two things this crate needs are
+# deliberately untracked: the standard library and the licence are staged into
+# the package by scripts/vendor_for_publish.py and gitignored so they cannot
+# drift from the originals one directory up. Listing them here is what puts
+# them in the archive anyway — without `nUlakam/`, build.rs has nothing to
+# compile into the binary and the published crate would produce a compiler
+# whose first import fails.
+include = [
+    "src/**/*",
+    "tests/**/*",
+    "build.rs",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+    "nUlakam/**/*.qmz",
+]
 
 # The user-facing binary is `etamil`; the library target is `etamil_compiler`.
 [[bin]]

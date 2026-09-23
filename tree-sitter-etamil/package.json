@@ -1,0 +1,51 @@
+{
+  "name": "tree-sitter-etamil",
+  "version": "0.4.0",
+  "description": "eTamil grammar for tree-sitter — a Tamil-vocabulary programming language for Indian accounting, tax and FinTech",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Maruff/tree-sitter-etamil"
+  },
+  "homepage": "https://etamil.in",
+  "license": "MIT",
+  "author": {
+    "name": "Mohammed Maruff (Esan Maruff)",
+    "email": "esan@etamil.in"
+  },
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "keywords": [
+    "tree-sitter",
+    "parser",
+    "etamil",
+    "tamil",
+    "grammar"
+  ],
+  "files": [
+    "grammar.js",
+    "keywords.js",
+    "tree-sitter.json",
+    "queries/",
+    "src/",
+    "bindings/node/",
+    "binding.gyp"
+  ],
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "parse:corpus": "node test/parse-corpus.mjs"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.25.0"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.etamil",
+      "file-types": [
+        "qmz",
+        "etamil"
+      ],
+      "highlights": "queries/highlights.scm"
+    }
+  ]
+}
