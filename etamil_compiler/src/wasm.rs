@@ -14,8 +14,23 @@
 //! are gated out of a wasm build, so a program that reaches for one gets a
 //! message saying it needs a machine of its own. See lib.rs.
 //!
-//! Every entry point returns a `String` rather than a `JsValue` -- JSON for the
-//! five that carry structure, plain text for `version`. That keeps the
+//! The whole of the surface a browser sees, and the only index of it:
+//!
+//! | export | what it answers |
+//! |---|---|
+//! | `diagnostics` | the compiler's own positioned, bilingual errors |
+//! | `symbols` | every name a source defines |
+//! | `symbols_at` | the names visible from one position |
+//! | `script_spans` | which ASCII is eTamil script rather than English |
+//! | `run` | the program, on the bytecode VM |
+//! | `run_with_input` | the same, with stdin supplied |
+//! | `version` | the compiler version |
+//!
+//! `scripts/check_wasm_boundary.py` fails if an export is missing from that
+//! table, because this comment went stale twice before anyone noticed.
+//!
+//! Every entry point returns a `String` rather than a `JsValue` -- JSON for
+//! the six that carry structure, plain text for `version`. That keeps the
 //! dependency list at `wasm-bindgen` alone -- no `serde-wasm-bindgen`, no
 //! `js-sys` -- and the payloads are small enough that one `JSON.parse` on the
 //! JavaScript side costs nothing measurable.
