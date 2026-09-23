@@ -1,0 +1,41 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "etamil",
+      "camelcase": "ETamil",
+      "title": "eTamil",
+      "scope": "source.etamil",
+      "path": ".",
+      "file-types": ["qmz", "etamil"],
+      "injection-regex": "^(etamil|qmz)$",
+      "highlights": ["queries/highlights.scm"],
+      "injections": [],
+      "locals": ["queries/locals.scm"],
+      "tags": ["queries/tags.scm"]
+    }
+  ],
+  "metadata": {
+    "version": "0.4.0",
+    "license": "MIT",
+    "description": "eTamil grammar for tree-sitter — a Tamil-vocabulary programming language for Indian accounting, tax and FinTech",
+    "authors": [
+      {
+        "name": "Mohammed Maruff (Esan Maruff)",
+        "email": "esan@etamil.in"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/Maruff/tree-sitter-etamil",
+      "homepage": "https://etamil.in"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

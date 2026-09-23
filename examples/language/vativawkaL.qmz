@@ -1,0 +1,87 @@
+// __வடிவங்கள் — record shapes, and the functions attached to them__
+//
+// __A வடிவம் names a kind of record and says which fields it has and what each__
+// __holds. A record made as one is checked against it: a field that is not__
+// __there, a field left out, or a value of the wrong kind is refused before the__
+// __program runs where that can be seen, and when the record is made where it__
+// __cannot — a row from a database, a number typed in.__
+//
+// __Functions written inside the வடிவம் are attached to it. One whose first__
+// __parameter is இது is called on a record, க.தவணை_தொகை(), and cannot change__
+// __it, as Rust's &self cannot; a change is a new record. One without இது is__
+// __called on the shape itself, கடன்.புதிது(…), like Rust's Loan::new.__
+
+வடிவம் கடன் {
+    சொல் பெயர்,
+    எண் அசல்,
+    எண் ஆண்டு_வீதம்,
+    எண் மாதங்கள்,
+
+    செயல் புதிது(பெயர், அசல், ஆண்டு_வீதம், மாதங்கள்) கடன் {
+        திரும்பு கடன்{பெயர்: பெயர், அசல்: அசல், ஆண்டு_வீதம்: ஆண்டு_வீதம், மாதங்கள்: மாதங்கள்};
+    }
+
+    செயல் மாத_வீதம்(இது) எண் {
+        திரும்பு இது.ஆண்டு_வீதம் / 12;
+    }
+
+    // __EMI = P × r × (1 + r)^n / ((1 + r)^n − 1), rounded once at the end__
+    செயல் தவணை_தொகை(இது) எண் {
+        ம = இது.மாத_வீதம்();
+        காரணி = 1;
+        எண்ணி = 0;
+        (எண்ணி < இது.மாதங்கள்) சுற்று {
+            காரணி = காரணி * (1 + ம);
+            எண்ணி = எண்ணி + 1;
+        }
+        திரும்பு வட்டமிடு(இது.அசல் * ம * காரணி / (காரணி - 1), 2);
+    }
+
+    செயல் மொத்த_வட்டி(இது) எண் {
+        திரும்பு வட்டமிடு(இது.தவணை_தொகை() * இது.மாதங்கள் - இது.அசல், 2);
+    }
+
+    // __..இது takes every field not written from the loan it was called on__
+    செயல் முன்செலுத்து(இது, எண் தொகை) கடன் {
+        திரும்பு கடன்{அசல்: இது.அசல் - தொகை, ..இது};
+    }
+}
+
+// __A field can hold a function__
+வடிவம் வரி_நெறி {
+    சொல் பெயர்,
+    செயல் கணி
+}
+
+நிலை வீட்டுக்_கடன் = கடன்.புதிது("ராஜா", 500000, 9%, 60);
+அச்சு "கடன்: " & வீட்டுக்_கடன்;
+அச்சு "வகை: " & வகை(வீட்டுக்_கடன்);
+அச்சு "மாதத் தவணை: " & வீட்டுக்_கடன்.தவணை_தொகை();
+அச்சு "மொத்த வட்டி: " & வீட்டுக்_கடன்.மொத்த_வட்டி();
+
+குறைந்தது = வீட்டுக்_கடன்.முன்செலுத்து(100000);
+அச்சு "முன்செலுத்திய பின் தவணை: " & குறைந்தது.தவணை_தொகை();
+அச்சு "அசல் கடன் மாறவில்லை: " & வீட்டுக்_கடன்.அசல்;
+
+// __Called on the shape, with the loan first — Rust's Loan::interest(&loan)__
+அச்சு "கடன்.மாத_வீதம்(…): " & கடன்.மாத_வீதம்(வீட்டுக்_கடன்);
+
+// __A plain record, from a database row or a JSON body, made into a கடன்__
+// __as a result: the shape is checked when the record arrives__
+பதிவு_ = {பெயர்: "மீனா", அசல்: 200000, ஆண்டு_வீதம்: 12%, மாதங்கள்: 24};
+மாற்றம் = கடன்(பதிவு_);
+(சரியா(மாற்றம்)) எனில் {
+    அச்சு "மீனாவின் தவணை: " & மதிப்பு(மாற்றம்).தவணை_தொகை();
+}
+தவறானது = கடன்({பெயர்: "அ", அசல்: "நிறைய", ஆண்டு_வீதம்: 1%, மாதங்கள்: 1});
+அச்சு "ஏற்கப்படவில்லை: " & தவறா(தவறானது);
+
+ஜிஎஸ்டி = வரி_நெறி{பெயர்: "ஜிஎஸ்டி 18%", கணி: செயல்(தொகை) { திரும்பு தொகை * 18%; }};
+அச்சு ஜிஎஸ்டி.பெயர் & ": " & ஜிஎஸ்டி.கணி(வீட்டுக்_கடன்.தவணை_தொகை());
+
+// __வீட்டுக்_கடன் is bound with நிலை, so the checker knows it is a கடன். These__
+// __would each be refused before anything ran:__
+//   __வீட்டுக்_கடன்.அசால்                     no field அசால்; its fields are listed__
+//   __கடன்{பெயர்: "அ", அசல்: 1}                missing: ஆண்டு_வீதம், மாதங்கள்__
+//   __கடன்{அசல்: "நிறைய", ..வீட்டுக்_கடன்}     கடன்.அசல் is declared எண்__
+//   __வீட்டுக்_கடன்.புதிது("அ", 1, 1%, 1)     புதிது takes no இது__

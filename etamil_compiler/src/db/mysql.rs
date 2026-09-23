@@ -179,7 +179,7 @@ impl Database for MysqlDatabase {
                     value_from(raw, column.column_type()),
                 );
             }
-            out.push(Value::Map(record));
+            out.push(Value::Map(record.into()));
         }
 
         Ok(out)

@@ -141,6 +141,57 @@ jobs:
           path: eTamil_Code/etamil-support.vsix
           if-no-files-found: error
 
+  # Everything that renders eTamil outside VS Code: the tree-sitter grammar
+  # (Neovim, Helix, Zed, GitHub code navigation) and the highlight.js
+  # definition (web docs and the browser playground). Both have their
+  # vocabulary generated from the compiler by the editor-support job above, so
+  # what is tested here is that they actually parse and highlight the language.
+  grammars:
+    name: tree-sitter and highlight.js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install the tree-sitter grammar's tools
+        working-directory: tree-sitter-etamil
+        run: npm install
+
+      # The committed src/parser.c must match grammar.js. Consumers build from
+      # the committed parser without running the CLI, so a stale one ships a
+      # grammar nobody generated.
+      - name: The committed parser matches the grammar
+        working-directory: tree-sitter-etamil
+        run: |
+          npx tree-sitter generate
+          git diff --exit-code -- src/ || {
+            echo "src/parser.c is stale; run: cd tree-sitter-etamil && npx tree-sitter generate"
+            exit 1
+          }
+
+      - name: Corpus tests
+        working-directory: tree-sitter-etamil
+        run: npx tree-sitter test
+
+      # The blunt check: parse every real eTamil program in the repository.
+      # This is what found the multi-line string literals, the database
+      # statements and the interval block, none of which any hand-written
+      # corpus test happened to cover.
+      - name: Parse the standard library and every example
+        working-directory: tree-sitter-etamil
+        run: node test/parse-corpus.mjs
+
+      - name: Install highlight.js
+        working-directory: eTamil_HighlightJS
+        run: npm install
+
+      - name: highlight.js definition
+        working-directory: eTamil_HighlightJS
+        run: npm test
+
   examples:
     name: examples
     runs-on: ubuntu-latest

@@ -98,6 +98,7 @@ pub fn params_from(value: &Value) -> Result<Vec<Value>, String> {
                 Value::Boolean(_) => "a boolean",
                 Value::Map(_) => "a record",
                 Value::Ok(_) | Value::Err(_) => "a result",
+                Value::Function(_) => "a function",
                 Value::Null => "nil",
                 Value::Array(_) => unreachable!(),
             }

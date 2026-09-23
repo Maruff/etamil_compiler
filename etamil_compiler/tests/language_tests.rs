@@ -2000,7 +2000,7 @@ fn record(pairs: &[(&str, Value)]) -> Value {
     for (name, value) in pairs {
         fields.insert(name.to_string(), value.clone());
     }
-    Value::Map(fields)
+    Value::Map(fields.into())
 }
 
 /// Run a program with a pre-opened stand-in connection.
@@ -4208,7 +4208,10 @@ fn appending_in_place_leaves_the_other_binding_alone() {
             Value::Number(dec(2))
         ]))
     );
-    assert_eq!(vm.variables.get("b"), Some(&Value::Array(vec![Value::Number(dec(1))])));
+    assert_eq!(
+        vm.variables.get("b"),
+        Some(&Value::Array(vec![Value::Number(dec(1))]))
+    );
 }
 
 // Assigning to a name inside a function makes a local, even when an outer name
@@ -4217,11 +4220,9 @@ fn appending_in_place_leaves_the_other_binding_alone() {
 // would have made the optimisation a bug.
 #[test]
 fn appending_inside_a_function_does_not_reach_the_global() {
-    let vm = run(
-        "பட்டியல் = [1]; \
+    let vm = run("பட்டியல் = [1]; \
          செயல் சேர்ப்பு() { பட்டியல் = இணை(பட்டியல், 2); திரும்பு நீளம்(பட்டியல்); } \
-         எத்தனை = சேர்ப்பு();",
-    )
+         எத்தனை = சேர்ப்பு();")
     .unwrap();
 
     assert_eq!(num(&vm, "எத்தனை"), dec(2));
@@ -4236,10 +4237,7 @@ fn appending_inside_a_function_does_not_reach_the_global() {
 // own இணை must get its own — anywhere in the file, including after the call.
 #[test]
 fn a_program_that_defines_its_own_append_gets_its_own() {
-    let vm = run(
-        "a = [1]; a = இணை(a, 2); செயல் இணை(பட்டியல், ஒன்று) { திரும்பு \"mine\"; }",
-    )
-    .unwrap();
+    let vm = run("a = [1]; a = இணை(a, 2); செயல் இணை(பட்டியல், ஒன்று) { திரும்பு \"mine\"; }").unwrap();
     assert_eq!(text(&vm, "a"), "mine");
 }
 
@@ -4258,14 +4256,12 @@ fn appending_to_something_that_is_not_an_array_still_says_so() {
 
 #[test]
 fn a_program_with_no_tamil_letter_in_it_runs() {
-    let vm = run(
-        "_fn _add(_int _a, _int _b) { _return _a + _b; } \
+    let vm = run("_fn _add(_int _a, _int _b) { _return _a + _b; } \
          _total = _add(2, 3); \
          _flag = _false; \
          (_total == 5) _if { _flag = _true; } _else { _flag = _false; } \
          _count = 0; \
-         (_count < 3) _loop { _count = _count + 1; }",
-    )
+         (_count < 3) _loop { _count = _count + 1; }")
     .unwrap();
 
     assert_eq!(num(&vm, "_total"), dec(5));

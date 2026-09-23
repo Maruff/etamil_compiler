@@ -159,7 +159,8 @@ for an amount.
 | பொய் | `poy` | `_false` | `False` |
 | இன்மை | `iZmY` | `_null` | `Null` |
 | மாறி | `mARi` | — | `Let` |
-| நிலை | `nilY` | — | `Const` |
+| நிலை | `nilY` | `_const` | `Const` |
+| வடிவம் | `vativam` | `_shape` | `Shape` |
 
 ## Control Flow
 

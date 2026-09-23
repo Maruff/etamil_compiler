@@ -58,6 +58,17 @@ DATA_OUT = EXT / "src" / "generated" / "language-data.ts"
 PYGMENTS_OUT = (
     ROOT / "eTamil_Pygments" / "etamil_pygments" / "_etamil_builtins.py"
 )
+# Rouge is what GitHub Pages and Jekyll highlight with, so this is the lexer
+# that renders eTamil on the language's own site.
+ROUGE_OUT = ROOT / "eTamil_Rouge" / "lib" / "rouge" / "lexers" / "etamil.rb"
+# highlight.js covers web documentation and the browser playground, neither of
+# which can run Pygments or Rouge.
+HIGHLIGHTJS_OUT = ROOT / "eTamil_HighlightJS" / "src" / "languages" / "etamil.js"
+# tree-sitter is what Neovim, Helix and Zed parse with, and what GitHub uses
+# for code navigation. Only the vocabulary is generated; the grammar's
+# structure is hand-written, because the shape of a statement cannot be
+# derived from a token table.
+TREESITTER_OUT = ROOT / "tree-sitter-etamil" / "keywords.js"
 
 TAMIL = "஀-௿"
 # The same identifier shape the lexer accepts, so the grammar cannot scope
@@ -139,7 +150,7 @@ NO_SYNTAX = {
     "Encrypt", "Decrypt", "Password", "EncryptionKey",
     "File", "CSV", "Read", "Write", "Open", "Close", "FileLines",
     "SQL", "NoSQL", "MongoDB", "Redis", "JSONdb",
-    "Let", "Const",
+    "Let",
     "JSONBody",
 }
 
@@ -510,18 +521,37 @@ def build_grammar(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) 
         # Comments first, and line comments only: the lexer skips `//...` and
         # has no block comment at all, so a /* */ rule greyed out code the
         # compiler then rejected with a lex error.
+        # An English comment that opens with `__` and has not closed yet.
+        #
+        # This rule comes first, and it is a block rule rather than a line
+        # rule, because Rule 2's marks go at the ends of the *sentence*: `__`
+        # on the first comment line and `__` on the last. The previous version
+        # nested a single-line `__.+?__` inside the line-comment rule below,
+        # so a sentence spanning two lines left each of them holding one
+        # unmatched mark, neither matched, and the English in between was
+        # coloured as ezuqqu. docs/reference/SCRIPT_RULES.md.
+        #
+        # `end` has two alternatives and the order matters. The closing mark
+        # wins where there is one. Otherwise the region stops at the start of
+        # a line that is not a comment — a zero-width lookahead, which ends
+        # the rule without consuming anything — so one unclosed `__` cannot
+        # colour the rest of the file English.
+        {
+            "name": "comment.line.double-slash.etamil",
+            "contentName": "meta.english.comment.etamil",
+            "begin": r"//[ 	]*__",
+            "end": r"__|^(?=[ 	]*[^ 	/])",
+            "beginCaptures": {"0": {"name": "punctuation.definition.comment.etamil"}},
+        },
         {
             "name": "comment.line.double-slash.etamil",
             "begin": "//",
             "end": "$",
             "beginCaptures": {"0": {"name": "punctuation.definition.comment.etamil"}},
-            # `__ … __` around a comment written in English, so that a reader
-            # — and an editor showing the file in the eTamil font, where an
-            # unmarked `c` draws ச — can tell it from a comment written in
-            # ezuqqu. docs/reference/SCRIPT_RULES.md. Non-greedy, and a line
-            # at a time: the lexer has no block comment, so a mark cannot
-            # span lines and a greedy match would swallow two marked comments
-            # on one line into one.
+            # A marked run that does not start the comment — `// kaZakku
+            # __two words__ mudivu`. Two such runs on one line are two, which
+            # is why this stays non-greedy, and why the block rule above is
+            # anchored to `//` and cannot swallow them.
             "patterns": [
                 {
                     "name": "meta.english.comment.etamil",
@@ -847,27 +877,8 @@ PYG_ORDER = [
 def build_pygments_words(
     tokens: list[dict], builtins: list[dict], stdlib: list[dict]
 ) -> str:
-    """Emit the Pygments word lists from the same tables as the grammar."""
-    groups: dict[str, set[str]] = {name: set() for name in PYG_ORDER}
-
-    for token in tokens:
-        if token["no_syntax"]:
-            continue
-        group = PYG_GROUPS.get(token["scope"])
-        if group is None:
-            die(f"no Pygments group for scope {token['scope']}")
-        groups[group].update(token["forms"])
-
-    for entry in builtins:
-        groups["BUILTIN"].update(entry["forms"])
-    for entry in stdlib:
-        groups["BUILTIN"].update(entry["forms"])
-
-    # One form, one group. Earlier in PYG_ORDER wins.
-    claimed: set[str] = set()
-    for name in PYG_ORDER:
-        groups[name] -= claimed
-        claimed |= groups[name]
+    """Emit the Pygments word lists from the shared grouping."""
+    groups = pygments_groups(tokens, builtins, stdlib)
 
     lines = [
         '"""',
@@ -881,14 +892,472 @@ def build_pygments_words(
         "",
     ]
     for name in PYG_ORDER:
-        # Longest first: a prefix must never shadow the longer word it starts.
-        forms = sorted(groups[name], key=lambda form: (-len(form), form))
         lines.append(f"{name} = (")
-        for form in forms:
+        for form in groups[name]:
             lines.append(f"    {form!r},")
         lines.append(")")
         lines.append("")
     return "\n".join(lines)
+
+
+def pygments_groups(
+    tokens: list[dict], builtins: list[dict], stdlib: list[dict]
+) -> dict[str, list[str]]:
+    """The word lists, grouped and de-duplicated, shared by every highlighter.
+
+    Pygments, Rouge and highlight.js all need the same question answered — which
+    words are control flow, which are types, which are builtins — so they answer
+    it from one place. Three hand-kept keyword lists would drift from each other
+    and from the compiler, which is the failure this whole generator exists to
+    prevent.
+    """
+    groups: dict[str, set[str]] = {name: set() for name in PYG_ORDER}
+
+    for token in tokens:
+        if token["no_syntax"]:
+            continue
+        group = PYG_GROUPS.get(token["scope"])
+        if group is None:
+            die(f"no highlighter group for scope {token['scope']}")
+        groups[group].update(token["forms"])
+
+    for entry in builtins:
+        groups["BUILTIN"].update(entry["forms"])
+    for entry in stdlib:
+        groups["BUILTIN"].update(entry["forms"])
+
+    # One form, one group. Earlier in PYG_ORDER wins.
+    claimed: set[str] = set()
+    ordered: dict[str, list[str]] = {}
+    for name in PYG_ORDER:
+        groups[name] -= claimed
+        claimed |= groups[name]
+        # Longest first: a prefix must never shadow the longer word it starts,
+        # and none of these three engines sorts alternations for you.
+        ordered[name] = sorted(groups[name], key=lambda form: (-len(form), form))
+    return ordered
+
+
+IDENT_TAIL = "[a-zA-Z0-9_\\u0B80-\\u0BFF]"
+IDENT_RE = "[a-zA-Z_\\u0B80-\\u0BFF][a-zA-Z0-9_\\u0B80-\\u0BFF]*"
+
+
+def build_rouge(groups: dict[str, list[str]]) -> str:
+    """A Rouge lexer — what Jekyll and GitHub Pages highlight with.
+
+    Written by substitution rather than as an f-string: the template is Ruby
+    and regex, both full of braces and dollar signs, and an f-string would
+    fight every one of them.
+
+    The important detail is the word boundary. Rouge's `\\b` is ASCII-only, so
+    a Tamil keyword anchored with it would never match; the guard here is an
+    explicit "not followed by another identifier character", built from the
+    same class the compiler's own lexer uses.
+    """
+
+    def words(names: list[str]) -> str:
+        if not names:
+            return "%r//"
+        joined = "|".join(re.escape(name) for name in names)
+        return "%r/(?:" + joined + ")(?!" + IDENT_TAIL + ")/"
+
+    template = '''# -*- coding: utf-8 -*- #
+# frozen_string_literal: true
+#
+# @@BANNER@@
+#
+# Rouge is what Jekyll and GitHub Pages highlight with, so this is the lexer
+# that renders eTamil on https://etamil.in itself.
+#
+# Every keyword has interchangeable spellings — Tamil script, a romanized form
+# typable on an unmodified keyboard, and for some an English alias. All of them
+# come from the compiler's own token table, so this file cannot describe a
+# language the compiler does not accept.
+
+module Rouge
+  module Lexers
+    class ETamil < RegexLexer
+      title 'eTamil'
+      desc 'A Tamil-vocabulary language for Indian accounting, tax and FinTech (etamil.in)'
+      tag 'etamil'
+      aliases 'etamil'
+      filenames '*.qmz', '*.etamil'
+      mimetypes 'text/x-etamil'
+
+      state :root do
+        # Line comments only: the compiler's lexer has no block comment, so a
+        # /* */ rule would grey out code that then fails to lex.
+        rule %r(//.*$), Comment::Single
+
+        rule %r/"/, Str::Double, :string
+
+        # A percentage literal is exact — 18% is 0.18, not a rounded double —
+        # which is worth showing as its own kind of number in a language for
+        # tax arithmetic.
+        rule %r/\\d+(?:\\.\\d+)?%/, Num::Other
+        rule %r/\\d+\\.\\d+/, Num::Float
+        rule %r/\\d+/, Num::Integer
+
+        rule @@DECLARE_FUNCTION@@, Keyword::Declaration
+        rule @@IMPORT@@, Keyword::Namespace
+        rule @@CONTROL@@, Keyword
+        rule @@TYPE@@, Keyword::Type
+        rule @@CONSTANT@@, Keyword::Constant
+        rule @@RESERVED@@, Keyword::Reserved
+        rule @@LOGICAL@@, Operator::Word
+        rule @@NAMED_CONSTANT@@, Name::Constant
+        rule @@BUILTIN@@, Name::Builtin
+        # Domain vocabulary — வரவு, பற்று, தொகை — is deliberately *not*
+        # reserved: the parser accepts these as ordinary names, so colouring
+        # them as syntax would tell the reader the opposite of the truth.
+        rule @@DOMAIN@@, Name::Entity
+
+        rule %r/@@IDENT@@/, Name
+
+        rule %r/==|!=|>=|<=/, Operator
+        rule %r/[+\\-*\\/&<>=?]/, Operator
+        rule %r/[\\[\\](){}]/, Punctuation
+        rule %r/[;,:.]/, Punctuation
+        rule %r/\\s+/m, Text
+      end
+
+      state :string do
+        rule %r/"/, Str::Double, :pop!
+        # The five escapes the compiler decodes. An unrecognised escape keeps
+        # both characters rather than being one, so it is shown as an error
+        # instead of silently accepted.
+        rule %r/\\\\[ntr"\\\\]/, Str::Escape
+        rule %r/\\\\./, Error
+        rule %r/[^"\\\\]+/m, Str::Double
+      end
+    end
+  end
+end
+'''
+
+    out = template.replace("@@BANNER@@", BANNER).replace("@@IDENT@@", IDENT_RE)
+    for name in PYG_ORDER:
+        out = out.replace("@@" + name + "@@", words(groups[name]))
+    return out
+
+
+def build_highlightjs(groups: dict[str, list[str]]) -> str:
+    """A highlight.js definition, for web documentation and the playground.
+
+    Neither Pygments nor Rouge runs in a browser, so the online manual and the
+    wasm playground need this one.
+    """
+
+    def js_list(names: list[str]) -> str:
+        return json.dumps(names, ensure_ascii=False)
+
+    def alternation(names: list[str]) -> str:
+        if not names:
+            return "(?!)"
+        return "(?:" + "|".join(re.escape(name) for name in names) + ")"
+
+    template = '''/*
+Language: eTamil
+Description: A Tamil-vocabulary programming language for Indian accounting, tax and FinTech
+Website: https://etamil.in
+Category: common
+
+@@BANNER@@
+*/
+
+/** @type LanguageFn */
+export default function etamil(hljs) {
+  // highlight.js decides what a "word" is with $pattern, and its default is
+  // ASCII. Without this every Tamil keyword is invisible to the matcher, so
+  // the pattern below is the whole reason the language highlights at all.
+  const IDENT = /@@IDENT@@/;
+
+  const KEYWORDS = {
+    $pattern: IDENT,
+    keyword: @@KEYWORDS@@,
+    type: @@TYPE@@,
+    literal: @@CONSTANT@@,
+    built_in: @@BUILTINS@@,
+  };
+
+  const STRING = {
+    className: 'string',
+    begin: '"',
+    end: '"',
+    illegal: '\\n',
+    contains: [
+      // The five escapes the compiler decodes.
+      { className: 'subst', begin: /\\\\[ntr"\\\\]/ },
+    ],
+  };
+
+  const NUMBER = {
+    className: 'number',
+    variants: [
+      // A percentage literal is exact: 18% is 0.18.
+      { begin: /\\b\\d+(?:\\.\\d+)?%/ },
+      { begin: /\\b\\d+\\.\\d+/ },
+      { begin: /\\b\\d+/ },
+    ],
+    relevance: 0,
+  };
+
+  const DOMAIN = {
+    // Domain vocabulary — வரவு, பற்று, தொகை — is deliberately not reserved:
+    // the parser accepts these as ordinary names. Marked as a title rather
+    // than a keyword so it reads as vocabulary, not syntax.
+    className: 'title.class',
+    begin: /@@DOMAIN@@(?!@@IDENT_TAIL@@)/,
+    relevance: 0,
+  };
+
+  return {
+    name: 'eTamil',
+    aliases: ['etamil', 'qmz'],
+    keywords: KEYWORDS,
+    contains: [
+      // Line comments only; the language has no block comment.
+      hljs.COMMENT('//', '$'),
+      STRING,
+      NUMBER,
+      DOMAIN,
+    ],
+  };
+}
+'''
+
+    keywords = (
+        groups["CONTROL"]
+        + groups["DECLARE_FUNCTION"]
+        + groups["IMPORT"]
+        + groups["RESERVED"]
+        + groups["LOGICAL"]
+    )
+    builtins = groups["BUILTIN"] + groups["NAMED_CONSTANT"]
+
+    return (
+        template.replace("@@BANNER@@", BANNER)
+        .replace("@@IDENT_TAIL@@", IDENT_TAIL)
+        .replace("@@IDENT@@", IDENT_RE)
+        .replace("@@KEYWORDS@@", js_list(keywords))
+        .replace("@@TYPE@@", js_list(groups["TYPE"]))
+        .replace("@@CONSTANT@@", js_list(groups["CONSTANT"]))
+        .replace("@@BUILTINS@@", js_list(builtins))
+        .replace("@@DOMAIN@@", alternation(groups["DOMAIN"]))
+    )
+
+
+def build_treesitter_keywords(tokens: list[dict]) -> str:
+    """Every spelling of every keyword, for grammar.js to build rules from.
+
+    Only the vocabulary. `grammar.js` is written by hand because the shape of
+    a statement — that eTamil puts the condition *before* the keyword, that a
+    route takes a method and a literal path — is not recoverable from a list
+    of tokens. Keeping the two apart is the same split as the snippet
+    templates: generate what is derivable, hand-write what is not, and let CI
+    fail if the derivable half drifts.
+    """
+    by_token: dict[str, list[str]] = {}
+    for token in tokens:
+        # Longest first so a prefix never shadows the longer word it starts.
+        by_token[token["token"]] = sorted(
+            token["forms"], key=lambda form: (-len(form), form)
+        )
+
+    lines = [
+        "// " + BANNER,
+        "//",
+        "// Every spelling the compiler accepts for each keyword, keyed by the",
+        "// token name in etamil_compiler/src/lexer.rs. grammar.js turns these",
+        "// into `choice(...)` rules, so the grammar cannot parse a spelling",
+        "// the compiler rejects, or miss one it accepts.",
+        "",
+        "module.exports = {",
+    ]
+    for name in sorted(by_token):
+        forms = ", ".join(json.dumps(form, ensure_ascii=False) for form in by_token[name])
+        lines.append(f"  {name}: [{forms}],")
+    lines.append("};")
+    lines.append("")
+    return "\n".join(lines)
+
+
+TREESITTER_GRAMMAR = ROOT / "tree-sitter-etamil" / "grammar.js"
+TREESITTER_QUERIES = ROOT / "tree-sitter-etamil" / "queries" / "highlights.scm"
+
+
+def build_treesitter_queries(tokens: list[dict], builtins: list[dict], stdlib: list[dict]) -> str:
+    """Highlight queries for Neovim, Helix and Zed.
+
+    Only the keywords `grammar.js` actually references can appear here. A
+    tree-sitter query naming a string the parser has no rule for is a hard
+    error — "Invalid node type" — and the language then fails to highlight at
+    all rather than highlighting partially. Many of the lexer's tokens are
+    reserved words that no statement consumes, so emitting every spelling
+    produced exactly that.
+
+    The set is read from `grammar.js` rather than kept by hand, so adding a
+    keyword to a rule is enough to have it highlighted.
+    """
+    if not TREESITTER_GRAMMAR.exists():
+        die(f"{TREESITTER_GRAMMAR} is missing")
+
+    used = set(re.findall(r"kw\('(\w+)'\)", TREESITTER_GRAMMAR.read_text(encoding="utf-8")))
+    if not used:
+        die("grammar.js references no keywords; the kw('X') scan found nothing")
+
+    groups = pygments_groups(tokens, builtins, stdlib)
+    by_token = {token["token"]: token for token in tokens}
+
+    # Which group each *used* token belongs to, so the query and the other
+    # highlighters agree about what is control flow and what is a type.
+    forms_for: dict[str, list[str]] = {name: [] for name in PYG_ORDER}
+    for name in used:
+        token = by_token.get(name)
+        if token is None:
+            die(f"grammar.js references kw('{name}'), which is not a lexer token")
+        group = PYG_GROUPS.get(token["scope"])
+        if group is None:
+            die(f"no highlighter group for scope {token['scope']}")
+        forms_for[group].extend(token["forms"])
+
+    # Builtins and library functions are ordinary identifiers to the grammar,
+    # so they are matched by predicate on (identifier) rather than as node
+    # types. A #any-of? over 300 names is what tree-sitter is built for.
+    builtin_names = sorted(
+        {form for entry in builtins for form in entry["forms"]}
+        | {entry["name"] for entry in stdlib}
+    )
+
+    def node_list(names: list[str]) -> str:
+        unique = sorted(set(names), key=lambda form: (-len(form), form))
+        return " ".join(json.dumps(form, ensure_ascii=False) for form in unique)
+
+    def any_of(names: list[str]) -> str:
+        return " ".join(json.dumps(name, ensure_ascii=False) for name in names)
+
+    sections = [
+        f"""; Highlight queries for eTamil.
+;
+; {BANNER}
+;
+; Neovim, Helix and Zed read this file directly. Capture names follow the
+; nvim-treesitter convention, so eTamil picks up whatever colour scheme the
+; reader already uses.
+;
+; Only keywords `grammar.js` actually references appear below. A query naming a
+; string the parser has no rule for is a hard error, and the language then
+; fails to highlight at all rather than partially.
+
+; --- Comments and literals -------------------------------------------------
+
+(comment) @comment @spell
+
+(string) @string
+(escape_sequence) @string.escape
+; An unrecognised escape keeps both characters rather than being one, so it is
+; shown as an error rather than silently accepted.
+(invalid_escape) @error
+
+(number) @number
+; A percentage literal is exact — 18% is 0.18, never a rounded double — which
+; is the whole point of a language for tax arithmetic.
+(percentage) @number.float
+
+(boolean) @boolean
+(null) @constant.builtin
+
+; --- Structure -------------------------------------------------------------
+
+(function_definition name: (identifier) @function)
+(parameter name: (identifier) @variable.parameter)
+(call function: (identifier) @function.call)
+
+(type) @type
+(function_type) @type
+(http_method) @constant.builtin
+
+; நிலை and வடிவம் are keywords only where they bind a name or begin a shape,
+; which is where the grammar names them `keyword`; anywhere else they are the
+; ordinary names two examples and nUlakam use them as. `நிலை x = …` has the
+; same form as `கடன் க = …`, so there it is told apart by its spelling.
+(shape_definition keyword: (identifier) @keyword)
+(fixed_declaration keyword: (identifier) @keyword)
+(parameter modifier: (identifier) @keyword)
+((typed_declaration type: (identifier) @keyword)
+  (#any-of? @keyword "நிலை" "nilY" "_const"))
+(shape_definition name: (identifier) @type)
+(typed_declaration type: (identifier) @type)
+(fixed_declaration type: (identifier) @type)
+(parameter type: (identifier) @type)
+(shape_field type: (identifier) @type)
+(shape_literal shape: (identifier) @type)
+(shape_field name: (identifier) @property)
+
+; A field name is data — what the author typed — not a language construct, so
+; the key in {{வரி: 1}} is a property and not the Tax keyword.
+(pair key: (identifier) @property)
+(pair key: (string) @property)
+(field_access field: (identifier) @property)
+(field_assignment field: (identifier) @property)
+
+; --- Operators and punctuation ---------------------------------------------
+
+[
+  "+" "-" "*" "/" "&"
+  "==" "!=" "<" "<=" ">" ">="
+  "=" "?"
+] @operator
+
+[ "(" ")" "[" "]" "{{" "}}" ] @punctuation.bracket
+[ ";" "," ":" "." ] @punctuation.delimiter
+"""
+    ]
+
+    captures = [
+        ("CONTROL", "@keyword"),
+        ("DECLARE_FUNCTION", "@keyword.function"),
+        ("IMPORT", "@keyword.import"),
+        ("LOGICAL", "@keyword.operator"),
+        ("RESERVED", "@keyword"),
+        ("NAMED_CONSTANT", "@constant.builtin"),
+        ("BUILTIN", "@function.builtin"),
+        ("DOMAIN", "@variable.member"),
+    ]
+
+    sections.append(
+        "\n; --- Keywords --------------------------------------------------------------\n;\n"
+        "; Every spelling the compiler accepts for these: Tamil script, the romanized\n"
+        "; form, and where one exists an English alias.\n"
+    )
+    for group, capture in captures:
+        forms = forms_for[group]
+        if not forms:
+            continue
+        if group == "DOMAIN":
+            sections.append(
+                "\n; Domain vocabulary — வரவு, பற்று, தொகை. Deliberately not @keyword: the\n"
+                "; parser accepts these as ordinary names, and colouring them as syntax\n"
+                "; would tell the reader the opposite of the truth.\n"
+            )
+        sections.append(f"[ {node_list(forms)} ] {capture}\n")
+
+    # Identifiers last, so a more specific capture above always wins, with the
+    # library matched by predicate.
+    sections.append(
+        f"""
+; --- Names -----------------------------------------------------------------
+
+; Host builtins and the nUlakam standard library are ordinary identifiers to
+; the grammar, so they are matched by name rather than as node types.
+((identifier) @function.builtin
+  (#any-of? @function.builtin {any_of(builtin_names)}))
+
+(identifier) @variable
+"""
+    )
+
+    return "".join(sections)
 
 
 def main() -> int:
@@ -910,11 +1379,20 @@ def main() -> int:
     data = build_data(tokens, builtins, stdlib)
 
     pygments_words = build_pygments_words(tokens, builtins, stdlib)
+    groups = pygments_groups(tokens, builtins, stdlib)
+    rouge = build_rouge(groups)
+    treesitter = build_treesitter_keywords(tokens)
+    ts_queries = build_treesitter_queries(tokens, builtins, stdlib)
+    highlightjs = build_highlightjs(groups)
 
     outputs = [
         (GRAMMAR_OUT, grammar),
         (DATA_OUT, data),
         (PYGMENTS_OUT, pygments_words),
+        (ROUGE_OUT, rouge),
+        (HIGHLIGHTJS_OUT, highlightjs),
+        (TREESITTER_OUT, treesitter),
+        (TREESITTER_QUERIES, ts_queries),
     ]
 
     if args.check:
@@ -945,6 +1423,10 @@ def main() -> int:
     print(f"wrote {GRAMMAR_OUT.relative_to(ROOT).as_posix()}")
     print(f"wrote {DATA_OUT.relative_to(ROOT).as_posix()}")
     print(f"wrote {PYGMENTS_OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {ROUGE_OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {HIGHLIGHTJS_OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {TREESITTER_OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {TREESITTER_QUERIES.relative_to(ROOT).as_posix()}")
     print(
         f"  {len(tokens)} keywords ({reserved} reserved, "
         f"{len(tokens) - reserved} usable as names), "

@@ -1,0 +1,46 @@
+// __நிலை — bindings that do not change, as Rust's `let` does not__
+//
+// __A name bound with நிலை is bound once. Assigning it again, or changing one__
+// __element or field of it, is refused before the program runs. Values are__
+// __copied rather than shared, so a copy is an ordinary variable and changing__
+// __it cannot reach the original.__
+//
+// __Plain assignment is unchanged: a name without நிலை is as mutable as ever.__
+
+// __Regulatory figures: set once, read everywhere, changed nowhere__
+நிலை எண் அடிப்படை_விலக்கு = 300000;
+நிலை அடுக்குகள் = [
+    {மேல்: 700000, வீதம்: 5%},
+    {மேல்: 1000000, வீதம்: 10%},
+    {மேல்: 1200000, வீதம்: 15%}
+];
+
+// __A parameter can be fixed too: this function cannot overwrite what it was__
+// __given, only compute from it__
+செயல் வரி_கணக்கிடு(நிலை எண் வருமானம்) எண் {
+    மொத்தம் = 0;
+    கீழ் = அடிப்படை_விலக்கு;
+    ஒவ்வொரு அடுக்கு இல் அடுக்குகள் {
+        (வருமானம் > கீழ்) எனில் {
+            மேல் = அடுக்கு.மேல்;
+            (வருமானம் < மேல்) எனில் { மேல் = வருமானம்; }
+            மொத்தம் = மொத்தம் + (மேல் - கீழ்) * அடுக்கு.வீதம்;
+        }
+        கீழ் = அடுக்கு.மேல்;
+    }
+    திரும்பு மொத்தம்;
+}
+
+அச்சு "வருமானம் 900000 — வரி: " & வரி_கணக்கிடு(900000);
+அச்சு "வருமானம் 250000 — வரி: " & வரி_கணக்கிடு(250000);
+
+// __A copy is free to change; the fixed original is not touched__
+நகல் = அடுக்குகள்;
+நகல்[0] = {மேல்: 700000, வீதம்: 0%};
+அச்சு "நகலின் முதல் வீதம்: " & நகல்[0].வீதம்;
+அச்சு "அசலின் முதல் வீதம்: " & அடுக்குகள்[0].வீதம்;
+
+// __These would each be refused before anything ran:__
+//   __அடிப்படை_விலக்கு = 250000;          cannot assign twice__
+//   __அடுக்குகள்[0] = {மேல்: 1, வீதம்: 1%};  cannot change part of it__
+//   __நிலை அடிப்படை_விலக்கு = 1;          already bound with நிலை__

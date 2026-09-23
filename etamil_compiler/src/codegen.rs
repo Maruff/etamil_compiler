@@ -73,6 +73,17 @@ pub struct Compiler {
     /// is how nUlakam is written throughout.
     globals: HashMap<String, LLVMValueRef>,
     functions: HashMap<String, LLVMValueRef>,
+    /// Every function compiled, with how many captures lead its parameters
+    /// and how many arguments a caller supplies. Each is registered with the
+    /// runtime at startup, so a call through a function value can reach it.
+    compiled: Vec<(String, usize, usize)>,
+    /// Runs as `main`'s first instruction and registers every function.
+    registrar: LLVMValueRef,
+    /// Numbers the anonymous செயல்s in this module.
+    lambdas: usize,
+    /// The program's வடிவம்s, registered with the runtime at startup and
+    /// known by name before any statement is compiled.
+    shapes: crate::vm::shape::Shapes,
     in_function: bool,
     terminated: bool,
     /// Constructs this backend cannot build. The caller must refuse to emit
@@ -107,6 +118,26 @@ impl Compiler {
             );
             LLVMPositionBuilderAtEnd(builder, entry);
 
+            // Registration happens before the program's first statement, so a
+            // function value made anywhere can be called anywhere. Its body is
+            // filled in once every function is known — see `finish_registrar`.
+            // The dot keeps the name out of reach of any source identifier.
+            let void_fn = LLVMFunctionType(LLVMVoidTypeInContext(context), ptr::null_mut(), 0, 0);
+            let registrar = LLVMAddFunction(
+                module,
+                CString::new("etamil.register").unwrap().as_ptr(),
+                void_fn,
+            );
+            LLVMSetLinkage(registrar, LLVMLinkage::LLVMInternalLinkage);
+            LLVMBuildCall2(
+                builder,
+                void_fn,
+                registrar,
+                ptr::null_mut(),
+                0,
+                CString::new("").unwrap().as_ptr(),
+            );
+
             Compiler {
                 context,
                 module,
@@ -115,6 +146,10 @@ impl Compiler {
                 variables: HashMap::new(),
                 globals: HashMap::new(),
                 functions: HashMap::new(),
+                compiled: Vec::new(),
+                registrar,
+                lambdas: 0,
+                shapes: crate::vm::shape::Shapes::new(),
                 in_function: false,
                 terminated: false,
                 unsupported: Vec::new(),
@@ -247,6 +282,11 @@ impl Compiler {
                     .unwrap_or_else(|_| CString::new("slot").unwrap())
                     .as_ptr(),
             );
+            // Zero is the nil handle. A slot read before anything is stored in
+            // it — a local captured by a செயல் before the branch that assigns
+            // it has run — then reads இன்மை, as the VM's frame does, rather
+            // than whatever the stack held.
+            LLVMBuildStore(self.builder, LLVMConstInt(self.value(), 0, 0), slot);
             LLVMPositionBuilderAtEnd(self.builder, here);
             slot
         }
@@ -312,37 +352,400 @@ impl Compiler {
         // compiled, because a body may read one and bodies are compiled first —
         // so a name assigned further down the file would otherwise be invisible
         // from inside a `செயல்` written above it.
-        for statement in &statements {
-            if let Stmt::Assign { name, .. } = statement {
-                self.declare_global(name);
-            }
+        //
+        // Every name the top level binds, at any depth outside a function: a
+        // loop variable or a query's rows is a global on the VM too, and a
+        // `செயல்` — named or written as a value — reads it live from there.
+        let mut top_level = Vec::new();
+        top_level_bindings(&statements, &mut top_level);
+        for name in &top_level {
+            self.declare_global(name);
         }
+        self.shapes = crate::vm::shape::from_program(&statements);
 
         unsafe {
             for statement in &statements {
-                if let Stmt::FunctionDef { name, params, .. } = statement {
-                    self.declare_function(name, params.len());
+                match statement {
+                    Stmt::FunctionDef { name, params, .. } => {
+                        self.declare_function(name, params.len());
+                    }
+                    // A method is a function named `வடிவம்.முறை`, இது first.
+                    Stmt::ShapeDef { name, methods, .. } => {
+                        for method in methods {
+                            let function = crate::vm::shape::method_function(name, &method.name);
+                            self.declare_function(&function, method.params.len());
+                        }
+                    }
+                    _ => {}
                 }
             }
 
             for statement in &statements {
-                if let Stmt::FunctionDef {
-                    name, params, body, ..
-                } = statement
-                {
-                    self.compile_function(name, params, body);
+                match statement {
+                    Stmt::FunctionDef {
+                        name, params, body, ..
+                    } => self.compile_function(name, &[], params, body),
+                    Stmt::ShapeDef { name, methods, .. } => {
+                        for method in methods {
+                            let function = crate::vm::shape::method_function(name, &method.name);
+                            self.compile_function(&function, &[], &method.params, &method.body);
+                        }
+                    }
+                    _ => {}
                 }
             }
 
             for statement in statements {
-                if !matches!(statement, Stmt::FunctionDef { .. }) {
+                if !matches!(statement, Stmt::FunctionDef { .. } | Stmt::ShapeDef { .. }) {
                     self.compile_stmt(statement);
                 }
             }
 
             let zero = LLVMConstInt(self.word(), 0, 0);
             LLVMBuildRet(self.builder, zero);
+
+            self.finish_registrar();
         }
+    }
+
+    /// Fill in the function `main` calls first: one registration per function
+    /// this module compiled, each with an entry that takes its arguments as an
+    /// array, which is the only shape a call through a value can supply.
+    fn finish_registrar(&mut self) {
+        unsafe {
+            let saved_function = self.function;
+            self.function = self.registrar;
+            let entry = LLVMAppendBasicBlockInContext(
+                self.context,
+                self.registrar,
+                CString::new("entry").unwrap().as_ptr(),
+            );
+            LLVMPositionBuilderAtEnd(self.builder, entry);
+
+            for (name, captures, params) in self.compiled.clone() {
+                let function = match self.functions.get(&name).copied() {
+                    Some(function) => function,
+                    None => continue,
+                };
+                let array_entry = self.array_entry(&name, function, captures + params);
+                if let Some(label) = self.constant_text(&name, "function") {
+                    let captures = LLVMConstInt(self.value(), captures as u64, 0);
+                    let params = LLVMConstInt(self.value(), params as u64, 0);
+                    self.invoke(
+                        "etamil_register_function",
+                        vec![self.text(), self.text(), self.value(), self.value()],
+                        self.nothing(),
+                        &mut [label, array_entry, captures, params],
+                    );
+                }
+            }
+
+            self.register_shapes();
+            LLVMBuildRetVoid(self.builder);
+            self.function = saved_function;
+        }
+    }
+
+    /// Each shape, a field and a method at a time, for the runtime's checks.
+    /// Emitted into the registrar, whose block the builder is standing in.
+    fn register_shapes(&mut self) {
+        let mut shapes: Vec<crate::vm::shape::Shape> = self.shapes.values().cloned().collect();
+        // Sorted so the emitted IR is the same from one build to the next.
+        shapes.sort_by(|a, b| a.name.cmp(&b.name));
+
+        for shape in shapes {
+            let Some(owner) = self.constant_text(&shape.name, "shape") else {
+                continue;
+            };
+            self.invoke(
+                "etamil_shape_begin",
+                vec![self.text()],
+                self.nothing(),
+                &mut [owner],
+            );
+
+            for (field, declared) in &shape.fields {
+                let Some(label) = self.constant_text(field, "field") else {
+                    continue;
+                };
+                let code = crate::vm::shape::type_code(declared);
+                let of = match declared {
+                    Some(crate::parser::DeclaredType::Shape(inner)) => {
+                        match self.constant_text(inner, "shape") {
+                            Some(inner) => inner,
+                            None => continue,
+                        }
+                    }
+                    _ => unsafe { LLVMConstNull(self.text()) },
+                };
+                unsafe {
+                    let code = LLVMConstInt(self.word(), code as u64, 0);
+                    self.invoke(
+                        "etamil_shape_field",
+                        vec![self.text(), self.text(), self.word(), self.text()],
+                        self.nothing(),
+                        &mut [owner, label, code, of],
+                    );
+                }
+            }
+
+            let mut methods: Vec<(&String, &bool)> = shape.methods.iter().collect();
+            methods.sort();
+            for (method, takes_self) in methods {
+                let Some(label) = self.constant_text(method, "method") else {
+                    continue;
+                };
+                unsafe {
+                    let takes_self = LLVMConstInt(self.word(), u64::from(*takes_self), 0);
+                    self.invoke(
+                        "etamil_shape_method",
+                        vec![self.text(), self.text(), self.word()],
+                        self.nothing(),
+                        &mut [owner, label, takes_self],
+                    );
+                }
+            }
+        }
+    }
+
+    /// `கடன்{அசல்: …, ..பழையது}`: the fields go on a fresh plain record, and
+    /// the runtime checks them against the shape and makes it one — with the
+    /// same `vm::shape::build` the VM's `MakeShaped` calls.
+    fn compile_shape_literal(
+        &mut self,
+        shape: &str,
+        fields: &[(String, Expr)],
+        base: Option<&Expr>,
+    ) -> LLVMValueRef {
+        // The `..` record first, as the VM evaluates it first.
+        let (base, has_base) = match base {
+            Some(base) => (self.compile_expr(base), 1),
+            None => (self.nil(), 0),
+        };
+        let record = self.invoke("etamil_record", vec![], self.value(), &mut []);
+        for (field, value) in fields {
+            let handle = self.compile_expr(value);
+            if let Some(key) = self.constant_text(field, "field") {
+                self.invoke(
+                    "etamil_record_put",
+                    vec![self.value(), self.text(), self.value()],
+                    self.nothing(),
+                    &mut [record, key, handle],
+                );
+            }
+        }
+        let Some(name) = self.constant_text(shape, "shape") else {
+            return self.nil();
+        };
+        unsafe {
+            let has_base = LLVMConstInt(self.word(), has_base, 0);
+            self.invoke(
+                "etamil_shape_make",
+                vec![self.value(), self.text(), self.value(), self.word()],
+                self.value(),
+                &mut [record, name, base, has_base],
+            )
+        }
+    }
+
+    /// `r.m(…)`. With a shape's name for r it is that shape's function,
+    /// called directly; otherwise the runtime finds the method of r's shape,
+    /// or a function r holds in that field.
+    fn compile_method_call(&mut self, receiver: &Expr, name: &str, args: &[Expr]) -> LLVMValueRef {
+        if let Expr::Variable(shape) = receiver
+            && self.shapes.contains_key(shape)
+        {
+            let function = crate::vm::shape::method_function(shape, name);
+            return self.compile_call(&function, args);
+        }
+
+        let receiver = self.compile_expr(receiver);
+        let handles: Vec<LLVMValueRef> = args.iter().map(|arg| self.compile_expr(arg)).collect();
+        let Some(label) = self.constant_text(name, "method") else {
+            return self.nil();
+        };
+        let (argv, argc) = self.argv(&handles);
+        unsafe {
+            self.invoke(
+                "etamil_call_method",
+                vec![
+                    self.value(),
+                    self.text(),
+                    LLVMPointerType(self.value(), 0),
+                    self.value(),
+                ],
+                self.value(),
+                &mut [receiver, label, argv, argc],
+            )
+        }
+    }
+
+    /// `i64 name.entry(ptr argv)`: load `count` handles and call `function`
+    /// with them. Leaves the builder where it found it.
+    fn array_entry(&mut self, name: &str, function: LLVMValueRef, count: usize) -> LLVMValueRef {
+        unsafe {
+            let mut params = [LLVMPointerType(self.value(), 0)];
+            let kind = LLVMFunctionType(self.value(), params.as_mut_ptr(), 1, 0);
+            let entry_fn = LLVMAddFunction(
+                self.module,
+                CString::new(format!("{}.entry", name))
+                    .unwrap_or_else(|_| CString::new("entry").unwrap())
+                    .as_ptr(),
+                kind,
+            );
+            LLVMSetLinkage(entry_fn, LLVMLinkage::LLVMInternalLinkage);
+
+            let here = LLVMGetInsertBlock(self.builder);
+            let block = LLVMAppendBasicBlockInContext(
+                self.context,
+                entry_fn,
+                CString::new("entry").unwrap().as_ptr(),
+            );
+            LLVMPositionBuilderAtEnd(self.builder, block);
+
+            let argv = LLVMGetParam(entry_fn, 0);
+            let mut args = Vec::with_capacity(count);
+            for position in 0..count {
+                let mut index = [LLVMConstInt(self.value(), position as u64, 0)];
+                let slot = LLVMBuildGEP2(
+                    self.builder,
+                    self.value(),
+                    argv,
+                    index.as_mut_ptr(),
+                    1,
+                    CString::new("arg").unwrap().as_ptr(),
+                );
+                args.push(LLVMBuildLoad2(
+                    self.builder,
+                    self.value(),
+                    slot,
+                    CString::new("arg").unwrap().as_ptr(),
+                ));
+            }
+            let answer = LLVMBuildCall2(
+                self.builder,
+                self.llvm_function_type(count),
+                function,
+                args.as_mut_ptr(),
+                count as u32,
+                CString::new("answer").unwrap().as_ptr(),
+            );
+            LLVMBuildRet(self.builder, answer);
+
+            LLVMPositionBuilderAtEnd(self.builder, here);
+            entry_fn
+        }
+    }
+
+    /// A stack array of handles in the current function's entry block, filled
+    /// here, and a pointer to its first element: how a variable number of
+    /// handles crosses the C ABI.
+    fn argv(&mut self, handles: &[LLVMValueRef]) -> (LLVMValueRef, LLVMValueRef) {
+        unsafe {
+            let count = handles.len();
+            let array_type = LLVMArrayType2(self.value(), count.max(1) as u64);
+            let argv = {
+                let here = LLVMGetInsertBlock(self.builder);
+                let entry = LLVMGetEntryBasicBlock(self.function);
+                let first = LLVMGetFirstInstruction(entry);
+                if first.is_null() {
+                    LLVMPositionBuilderAtEnd(self.builder, entry);
+                } else {
+                    LLVMPositionBuilderBefore(self.builder, first);
+                }
+                let argv = LLVMBuildAlloca(
+                    self.builder,
+                    array_type,
+                    CString::new("argv").unwrap().as_ptr(),
+                );
+                LLVMPositionBuilderAtEnd(self.builder, here);
+                argv
+            };
+
+            for (position, handle) in handles.iter().enumerate() {
+                let mut indices = [
+                    LLVMConstInt(self.word(), 0, 0),
+                    LLVMConstInt(self.word(), position as u64, 0),
+                ];
+                let slot = LLVMBuildGEP2(
+                    self.builder,
+                    array_type,
+                    argv,
+                    indices.as_mut_ptr(),
+                    2,
+                    CString::new("arg").unwrap().as_ptr(),
+                );
+                LLVMBuildStore(self.builder, *handle, slot);
+            }
+
+            let mut indices = [
+                LLVMConstInt(self.word(), 0, 0),
+                LLVMConstInt(self.word(), 0, 0),
+            ];
+            let first_arg = LLVMBuildGEP2(
+                self.builder,
+                array_type,
+                argv,
+                indices.as_mut_ptr(),
+                2,
+                CString::new("argv_first").unwrap().as_ptr(),
+            );
+            (first_arg, LLVMConstInt(self.value(), count as u64, 1))
+        }
+    }
+
+    /// A function value naming `name` and carrying these handles.
+    fn function_value(&mut self, name: &str, captured: &[LLVMValueRef]) -> LLVMValueRef {
+        let label = match self.constant_text(name, "function") {
+            Some(label) => label,
+            None => return self.nil(),
+        };
+        let (argv, count) = self.argv(captured);
+        unsafe {
+            self.invoke(
+                "etamil_function",
+                vec![self.text(), LLVMPointerType(self.value(), 0), self.value()],
+                self.value(),
+                &mut [label, argv, count],
+            )
+        }
+    }
+
+    /// `செயல்(…) { … }` where a value goes: compiled as a function of its own
+    /// whose leading parameters are the locals it captures, and made into a
+    /// value carrying their current handles.
+    ///
+    /// What it captures is decided by `parser::captures` against the locals
+    /// known at this point — the same function and the same set the bytecode
+    /// compiler uses, which is what keeps the two backends agreeing on it.
+    fn compile_lambda(&mut self, params: &[crate::parser::Param], body: &[Stmt]) -> LLVMValueRef {
+        let captures = if self.in_function {
+            let variables = &self.variables;
+            crate::parser::captures(params, body, |name| variables.contains_key(name))
+        } else {
+            Vec::new()
+        };
+        let name = format!("#செயல்_{}", self.lambdas);
+        self.lambdas += 1;
+
+        let function = self.declare_function(&name, captures.len() + params.len());
+        // Reached only through its value, never by a name from outside.
+        unsafe { LLVMSetLinkage(function, LLVMLinkage::LLVMInternalLinkage) };
+        self.compile_function(&name, &captures, params, body);
+
+        let mut handles = Vec::with_capacity(captures.len());
+        for capture in &captures {
+            let slot = self.variables[capture];
+            handles.push(unsafe {
+                LLVMBuildLoad2(
+                    self.builder,
+                    self.value(),
+                    slot,
+                    CString::new("captured").unwrap().as_ptr(),
+                )
+            });
+        }
+        self.function_value(&name, &handles)
     }
 
     fn compile_stmt(&mut self, statement: Stmt) {
@@ -353,7 +756,8 @@ impl Compiler {
                     let slot = self.storage_for(&name);
                     LLVMBuildStore(self.builder, handle, slot);
                 }
-                Stmt::FunctionDef { .. } => {}
+                // Compiled up front in `compile`, with every other function.
+                Stmt::FunctionDef { .. } | Stmt::ShapeDef { .. } => {}
                 Stmt::Return(value) => {
                     if self.in_function {
                         let handle = match value.as_ref() {
@@ -393,7 +797,9 @@ impl Compiler {
                         LLVMBuildStore(self.builder, line, slot);
                     }
                 }
-                Stmt::SetIndex { name, index, value } => {
+                Stmt::SetIndex {
+                    name, index, value, ..
+                } => {
                     match self.lookup(&name) {
                         Some(slot) => {
                             let base = LLVMBuildLoad2(
@@ -421,7 +827,9 @@ impl Compiler {
                             .push(format!("the name {} (nothing here defines it)", name)),
                     }
                 }
-                Stmt::SetField { name, field, value } => match self.lookup(&name) {
+                Stmt::SetField {
+                    name, field, value, ..
+                } => match self.lookup(&name) {
                     Some(slot) => {
                         let base = LLVMBuildLoad2(
                             self.builder,
@@ -766,7 +1174,31 @@ impl Compiler {
         }
     }
 
-    fn compile_function(&mut self, name: &str, params: &[crate::parser::Param], body: &[Stmt]) {
+    /// A function's body. `captures` lead its parameters: a named `செயல்` has
+    /// none, and one written as a value has the locals it carries.
+    fn compile_function(
+        &mut self,
+        name: &str,
+        captures: &[String],
+        params: &[crate::parser::Param],
+        body: &[Stmt],
+    ) {
+        let params: Vec<crate::parser::Param> = captures
+            .iter()
+            .map(|capture| crate::parser::Param {
+                name: capture.clone(),
+                declared: None,
+                immutable: false,
+                at: crate::parser::Position { line: 0, column: 0 },
+            })
+            .chain(params.iter().cloned())
+            .collect();
+        self.compiled.push((
+            name.to_string(),
+            captures.len(),
+            params.len() - captures.len(),
+        ));
+        let params = params.as_slice();
         unsafe {
             let function = self.declare_function(name, params.len());
             let saved_function = self.function;
@@ -861,6 +1293,11 @@ impl Compiler {
                         CString::new("load").unwrap().as_ptr(),
                     )
                 },
+                // No variable, but a function — the program's own or a
+                // builtin — and so that function as a value: `ச = இரட்டி;`.
+                None if self.functions.contains_key(name) || crate::vm::is_builtin(name) => {
+                    self.function_value(name, &[])
+                }
                 None => {
                     self.unsupported
                         .push(format!("the name {} (nothing here defines it)", name));
@@ -951,7 +1388,7 @@ impl Compiler {
                 let position = self.compile_expr(index);
                 self.call_values("etamil_index", &mut [base, position])
             }
-            Expr::Field { base, name } => {
+            Expr::Field { base, name, .. } => {
                 let base = self.compile_expr(base);
                 match self.constant_text(name, "field") {
                     Some(key) => self.invoke(
@@ -965,6 +1402,33 @@ impl Compiler {
             }
             Expr::Call { name, args } => self.compile_call(name, args),
             Expr::Try(inner) => self.compile_try(inner),
+            Expr::Lambda { params, body, .. } => self.compile_lambda(params, body),
+            Expr::ShapeLiteral {
+                shape,
+                fields,
+                base,
+                ..
+            } => self.compile_shape_literal(shape, fields, base.as_deref()),
+            Expr::MethodCall {
+                receiver,
+                name,
+                args,
+                ..
+            } => self.compile_method_call(receiver, name, args),
+            Expr::CallValue { callee, args } => {
+                let callee = self.compile_expr(callee);
+                let handles: Vec<LLVMValueRef> =
+                    args.iter().map(|arg| self.compile_expr(arg)).collect();
+                let (argv, argc) = self.argv(&handles);
+                unsafe {
+                    self.invoke(
+                        "etamil_call_value",
+                        vec![self.value(), LLVMPointerType(self.value(), 0), self.value()],
+                        self.value(),
+                        &mut [callee, argv, argc],
+                    )
+                }
+            }
         }
     }
 
@@ -1051,6 +1515,54 @@ impl Compiler {
     /// through the runtime, which dispatches them with the interpreter's own
     /// table. That order is the VM's order.
     fn compile_call(&mut self, name: &str, args: &[Expr]) -> LLVMValueRef {
+        // `கடன்(பதிவு)` — a shape's name called makes a record of that shape
+        // out of a plain one, as a result, through `vm::shape::convert`.
+        if self.shapes.contains_key(name) && !self.functions.contains_key(name) && args.len() == 1 {
+            let record = self.compile_expr(&args[0]);
+            return match self.constant_text(name, "shape") {
+                Some(label) => self.invoke(
+                    "etamil_shape_convert",
+                    vec![self.text(), self.value()],
+                    self.value(),
+                    &mut [label, record],
+                ),
+                None => self.nil(),
+            };
+        }
+
+        // A variable of this name may hold a function value, and if it does
+        // it is what is called — a parameter called by its name. Only the
+        // runtime can see what it holds, so it decides, the way the VM's
+        // `Call` does. The arguments go first, as they do on the VM's stack.
+        if let Some(slot) = self.lookup(name) {
+            let handles: Vec<LLVMValueRef> =
+                args.iter().map(|arg| self.compile_expr(arg)).collect();
+            let label = match self.constant_text(name, "builtin") {
+                Some(label) => label,
+                None => return self.nil(),
+            };
+            let (argv, argc) = self.argv(&handles);
+            return unsafe {
+                let held = LLVMBuildLoad2(
+                    self.builder,
+                    self.value(),
+                    slot,
+                    CString::new("held").unwrap().as_ptr(),
+                );
+                self.invoke(
+                    "etamil_call_named",
+                    vec![
+                        self.value(),
+                        self.text(),
+                        LLVMPointerType(self.value(), 0),
+                        self.value(),
+                    ],
+                    self.value(),
+                    &mut [held, label, argv, argc],
+                )
+            };
+        }
+
         if let Some(function) = self.functions.get(name).copied() {
             let mut handles: Vec<LLVMValueRef> =
                 args.iter().map(|arg| self.compile_expr(arg)).collect();
@@ -1075,57 +1587,8 @@ impl Compiler {
             None => return self.nil(),
         };
 
+        let (first_arg, argc) = self.argv(&handles);
         unsafe {
-            let count = handles.len();
-            let array_type = LLVMArrayType2(self.value(), count.max(1) as u64);
-            let argv = {
-                let here = LLVMGetInsertBlock(self.builder);
-                let entry = LLVMGetEntryBasicBlock(self.function);
-                let first = LLVMGetFirstInstruction(entry);
-                if first.is_null() {
-                    LLVMPositionBuilderAtEnd(self.builder, entry);
-                } else {
-                    LLVMPositionBuilderBefore(self.builder, first);
-                }
-                let argv = LLVMBuildAlloca(
-                    self.builder,
-                    array_type,
-                    CString::new("argv").unwrap().as_ptr(),
-                );
-                LLVMPositionBuilderAtEnd(self.builder, here);
-                argv
-            };
-
-            for (position, handle) in handles.iter().enumerate() {
-                let mut indices = [
-                    LLVMConstInt(self.word(), 0, 0),
-                    LLVMConstInt(self.word(), position as u64, 0),
-                ];
-                let slot = LLVMBuildGEP2(
-                    self.builder,
-                    array_type,
-                    argv,
-                    indices.as_mut_ptr(),
-                    2,
-                    CString::new("arg").unwrap().as_ptr(),
-                );
-                LLVMBuildStore(self.builder, *handle, slot);
-            }
-
-            let mut indices = [
-                LLVMConstInt(self.word(), 0, 0),
-                LLVMConstInt(self.word(), 0, 0),
-            ];
-            let first_arg = LLVMBuildGEP2(
-                self.builder,
-                array_type,
-                argv,
-                indices.as_mut_ptr(),
-                2,
-                CString::new("argv_first").unwrap().as_ptr(),
-            );
-
-            let argc = LLVMConstInt(self.value(), count as u64, 1);
             self.invoke(
                 "etamil_call",
                 vec![self.text(), LLVMPointerType(self.value(), 0), self.value()],
@@ -1271,12 +1734,39 @@ impl Drop for Compiler {
 // explicitly. **Adding an arm there means adding it here**, or the report will
 // claim a refusal the backend no longer makes.
 
+/// Every name the top level binds, at any depth short of a function body.
+#[cfg(feature = "llvm")]
+fn top_level_bindings(statements: &[Stmt], into: &mut Vec<String>) {
+    for statement in statements {
+        into.extend(
+            crate::parser::bound_names(statement)
+                .into_iter()
+                .map(str::to_string),
+        );
+        match statement {
+            Stmt::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                top_level_bindings(then_branch, into);
+                if let Some(otherwise) = else_branch {
+                    top_level_bindings(otherwise, into);
+                }
+            }
+            Stmt::Loop { body, .. } | Stmt::ForEach { body, .. } => top_level_bindings(body, into),
+            _ => {}
+        }
+    }
+}
+
 /// Does the LLVM backend build this kind of statement?
 pub fn builds(statement: &Stmt) -> bool {
     matches!(
         statement,
         Stmt::Assign { .. }
             | Stmt::FunctionDef { .. }
+            | Stmt::ShapeDef { .. }
             | Stmt::Return(_)
             | Stmt::Print(_)
             | Stmt::Input(_)
@@ -1353,6 +1843,11 @@ fn collect(statements: &[Stmt], found: &mut Vec<&'static str>) {
             Stmt::FunctionDef { body, .. }
             | Stmt::Loop { body, .. }
             | Stmt::ForEach { body, .. } => collect(body, found),
+            Stmt::ShapeDef { methods, .. } => {
+                for method in methods {
+                    collect(&method.body, found);
+                }
+            }
             Stmt::If {
                 then_branch,
                 else_branch,

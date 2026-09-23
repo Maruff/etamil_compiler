@@ -28,6 +28,11 @@ pub mod parser;
 
 // --- Everything below needs an OS ---
 
+// The standard library, compiled into the binary. Deliberately not gated to
+// native: it is plain text with no filesystem access, and wasm is the target
+// that needs it most — a browser has no directory for `இறக்கு` to look in, so
+// the embedded copy is the only way an import can resolve there at all.
+pub mod stdlib;
 // Reads imported files from disk.
 #[cfg(not(target_family = "wasm"))]
 pub mod module;

@@ -1,15 +1,35 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Copyright (C) 2026 Mohammed Maruff (Esan Maruff) <esan@etamil.in>
 // Bytecode compiler: Converts AST to bytecode instructions
-use crate::parser::{Expr, Stmt};
+use crate::parser::{Expr, Param, Stmt};
 use crate::vm::Value;
-use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction};
+use crate::vm::bytecode::{Bytecode, FunctionInfo, Instruction, LambdaSource};
 use rust_decimal::Decimal;
+use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Numbers every anonymous செயல் this process compiles, across compilations.
+///
+/// Per-compilation numbering would reuse `#செயல்_0` in every program, and the
+/// REPL compiles each line as a new program over a VM that keeps its variables:
+/// a function value made on one line would then name a *different* body on the
+/// next. A name that is never reused can at worst name nothing, which the VM
+/// reports, rather than name the wrong thing, which it could not.
+static NEXT_LAMBDA: AtomicUsize = AtomicUsize::new(0);
 
 pub struct BytecodeCompiler {
     bytecode: Bytecode,
     /// Makes each ஒவ்வொரு loop's hidden variables unique.
     loop_id: usize,
+    /// The locals of the function being compiled, as far as it has got:
+    /// parameters, captures, and every name bound so far. `None` at the top
+    /// level, where a name is a global and a செயல் reads it live rather than
+    /// capturing it. This is what an anonymous செயல் captures from, and the
+    /// LLVM backend keeps the same set, in the same order, for the same use.
+    locals: Option<HashSet<String>>,
+    /// The program's வடிவம்s, known before anything is compiled, because a
+    /// shape may be used above the line that declares it.
+    shapes: HashSet<String>,
     /// False when the program defines its own `இணை`, in which case the
     /// in-place append below would call something the author replaced.
     append_in_place: bool,
@@ -26,6 +46,8 @@ impl BytecodeCompiler {
         BytecodeCompiler {
             bytecode: Bytecode::new(),
             loop_id: 0,
+            locals: None,
+            shapes: HashSet::new(),
             append_in_place: true,
         }
     }
@@ -54,16 +76,31 @@ impl BytecodeCompiler {
                         .as_ref()
                         .is_some_and(|stmts| Self::defines_own_append(stmts))
             }
-            Stmt::Loop { body, .. } | Stmt::ForEach { body, .. } => {
-                Self::defines_own_append(body)
-            }
+            Stmt::Loop { body, .. } | Stmt::ForEach { body, .. } => Self::defines_own_append(body),
             _ => false,
         })
     }
 
     pub fn compile_statements(statements: Vec<Stmt>) -> Bytecode {
+        Self::compile_with_lambdas(statements, &[])
+    }
+
+    /// Compile a program that must also hold these anonymous செயல்s, under
+    /// the names they were first compiled with — the REPL's case, where a
+    /// function value made on an earlier line is still held in a variable.
+    pub fn compile_with_lambdas(statements: Vec<Stmt>, carried: &[LambdaSource]) -> Bytecode {
         let mut compiler = BytecodeCompiler::new();
         compiler.append_in_place = !Self::defines_own_append(&statements);
+        compiler.bytecode.shapes = crate::vm::shape::from_program(&statements);
+        compiler.shapes = compiler.bytecode.shapes.keys().cloned().collect();
+        for lambda in carried {
+            compiler.compile_function(
+                lambda.name.clone(),
+                lambda.captures.clone(),
+                lambda.params.clone(),
+                lambda.body.clone(),
+            );
+        }
         for stmt in statements {
             compiler.compile_stmt(stmt);
         }
@@ -72,24 +109,74 @@ impl BytecodeCompiler {
     }
 
     fn compile_stmt(&mut self, stmt: Stmt) {
+        // What this statement binds becomes a local once it has run, which is
+        // when a செயல் written after it can capture it.
+        let bound: Vec<String> = crate::parser::bound_names(&stmt)
+            .into_iter()
+            .map(str::to_string)
+            .collect();
+        self.compile_stmt_inner(stmt);
+        self.note_locals(bound);
+    }
+
+    fn note_locals(&mut self, names: impl IntoIterator<Item = String>) {
+        if let Some(locals) = self.locals.as_mut() {
+            locals.extend(names);
+        }
+    }
+
+    /// A function body, emitted inline and jumped over.
+    ///
+    /// `captures` are bound before `params` when it is called, from the values
+    /// the function value carries.
+    fn compile_function(
+        &mut self,
+        name: String,
+        captures: Vec<String>,
+        params: Vec<Param>,
+        body: Vec<Stmt>,
+    ) {
+        let params: Vec<String> = params.into_iter().map(|param| param.name).collect();
+
+        let jump_idx = self.bytecode.len();
+        self.bytecode.push(Instruction::Jump(0)); // patched below
+
+        let own: HashSet<String> = captures.iter().chain(params.iter()).cloned().collect();
+        let outer_locals = self.locals.replace(own);
+
+        let start = self.bytecode.len();
+        for stmt in body {
+            self.compile_stmt(stmt);
+        }
+        // Falling off the end returns nil.
+        self.bytecode.push(Instruction::Push(Value::Null));
+        self.bytecode.push(Instruction::Return);
+
+        self.locals = outer_locals;
+
+        let end = self.bytecode.len();
+        self.bytecode.instructions[jump_idx] = Instruction::Jump(end);
+        self.bytecode.functions.insert(
+            name,
+            FunctionInfo {
+                start,
+                params,
+                captures,
+            },
+        );
+    }
+
+    fn compile_stmt_inner(&mut self, stmt: Stmt) {
         match stmt {
-            // The declared type is the checker's business, not the VM's: by
-            // the time bytecode is emitted the program has already been
-            // accepted, so there is nothing left to enforce here.
-            Stmt::Assign {
-                name,
-                value,
-                declared: _,
-                at: _,
-            } => {
+            // The declared type and நிலை are the checker's business, not the
+            // VM's: by the time bytecode is emitted the program has already
+            // been accepted, so there is nothing left to enforce here.
+            Stmt::Assign { name, value, .. } => {
                 // `x = இணை(x, v)` appends to x in place. Anything else —
                 // a different destination, a longer expression around the
                 // call, an author's own இணை — takes the copying path.
                 if self.append_in_place
-                    && let Expr::Call {
-                        name: called,
-                        args,
-                    } = &value
+                    && let Expr::Call { name: called, args } = &value
                     && Self::APPEND.contains(&called.as_str())
                     && args.len() == 2
                     && matches!(&args[0], Expr::Variable(source) if *source == name)
@@ -103,29 +190,20 @@ impl BytecodeCompiler {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::StoreVar(name));
             }
+            // The VM binds parameters by name; the declared types are the
+            // checker's business and are already enforced by now. A named
+            // செயல் captures nothing: it reads globals live, as it always has.
             Stmt::FunctionDef {
                 name, params, body, ..
-            } => {
-                // The VM binds parameters by name; the declared types are
-                // the checker's business and are already enforced by now.
-                let params: Vec<String> = params.into_iter().map(|param| param.name).collect();
-                // The body is emitted inline, so execution has to jump over it.
-                let jump_idx = self.bytecode.len();
-                self.bytecode.push(Instruction::Jump(0)); // patched below
-
-                let start = self.bytecode.len();
-                for stmt in body {
-                    self.compile_stmt(stmt);
+            } => self.compile_function(name, Vec::new(), params, body),
+            // The shape itself was registered before compiling began. Its
+            // methods are functions named `வடிவம்.முறை`, இது first when they
+            // take one.
+            Stmt::ShapeDef { name, methods, .. } => {
+                for method in methods {
+                    let function = crate::vm::shape::method_function(&name, &method.name);
+                    self.compile_function(function, Vec::new(), method.params, method.body);
                 }
-                // Falling off the end returns nil.
-                self.bytecode.push(Instruction::Push(Value::Null));
-                self.bytecode.push(Instruction::Return);
-
-                let end = self.bytecode.len();
-                self.bytecode.instructions[jump_idx] = Instruction::Jump(end);
-                self.bytecode
-                    .functions
-                    .insert(name, FunctionInfo { start, params });
             }
             Stmt::Return(value) => {
                 match value {
@@ -139,12 +217,16 @@ impl BytecodeCompiler {
                 self.compile_expr(expr);
                 self.bytecode.push(Instruction::Pop);
             }
-            Stmt::SetIndex { name, index, value } => {
+            Stmt::SetIndex {
+                name, index, value, ..
+            } => {
                 self.compile_expr(index);
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::SetIndex(name));
             }
-            Stmt::SetField { name, field, value } => {
+            Stmt::SetField {
+                name, field, value, ..
+            } => {
                 self.compile_expr(value);
                 self.bytecode.push(Instruction::SetField(name, field));
             }
@@ -240,6 +322,9 @@ impl BytecodeCompiler {
                 let index = format!("#each_i_{}", id);
 
                 self.compile_expr(collection);
+                // Bound before the body runs, so a செயல் in the body can
+                // capture the item it was made for.
+                self.note_locals([var.clone()]);
                 self.bytecode.push(Instruction::StoreVar(items.clone()));
                 self.bytecode
                     .push(Instruction::Push(Value::Number(Decimal::ZERO)));
@@ -528,7 +613,7 @@ impl BytecodeCompiler {
                 self.compile_expr(*index);
                 self.bytecode.push(Instruction::Index);
             }
-            Expr::Field { base, name } => {
+            Expr::Field { base, name, .. } => {
                 self.compile_expr(*base);
                 self.bytecode.push(Instruction::Field(name));
             }
@@ -540,6 +625,83 @@ impl BytecodeCompiler {
                 self.compile_expr(*left);
                 self.compile_expr(*right);
                 self.bytecode.push(Instruction::Concat);
+            }
+            Expr::Lambda { params, body, .. } => {
+                let captures = match &self.locals {
+                    Some(locals) => {
+                        crate::parser::captures(&params, &body, |name| locals.contains(name))
+                    }
+                    None => Vec::new(),
+                };
+                let name = format!("#செயல்_{}", NEXT_LAMBDA.fetch_add(1, Ordering::Relaxed));
+                self.bytecode.lambdas.push(LambdaSource {
+                    name: name.clone(),
+                    captures: captures.clone(),
+                    params: params.clone(),
+                    body: body.clone(),
+                });
+                self.compile_function(name.clone(), captures.clone(), params, body);
+                self.bytecode
+                    .push(Instruction::MakeFunction(name, captures));
+            }
+            // `கடன்.புதிது(…)` names the shape: its function, called directly.
+            // Anything else is a record whose method is found when it runs.
+            Expr::MethodCall {
+                receiver,
+                name,
+                args,
+                ..
+            } => {
+                let argc = args.len();
+                let associated = match receiver.as_ref() {
+                    Expr::Variable(shape) if self.shapes.contains(shape) => Some(shape.clone()),
+                    _ => None,
+                };
+                match associated {
+                    Some(shape) => {
+                        for arg in args {
+                            self.compile_expr(arg);
+                        }
+                        let function = crate::vm::shape::method_function(&shape, &name);
+                        self.bytecode.push(Instruction::Call(function, argc));
+                    }
+                    None => {
+                        self.compile_expr(*receiver);
+                        for arg in args {
+                            self.compile_expr(arg);
+                        }
+                        self.bytecode.push(Instruction::CallMethod(name, argc));
+                    }
+                }
+            }
+            Expr::ShapeLiteral {
+                shape,
+                fields,
+                base,
+                ..
+            } => {
+                let with_base = base.is_some();
+                if let Some(base) = base {
+                    self.compile_expr(*base);
+                }
+                let mut keys = Vec::with_capacity(fields.len());
+                for (key, value) in fields {
+                    keys.push(key);
+                    self.compile_expr(value);
+                }
+                self.bytecode.push(Instruction::MakeShaped {
+                    shape,
+                    keys,
+                    with_base,
+                });
+            }
+            Expr::CallValue { callee, args } => {
+                let argc = args.len();
+                self.compile_expr(*callee);
+                for arg in args {
+                    self.compile_expr(arg);
+                }
+                self.bytecode.push(Instruction::CallValue(argc));
             }
         }
     }

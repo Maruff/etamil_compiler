@@ -11,7 +11,9 @@ use std::collections::HashMap;
 #[cfg(not(target_family = "wasm"))]
 use std::fs;
 // Only reached from package_copy, which a wasm build gates out.
+use crate::vm::bytecode::FunctionInfo;
 use crate::vm::host;
+use crate::vm::value::FunctionValue;
 use crate::vm::{Bytecode, Instruction, Value};
 use rust_decimal::Decimal;
 #[cfg(not(target_family = "wasm"))]
@@ -248,6 +250,98 @@ impl VM {
         self.variables.get(name).cloned()
     }
 
+    /// Look at a name's value without copying it.
+    fn peek_var(&self, name: &str) -> Option<&Value> {
+        if let Some(frame) = self.frames.last()
+            && let Some(value) = frame.locals.get(name)
+        {
+            return Some(value);
+        }
+        self.variables.get(name)
+    }
+
+    /// The last `count` values on the stack, in the order they were pushed.
+    fn pop_args(&mut self, count: usize) -> Result<Vec<Value>, String> {
+        if self.stack.len() < count {
+            return Err("Stack underflow".to_string());
+        }
+        Ok(self.stack.split_off(self.stack.len() - count))
+    }
+
+    /// Enter a function's body: bind its captures and parameters in a new
+    /// frame and move to its first instruction.
+    fn enter(
+        &mut self,
+        info: &FunctionInfo,
+        name: &str,
+        captured: Vec<Value>,
+        args: Vec<Value>,
+    ) -> Result<(), String> {
+        if info.params.len() != args.len() {
+            let shown = FunctionValue::shown(name);
+            return Err(format!(
+                "செயல் {} {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
+                 (function {} expects {} argument(s), got {})",
+                shown,
+                info.params.len(),
+                args.len(),
+                shown,
+                info.params.len(),
+                args.len()
+            ));
+        }
+        if self.frames.len() >= MAX_CALL_DEPTH {
+            return Err(format!(
+                "செயல் அழைப்பு ஆழம் மிகுதி ({})  (call depth exceeded — infinite recursion?)",
+                MAX_CALL_DEPTH
+            ));
+        }
+
+        let mut locals = HashMap::with_capacity(info.captures.len() + info.params.len());
+        let mut carried = captured.into_iter();
+        for capture in &info.captures {
+            locals.insert(capture.clone(), carried.next().unwrap_or(Value::Null));
+        }
+        for (param, value) in info.params.iter().zip(args) {
+            locals.insert(param.clone(), value);
+        }
+
+        self.frames.push(Frame {
+            return_ip: self.instruction_pointer + 1,
+            locals,
+            base_len: self.stack.len(),
+        });
+        self.instruction_pointer = info.start;
+        Ok(())
+    }
+
+    /// Call a function value.
+    ///
+    /// Answers true when a body was entered — a frame pushed and the
+    /// instruction pointer moved — and false for a builtin, whose answer has
+    /// already been pushed.
+    fn call_function(
+        &mut self,
+        bytecode: &Bytecode,
+        function: FunctionValue,
+        args: Vec<Value>,
+    ) -> Result<bool, String> {
+        if let Some(info) = bytecode.functions.get(function.name.as_str()) {
+            self.enter(info, &function.name, function.captured, args)?;
+            return Ok(true);
+        }
+        if crate::vm::is_builtin(&function.name) {
+            let answer = self.invoke_builtin(&function.name, args)?;
+            self.stack.push(answer);
+            return Ok(false);
+        }
+        Err(format!(
+            "அறியப்படாத செயல் {}  (unknown function {})",
+            FunctionValue::shown(&function.name),
+            FunctionValue::shown(&function.name)
+        ))
+    }
+
     /// Write a name. Inside a function this always creates or updates a
     /// local, so a function cannot silently clobber a global — assigning to
     /// an outer name shadows it for the duration of the call.
@@ -276,8 +370,9 @@ impl VM {
             .ok_or_else(|| "Stack underflow".to_string())
     }
 
-    /// Human-readable type name, for error messages.
-    fn type_name(value: &Value) -> &'static str {
+    /// Human-readable type name, for error messages. Public so the LLVM
+    /// backend's runtime words the same failure the same way.
+    pub fn type_name(value: &Value) -> &'static str {
         match value {
             Value::Number(_) => "a number",
             Value::String(_) => "a string",
@@ -286,6 +381,7 @@ impl VM {
             Value::Map(_) => "a record",
             Value::Ok(_) => "a result",
             Value::Err(_) => "a result",
+            Value::Function(_) => "a function",
             Value::Null => "nil",
         }
     }
@@ -373,11 +469,15 @@ impl VM {
     /// `name` is only for the message. The VM has it from the instruction and
     /// the backend passes it in, so both say the same thing when the base turns
     /// out to be something that cannot be indexed at all.
+    ///
+    /// A record made as a வடிவம் takes only the fields its shape has, which
+    /// is why the shapes come too.
     pub fn index_assign(
         base: &mut Value,
         index: &Value,
         value: Value,
         name: &str,
+        shapes: &crate::vm::shape::Shapes,
     ) -> Result<(), String> {
         match base {
             Value::Array(items) => {
@@ -386,7 +486,9 @@ impl VM {
                 Ok(())
             }
             Value::Map(fields) => {
-                fields.insert(index.to_string(), value);
+                let key = index.to_string();
+                crate::vm::shape::check_set(shapes, fields, &key, &value)?;
+                fields.insert(key, value);
                 Ok(())
             }
             other => Err(format!(
@@ -514,6 +616,12 @@ impl VM {
             // வகை — the type of a value, as a string
             "வகை" | "vakY" | "_typeof" => {
                 Self::expect_args(name, &args, 1)?;
+                // A shaped record is the shape it was made as.
+                if let Value::Map(record) = &args[0]
+                    && let Some(shape) = &record.shape
+                {
+                    return Ok(Value::String(shape.clone()));
+                }
                 Ok(Value::String(Self::type_name(&args[0]).to_string()))
             }
             // --- Results, following Rust ---
@@ -814,7 +922,7 @@ impl VM {
                         answer.insert("நிலை".to_string(), Value::Number(Decimal::from(code)));
                         answer.insert("வெளியீடு".to_string(), Value::String(out));
                         answer.insert("பிழை".to_string(), Value::String(err));
-                        Ok(Value::Ok(Box::new(Value::Map(answer))))
+                        Ok(Value::Ok(Box::new(Value::Map(answer.into()))))
                     }
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                 }
@@ -896,7 +1004,7 @@ impl VM {
                         let mut described = HashMap::new();
                         described.insert("kid".to_string(), Value::String(kid));
                         described.insert("alg".to_string(), Value::String(algorithm));
-                        Ok(Value::Ok(Box::new(Value::Map(described))))
+                        Ok(Value::Ok(Box::new(Value::Map(described.into()))))
                     }
                     Err(why) => Ok(Value::Err(Box::new(Value::String(why)))),
                 }
@@ -962,7 +1070,7 @@ impl VM {
                 let mut pair = HashMap::new();
                 pair.insert("தனி".to_string(), Value::String(private));
                 pair.insert("பொது".to_string(), Value::String(public));
-                Ok(Value::Map(pair))
+                Ok(Value::Map(pair.into()))
             }
             // வளைவு_பொதுச்சாவி(தனிச்சாவி) — the public half of a private key
             "வளைவு_பொதுச்சாவி" | "vaLYvu_poquccAvi" | "_publicKey" => {
@@ -1579,7 +1687,7 @@ impl VM {
                             .collect(),
                     ),
                 );
-                Value::Ok(Box::new(Value::Map(record)))
+                Value::Ok(Box::new(Value::Map(record.into())))
             }
             Err(message) => Value::Err(Box::new(Value::String(message))),
         }
@@ -1985,12 +2093,28 @@ impl VM {
                     // An unknown name used to silently load Null, which
                     // to_number() then turned into 0.0 — a typo became a
                     // wrong answer with no diagnostic.
-                    let value = self.get_var(&name).ok_or_else(|| {
-                        format!(
-                            "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
-                            name, name
-                        )
-                    })?;
+                    //
+                    // A name that is no variable but is a function — the
+                    // program's own, or a builtin — is that function as a
+                    // value: `ச = இரட்டி;`. A variable of the same name wins,
+                    // as it does in a call.
+                    let value = match self.get_var(name) {
+                        Some(value) => value,
+                        None if bytecode.functions.contains_key(name.as_str())
+                            || crate::vm::is_builtin(name) =>
+                        {
+                            Value::Function(Box::new(FunctionValue {
+                                name: name.clone(),
+                                captured: Vec::new(),
+                            }))
+                        }
+                        None => {
+                            return Err(format!(
+                                "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
+                                name, name
+                            ));
+                        }
+                    };
                     self.stack.push(value);
                 }
                 Instruction::Add => {
@@ -2193,7 +2317,7 @@ impl VM {
                         let value = self.pop()?;
                         fields.insert(key.clone(), value);
                     }
-                    self.stack.push(Value::Map(fields));
+                    self.stack.push(Value::Map(fields.into()));
                 }
                 Instruction::Index => {
                     let index = self.pop()?;
@@ -2225,18 +2349,18 @@ impl VM {
                 Instruction::SetIndex(name) => {
                     let value = self.pop()?;
                     let index = self.pop()?;
-                    let mut base = self.get_var(&name).ok_or_else(|| {
+                    let mut base = self.get_var(name).ok_or_else(|| {
                         format!(
                             "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
                             name, name
                         )
                     })?;
-                    Self::index_assign(&mut base, &index, value, &name)?;
+                    Self::index_assign(&mut base, &index, value, name, &bytecode.shapes)?;
                     self.set_var(name, base);
                 }
                 Instruction::SetField(name, field) => {
                     let value = self.pop()?;
-                    let mut base = self.get_var(&name).ok_or_else(|| {
+                    let mut base = self.get_var(name).ok_or_else(|| {
                         format!(
                             "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
                             name, name
@@ -2244,6 +2368,7 @@ impl VM {
                     })?;
                     match &mut base {
                         Value::Map(fields) => {
+                            crate::vm::shape::check_set(&bytecode.shapes, fields, field, &value)?;
                             fields.insert(field.clone(), value);
                         }
                         other => {
@@ -2270,6 +2395,32 @@ impl VM {
                     self.stack.push(value);
                 }
                 Instruction::Call(name, argc) => {
+                    // A variable holding a function value is called first, so
+                    // a parameter can be called by its name. Any other value
+                    // under that name leaves the call to the function of that
+                    // name, which is what the call always meant before.
+                    if let Some(Value::Function(function)) = self.peek_var(name) {
+                        let function = (**function).clone();
+                        let args = self.pop_args(*argc)?;
+                        if !self.call_function(&bytecode, function, args)? {
+                            self.instruction_pointer += 1;
+                        }
+                        continue;
+                    }
+
+                    // `கடன்(பதிவு)` — a shape's name called makes a record of
+                    // that shape out of a plain one, as a result.
+                    if !bytecode.functions.contains_key(name.as_str())
+                        && bytecode.shapes.contains_key(name.as_str())
+                        && *argc == 1
+                    {
+                        let record = self.pop()?;
+                        let made = crate::vm::shape::convert(&bytecode.shapes, name, record)?;
+                        self.stack.push(made);
+                        self.instruction_pointer += 1;
+                        continue;
+                    }
+
                     // User-defined functions shadow builtins.
                     if !bytecode.functions.contains_key(name.as_str()) {
                         let result = self.call_builtin(name, *argc)?;
@@ -2283,39 +2434,75 @@ impl VM {
                     let info = bytecode.functions.get(name.as_str()).ok_or_else(|| {
                         format!("அறியப்படாத செயல் '{}'  (unknown function '{}')", name, name)
                     })?;
-                    if info.params.len() != *argc {
-                        return Err(format!(
-                            "செயல் '{}' {} அளவுருக்களை எதிர்பார்க்கிறது, {} வழங்கப்பட்டது  \
-                             (function '{}' expects {} argument(s), got {})",
-                            name,
-                            info.params.len(),
-                            argc,
-                            name,
-                            info.params.len(),
-                            argc
-                        ));
-                    }
-                    if self.frames.len() >= MAX_CALL_DEPTH {
-                        return Err(format!(
-                            "செயல் அழைப்பு ஆழம் மிகுதி ({})  (call depth exceeded — infinite recursion?)",
-                            MAX_CALL_DEPTH
-                        ));
-                    }
-
-                    // Arguments were pushed left to right, so bind in reverse.
-                    let mut locals = HashMap::with_capacity(info.params.len());
-                    for param in info.params.iter().rev() {
-                        let value = self.pop()?;
-                        locals.insert(param.clone(), value);
-                    }
-
-                    self.frames.push(Frame {
-                        return_ip: self.instruction_pointer + 1,
-                        locals,
-                        base_len: self.stack.len(),
-                    });
-                    self.instruction_pointer = info.start;
+                    let args = self.pop_args(*argc)?;
+                    self.enter(info, name, Vec::new(), args)?;
                     continue;
+                }
+                Instruction::CallValue(argc) => {
+                    let args = self.pop_args(*argc)?;
+                    let callee = self.pop()?;
+                    let function = match callee {
+                        Value::Function(function) => *function,
+                        other => {
+                            return Err(format!(
+                                "இது ஒரு செயல் அல்ல  (this is not a function: it is {})",
+                                Self::type_name(&other)
+                            ));
+                        }
+                    };
+                    if !self.call_function(&bytecode, function, args)? {
+                        self.instruction_pointer += 1;
+                    }
+                    continue;
+                }
+                Instruction::CallMethod(name, argc) => {
+                    let mut args = self.pop_args(*argc)?;
+                    let receiver = self.pop()?;
+                    let function =
+                        match crate::vm::shape::method_target(&bytecode.shapes, &receiver, name)? {
+                            crate::vm::shape::Target::Method(function) => {
+                                // The record is the method's இது: its first argument.
+                                args.insert(0, receiver);
+                                FunctionValue {
+                                    name: function,
+                                    captured: Vec::new(),
+                                }
+                            }
+                            crate::vm::shape::Target::Held(function) => function,
+                        };
+                    if !self.call_function(&bytecode, function, args)? {
+                        self.instruction_pointer += 1;
+                    }
+                    continue;
+                }
+                Instruction::MakeShaped {
+                    shape,
+                    keys,
+                    with_base,
+                } => {
+                    let values = self.pop_args(keys.len())?;
+                    let base = if *with_base { Some(self.pop()?) } else { None };
+                    let given = keys.iter().cloned().zip(values).collect();
+                    let record = crate::vm::shape::build(&bytecode.shapes, shape, given, base)?;
+                    self.stack.push(record);
+                }
+                Instruction::MakeFunction(name, captures) => {
+                    // A local that has not been bound yet is carried as
+                    // இன்மை, as the compiled program's zeroed slot is.
+                    let captured = captures
+                        .iter()
+                        .map(|capture| {
+                            self.frames
+                                .last()
+                                .and_then(|frame| frame.locals.get(capture.as_str()))
+                                .cloned()
+                                .unwrap_or(Value::Null)
+                        })
+                        .collect();
+                    self.stack.push(Value::Function(Box::new(FunctionValue {
+                        name: name.clone(),
+                        captured,
+                    })));
                 }
                 Instruction::Return => {
                     let value = self.pop()?;
@@ -2372,7 +2559,7 @@ impl VM {
                     // the language cannot express: தளம்_வினா names no handle,
                     // so there would be no way to say which one a query meant.
                     // Refusing is the honest answer until it can.
-                    if let Some(already) = self.connections.connection_of(&handle) {
+                    if let Some(already) = self.connections.connection_of(handle) {
                         if already != connection {
                             return Err(format!(
                                 "'{}' ஏற்கனவே '{}' உடன் இணைக்கப்பட்டுள்ளது  \
@@ -2390,7 +2577,7 @@ impl VM {
                     // Borrowed rather than opened: under --server every request
                     // runs on a fresh VM, so this statement is reached once per
                     // request and used to mean a new connection each time.
-                    let lease = crate::db::pool::checkout(&db_type, &connection)?;
+                    let lease = crate::db::pool::checkout(db_type, &connection)?;
                     self.connections.insert(handle.clone(), connection, lease);
                 }
                 // The operand is a handle, which for an unnamed connection is
@@ -2400,7 +2587,7 @@ impl VM {
                     // it. தளம்_பிரி means "I am done with this", which is what
                     // a program actually wants to say; keeping the socket open
                     // for the next request is the host's business.
-                    match self.connections.remove(&db_type) {
+                    match self.connections.remove(db_type) {
                         Some(lease) => drop(lease),
                         None => {
                             return Err(format!(
@@ -2472,7 +2659,7 @@ impl VM {
                     self.variables
                         .insert("response_body".to_string(), Value::String(body));
                     self.variables
-                        .insert("response_headers".to_string(), Value::Map(headers));
+                        .insert("response_headers".to_string(), Value::Map(headers.into()));
                 }
                 Instruction::DefineRoute(_, _) | Instruction::StartServer(_, _) => {
                     return Err(

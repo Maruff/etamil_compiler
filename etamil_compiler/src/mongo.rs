@@ -68,6 +68,10 @@ pub fn to_bson(value: &Value) -> Bson {
         // as data. Its contents are what was meant.
         Value::Ok(inner) => to_bson(inner),
         Value::Err(inner) => to_bson(inner),
+        // Behaviour, not data: there is nothing in a function to store. Its
+        // rendering goes in, as the SQLite driver does for any value without a
+        // column type, rather than a null that would read back as "absent".
+        Value::Function(_) => Bson::String(value.to_string()),
         Value::Null => Bson::Null,
     }
 }
@@ -106,7 +110,7 @@ pub fn from_bson(value: &Bson) -> Value {
             for (key, held) in document {
                 fields.insert(key.clone(), from_bson(held));
             }
-            Value::Map(fields)
+            Value::Map(fields.into())
         }
         Bson::Null => Value::Null,
         // An ObjectId is the identifier every document has, and its text form

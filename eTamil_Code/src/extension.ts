@@ -45,6 +45,7 @@ import {
   hoverProvider,
   signatureHelpProvider,
 } from './language';
+import { registerScriptMode } from './scriptMode';
 import {
   bundledLibrary,
   carried,
@@ -144,6 +145,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   registerLanguageFeatures(context);
   registerScriptFont(context, output);
+  registerScriptMode(context, output);
   registerDiagnostics(context);
   registerCommands(context);
 }

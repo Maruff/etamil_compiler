@@ -13,11 +13,16 @@
 //! input. Recompiling a `செயல்` costs nothing and registers it again; that is
 //! why definitions are the only statements replayed. Replaying the rest would
 //! run a session's side effects once per line.
+//!
+//! An anonymous `செயல்` is kept the same way, by its compiled name rather than
+//! by its statement: `ச = செயல்(x) { … };` must not run again, but the value it
+//! left in `ச` names a body the next line has to hold.
 
 use std::io::{self, BufRead, Write};
 use std::path::Path;
 
 use crate::parser::Stmt;
+use crate::vm::bytecode::LambdaSource;
 use crate::vm::{BytecodeCompiler, VM};
 
 const BANNER: &str = "eTamil — வணக்கம். :help for help, :quit to leave.";
@@ -42,6 +47,7 @@ pub fn run() -> ! {
     let mut vm = VM::new();
     // Definitions only: see the note at the top of this file.
     let mut definitions: Vec<Stmt> = Vec::new();
+    let mut lambdas: Vec<LambdaSource> = Vec::new();
     let mut pending = String::new();
 
     loop {
@@ -85,7 +91,7 @@ pub fn run() -> ! {
         }
 
         let source = std::mem::take(&mut pending);
-        evaluate(&mut vm, &mut definitions, &source);
+        evaluate(&mut vm, &mut definitions, &mut lambdas, &source);
     }
 }
 
@@ -117,7 +123,12 @@ fn open_braces(source: &str) -> i32 {
 }
 
 /// Compile one input against the session's definitions and run it.
-fn evaluate(vm: &mut VM, definitions: &mut Vec<Stmt>, source: &str) {
+fn evaluate(
+    vm: &mut VM,
+    definitions: &mut Vec<Stmt>,
+    lambdas: &mut Vec<LambdaSource>,
+    source: &str,
+) {
     // load_source rather than the parser directly, so that இறக்கு works: an
     // import is resolved to the statements it brings in.
     let parsed = match crate::module::load_source(source, Path::new(".")) {
@@ -151,7 +162,10 @@ fn evaluate(vm: &mut VM, definitions: &mut Vec<Stmt>, source: &str) {
     let mut program = definitions.clone();
     program.extend(statements);
 
-    let bytecode = BytecodeCompiler::compile_statements(program);
+    let bytecode = BytecodeCompiler::compile_with_lambdas(program, lambdas);
+    // Kept whether or not the line succeeds: one that fails half way may
+    // already have put a function value in a variable.
+    lambdas.extend(bytecode.lambdas.iter().cloned());
 
     // The VM is reused, so it resumes where the last program ended; a new
     // program starts at its own beginning.
@@ -162,9 +176,11 @@ fn evaluate(vm: &mut VM, definitions: &mut Vec<Stmt>, source: &str) {
         return;
     }
 
-    // Remember what this line defined, for the next one.
+    // Remember what this line defined, for the next one. A shape too: the
+    // next line's program is compiled afresh, and a record made as a shape
+    // carries only its name, so the shape has to come along to mean anything.
     for statement in parsed {
-        if matches!(statement, Stmt::FunctionDef { .. }) {
+        if matches!(statement, Stmt::FunctionDef { .. } | Stmt::ShapeDef { .. }) {
             definitions.push(statement);
         }
     }
@@ -194,6 +210,18 @@ fn show_session(vm: &VM, definitions: &[Stmt]) {
 
     if !functions.is_empty() {
         println!("  செயல்: {}", functions.join(", "));
+    }
+
+    let shapes: Vec<&str> = definitions
+        .iter()
+        .filter_map(|statement| match statement {
+            Stmt::ShapeDef { name, .. } => Some(name.as_str()),
+            _ => None,
+        })
+        .collect();
+
+    if !shapes.is_empty() {
+        println!("  வடிவம்: {}", shapes.join(", "));
     }
 }
 

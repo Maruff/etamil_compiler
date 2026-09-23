@@ -1,0 +1,192 @@
+================================================================================
+A database connection names its backend, not a variable
+================================================================================
+
+தளம்_இணை சீகுலைட், "kaNakku.db";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (database_statement
+    backend: (database_backend)
+    connection: (string)))
+
+================================================================================
+A parameterised query
+================================================================================
+
+தளம்_வினா "SELECT peyar FROM pativukaL WHERE vakY = ?", ["வரவு"], நிரைகள்;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (database_statement
+    sql: (string)
+    parameters: (array
+      (string))
+    target: (identifier)))
+
+================================================================================
+A multi-line SQL literal
+================================================================================
+
+தளம்_செய் "CREATE TABLE vari (
+    vakY TEXT,
+    vikiqam REAL
+)", [];
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (database_statement
+    sql: (string)
+    parameters: (array)))
+
+================================================================================
+Opening a file with an explicit mode
+================================================================================
+
+கோப்பு_திற "kOppu.txt", "write";
+கோப்பு_எழுது "kOppu.txt", உள்ளடக்கம்;
+கோப்பு_மூடு "kOppu.txt";
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (file_statement
+    path: (string)
+    mode: (string))
+  (file_statement
+    path: (string)
+    data: (identifier))
+  (file_statement
+    path: (string)))
+
+================================================================================
+Reading a CSV row count
+================================================================================
+
+தரவுரை_படி "qaravu.csv", மொத்தம்;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (csv_statement
+    path: (string)
+    target: (identifier)))
+
+================================================================================
+A JSON response
+================================================================================
+
+ஜேசான்_உரை "{\"message\": \"ok\"}", 200;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (json_response_statement
+    body: (string
+      (escape_sequence)
+      (escape_sequence)
+      (escape_sequence)
+      (escape_sequence))
+    status: (number)))
+
+================================================================================
+An interval block — a background task, not a loop
+================================================================================
+
+இடைவெளி 600 {
+    தளம்_இணை சீகுலைட், "katY.db";
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (every_statement
+    interval: (number)
+    body: (block
+      (database_statement
+        backend: (database_backend)
+        connection: (string)))))
+
+================================================================================
+Results and the try operator
+================================================================================
+
+மதிப்பு_பெறு = எண்ணாக்கு(உரை_மதிப்பு)?;
+(சரியா(முடிவு)) எனில் {
+    அச்சு மதிப்பு(முடிவு);
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (try_expression
+      (call
+        function: (identifier)
+        arguments: (argument_list
+          (identifier)))))
+  (if_statement
+    condition: (call
+      function: (identifier)
+      arguments: (argument_list
+        (identifier)))
+    consequence: (block
+      (print_statement
+        value: (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)))))))
+
+================================================================================
+Logical operators bind looser than comparison
+================================================================================
+
+(வருவாய் > 800000 மற்றும் வயது < 60) எனில் {
+    அச்சு "Taxable";
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (if_statement
+    condition: (logical_expression
+      (comparison_expression
+        left: (identifier)
+        right: (number))
+      (comparison_expression
+        left: (identifier)
+        right: (number)))
+    consequence: (block
+      (print_statement
+        value: (string)))))
+
+================================================================================
+An array of records
+================================================================================
+
+பேரேடு = [{பெயர்: "ravi", தொகை: 1500}, {பெயர்: "kumar", தொகை: 2500}];
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (array
+      (record
+        (pair
+          key: (identifier)
+          value: (string))
+        (pair
+          key: (identifier)
+          value: (number)))
+      (record
+        (pair
+          key: (identifier)
+          value: (string))
+        (pair
+          key: (identifier)
+          value: (number))))))

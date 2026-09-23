@@ -7,11 +7,15 @@
 //! diagnostic `etamil` prints on the command line -- including the bilingual
 //! message text, which comes straight from each error type's `Display`.
 //!
-//! Only `lexer` -> `parser` -> `check` is reachable from here. Running a
-//! program needs `vm`, which reads and writes files and is gated out of a wasm
-//! build; see lib.rs.
+//! Two things are reachable from here: `lexer` -> `parser` -> `check`, for
+//! diagnostics and the symbol queries, and `vm`, for `run` and
+//! `run_with_input`. What the VM cannot do in a browser it refuses explicitly
+//! rather than silently: the modules behind databases, sockets and `உள்ளிடு`
+//! are gated out of a wasm build, so a program that reaches for one gets a
+//! message saying it needs a machine of its own. See lib.rs.
 //!
-//! Both entry points return JSON strings rather than `JsValue`. That keeps the
+//! Every entry point returns a `String` rather than a `JsValue` -- JSON for the
+//! five that carry structure, plain text for `version`. That keeps the
 //! dependency list at `wasm-bindgen` alone -- no `serde-wasm-bindgen`, no
 //! `js-sys` -- and the payloads are small enough that one `JSON.parse` on the
 //! JavaScript side costs nothing measurable.

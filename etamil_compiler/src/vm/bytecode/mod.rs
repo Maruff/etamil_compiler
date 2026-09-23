@@ -107,7 +107,27 @@ pub enum Instruction {
 
     // Functions
     /// Call a named function with this many arguments already on the stack.
+    ///
+    /// A variable of that name holding a function value is called first, so a
+    /// parameter can be called: `செயல் ஒவ்வொன்றுக்கும்(பட்டியல், செ) { … செ(x) … }`.
     Call(String, usize),
+    /// Pop this many arguments, then the value to call, and call it.
+    CallValue(usize),
+    /// Push a function value for this function, carrying the current values of
+    /// the named locals with it. Empty for a named function, which captures
+    /// nothing; a local that does not exist yet is carried as இன்மை.
+    MakeFunction(String, Vec<String>),
+    /// `r.m(args)` — pop this many arguments, then the receiver: call the
+    /// method of its shape, or a function it holds in that field.
+    CallMethod(String, usize),
+    /// `வடிவம்{…}` — pop one value per key, and before them the `..` record
+    /// when there is one; push a record of that shape, or fail if it does not
+    /// fit.
+    MakeShaped {
+        shape: String,
+        keys: Vec<String>,
+        with_base: bool,
+    },
     /// Pop the return value, restore the caller's frame, push the value back.
     Return,
 
@@ -124,6 +144,24 @@ pub enum Instruction {
 pub struct FunctionInfo {
     pub start: usize,
     pub params: Vec<String>,
+    /// Locals of the enclosing function an anonymous செயல் carries with it,
+    /// bound before the parameters. Always empty for a named function.
+    pub captures: Vec<String>,
+}
+
+/// An anonymous செயல் as it was compiled: the hidden name its function values
+/// carry, what it captures, and its source.
+///
+/// Kept because the REPL compiles every line as a new program over a VM that
+/// keeps its variables. A function value made on one line names a body that
+/// line's bytecode held; the next line's program has to hold it too, under the
+/// same name, or calling the value would find nothing.
+#[derive(Debug, Clone)]
+pub struct LambdaSource {
+    pub name: String,
+    pub captures: Vec<String>,
+    pub params: Vec<crate::parser::Param>,
+    pub body: Vec<crate::parser::Stmt>,
 }
 
 /// Complete bytecode program
@@ -134,6 +172,11 @@ pub struct Bytecode {
     /// to its entry point. Resolution happens at call time, so functions may
     /// be defined in any order and may recurse.
     pub functions: std::collections::HashMap<String, FunctionInfo>,
+    /// Every வடிவம் the program declares, for the checks a shaped record
+    /// gets when it is built or changed at runtime.
+    pub shapes: crate::vm::shape::Shapes,
+    /// Every anonymous செயல் this program compiled. See `LambdaSource`.
+    pub lambdas: Vec<LambdaSource>,
 }
 
 impl Default for Bytecode {
@@ -147,6 +190,8 @@ impl Bytecode {
         Bytecode {
             instructions: Vec::new(),
             functions: std::collections::HashMap::new(),
+            shapes: crate::vm::shape::Shapes::new(),
+            lambdas: Vec::new(),
         }
     }
 

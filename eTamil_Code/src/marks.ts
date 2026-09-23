@@ -16,6 +16,12 @@
 //     Rule 1  an identifier containing English ASCII begins with `_`
 //     Rule 2  a comment containing English ASCII is wrapped in `__ … __`
 //
+// Two more things stay in the ISO font without being marked, because they are
+// data rather than language: a string literal, and a name reached through `.`
+// — a field name, or the extension in `paNam.qmz`. Those are view conditions
+// and nothing more. Nothing is added to the file for them, and
+// `scripts/check_script_rules.py` asks nothing of them.
+//
 // **What is returned is the eTamil-script ASCII, not the English.** The editor
 // keeps its ordinary ISO font as the base and paints only these spans in the
 // eTamil face. Painting the other way round would mean that any span this
@@ -47,8 +53,11 @@ const IDENT_PART = /[A-Za-z0-9_஀-௿]/;
  */
 const HEADER = /^(?:SPDX-[A-Za-z-]+:|Copyright\s*\(C\))/;
 
-/** `__ … __` inside a comment. Non-greedy: two marked runs on one line are two. */
-const MARKED = /__.+?__/g;
+/** Rule 2's mark. One opens an English region and the next one closes it. */
+const MARK = '__';
+
+/** What precedes a field name, an extension, a dotted name. */
+const DOT = '.';
 
 /**
  * Every span of ASCII that should be drawn in the eTamil font.
@@ -57,6 +66,7 @@ const MARKED = /__.+?__/g;
  *
  *   - anything inside a string literal, which is data and carries no marks
  *   - an identifier beginning with `_`, in whole
+ *   - a name immediately preceded by `.` — a field name, an extension
  *   - comment text between `__` and `__`
  *   - the licence header
  *   - Unicode Tamil, which both fonts draw as Tamil, so the choice is moot
@@ -68,9 +78,17 @@ export function scanETamilScript(text: string): Span[] {
   // newline. Carrying the state means an unterminated quote does not start
   // painting the rest of the file.
   let inString = false;
+  // So does an English comment. A sentence is longer than a line and an author
+  // writes it as one — `__` on the first line and `__` on the last, which is
+  // the form SCRIPT_RULES.md's own Rule 2 example uses. Scanning each line on
+  // its own left both of those lines holding a single unmatched mark, so
+  // neither counted and every English word between them was painted as Tamil.
+  // That is the failure this module exists to prevent, not a missed span.
+  let inEnglish = false;
 
   lines.forEach((line, lineNumber) => {
     let index = 0;
+    let commented = false;
 
     while (index < line.length) {
       if (inString) {
@@ -94,8 +112,9 @@ export function scanETamilScript(text: string): Span[] {
       }
 
       if (character === '/' && line[index + 1] === '/') {
-        comment(spans, lineNumber, line, index + 2);
-        return;
+        inEnglish = comment(spans, lineNumber, line, index + 2, inEnglish);
+        commented = true;
+        break;
       }
 
       if (IDENT_START.test(character)) {
@@ -106,7 +125,13 @@ export function scanETamilScript(text: string): Span[] {
         // Rule 1: the mark is on the identifier, so the whole of a marked name
         // stays in the ISO font — including `_மொத்த_cgst`, where only part of
         // it is Latin.
-        if (line[index] !== '_') {
+        //
+        // A name reached through `.` stays in the ISO font too, and for the
+        // reason strings do: a field name is data, not a language construct —
+        // parser.rs says so where it reads one. No mark is added to the file
+        // for this and none is required; it decides rendering and nothing
+        // else. `line[-1]` is undefined at the start of a line, not `.`.
+        if (line[index] !== '_' && line[index - 1] !== DOT) {
           latinRuns(spans, lineNumber, line.slice(index, end), index);
         }
         index = end;
@@ -115,33 +140,82 @@ export function scanETamilScript(text: string): Span[] {
 
       index += 1;
     }
+
+    // A block is contiguous `//` lines, so the region ends at the first line
+    // without a comment on it. That keeps one unclosed `__` from making the
+    // remainder of the file English — and were it carried instead, the file
+    // would merely render eTamil as Latin, so the failure stays harmless
+    // either way.
+    if (!commented) {
+      inEnglish = false;
+    }
   });
 
   return spans;
 }
 
-/** The eTamil-script part of one comment, which runs to the end of the line. */
-function comment(spans: Span[], lineNumber: number, line: string, from: number): void {
+/**
+ * The eTamil-script part of one comment, and whether English is still open.
+ *
+ * `inEnglish` comes in as the state the previous comment line left and goes
+ * out as the state this one leaves, so `__` opens a region that survives to
+ * the line carrying the closing mark. A line that opens and closes is the
+ * ordinary single-line case and needs no special handling: the same toggle
+ * covers both.
+ */
+function comment(
+  spans: Span[],
+  lineNumber: number,
+  line: string,
+  from: number,
+  inEnglish: boolean
+): boolean {
   const body = line.slice(from);
+  // Exempt, and deliberately state-neutral: the header sits above everything
+  // and must not open or close a region for the code below it.
   if (HEADER.test(body.trim())) {
-    return;
+    return inEnglish;
   }
 
-  const marked: Array<[number, number]> = [];
-  MARKED.lastIndex = 0;
-  for (let match = MARKED.exec(body); match; match = MARKED.exec(body)) {
-    marked.push([match.index, match.index + match[0].length]);
+  // Where English runs on this line. An open region that this line does not
+  // close reaches the end of it and continues on the next.
+  const english: Array<[number, number]> = [];
+  let inside = inEnglish;
+  let openedAt = inside ? 0 : -1;
+
+  for (let index = 0; index < body.length; ) {
+    if (body.startsWith(MARK, index)) {
+      if (inside) {
+        english.push([openedAt, index + MARK.length]);
+        inside = false;
+      } else {
+        openedAt = index;
+        inside = true;
+      }
+      index += MARK.length;
+      continue;
+    }
+    index += 1;
+  }
+  if (inside) {
+    english.push([openedAt, body.length]);
   }
 
   LATIN.lastIndex = 0;
   for (let match = LATIN.exec(body); match; match = LATIN.exec(body)) {
-    const start = match.index;
-    const end = start + match[0].length;
-    const inside = marked.some(([open, close]) => start >= open && end <= close);
-    if (!inside) {
-      spans.push({ line: lineNumber, start: from + start, end: from + end });
+    const runStart = match.index;
+    const runEnd = runStart + match[0].length;
+    const isEnglish = english.some(([open, close]) => runStart >= open && runEnd <= close);
+    // The same, and in a comment it is what the condition is mostly for: an
+    // extension or a dotted name — `.qmz`, `.gitignore`, `paNam.qmz` — is
+    // English however the words around it are spelled.
+    const afterDot = body[runStart - 1] === DOT;
+    if (!isEnglish && !afterDot) {
+      spans.push({ line: lineNumber, start: from + runStart, end: from + runEnd });
     }
   }
+
+  return inside;
 }
 
 /** The Latin letters inside one unmarked identifier. */

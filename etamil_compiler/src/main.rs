@@ -119,8 +119,7 @@ fn llvm_gaps(loaded: Result<Vec<parser::Stmt>, String>) -> ! {
         std::process::exit(0);
     }
 
-    let mut counts: std::collections::BTreeMap<&str, usize> =
-        std::collections::BTreeMap::new();
+    let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
     for item in &refused {
         *counts.entry(item).or_insert(0) += 1;
     }

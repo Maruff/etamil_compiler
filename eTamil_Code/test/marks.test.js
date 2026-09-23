@@ -102,6 +102,95 @@ describe('comments', { skip: available ? false : 'run npm run build' }, () => {
   });
 });
 
+describe('an English comment across lines', { skip: available ? false : 'run npm run build' }, () => {
+  // `__` opens a region rather than matching a pair on one line. Scanning each
+  // line on its own left the first and last lines of a block each holding one
+  // unmatched mark, so neither counted and every English word between them was
+  // painted as Tamil — the unreadable direction, not a missed span.
+
+  test('the example SCRIPT_RULES.md prints for Rule 2 is English throughout', () => {
+    assert.deepEqual(
+      painted(`// __Rounded to paise once, at the end. Rounding each share as it is
+// computed adds money that was never there.__`),
+      []
+    );
+  });
+
+  test('a block of three lines, Tamil in the middle, is English throughout', () => {
+    assert.deepEqual(
+      painted(`// __viLimpu_nivAraNam runs the whole ladder twice — there is
+// no closed form for it, so kaZakku is done twice and
+// compared.__`),
+      []
+    );
+  });
+
+  test('the region closes, and the comment after it is eTamil again', () => {
+    assert.deepEqual(
+      painted(`// __English here.__
+// kaZakku mudivu`),
+      ['kaZakku', 'mudivu']
+    );
+  });
+
+  test('an unclosed mark ends at the first line with no comment on it', () => {
+    // Otherwise one stray `__` would turn the rest of the file English.
+    assert.deepEqual(
+      painted(`// __opened and never closed
+moqqam = 5;
+// kaZakku mudivu`),
+      ['moqqam', 'kaZakku', 'mudivu']
+    );
+  });
+
+  test('a line that opens and closes is still the ordinary single-line case', () => {
+    assert.deepEqual(painted('// kaZakku __two words__ mudivu'), ['kaZakku', 'mudivu']);
+  });
+
+  test('code above a block is unaffected by what the block opens', () => {
+    assert.deepEqual(
+      painted(`moqqam = 5;
+// __English from here
+// to here.__`),
+      ['moqqam']
+    );
+  });
+});
+
+describe('names reached through a dot', { skip: available ? false : 'run npm run build' }, () => {
+  test('a field name is not painted, but the record it hangs off is', () => {
+    assert.deepEqual(painted('moqqam = cAzRu.varuvAy;'), ['moqqam', 'cAzRu']);
+  });
+
+  test('the whole field name goes, mixed ones included', () => {
+    assert.deepEqual(painted('r.மொத்த_cgst = 0;'), ['r']);
+  });
+
+  test('a chain leaves only the head painted', () => {
+    assert.deepEqual(painted('a.b.c = 1;'), ['a']);
+  });
+
+  test('a field written in ezuqqu is still data, and still ISO', () => {
+    assert.deepEqual(painted('இ.moqqam = 5;'), []);
+  });
+
+  test('an already-marked field name is no different', () => {
+    assert.deepEqual(painted('r._sum = 0;'), ['r']);
+  });
+
+  test('an extension in a comment is English, whatever surrounds it', () => {
+    assert.deepEqual(painted('// kOppu .qmz vakai'), ['kOppu', 'vakai']);
+  });
+
+  test('a dotted name in a comment keeps its stem and drops its extension', () => {
+    assert.deepEqual(painted('// paNam.qmz'), ['paNam']);
+  });
+
+  test('a decimal has no letters to paint either way', () => {
+    assert.deepEqual(painted('vIqam = 18.5;'), ['vIqam']);
+  });
+});
+
 describe('strings', { skip: available ? false : 'run npm run build' }, () => {
   test('a string is data and is never painted', () => {
     assert.deepEqual(painted('அச்சு "Total due";'), []);

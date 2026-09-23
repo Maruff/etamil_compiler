@@ -1359,12 +1359,27 @@ export const KEYWORDS: readonly KeywordEntry[] = [
     "token": "Const",
     "forms": [
       "நிலை",
-      "nilY"
+      "nilY",
+      "_const"
     ],
     "group": "Variables & Data Types",
     "scope": "support.type.domain.etamil",
     "reserved": false,
-    "noSyntax": true,
+    "noSyntax": false,
+    "snippetTamil": null,
+    "snippetLatin": null
+  },
+  {
+    "token": "Shape",
+    "forms": [
+      "வடிவம்",
+      "vativam",
+      "_shape"
+    ],
+    "group": "Variables & Data Types",
+    "scope": "support.type.domain.etamil",
+    "reserved": false,
+    "noSyntax": false,
     "snippetTamil": null,
     "snippetLatin": null
   },

@@ -42,6 +42,45 @@ pub fn load_source(source: &str, base_dir: &Path) -> Result<Vec<Stmt>, String> {
     resolve(statements, base_dir, &mut visited)
 }
 
+/// Where a module's imports resolve from.
+///
+/// A module read from disk resolves its own imports against its directory. One
+/// answered from the built-in library has no directory, so it resolves against
+/// its position in the embedded tree instead — which matters because the
+/// library imports its neighbours relatively (`../kaNiqam.qmz`).
+enum Origin {
+    Disk(PathBuf),
+    Embedded(String),
+}
+
+/// Parse an embedded module and resolve whatever it imports.
+fn load_embedded(virtual_path: &str, visited: &mut HashSet<PathBuf>) -> Result<Vec<Stmt>, String> {
+    let source = crate::stdlib::source(virtual_path).ok_or_else(|| {
+        format!(
+            "உள்ளமைந்த தொகுதி '{}' இல்லை  (no built-in module '{}')",
+            virtual_path, virtual_path
+        )
+    })?;
+
+    // Keyed apart from any real path so a file on disk and the built-in copy
+    // of the same module are never mistaken for one another.
+    let key = PathBuf::from(format!(
+        "<built-in>/{}",
+        crate::stdlib::parent(virtual_path)
+    ))
+    .join(virtual_path);
+    if !visited.insert(key) {
+        return Ok(Vec::new()); // already imported
+    }
+
+    let statements = parse_source(source)?;
+    resolve_from(
+        statements,
+        &Origin::Embedded(crate::stdlib::parent(virtual_path)),
+        visited,
+    )
+}
+
 fn load_inner(path: &Path, visited: &mut HashSet<PathBuf>) -> Result<Vec<Stmt>, String> {
     // Canonicalize so the same file reached by two different paths is still
     // recognised as already imported.
@@ -123,22 +162,56 @@ fn resolve(
     base_dir: &Path,
     visited: &mut HashSet<PathBuf>,
 ) -> Result<Vec<Stmt>, String> {
+    resolve_from(statements, &Origin::Disk(base_dir.to_path_buf()), visited)
+}
+
+fn resolve_from(
+    statements: Vec<Stmt>,
+    origin: &Origin,
+    visited: &mut HashSet<PathBuf>,
+) -> Result<Vec<Stmt>, String> {
     let mut out = Vec::new();
     for statement in statements {
         match statement {
             Stmt::Import(relative) => {
-                let found = locate(&relative, base_dir).ok_or_else(|| {
-                    format!(
-                        "தொகுதி '{}' கண்டுபிடிக்க முடியவில்லை  (cannot open module '{}'): \
-                         looked beside the importing file, along ETAMIL_PATH, and next to the compiler",
-                        relative, relative
-                    )
-                })?;
-                let imported = load_inner(&found, visited)?;
+                let imported = match origin {
+                    // On disk, the filesystem is tried first and the built-in
+                    // library last, so a checkout, ETAMIL_PATH or a distribution
+                    // package always overrides the copy inside the binary. That
+                    // ordering is what lets the library be edited without
+                    // rebuilding the compiler.
+                    Origin::Disk(base_dir) => match locate(&relative, base_dir) {
+                        Some(found) => load_inner(&found, visited)?,
+                        None if crate::stdlib::contains(&relative) => {
+                            load_embedded(&relative, visited)?
+                        }
+                        None => return Err(not_found(&relative)),
+                    },
+                    // Inside the built-in library, imports stay inside it. A
+                    // module answered from the binary must not start reading
+                    // the invoking user's working directory.
+                    Origin::Embedded(virtual_dir) => {
+                        let target = crate::stdlib::join(virtual_dir, &relative);
+                        if crate::stdlib::contains(&target) {
+                            load_embedded(&target, visited)?
+                        } else {
+                            return Err(not_found(&relative));
+                        }
+                    }
+                };
                 out.extend(imported);
             }
             other => out.push(other),
         }
     }
     Ok(out)
+}
+
+fn not_found(relative: &str) -> String {
+    format!(
+        "தொகுதி '{}' கண்டுபிடிக்க முடியவில்லை  (cannot open module '{}'): \
+         looked beside the importing file, along ETAMIL_PATH, next to the compiler, \
+         and in the built-in standard library",
+        relative, relative
+    )
 }

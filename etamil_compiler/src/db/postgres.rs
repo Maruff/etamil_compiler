@@ -232,7 +232,7 @@ impl Database for PostgresDatabase {
                     value_from(row, index, column.type_())?,
                 );
             }
-            out.push(Value::Map(record));
+            out.push(Value::Map(record.into()));
         }
 
         Ok(out)

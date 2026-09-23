@@ -119,7 +119,7 @@ impl Database for SqliteDatabase {
                 })?;
                 record.insert(name.clone(), value_from(raw));
             }
-            out.push(Value::Map(record));
+            out.push(Value::Map(record.into()));
         }
 
         Ok(out)

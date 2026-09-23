@@ -54,7 +54,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 
 | Area | Status | Notes |
 |---|---|---|
-| Lexer (Tamil / romanized / English keywords) | ✅ Working | 202 tokens across 541 spellings; errors carry line and column |
+| Lexer (Tamil / romanized / English keywords) | ✅ Working | 203 tokens across 545 spellings; errors carry line and column |
 | Variables, arithmetic, percentages, strings | ✅ Working | |
 | Comparisons, `எனில்` / `இன்றேல்`, `சுற்று` loops | ✅ Working | |
 | Logical `மற்றும்` / `அல்லது` / `இல்லை` | ✅ Working | both sides always evaluated — no short-circuiting |
@@ -62,6 +62,10 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | VM bytecode executor | ✅ Working | |
 | Functions (`செயல்` / `திரும்பு`) | ✅ Working | parameters, returns, local scope, recursion |
 | Arrays (`[…]`) and records (`{…}`) | ✅ Working | indexing, field access, assignment |
+| Fixed bindings (`நிலை`) | ✅ Working | `நிலை எல்லை = 250000;` is bound once: assigning it again, or changing an element or a field of it, is refused before the program runs. Opt-in — a plain assignment is as mutable as ever — and `நிலை` is still an ordinary name wherever it does not begin a binding |
+| Functions as values | ✅ Working | `ச = இரட்டி;`, a `செயல்` passed to another, kept in an array or a record, returned, or written where a value goes: `செயல்(x) { திரும்பு x * 2; }`. One written inside a function carries copies of the locals it uses, as a Rust `move` closure does. A builtin is a value too |
+| Record shapes (`வடிவம்`) | ✅ Working | `வடிவம் கடன் { எண் அசல், எண் வீதம் }` names a kind of record. `கடன்{…}` must give every field and no other, each holding what it was declared to; a mistyped field is refused before the program runs; a value that only exists at runtime is checked when the record is made. `கடன்(பதிவு)` makes a database row into one, as a result |
+| Methods | ✅ Working | a `செயல்` written inside a `வடிவம்`. With `இது` first it is called on a record, `க.தவணை()`, and cannot change it — Rust's `&self`; a change is a new record, `கடன்{அசல்: 1, ..இது}`. Without it, it is called on the shape, `கடன்.புதிது(…)` |
 | Iteration (`ஒவ்வொரு … இல்`) | ✅ Working | arrays, records, strings |
 | Results (`சரி` / `தவறு` / `?`) | ✅ Working | Rust semantics; failure is a value, not an exception |
 | Modules (`இறக்கு`) | ✅ Working | resolves beside the file, then `ETAMIL_PATH` |
@@ -83,7 +87,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | PostgreSQL | ✅ Working | `--features postgres`; money as native `NUMERIC`, so a text column stays text — unlike SQLite, where decimals are stored as text |
 | MySQL / MariaDB | ✅ Live verified | `--features mysql`; the live sample passes with `ETAMIL_TEST_MYSQL=1 ./scripts/run_examples.sh`; setup details are in `TESTING.md` |
 | HTTP server (`--server`) | ✅ Working | worker pool; `வழி` routes with `:id` path parameters, query params, headers and request bodies; `பதில்` responses |
-| LLVM backend (`--llvm`) | 🟡 Expressions complete; I/O statements refused | Linux/macOS, `--features llvm`. Every value in the emitted IR is a handle into an arena in `src/runtime.rs`, and every operation on one is a call into the cdylib Cargo already builds — so decimals are **exact** (`1 / 3` prints all twenty-eight digits, as on the VM), formatting cannot drift from the VM's, and all fifty-nine builtins are reachable at once. Strings, arrays, records, results, booleans and `இன்மை` all have a representation. What is still refused is *statements*: files, databases, HTTP, routes. The IR is therefore not self-contained — it links `-letamil_compiler`. `docs/llvm-backend-gaps.md` explains the design and `scripts/run_parity.sh` measures it against the VM |
+| LLVM backend (`--llvm`) | 🟡 Expressions complete; I/O statements refused | Linux/macOS, `--features llvm`. Every value in the emitted IR is a handle into an arena in `src/runtime.rs`, and every operation on one is a call into the cdylib Cargo already builds — so decimals are **exact** (`1 / 3` prints all twenty-eight digits, as on the VM), formatting cannot drift from the VM's, and all fifty-nine builtins are reachable at once. Strings, arrays, records, results, booleans and `இன்மை` all have a representation, and so do function values, shaped records and methods: each compiled function has an entry the runtime can call through a value, and a shape's checks are `vm::shape`'s, shared with the VM. What is still refused is *statements*: files, databases, HTTP, routes. The IR is therefore not self-contained — it links `-letamil_compiler`. `docs/llvm-backend-gaps.md` explains the design and `scripts/run_parity.sh` measures it against the VM |
 | Response headers | ✅ Working | `பதில் 200, உடல், {"Content-Type": "text/html"}` — an ordinary record; defaults to JSON when omitted |
 | JSON (`nUlakam/jEcAZ.qmz`) | ✅ Working | `ஜேசான்_ஆக்கு` / `ஜேசான்_படி` — **written in eTamil**; `\uXXXX` escapes are not decoded |
 | Scheduled blocks (`இடைவெளி`) | ✅ Working | `இடைவெளி 3600 { … }` under either server; the number is the gap *between* runs, so a slow job runs late rather than twice at once |
@@ -105,7 +109,7 @@ eTamil runs backend programs today: functions, collections, error handling, modu
 | Type checking | ✅ Working | a declared type is enforced, with a position; deliberately narrow — no rule the rest of the language does not follow |
 | Tests in eTamil (`nUlakam/cOqaZY.qmz`) | ✅ Working | assertions, a summary, and a non-zero exit when anything fails, so a suite gates CI. `kaNakkiyal/vari_cOqaZY.qmz` is fifteen of them about GST arithmetic. `வெளியேறு(நிலை)` is what ends the process with a status |
 | Interactive shell (`--repl`) | ✅ Working | variables persist between lines, a செயல் can be typed across several, `இறக்கு` works, and a bare expression is answered rather than refused — `0.1 + 0.2` prints `0.3`. `:vars` shows what the session holds |
-| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 202 keywords in every spelling, completions for 62 builtins and 691 `nUlakam` functions, and errors from `--check` as you type. Carries the compiler, the standard library, the examples and the eTamil font, so installing it is the whole installation. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
+| VS Code extension | ✅ Working | `eTamil_Code/` — highlighting for all 203 keywords in every spelling, completions for 62 builtins and 691 `nUlakam` functions, and errors from `--check` as you type. Carries the compiler, the standard library, the examples and the eTamil font, so installing it is the whole installation. Grammar and completion data are **generated** from `lexer.rs`; CI fails if they drift |
 
 Anything marked "not implemented" **fails with an explicit message** rather than quietly doing nothing. That is deliberate: silent no-ops in a tax calculator are worse than errors.
 
@@ -382,6 +386,83 @@ Input always arrives as text and is converted when compared or used in arithmeti
     i = i + 1;
 }
 ```
+
+### Bindings that do not change
+
+```etamil
+நிலை எண் அடிப்படை_விலக்கு = 300000;
+நிலை அடுக்குகள் = [0, 5%, 20%];
+
+அடிப்படை_விலக்கு = 250000;   // refused: cannot assign twice
+அடுக்குகள்[1] = 10%;          // refused: no part of it changes either
+```
+
+`நிலை` is opt-in and follows Rust's `let`: bound once, for the rest of its
+scope, with no part of the value changed. Values are copied rather than shared,
+so `நகல் = அடுக்குகள்;` is an ordinary variable and changing it cannot reach the
+original. A parameter can be fixed too — `செயல் வரி(நிலை எண் தொகை)`.
+
+### Functions as values
+
+```etamil
+செயல் வடிகட்டு(அணி பட்டியல், செயல் ஏற்பது) அணி {
+    விடை = [];
+    ஒவ்வொரு உருப்படி இல் பட்டியல் {
+        (ஏற்பது(உருப்படி)) எனில் { விடை = இணை(விடை, உருப்படி); }
+    }
+    திரும்பு விடை;
+}
+
+பெரியவை = வடிகட்டு([1200, 450, 3100], செயல்(எ) { திரும்பு எ >= 1000; });
+
+செயல் வரி_விதி(வீதம்) செயல் {
+    திரும்பு செயல்(தொகை) { திரும்பு தொகை * வீதம்; };   // carries வீதம்
+}
+ஜிஎஸ்டி = வரி_விதி(18%);
+அச்சு ஜிஎஸ்டி(5000);                                   // 900
+```
+
+A named `செயல்` is a value by its name, and so is a builtin: `ஒவ்வொன்றுக்கும்(பட்டியல், நீளம்)`.
+One written as a value carries copies of the enclosing function's locals it
+reads, taken when it is made; at the top level it reads globals when it runs,
+as a named one always has.
+
+### Record shapes and methods
+
+```etamil
+வடிவம் கடன் {
+    சொல் பெயர்,
+    எண் அசல்,
+    எண் ஆண்டு_வீதம்,
+
+    செயல் புதிது(பெயர், அசல், ஆண்டு_வீதம்) கடன் {
+        திரும்பு கடன்{பெயர்: பெயர், அசல்: அசல், ஆண்டு_வீதம்: ஆண்டு_வீதம்};
+    }
+    செயல் ஆண்டு_வட்டி(இது) எண் {
+        திரும்பு இது.அசல் * இது.ஆண்டு_வீதம்;
+    }
+    செயல் முன்செலுத்து(இது, எண் தொகை) கடன் {
+        திரும்பு கடன்{அசல்: இது.அசல் - தொகை, ..இது};
+    }
+}
+
+நிலை க = கடன்.புதிது("ராஜா", 500000, 9%);
+அச்சு க.ஆண்டு_வட்டி();                      // 45000
+அச்சு க.முன்செலுத்து(100000).ஆண்டு_வட்டி();  // 36000
+```
+
+A shaped record is checked against its `வடிவம்`: `கடன்{…}` must give every
+field and no other, each holding what it was declared to, and `க.அசால்` is
+refused before the program runs with the fields `கடன்` does have. A value the
+checker cannot see — a number typed in, a field set by a computed key — is
+checked when it arrives. `கடன்(பதிவு)` makes a plain record, such as a
+database row, into a `கடன்`, and answers a `தவறு` when it does not fit.
+
+A method's `இது` is the record it was called on, and it cannot be changed, as
+Rust's `&self` cannot: a method that means to change a record returns a new one,
+`..இது` filling in the fields it does not write. A method without `இது` is
+called on the shape, and one with it can be too, the record first:
+`கடன்.ஆண்டு_வட்டி(க)`. There is no inheritance.
 
 ### Operators
 

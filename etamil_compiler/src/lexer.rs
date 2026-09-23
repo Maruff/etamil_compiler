@@ -134,7 +134,12 @@ pub enum Token {
     #[regex("பொய்|poy|_false")] False,
     #[regex("இன்மை|iZmY|_null")] Null,
     #[regex("மாறி|mARi")] Let,
-    #[regex("நிலை|nilY")] Const,
+    // An immutable binding: `நிலை எல்லை = 250000;`. A keyword only there — see
+    // Parser::starts_fixed_binding — so `நிலை = …` is still an ordinary name.
+    #[regex("நிலை|nilY|_const")] Const,
+    // A record shape: `வடிவம் கடன் { எண் அசல், … }`. Contextual like நிலை —
+    // see Parser::starts_shape — because nUlakam names a parameter வடிவம்.
+    #[regex("வடிவம்|vativam|_shape")] Shape,
 
     // --- Control Flow (Your Updated Syntax) ---
     #[regex("எனில்|eZil|_if")] If,

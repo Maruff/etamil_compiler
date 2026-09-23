@@ -1,3 +1,5 @@
+.claude/
+
 # Rust build artifacts
 etamil_compiler/target/
 scripts/bench/compare/rust/target/
@@ -91,3 +93,16 @@ android/app/src/main/jniLibs/
 # and the staged-artifact mess in the old OneDrive clone started exactly here.
 eTamil_Pygments/build/
 eTamil_Pygments/*.egg-info/
+
+# Staged for `cargo publish` only — see scripts/vendor_for_publish.py.
+# Generated from the originals one directory up on every publish, so it is
+# never committed and can never drift from them.
+etamil_compiler/nUlakam/
+etamil_compiler/LICENSE
+
+# tree-sitter build artifacts. src/parser.c IS committed — consumers build
+# from it without needing the CLI — but the compiled objects are not.
+tree-sitter-etamil/node_modules/
+tree-sitter-etamil/build/
+tree-sitter-etamil/*.wasm
+eTamil_HighlightJS/node_modules/

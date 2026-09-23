@@ -67,7 +67,7 @@ pub struct Position {
 /// There is one numeric type. `எண்` and `பின்னம்` both mean Number, because
 /// every value in the language is already a fixed-point decimal — a separate
 /// integer type would be a second decision, not a consequence of this one.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DeclaredType {
     Number,
     Text,
@@ -75,6 +75,10 @@ pub enum DeclaredType {
     Array,
     Record,
     Date,
+    /// `செயல்` in a type position: a function value, `செயல் மாற்று`.
+    Function,
+    /// A வடிவம் the program declared, by name: `கடன் க = கடன்{…};`.
+    Shape(String),
     /// No constraint: used where a type keyword exists that the checker has
     /// nothing to say about yet.
     Any,
@@ -88,21 +92,65 @@ pub enum DeclaredType {
 pub struct Param {
     pub name: String,
     pub declared: Option<DeclaredType>,
+    /// Declared `நிலை`: the body may read it and never assign to it.
+    pub immutable: bool,
     pub at: Position,
+}
+
+/// One field a வடிவம் declares: `எண் அசல்`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShapeField {
+    pub name: String,
+    pub declared: Option<DeclaredType>,
+    pub at: Position,
+}
+
+/// A செயல் written inside a வடிவம். Its first parameter is the record it was
+/// called on when that parameter is named இது — see `is_self` — and it is an
+/// associated function, called as `கடன்.புதிது(…)`, when it is not.
+#[derive(Debug, Clone)]
+pub struct Method {
+    pub name: String,
+    pub params: Vec<Param>,
+    pub returns: Option<DeclaredType>,
+    pub body: Vec<Stmt>,
+    pub at: Position,
+}
+
+impl Method {
+    /// Is it called on a record, `க.வட்டி(2)`, rather than on the shape?
+    pub fn takes_self(&self) -> bool {
+        self.params
+            .first()
+            .is_some_and(|param| is_self(&param.name))
+    }
+}
+
+/// `இது`, in any of its three spellings: the record a method was called on.
+///
+/// A name rather than a keyword, as Rust's `self` is not: it is only special as
+/// the first parameter of a method, and anywhere else it is a name like any
+/// other. The name of the function a method compiles to — `கடன்.வட்டி` — has a
+/// dot in it, which no source identifier can, so it cannot collide either.
+pub fn is_self(name: &str) -> bool {
+    matches!(name, "இது" | "iqu" | "_self")
 }
 
 impl DeclaredType {
     /// The keyword an author would have written, for error messages.
-    pub fn name(&self) -> &'static str {
-        match self {
+    pub fn name(&self) -> String {
+        let fixed = match self {
             DeclaredType::Number => "எண் (eN, a number)",
             DeclaredType::Text => "சொல் (col, a string)",
             DeclaredType::Boolean => "ஈர்ம (Irma, a boolean)",
             DeclaredType::Array => "அணி (aNi, an array)",
             DeclaredType::Record => "பொருள் (poruL, a record)",
             DeclaredType::Date => "தேதி (qEqi, a date)",
+            DeclaredType::Function => "செயல் (ceyal, a function)",
+            DeclaredType::Shape(shape) => return format!("{} (a வடிவம், shape)", shape),
             DeclaredType::Any => "any type",
-        }
+        };
+        fixed.to_string()
     }
 }
 
@@ -153,9 +201,39 @@ pub enum Expr {
     Field {
         base: Box<Expr>,
         name: String,
+        at: Position,
+    },
+    // r.vatti(2) — a method of r's shape, or a function r holds in a field.
+    // `கடன்.புதிது(…)` with a shape's name for r is an associated function.
+    MethodCall {
+        receiver: Box<Expr>,
+        name: String,
+        args: Vec<Expr>,
+        at: Position,
+    },
+    // கடன்{அசல்: 100000, வீதம்: 9%} — a record made as a declared shape.
+    // `..பழையது` last takes every field not written from another கடன்.
+    ShapeLiteral {
+        shape: String,
+        fields: Vec<(String, Expr)>,
+        base: Option<Box<Expr>>,
+        at: Position,
     },
     // expr? — unwrap a சரி, or return the தவறு to the caller
     Try(Box<Expr>),
+    // செயல்(x) { திரும்பு x * 2; } — a function written where a value goes.
+    // It carries the enclosing function's locals it uses, by value.
+    Lambda {
+        params: Vec<Param>,
+        returns: Option<DeclaredType>,
+        body: Vec<Stmt>,
+        at: Position,
+    },
+    // f(1)(2), விதிகள்[0](தொகை) — call whatever an expression produced
+    CallValue {
+        callee: Box<Expr>,
+        args: Vec<Expr>,
+    },
 }
 
 #[allow(dead_code)]
@@ -168,6 +246,10 @@ pub enum Stmt {
         declared: Option<DeclaredType>,
         /// Where the name was written, for the checker to point at.
         at: Position,
+        /// `நிலை பெயர் = …;` — bound once, never assigned again, and no part
+        /// of it changed. Values are copied rather than shared, so holding
+        /// the name still is enough to hold the whole value still.
+        immutable: bool,
     },
     // ceyal name(params) returns { body }
     FunctionDef {
@@ -180,6 +262,13 @@ pub enum Stmt {
         /// the declared return type has somewhere to point.
         at: Position,
     },
+    // வடிவம் கடன் { எண் அசல், எண் வீதம், செயல் வட்டி(இது) { … } }
+    ShapeDef {
+        name: String,
+        fields: Vec<ShapeField>,
+        methods: Vec<Method>,
+        at: Position,
+    },
     // qirumpu value;
     Return(Option<Expr>),
     // a[i] = value;  — the base must be a plain variable for now
@@ -187,12 +276,14 @@ pub enum Stmt {
         name: String,
         index: Expr,
         value: Expr,
+        at: Position,
     },
     // r.peyar = value;
     SetField {
         name: String,
         field: String,
         value: Expr,
+        at: Position,
     },
     // A bare expression evaluated for its effect, e.g. a call statement.
     Expression(Expr),
@@ -341,6 +432,11 @@ pub struct Parser<'a> {
     /// Where the last consumed token was, so an unexpected end of input can
     /// still be reported somewhere the author recognizes.
     last: (usize, usize),
+    /// True while parsing an expression a `{` block follows — the collection
+    /// of a ஒவ்வொரு, the seconds of an இடைவெளி, the path of a வழி — where
+    /// `பெயர் {` must mean the block, not a shaped literal. Rust has the same
+    /// rule for `for` and `if`, for the same reason. Brackets lift it.
+    restrict: bool,
 }
 
 impl<'a> Parser<'a> {
@@ -348,6 +444,7 @@ impl<'a> Parser<'a> {
         Parser {
             tokens: tokens.peekable(),
             last: (1, 1),
+            restrict: false,
         }
     }
 
@@ -373,6 +470,14 @@ impl<'a> Parser<'a> {
 
     fn peek_token(&mut self) -> Option<&'a Token> {
         self.peek_spanned().map(|spanned| &spanned.token)
+    }
+
+    /// The token after the next one. The iterator is a cheap copy of a slice
+    /// cursor, so looking two ahead costs nothing and consumes nothing.
+    fn peek_after(&self) -> Option<&'a Token> {
+        let mut ahead = self.tokens.clone();
+        ahead.next();
+        ahead.next().map(|spanned| &spanned.token)
     }
 
     fn advance(&mut self) -> Option<&'a Spanned> {
@@ -532,13 +637,190 @@ impl<'a> Parser<'a> {
     // --- Statements --------------------------------------------------------
 
     fn parse_statement(&mut self) -> Result<Stmt, ParseError> {
+        // A statement is never the head of a block, even inside one.
+        self.unrestricted(|parser| parser.parse_statement_inner())
+    }
+
+    /// Run `parse` with shaped literals allowed again, as they are inside any
+    /// bracket, and put the restriction back afterwards.
+    fn unrestricted<T>(
+        &mut self,
+        parse: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        let outer = std::mem::replace(&mut self.restrict, false);
+        let parsed = parse(self);
+        self.restrict = outer;
+        parsed
+    }
+
+    /// An expression a `{` block follows, where `பெயர் {` is the block.
+    fn parse_head(&mut self) -> Result<Expr, ParseError> {
+        let outer = std::mem::replace(&mut self.restrict, true);
+        let parsed = self.parse_expression();
+        self.restrict = outer;
+        parsed
+    }
+
+    /// A type written before a name, if one is: a type keyword, `செயல்`, or
+    /// the name of a வடிவம். A shape's name is an ordinary identifier, so it is
+    /// a type only where a second name follows it — `கடன் க` — which nothing
+    /// else in the language allows.
+    fn parse_type_prefix(&mut self) -> Option<DeclaredType> {
+        match self.peek_token() {
+            Some(token) if Self::is_type_token(token) => {
+                let token = self.advance().expect("peeked");
+                Some(Self::type_of(&token.token))
+            }
+            Some(Token::Function) if self.peek_after().is_some_and(Self::is_plain_name) => {
+                self.advance();
+                Some(DeclaredType::Function)
+            }
+            Some(token)
+                if Self::is_plain_name(token)
+                    && self.peek_after().is_some_and(Self::is_plain_name) =>
+            {
+                let spanned = self.advance().expect("peeked");
+                Some(DeclaredType::Shape(self.name_of(spanned)))
+            }
+            _ => None,
+        }
+    }
+
+    /// A token that can be a name and is not a type keyword.
+    fn is_plain_name(token: &Token) -> bool {
+        Self::is_identifier_like(token) && !Self::is_type_token(token)
+    }
+
+    /// Inside a வடிவம், is `செயல் பெயர்` a field's type and name — followed by
+    /// `,` or `}` — rather than the start of a method?
+    fn function_typed_field(&self) -> bool {
+        let mut ahead = self.tokens.clone();
+        ahead.next();
+        let named = ahead
+            .next()
+            .is_some_and(|spanned| Self::is_plain_name(&spanned.token));
+        named
+            && matches!(
+                ahead.next().map(|spanned| &spanned.token),
+                Some(Token::Comma) | Some(Token::RBrace)
+            )
+    }
+
+    /// Is this `வடிவம் பெயர் {`, rather than வடிவம் used as a name?
+    fn starts_shape(&mut self) -> bool {
+        self.peek_token().is_some_and(Self::is_plain_name)
+            && self.peek_after() == Some(&Token::LBrace)
+    }
+
+    /// The rest of `வடிவம் பெயர் { … }`, the `வடிவம்` already consumed.
+    ///
+    /// Fields and methods may come in any order. A field is `[வகை] பெயர்`,
+    /// separated by commas; a method is a `செயல்` exactly as it would be
+    /// written outside, and needs no separator after its closing brace.
+    fn parse_shape(&mut self) -> Result<Stmt, ParseError> {
+        let spanned = self.take("a shape name")?;
+        let name = self.name_of(spanned);
+        let at = Position {
+            line: spanned.line,
+            column: spanned.column,
+        };
+        self.expect(Token::LBrace)?;
+
+        let mut fields = Vec::new();
+        let mut methods = Vec::new();
+        loop {
+            if self.matches(Token::RBrace) {
+                break;
+            }
+            if self.peek_token().is_none() {
+                return Err(self.at_end("'}'"));
+            }
+
+            // `செயல் பெயர்(` is a method. `செயல் பெயர்,` is a field that holds a
+            // function, which the type prefix below reads.
+            if self.peek_token() == Some(&Token::Function) && !self.function_typed_field() {
+                self.advance();
+                let at = match self.peek_spanned() {
+                    Some(spanned) => Position {
+                        line: spanned.line,
+                        column: spanned.column,
+                    },
+                    None => at,
+                };
+                let name = self.take_name("a method name")?;
+                let (params, returns) = self.parse_signature()?;
+                self.expect(Token::LBrace)?;
+                let body = self.parse_block()?;
+                methods.push(Method {
+                    name,
+                    params,
+                    returns,
+                    body,
+                    at,
+                });
+                continue;
+            }
+
+            let declared = self.parse_type_prefix();
+            let spanned = self.take("a field name")?;
+            if !Self::is_plain_name(&spanned.token) {
+                return Err(self.mismatch(spanned, "a field name"));
+            }
+            fields.push(ShapeField {
+                name: self.name_of(spanned),
+                declared,
+                at: Position {
+                    line: spanned.line,
+                    column: spanned.column,
+                },
+            });
+            if !self.matches(Token::Comma) && self.peek_token() != Some(&Token::RBrace) {
+                // A method may follow a field directly; anything else is a
+                // missing comma.
+                if self.peek_token() != Some(&Token::Function) {
+                    let expected = "',' or '}' after a field";
+                    return Err(match self.peek_spanned() {
+                        Some(spanned) => self.mismatch(spanned, expected),
+                        None => self.at_end(expected),
+                    });
+                }
+            }
+        }
+
+        Ok(Stmt::ShapeDef {
+            name,
+            fields,
+            methods,
+            at,
+        })
+    }
+
+    fn parse_statement_inner(&mut self) -> Result<Stmt, ParseError> {
         let first = self.take("a statement")?;
+
+        if first.token == Token::Shape && self.starts_shape() {
+            return self.parse_shape();
+        }
+
+        // `நிலை பெயர் = …;` — an immutable binding. Only when a name or a type
+        // follows: `நிலை = …;` assigns to a variable called நிலை, which two
+        // examples do, and `{நிலை: …}` is a field. A hard keyword would have
+        // broken both for no gain.
+        if first.token == Token::Const && self.starts_fixed_binding() {
+            return self.parse_fixed_binding();
+        }
 
         // An optional type declaration: eN, piZZam, col and the rest. The
         // declared type is kept so the checker can hold assignments to it.
         let (declared, current) = if Self::is_type_token(&first.token) {
             let name = self.take("a name after the type")?;
             (Some(Self::type_of(&first.token)), name)
+        } else if Self::is_plain_name(&first.token)
+            && self.peek_token().is_some_and(Self::is_plain_name)
+        {
+            // `கடன் க = …;` — a name followed by a name: the first is a shape.
+            let name = self.take("a name after the shape")?;
+            (Some(DeclaredType::Shape(self.name_of(first))), name)
         } else {
             (None, first)
         };
@@ -553,6 +835,7 @@ impl<'a> Parser<'a> {
             // A call used as a statement, e.g. `paqivu_ceyal(x);`
             if self.peek_token() == Some(&Token::LParen) {
                 let call = self.finish_name_or_call(name)?;
+                let call = self.parse_postfix(call)?;
                 self.expect(Token::Semicolon)?;
                 return Ok(Stmt::Expression(call));
             }
@@ -564,16 +847,42 @@ impl<'a> Parser<'a> {
                 self.expect(Token::Assign)?;
                 let value = self.parse_expression()?;
                 self.expect(Token::Semicolon)?;
-                return Ok(Stmt::SetIndex { name, index, value });
+                return Ok(Stmt::SetIndex {
+                    name,
+                    index,
+                    value,
+                    at,
+                });
             }
 
-            // r.field = value;
+            // r.field = value;  or a method called for its effect: r.m(x);
             if self.matches(Token::Dot) {
+                let field_at = self.peek_spanned().map(|spanned| Position {
+                    line: spanned.line,
+                    column: spanned.column,
+                });
                 let field = self.take_name("a field name")?;
+                if self.matches(Token::LParen) {
+                    let args = self.parse_arguments()?;
+                    let call = Expr::MethodCall {
+                        receiver: Box::new(Expr::Variable(name)),
+                        name: field,
+                        args,
+                        at: field_at.unwrap_or(at),
+                    };
+                    let call = self.parse_postfix(call)?;
+                    self.expect(Token::Semicolon)?;
+                    return Ok(Stmt::Expression(call));
+                }
                 self.expect(Token::Assign)?;
                 let value = self.parse_expression()?;
                 self.expect(Token::Semicolon)?;
-                return Ok(Stmt::SetField { name, field, value });
+                return Ok(Stmt::SetField {
+                    name,
+                    field,
+                    value,
+                    at,
+                });
             }
 
             // A declaration with no initializer.
@@ -583,6 +892,7 @@ impl<'a> Parser<'a> {
                     value: Expr::Number(Decimal::ZERO),
                     declared,
                     at,
+                    immutable: false,
                 });
             }
 
@@ -594,6 +904,7 @@ impl<'a> Parser<'a> {
                 value,
                 declared,
                 at,
+                immutable: false,
             });
         }
 
@@ -610,28 +921,22 @@ impl<'a> Parser<'a> {
                     },
                 };
                 let name = self.take_name("a function name")?;
-                self.expect(Token::LParen)?;
-                let mut params = Vec::new();
-                if !self.matches(Token::RParen) {
-                    loop {
-                        params.push(self.parse_param()?);
-                        if !self.matches(Token::Comma) {
-                            break;
-                        }
-                    }
-                    self.expect(Token::RParen)?;
+
+                // `செயல் மாற்று = இரட்டி;` — a variable declared to hold a
+                // function, the same shape as `எண் தொகை = 5;`.
+                if self.matches(Token::Assign) {
+                    let value = self.parse_expression()?;
+                    self.expect(Token::Semicolon)?;
+                    return Ok(Stmt::Assign {
+                        name,
+                        value,
+                        declared: Some(DeclaredType::Function),
+                        at,
+                        immutable: false,
+                    });
                 }
 
-                // An optional return type, between the parameter list and the
-                // body. Nothing else can appear there, so it needs no marker.
-                let returns = match self.peek_token() {
-                    Some(token) if Self::is_type_token(token) => {
-                        let token = self.take("a return type")?;
-                        Some(Self::type_of(&token.token))
-                    }
-                    _ => None,
-                };
-
+                let (params, returns) = self.parse_signature()?;
                 self.expect(Token::LBrace)?;
                 let body = self.parse_block()?;
                 Ok(Stmt::FunctionDef {
@@ -653,7 +958,7 @@ impl<'a> Parser<'a> {
             Token::ForEach => {
                 let var = self.take_name("a loop variable")?;
                 self.expect(Token::In)?;
-                let collection = self.parse_expression()?;
+                let collection = self.parse_head()?;
                 self.expect(Token::LBrace)?;
                 let body = self.parse_block()?;
                 Ok(Stmt::ForEach {
@@ -840,7 +1145,7 @@ impl<'a> Parser<'a> {
                 // author's.
                 let method = Self::token_name(&self.take("an HTTP method")?.token);
                 self.expect(Token::Comma)?;
-                let path = self.parse_expression()?;
+                let path = self.parse_head()?;
                 self.expect(Token::LBrace)?;
                 let handler = self.parse_block()?;
                 Ok(Stmt::DefineRoute {
@@ -850,7 +1155,7 @@ impl<'a> Parser<'a> {
                 })
             }
             Token::Every => {
-                let seconds = self.parse_expression()?;
+                let seconds = self.parse_head()?;
                 self.expect(Token::LBrace)?;
                 let body = self.parse_block()?;
                 Ok(Stmt::Schedule { seconds, body })
@@ -908,6 +1213,106 @@ impl<'a> Parser<'a> {
             }
             _ => Err(self.mismatch(current, "a statement")),
         }
+    }
+
+    /// Does the token after a `நிலை` make it the start of an immutable binding?
+    ///
+    /// A name or a type keyword does. Anything else — `=`, `.`, `[`, `(`, `,`
+    /// — means நிலை is being used as the ordinary name it has always been.
+    fn starts_fixed_binding(&mut self) -> bool {
+        match self.peek_token() {
+            Some(Token::Function) => true,
+            Some(token) => Self::is_type_token(token) || Self::is_identifier_like(token),
+            None => false,
+        }
+    }
+
+    /// The rest of `நிலை [வகை] பெயர் = மதிப்பு;`, the `நிலை` already consumed.
+    ///
+    /// Unlike a plain declaration, the value is not optional. Rust would let a
+    /// `let` be assigned later, once; here a name with no value would be a
+    /// zero that can never become anything else, which is not a binding
+    /// anyone means to write.
+    fn parse_fixed_binding(&mut self) -> Result<Stmt, ParseError> {
+        let declared = match self.peek_token() {
+            Some(token) if Self::is_type_token(token) => {
+                let token = self.take("a type")?;
+                Some(Self::type_of(&token.token))
+            }
+            Some(Token::Function) => {
+                self.advance();
+                Some(DeclaredType::Function)
+            }
+            Some(token)
+                if Self::is_plain_name(token)
+                    && self.peek_after().is_some_and(Self::is_plain_name) =>
+            {
+                let spanned = self.advance().expect("peeked");
+                Some(DeclaredType::Shape(self.name_of(spanned)))
+            }
+            _ => None,
+        };
+
+        let spanned = self.take("a name after நிலை (nilY)")?;
+        if !Self::is_identifier_like(&spanned.token) || Self::is_type_token(&spanned.token) {
+            return Err(self.mismatch(spanned, "a name after நிலை (nilY)"));
+        }
+        let name = self.name_of(spanned);
+        let at = Position {
+            line: spanned.line,
+            column: spanned.column,
+        };
+
+        self.expect(Token::Assign)?;
+        let value = self.parse_expression()?;
+        self.expect(Token::Semicolon)?;
+        Ok(Stmt::Assign {
+            name,
+            value,
+            declared,
+            at,
+            immutable: true,
+        })
+    }
+
+    /// `(params) [return type]`, up to the `{` that opens a body.
+    ///
+    /// Shared by a named `செயல்` and one written as a value, which differ only
+    /// in whether a name comes first.
+    fn parse_signature(&mut self) -> Result<(Vec<Param>, Option<DeclaredType>), ParseError> {
+        self.expect(Token::LParen)?;
+        let mut params = Vec::new();
+        if !self.matches(Token::RParen) {
+            loop {
+                params.push(self.parse_param()?);
+                if !self.matches(Token::Comma) {
+                    break;
+                }
+            }
+            self.expect(Token::RParen)?;
+        }
+
+        // An optional return type, between the parameter list and the body.
+        // Nothing else can appear there, so it needs no marker. `செயல்` there
+        // is a function that returns a function, and a name is a shape.
+        let returns = match self.peek_token() {
+            Some(token) if Self::is_type_token(token) => {
+                let token = self.take("a return type")?;
+                Some(Self::type_of(&token.token))
+            }
+            Some(Token::Function) if self.peek_after() == Some(&Token::LBrace) => {
+                self.advance();
+                Some(DeclaredType::Function)
+            }
+            Some(token)
+                if Self::is_plain_name(token) && self.peek_after() == Some(&Token::LBrace) =>
+            {
+                let spanned = self.advance().expect("peeked");
+                Some(DeclaredType::Shape(self.name_of(spanned)))
+            }
+            _ => None,
+        };
+        Ok((params, returns))
     }
 
     /// Statements up to a closing brace, which is consumed.
@@ -1139,30 +1544,128 @@ impl<'a> Parser<'a> {
         Ok(left)
     }
 
-    /// A primary expression followed by any number of `[i]`, `.name` and `?`.
+    /// A primary expression followed by any number of `[i]`, `.name`, `?`
+    /// and `(args)`.
     fn parse_factor(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.parse_primary()?;
+        let expr = self.parse_primary()?;
+        self.parse_postfix(expr)
+    }
+
+    /// Whatever follows a value: indexing, a field, `?`, or a call of it.
+    fn parse_postfix(&mut self, mut expr: Expr) -> Result<Expr, ParseError> {
         loop {
             if self.matches(Token::LBracket) {
-                let index = self.parse_expression()?;
+                let index = self.unrestricted(|parser| parser.parse_expression())?;
                 self.expect(Token::RBracket)?;
                 expr = Expr::Index {
                     base: Box::new(expr),
                     index: Box::new(index),
                 };
             } else if self.matches(Token::Dot) {
+                let at = match self.peek_spanned() {
+                    Some(spanned) => Position {
+                        line: spanned.line,
+                        column: spanned.column,
+                    },
+                    None => Position {
+                        line: self.last.0,
+                        column: self.last.1,
+                    },
+                };
                 let name = self.take_name("a field name")?;
-                expr = Expr::Field {
-                    base: Box::new(expr),
-                    name,
+                // `r.m(x)` is one thing, not a field read and then a call:
+                // the method of r's shape comes first, and a function held in
+                // the field only if there is none.
+                expr = if self.matches(Token::LParen) {
+                    let args = self.parse_arguments()?;
+                    Expr::MethodCall {
+                        receiver: Box::new(expr),
+                        name,
+                        args,
+                        at,
+                    }
+                } else {
+                    Expr::Field {
+                        base: Box::new(expr),
+                        name,
+                        at,
+                    }
                 };
             } else if self.matches(Token::Question) {
                 expr = Expr::Try(Box::new(expr));
+            } else if self.matches(Token::LParen) {
+                // `f(1)(2)`, `விதிகள்[0](தொகை)` — whatever came before is the
+                // function. A bare name followed by `(` never reaches here:
+                // that is an ordinary call, parsed with the name.
+                let args = self.parse_arguments()?;
+                expr = Expr::CallValue {
+                    callee: Box::new(expr),
+                    args,
+                };
             } else {
                 break;
             }
         }
         Ok(expr)
+    }
+
+    /// Arguments after a `(` that has already been consumed, up to and
+    /// including the `)`.
+    fn parse_arguments(&mut self) -> Result<Vec<Expr>, ParseError> {
+        self.unrestricted(|parser| {
+            let mut args = Vec::new();
+            if !parser.matches(Token::RParen) {
+                loop {
+                    args.push(parser.parse_expression()?);
+                    if !parser.matches(Token::Comma) {
+                        break;
+                    }
+                }
+                parser.expect(Token::RParen)?;
+            }
+            Ok(args)
+        })
+    }
+
+    /// The rest of `பெயர் { புலம்: மதிப்பு, …, ..அடிப்படை }`, the name and the
+    /// `{` already consumed.
+    fn parse_shape_literal(&mut self, shape: String, at: Position) -> Result<Expr, ParseError> {
+        self.unrestricted(|parser| {
+            let mut fields = Vec::new();
+            let mut base = None;
+            if !parser.matches(Token::RBrace) {
+                loop {
+                    // `..பழையது` — the rest of the fields from another record
+                    // of this shape. Last, as in Rust, because it fills in
+                    // what the fields before it did not say.
+                    if parser.peek_token() == Some(&Token::Dot)
+                        && parser.peek_after() == Some(&Token::Dot)
+                    {
+                        parser.advance();
+                        parser.advance();
+                        base = Some(Box::new(parser.parse_expression()?));
+                        break;
+                    }
+                    let key = parser.take_name("a field name")?;
+                    parser.expect(Token::Colon)?;
+                    let value = parser.parse_expression()?;
+                    fields.push((key, value));
+                    if !parser.matches(Token::Comma) {
+                        break;
+                    }
+                    if parser.peek_token() == Some(&Token::RBrace) {
+                        break;
+                    }
+                }
+                parser.expect(Token::RBrace)?;
+            }
+            Ok(Expr::ShapeLiteral {
+                shape,
+                fields,
+                base,
+                at,
+            })
+        })
     }
 
     fn parse_primary(&mut self) -> Result<Expr, ParseError> {
@@ -1181,36 +1684,36 @@ impl<'a> Parser<'a> {
 
         match &spanned.token {
             // அணி — an array literal: [a, b, c]
-            Token::LBracket => {
+            Token::LBracket => self.unrestricted(|parser| {
                 let mut items = Vec::new();
-                if !self.matches(Token::RBracket) {
+                if !parser.matches(Token::RBracket) {
                     loop {
-                        items.push(self.parse_expression()?);
-                        if !self.matches(Token::Comma) {
+                        items.push(parser.parse_expression()?);
+                        if !parser.matches(Token::Comma) {
                             break;
                         }
                     }
-                    self.expect(Token::RBracket)?;
+                    parser.expect(Token::RBracket)?;
                 }
                 Ok(Expr::ArrayLiteral(items))
-            }
+            }),
             // பொருள் — a record literal: {peyar: "ravi", vayaqu: 20}
-            Token::LBrace => {
+            Token::LBrace => self.unrestricted(|parser| {
                 let mut fields = Vec::new();
-                if !self.matches(Token::RBrace) {
+                if !parser.matches(Token::RBrace) {
                     loop {
-                        let key = self.take_name("a field name")?;
-                        self.expect(Token::Colon)?;
-                        let value = self.parse_expression()?;
+                        let key = parser.take_name("a field name")?;
+                        parser.expect(Token::Colon)?;
+                        let value = parser.parse_expression()?;
                         fields.push((key, value));
-                        if !self.matches(Token::Comma) {
+                        if !parser.matches(Token::Comma) {
                             break;
                         }
                     }
-                    self.expect(Token::RBrace)?;
+                    parser.expect(Token::RBrace)?;
                 }
                 Ok(Expr::RecordLiteral(fields))
-            }
+            }),
             // Unary minus, compiled as 0 - x.
             Token::Minus => {
                 let operand = self.parse_factor()?;
@@ -1220,6 +1723,23 @@ impl<'a> Parser<'a> {
                     right: Box::new(operand),
                 })
             }
+            // `செயல்(x) { … }` — a function written where a value goes. The
+            // same signature as a named one, and no name.
+            Token::Function => {
+                let at = Position {
+                    line: spanned.line,
+                    column: spanned.column,
+                };
+                let (params, returns) = self.parse_signature()?;
+                self.expect(Token::LBrace)?;
+                let body = self.parse_block()?;
+                Ok(Expr::Lambda {
+                    params,
+                    returns,
+                    body,
+                    at,
+                })
+            }
             Token::Number(n) => Ok(Expr::Number(*n)),
             Token::Percentage(n) => Ok(Expr::Number(*n)),
             Token::String(s) => Ok(Expr::String(s.clone())),
@@ -1227,13 +1747,22 @@ impl<'a> Parser<'a> {
             Token::False => Ok(Expr::Boolean(false)),
             Token::Null => Ok(Expr::Null),
             Token::LParen => {
-                let expr = self.parse_expression()?;
+                let expr = self.unrestricted(|parser| parser.parse_expression())?;
                 self.expect(Token::RParen)?;
                 Ok(expr)
             }
             // An identifier, or a financial keyword used as a name.
             token if Self::is_identifier_like(token) && !Self::is_type_token(token) => {
                 let name = self.name_of(spanned);
+                // `கடன்{…}` — a shaped record, unless a block follows here.
+                if !self.restrict && self.peek_token() == Some(&Token::LBrace) {
+                    self.advance();
+                    let at = Position {
+                        line: spanned.line,
+                        column: spanned.column,
+                    };
+                    return self.parse_shape_literal(name, at);
+                }
                 self.finish_name_or_call(name)
             }
             _ => Err(self.mismatch(spanned, "a value")),
@@ -1245,17 +1774,7 @@ impl<'a> Parser<'a> {
         if !self.matches(Token::LParen) {
             return Ok(Expr::Variable(name));
         }
-
-        let mut args = Vec::new();
-        if !self.matches(Token::RParen) {
-            loop {
-                args.push(self.parse_expression()?);
-                if !self.matches(Token::Comma) {
-                    break;
-                }
-            }
-            self.expect(Token::RParen)?;
-        }
+        let args = self.parse_arguments()?;
         Ok(Expr::Call { name, args })
     }
 
@@ -1325,10 +1844,34 @@ impl<'a> Parser<'a> {
     /// One parameter: an optional type keyword, then the name. The same order
     /// a variable declaration uses, so `எண் தொகை` reads the same in both places.
     fn parse_param(&mut self) -> Result<Param, ParseError> {
+        // `நிலை எண் தொகை` — a parameter the body cannot assign to. A parameter
+        // that is itself called நிலை is followed by `,` or `)` instead.
+        let immutable = self.peek_token() == Some(&Token::Const)
+            && matches!(
+                self.peek_after(),
+                Some(token) if Self::is_type_token(token) || Self::is_identifier_like(token)
+            );
+        if immutable {
+            self.advance();
+        }
+
         let declared = match self.peek_token() {
             Some(token) if Self::is_type_token(token) => {
                 let token = self.take("a parameter type")?;
                 Some(Self::type_of(&token.token))
+            }
+            // `செயல் மாற்று` — a parameter that must be a function.
+            Some(Token::Function) => {
+                self.advance();
+                Some(DeclaredType::Function)
+            }
+            // `கடன் க` — a parameter that must be a record of that shape.
+            Some(token)
+                if Self::is_plain_name(token)
+                    && self.peek_after().is_some_and(Self::is_plain_name) =>
+            {
+                let spanned = self.advance().expect("peeked");
+                Some(DeclaredType::Shape(self.name_of(spanned)))
             }
             _ => None,
         };
@@ -1344,6 +1887,7 @@ impl<'a> Parser<'a> {
         Ok(Param {
             name: self.name_of(spanned),
             declared,
+            immutable,
             at,
         })
     }
@@ -1380,7 +1924,213 @@ impl<'a> Parser<'a> {
             Expr::Index { .. } => "index".to_string(),
             Expr::Field { name, .. } => name,
             Expr::Try(_) => "try".to_string(),
+            Expr::Lambda { .. } => "function".to_string(),
+            Expr::CallValue { .. } => "call".to_string(),
+            Expr::MethodCall { name, .. } => name,
+            Expr::ShapeLiteral { shape, .. } => shape,
             Expr::Concat { .. } => "concat".to_string(),
         }
+    }
+}
+
+// --- Names: what a statement binds, and what a body reads -------------------
+//
+// Both backends decide what an anonymous செயல் captures, and they must decide
+// it the same way or a compiled program would see a different value from the
+// interpreted one. So the decision is made here, from the AST, once.
+
+/// The names a statement binds in the scope it runs in, in order.
+///
+/// Only the statement itself: a name bound inside an `எனில்` branch is bound by
+/// that inner statement, which the caller reaches as it walks the branch. The
+/// kinds are exactly those that give a name a value in both backends.
+pub fn bound_names(statement: &Stmt) -> Vec<&str> {
+    match statement {
+        Stmt::Assign { name, .. } => vec![name],
+        Stmt::ForEach { var, .. } => vec![var],
+        Stmt::Input(Expr::Variable(name)) => vec![name],
+        Stmt::DBQuery { result_var, .. } => vec![result_var],
+        Stmt::FileRead { variable, .. }
+        | Stmt::ReadCSV { variable, .. }
+        | Stmt::GetRequestBody { variable }
+        | Stmt::GetRequestParam { variable, .. }
+        | Stmt::GetHeader { variable, .. } => vec![variable],
+        _ => Vec::new(),
+    }
+}
+
+/// What an anonymous செயல் carries away: the names its body reads that are
+/// locals where it was written, sorted so both backends order them alike.
+///
+/// `local` says whether a name is a local at the point the செயல் appears. A
+/// name read inside a செயல் nested in this one counts, because the inner one
+/// can only capture what the outer one has.
+pub fn captures(params: &[Param], body: &[Stmt], local: impl Fn(&str) -> bool) -> Vec<String> {
+    let mut read = std::collections::BTreeSet::new();
+    for statement in body {
+        stmt_reads(statement, &mut read);
+    }
+    read.into_iter()
+        .filter(|name| !params.iter().any(|param| &param.name == name))
+        .filter(|name| local(name))
+        .collect()
+}
+
+fn stmt_reads(statement: &Stmt, into: &mut std::collections::BTreeSet<String>) {
+    let expr = expr_reads;
+    match statement {
+        Stmt::Assign { value, .. } => expr(value, into),
+        // A named செயல் captures nothing, so what it reads is not this
+        // function's business.
+        Stmt::FunctionDef { .. } => {}
+        Stmt::Return(Some(value)) | Stmt::Expression(value) | Stmt::Print(value) => {
+            expr(value, into)
+        }
+        Stmt::SetIndex {
+            name, index, value, ..
+        } => {
+            into.insert(name.clone());
+            expr(index, into);
+            expr(value, into);
+        }
+        Stmt::SetField { name, value, .. } => {
+            into.insert(name.clone());
+            expr(value, into);
+        }
+        Stmt::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            expr(condition, into);
+            for inner in then_branch.iter().chain(else_branch.iter().flatten()) {
+                stmt_reads(inner, into);
+            }
+        }
+        Stmt::Loop { condition, body } => {
+            expr(condition, into);
+            for inner in body {
+                stmt_reads(inner, into);
+            }
+        }
+        Stmt::ForEach {
+            collection, body, ..
+        } => {
+            expr(collection, into);
+            for inner in body {
+                stmt_reads(inner, into);
+            }
+        }
+        Stmt::FileOpen { filename, .. }
+        | Stmt::FileClose { filename }
+        | Stmt::FileRead { filename, .. }
+        | Stmt::ReadCSV { filename, .. } => expr(filename, into),
+        Stmt::FileWrite { filename, data } | Stmt::WriteCSV { filename, data } => {
+            expr(filename, into);
+            expr(data, into);
+        }
+        Stmt::DBConnect {
+            connection_string, ..
+        } => expr(connection_string, into),
+        Stmt::DBQuery { query, params, .. } => {
+            expr(query, into);
+            expr(params, into);
+        }
+        Stmt::DBExecute {
+            command, params, ..
+        } => {
+            expr(command, into);
+            expr(params, into);
+        }
+        Stmt::SendResponse {
+            status_code,
+            body,
+            headers,
+        } => {
+            expr(status_code, into);
+            expr(body, into);
+            if let Some(headers) = headers {
+                expr(headers, into);
+            }
+        }
+        Stmt::SendJSON { data, status_code } => {
+            expr(data, into);
+            if let Some(status) = status_code {
+                expr(status, into);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn expr_reads(expr: &Expr, into: &mut std::collections::BTreeSet<String>) {
+    match expr {
+        Expr::Variable(name) => {
+            into.insert(name.clone());
+        }
+        // A call by name may be a call of a local holding a function.
+        Expr::Call { name, args } => {
+            into.insert(name.clone());
+            for arg in args {
+                expr_reads(arg, into);
+            }
+        }
+        Expr::CallValue { callee, args } => {
+            expr_reads(callee, into);
+            for arg in args {
+                expr_reads(arg, into);
+            }
+        }
+        Expr::BinaryOp { left, right, .. }
+        | Expr::Comparison { left, right, .. }
+        | Expr::Concat { left, right }
+        | Expr::Logical { left, right, .. } => {
+            expr_reads(left, into);
+            expr_reads(right, into);
+        }
+        Expr::Not(inner) | Expr::Try(inner) => expr_reads(inner, into),
+        Expr::ArrayLiteral(items) => {
+            for item in items {
+                expr_reads(item, into);
+            }
+        }
+        Expr::RecordLiteral(fields) => {
+            for (_, value) in fields {
+                expr_reads(value, into);
+            }
+        }
+        Expr::Index { base, index } => {
+            expr_reads(base, into);
+            expr_reads(index, into);
+        }
+        Expr::Field { base, .. } => expr_reads(base, into),
+        Expr::MethodCall { receiver, args, .. } => {
+            expr_reads(receiver, into);
+            for arg in args {
+                expr_reads(arg, into);
+            }
+        }
+        Expr::ShapeLiteral { fields, base, .. } => {
+            for (_, value) in fields {
+                expr_reads(value, into);
+            }
+            if let Some(base) = base {
+                expr_reads(base, into);
+            }
+        }
+        // What a nested செயல் reads, less its own parameters, has to be
+        // available to it — so this one must carry it too.
+        Expr::Lambda { params, body, .. } => {
+            let mut inner = std::collections::BTreeSet::new();
+            for statement in body {
+                stmt_reads(statement, &mut inner);
+            }
+            for name in inner {
+                if !params.iter().any(|param| param.name == name) {
+                    into.insert(name);
+                }
+            }
+        }
+        Expr::Number(_) | Expr::String(_) | Expr::Boolean(_) | Expr::Null => {}
     }
 }

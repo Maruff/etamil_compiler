@@ -111,6 +111,11 @@
         "category": "eTamil"
       },
       {
+        "command": "etamil.toggleScriptFont",
+        "title": "Read this file as eTamil script, or as ISO",
+        "category": "eTamil"
+      },
+      {
         "command": "etamil.documentation",
         "title": "Documentation…",
         "category": "eTamil"
@@ -141,6 +146,10 @@
         },
         {
           "command": "etamil.serve",
+          "when": "resourceLangId == etamil"
+        },
+        {
+          "command": "etamil.toggleScriptFont",
           "when": "resourceLangId == etamil"
         }
       ]
@@ -196,7 +205,7 @@
     "build": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext .ts",
-    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/bundle.test.js test/links.test.js test/counts.test.js",
+    "test": "node --test test/grammar.test.js test/snippets.test.js test/errors.test.js test/marks.test.js test/scriptMode.test.js test/bundle.test.js test/links.test.js test/counts.test.js",
     "verify": "npm run check:generated && npm run build && npm run lint && npm run test",
     "stage": "python ../scripts/package_extension.py --stage",
     "package": "vsce package",

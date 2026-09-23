@@ -1,0 +1,188 @@
+================================================================================
+A fixed binding
+================================================================================
+
+நிலை எல்லை = 250000;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (typed_declaration
+    type: (identifier)
+    name: (identifier)
+    value: (number)))
+
+================================================================================
+A fixed binding with a type
+================================================================================
+
+நிலை எண் வீதம் = 5%;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (fixed_declaration
+    keyword: (identifier)
+    type: (type)
+    name: (identifier)
+    value: (percentage)))
+
+================================================================================
+நிலை is still an ordinary name where it binds nothing
+================================================================================
+
+நிலை = 5;
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (number)))
+
+================================================================================
+A function written where a value goes, and a call of a call
+================================================================================
+
+ச = செயல்(எ) { திரும்பு எ * 2; };
+விடை = ச(1)(2);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (assignment
+    name: (identifier)
+    value: (lambda
+      parameters: (parameter_list
+        (parameter
+          name: (identifier)))
+      body: (block
+        (return_statement
+          value: (binary_expression
+            left: (identifier)
+            right: (number))))))
+  (assignment
+    name: (identifier)
+    value: (call
+      function: (call
+        function: (identifier)
+        arguments: (argument_list
+          (number)))
+      arguments: (argument_list
+        (number)))))
+
+================================================================================
+A parameter that must be a function, and one fixed
+================================================================================
+
+செயல் செய்(செயல் நெறி, நிலை எண் தொகை) { திரும்பு நெறி(தொகை); }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (function_definition
+    name: (identifier)
+    parameters: (parameter_list
+      (parameter
+        type: (function_type)
+        name: (identifier))
+      (parameter
+        modifier: (identifier)
+        type: (type)
+        name: (identifier)))
+    body: (block
+      (return_statement
+        value: (call
+          function: (identifier)
+          arguments: (argument_list
+            (identifier)))))))
+
+================================================================================
+A shape with fields and a method
+================================================================================
+
+வடிவம் கடன் {
+    எண் அசல்,
+    செயல் கணி,
+    செயல் வட்டி(இது, எண் ஆண்டு) எண் { திரும்பு இது.அசல்; }
+}
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (shape_definition
+    keyword: (identifier)
+    name: (identifier)
+    (shape_field
+      type: (type)
+      name: (identifier))
+    (shape_field
+      type: (function_type)
+      name: (identifier))
+    (function_definition
+      name: (identifier)
+      parameters: (parameter_list
+        (parameter
+          name: (identifier))
+        (parameter
+          type: (type)
+          name: (identifier)))
+      return_type: (type)
+      body: (block
+        (return_statement
+          value: (field_access
+            base: (identifier)
+            field: (identifier)))))))
+
+================================================================================
+A shaped record, declared as its shape, with the rest from another
+================================================================================
+
+கடன் க = கடன்{அசல்: 1, ..பழையது};
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (typed_declaration
+    type: (identifier)
+    name: (identifier)
+    value: (shape_literal
+      shape: (identifier)
+      (pair
+        key: (identifier)
+        value: (number))
+      (spread
+        base: (identifier)))))
+
+================================================================================
+A method called for its effect
+================================================================================
+
+க.வட்டி(2);
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (expression_statement
+    (call
+      function: (field_access
+        base: (identifier)
+        field: (identifier))
+      arguments: (argument_list
+        (number)))))
+
+================================================================================
+A loop's collection is not read as a shaped record
+================================================================================
+
+ஒவ்வொரு உ இல் பட்டியல் { அச்சு உ; }
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (for_each_statement
+    variable: (identifier)
+    collection: (identifier)
+    body: (block
+      (print_statement
+        value: (identifier)))))

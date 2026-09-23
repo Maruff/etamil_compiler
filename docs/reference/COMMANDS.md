@@ -12,15 +12,38 @@ With no file argument, eTamil reads the program from standard input.
 | Option | Description | Default |
 |---|---|---|
 | `--vm` | Run on the bytecode VM | this is the default |
+| `--check` | Lex, parse and type check only — never runs the program | |
+| `--repl` | Interactive shell: type an expression, see what it comes to | |
 | `--server` | Start the synchronous HTTP server | |
-| `--async` | Currently an alias for `--server` | |
+| `--async` | Concurrent server: async accept, blocking handlers. `இடைவெளி` blocks run on a timer under either server | |
 | `--llvm` | LLVM backend — requires a build with `--features llvm`, Linux/macOS only | |
+| `--llvm-gaps` | List what the LLVM backend would refuse in this program — needs no LLVM | |
 | `--host <HOST>` | Server bind address | `127.0.0.1` |
 | `--port <PORT>` | Server port | `8080` |
 | `-h`, `--help` | Show usage | |
 | `-V`, `--version` | Show the version | |
 
 Unknown options are rejected with exit code 2.
+
+### `--check`
+
+Runs the front end — lexer, parser, type checker — and stops. The program is never
+executed, which is the point: an editor has to report a mistake while it is still
+being typed, and a mode that also ran the file would mean that opening a program in a
+text editor wrote its files and issued its queries.
+
+Errors go to stderr, one per line, in the same positioned bilingual form as
+everywhere else. Nothing is written to stdout, so a caller may treat any output at
+all as failure. Exit 0 when the program checks, 1 when it does not.
+
+This is what the VS Code extension's diagnostics are built on — see
+`eTamil_Code/src/compiler.ts` — so it has no second parser to keep in step with this
+one.
+
+```bash
+etamil --check program.qmz
+cat program.qmz | etamil --check
+```
 
 ## Execution modes
 
@@ -77,7 +100,7 @@ Both `.etamil` and `.qmz` extensions work — the compiler does not inspect the 
 | 1 | lexical, parse, or runtime error |
 | 2 | unknown command-line option |
 
-Lexical errors print every problem with its line and column before exiting. Parse errors currently panic without a position — see [roadmap](../ROADMAP.md) item 2.
+Lexical and parse errors both print every problem with its line and column before exiting; columns count written letters rather than bytes, so Tamil text reports sensible positions. The parser returns a `ParseError` rather than panicking — see [roadmap](../ROADMAP.md) item 2.
 
 ## Environment variables
 

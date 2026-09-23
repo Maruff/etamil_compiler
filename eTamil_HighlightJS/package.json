@@ -1,0 +1,31 @@
+{
+  "name": "highlightjs-etamil",
+  "version": "0.4.0",
+  "description": "highlight.js language definition for eTamil, a Tamil-vocabulary programming language for Indian accounting, tax and FinTech",
+  "main": "src/languages/etamil.js",
+  "scripts": {
+    "test": "node --test test/highlight.test.mjs"
+  },
+  "keywords": [
+    "highlight.js",
+    "highlightjs",
+    "etamil",
+    "tamil",
+    "syntax highlighting"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "highlight.js": "^11.12.0"
+  },
+  "homepage": "https://etamil.in",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Maruff/etamil_compiler",
+    "directory": "eTamil_HighlightJS"
+  },
+  "files": [
+    "src/"
+  ]
+}
