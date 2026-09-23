@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0
+
+The language gains four things, and the extension knows all of them: `நிலை`
+bindings that do not change, functions as values, record shapes (`வடிவம்`) and
+their methods. See the repository's CHANGELOG for what each one does.
+
+### Added
+
+- Highlighting for `நிலை` and `வடிவம்` in every spelling (`nilY`, `_const`,
+  `vativam`, `_shape`).
+- Completions and signature help for `nUlakam/aNi.qmz`'s map, filter and fold:
+  `ஒவ்வொன்றுக்கும்`, `வடிகட்டு` and `மடி`.
+- The carried compiler is 1.1.0, which also runs files saved with CRLF line
+  endings.
+- Three new example programs under `examples/language/`, for **eTamil: Open an
+  example**.
+
 ## 1.0.3
 
 A second face, which draws Tamil where the first drew none, and reads a

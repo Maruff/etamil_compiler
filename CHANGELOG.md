@@ -1,14 +1,14 @@
 # Changelog
 
 Releases of the eTamil compiler, standard library and editor support. The
-extension's version tracks the language's, so both are 1.0.0 here.
+extension's version tracks the language's, so both are 1.1.0 here.
 
 Every release is tagged `vN.N.N`, which is what builds the platform packages.
 GitHub's generated notes list the commits; this file says what they add up to.
 
 ---
 
-## Unreleased
+## 1.1.0 — 2026-09-23
 
 Four additions to the language, each on both backends — the VM, and LLVM
 through the runtime — and each an opt-in that leaves every existing program
