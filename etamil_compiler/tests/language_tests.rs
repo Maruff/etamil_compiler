@@ -507,6 +507,28 @@ fn a_utf8_bom_is_not_a_lexical_error() {
     assert_eq!(tokens.len(), without.len());
 }
 
+// CRLF line endings are the other thing Windows editors produce. Every line of
+// such a file used to be an "unrecognized input '\r'" error.
+#[test]
+fn a_program_saved_with_crlf_line_endings_runs() {
+    let vm = run("அ = 1;\r\nஆ = அ + 2;\r\n(ஆ == 3) எனில் {\r\n    இ = \"ஆம்\";\r\n}\r\n").unwrap();
+    assert_eq!(num(&vm, "ஆ"), dec(3));
+    assert_eq!(text(&vm, "இ"), "ஆம்");
+}
+
+#[test]
+fn a_string_spanning_crlf_lines_holds_the_same_text_as_one_spanning_lf_lines() {
+    let crlf = run("s = \"SELECT x\r\n  FROM t\";").unwrap();
+    let lf = run("s = \"SELECT x\n  FROM t\";").unwrap();
+    assert_eq!(text(&crlf, "s"), text(&lf, "s"));
+}
+
+#[test]
+fn a_crlf_error_is_reported_where_an_lf_one_would_be() {
+    let why = run("அ = 1;\r\nஆ = ;\r\n").unwrap_err();
+    assert!(why.contains("line 2, column 5"), "{}", why);
+}
+
 #[test]
 fn an_empty_program_lexes_to_nothing() {
     assert_eq!(lexer::tokenize("").unwrap().len(), 0);

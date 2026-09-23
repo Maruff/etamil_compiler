@@ -105,4 +105,9 @@ etamil_compiler/LICENSE
 tree-sitter-etamil/node_modules/
 tree-sitter-etamil/build/
 tree-sitter-etamil/*.wasm
+# What MSVC leaves beside the grammar when `tree-sitter test` compiles it on
+# Windows.
+tree-sitter-etamil/*.obj
+tree-sitter-etamil/*.lib
+tree-sitter-etamil/*.exp
 eTamil_HighlightJS/node_modules/

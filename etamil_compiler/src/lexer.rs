@@ -445,6 +445,19 @@ pub fn tokenize(source: &str) -> Result<Vec<Spanned>, Vec<LexError>> {
     // that way, so the mark is skipped rather than reported.
     let source = source.strip_prefix('\u{FEFF}').unwrap_or(source);
 
+    // The same editors end lines with CRLF, and the `\r` was not whitespace
+    // to the lexer: every line of such a file was an "unrecognized input"
+    // error. Normalised rather than skipped, so a multi-line string literal —
+    // SQL, mostly — holds the same text whichever way the file was saved. A
+    // `\r` removed from before a newline moves no token's line or column.
+    let normalised;
+    let source = if source.contains("\r\n") {
+        normalised = source.replace("\r\n", "\n");
+        normalised.as_str()
+    } else {
+        source
+    };
+
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
     let mut lexer = Token::lexer(source);

@@ -46,8 +46,17 @@ A `செயல்` written inside a `வடிவம்` is attached to it. Wit
 called on a record and cannot change it — Rust's `&self`; without, it is called
 on the shape. No inheritance.
 
+### Map, filter and fold
+
+`nUlakam/aNi.qmz` gains `ஒவ்வொன்றுக்கும்`, `வடிகட்டு` and `மடி`, each taking the
+rule it applies as a `செயல்`, with a test suite in `aNi_cOqaZY.qmz`.
+
 ### Also
 
+- A program saved with CRLF line endings runs. Every line of one used to be an
+  "unrecognized input" error; `\r\n` is now read as `\n`, inside strings too,
+  so a file means the same thing however an editor saved it.
+- The Windows build artifacts of the tree-sitter grammar are no longer tracked.
 - The checker now also looks inside conditions, loop collections and returned
   values, where it used to skip calls. Nothing in `examples/` or `nUlakam/`
   was newly refused.
