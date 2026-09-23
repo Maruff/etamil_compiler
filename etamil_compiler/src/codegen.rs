@@ -797,29 +797,38 @@ impl Compiler {
                         LLVMBuildStore(self.builder, line, slot);
                     }
                 }
+                // The runtime answers a new handle rather than changing the
+                // value in place — see `etamil_index_set` — and it is stored
+                // where an assignment to the name would go. Inside a function
+                // that is a local even when the value was read from a global,
+                // which is the VM's SetIndex exactly: it reads the name, changes
+                // a copy, and assigns the copy. The base is read after the index
+                // and the value, as the VM reads it after they are on its stack.
                 Stmt::SetIndex {
                     name, index, value, ..
                 } => {
                     match self.lookup(&name) {
                         Some(slot) => {
+                            let position = self.compile_expr(&index);
+                            let handle = self.compile_expr(&value);
                             let base = LLVMBuildLoad2(
                                 self.builder,
                                 self.value(),
                                 slot,
                                 CString::new("base").unwrap().as_ptr(),
                             );
-                            let position = self.compile_expr(&index);
-                            let handle = self.compile_expr(&value);
                             // The name travels with the call only so that a
                             // base that cannot be indexed reports the same
                             // message the VM reports.
                             if let Some(label) = self.constant_text(&name, "name") {
-                                self.invoke(
+                                let updated = self.invoke(
                                     "etamil_index_set",
                                     vec![self.value(), self.value(), self.value(), self.text()],
-                                    self.nothing(),
+                                    self.value(),
                                     &mut [base, position, handle, label],
                                 );
+                                let target = self.storage_for(&name);
+                                LLVMBuildStore(self.builder, updated, target);
                             }
                         }
                         None => self
@@ -831,20 +840,22 @@ impl Compiler {
                     name, field, value, ..
                 } => match self.lookup(&name) {
                     Some(slot) => {
+                        let handle = self.compile_expr(&value);
                         let base = LLVMBuildLoad2(
                             self.builder,
                             self.value(),
                             slot,
                             CString::new("base").unwrap().as_ptr(),
                         );
-                        let handle = self.compile_expr(&value);
                         if let Some(key) = self.constant_text(&field, "field") {
-                            self.invoke(
+                            let updated = self.invoke(
                                 "etamil_field_set",
                                 vec![self.value(), self.text(), self.value()],
-                                self.nothing(),
+                                self.value(),
                                 &mut [base, key, handle],
                             );
+                            let target = self.storage_for(&name);
+                            LLVMBuildStore(self.builder, updated, target);
                         }
                     }
                     None => self

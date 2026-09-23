@@ -390,33 +390,36 @@ pub extern "C" fn etamil_index(base: i64, index: i64) -> i64 {
 
 /// Indexed assignment: `a[0] = x` on an array, `r[k] = x` on a record.
 ///
+/// Answers a **new** handle, which the IR stores back into the variable. This
+/// used to change the value in place, and a handle is shared by every name it
+/// was assigned to: after `நகல் = அசல்; நகல்[0] = 9;` the compiled program's
+/// `அசல்` had changed too, and so had a caller's array after a function set an
+/// element of its parameter. The VM copies — a name holds a value, not a
+/// reference to one — and `நிலை`'s promise that a copy cannot reach the
+/// original rests on that. The parity job found it in examples/language/nilY.qmz.
+///
 /// # Safety
 ///
 /// `name` must be a valid, NUL-terminated C string that stays alive for
 /// the call. The generated code passes a pointer to a constant in its own
 /// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn etamil_index_set(base: i64, index: i64, value: i64, name: *const c_char) {
+pub unsafe extern "C" fn etamil_index_set(
+    base: i64,
+    index: i64,
+    value: i64,
+    name: *const c_char,
+) -> i64 {
     let name = unsafe { borrow_str(name) };
     let index = get(index);
     let value = get(value);
-    SHAPES.with(|shapes| {
-        let shapes = shapes.borrow();
-        ARENA.with(|arena| {
-            let mut arena = arena.borrow_mut();
-            match arena.get_mut(base.max(0) as usize) {
-                Some(slot) => {
-                    if let Err(why) = VM::index_assign(slot, &index, value, &name, &shapes) {
-                        fail(&why);
-                    }
-                }
-                None => fail(&format!(
-                    "அறிவிக்கப்படாத மாறி '{}'  (undefined variable '{}')",
-                    name, name
-                )),
-            }
-        })
-    })
+    let mut updated = get(base);
+    let done = SHAPES
+        .with(|shapes| VM::index_assign(&mut updated, &index, value, &name, &shapes.borrow()));
+    match done {
+        Ok(()) => put(updated),
+        Err(why) => fail(&why),
+    }
 }
 
 /// # Safety
@@ -442,32 +445,31 @@ pub unsafe extern "C" fn etamil_field(base: i64, key: *const c_char) -> i64 {
     }
 }
 
+/// `r.f = x`. A new handle, for the reason `etamil_index_set` gives one.
+///
 /// # Safety
 ///
 /// `key` must be a valid, NUL-terminated C string that stays alive for
 /// the call. The generated code passes a pointer to a constant in its own
 /// module, which satisfies both.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) {
+pub unsafe extern "C" fn etamil_field_set(base: i64, key: *const c_char, value: i64) -> i64 {
     let key = unsafe { borrow_str(key) };
     let value = get(value);
-    SHAPES.with(|shapes| {
-        let shapes = shapes.borrow();
-        ARENA.with(|arena| {
-            let mut arena = arena.borrow_mut();
-            match arena.get_mut(base.max(0) as usize) {
-                Some(Value::Map(fields)) => {
-                    // A shaped record takes only its own fields — the check
-                    // the VM's SetField makes, through the same function.
-                    if let Err(why) = shape::check_set(&shapes, fields, &key, &value) {
-                        fail(&why);
-                    }
-                    fields.insert(key, value);
-                }
-                _ => fail("பொருள் எதிர்பார்க்கப்பட்டது  (expected a record)"),
+    match get(base) {
+        Value::Map(mut fields) => {
+            // A shaped record takes only its own fields — the check the VM's
+            // SetField makes, through the same function.
+            let checked =
+                SHAPES.with(|shapes| shape::check_set(&shapes.borrow(), &fields, &key, &value));
+            if let Err(why) = checked {
+                fail(&why);
             }
-        })
-    })
+            fields.insert(key, value);
+            put(Value::Map(fields))
+        }
+        _ => fail("பொருள் எதிர்பார்க்கப்பட்டது  (expected a record)"),
+    }
 }
 
 /// How many times a `ஒவ்வொரு` goes round. Separate from the `நீளம்` builtin
@@ -1315,8 +1317,28 @@ mod tests {
         assert_eq!(shown(etamil_index(array, number("1"))), "20");
 
         let name = std::ffi::CString::new("aNi").unwrap();
-        unsafe { etamil_index_set(array, number("0"), number("99"), name.as_ptr()) };
-        assert_eq!(shown(etamil_index(array, number("0"))), "99");
+        let updated = unsafe { etamil_index_set(array, number("0"), number("99"), name.as_ptr()) };
+        assert_eq!(shown(etamil_index(updated, number("0"))), "99");
+    }
+
+    #[test]
+    fn setting_an_element_leaves_every_other_holder_of_the_value_alone() {
+        // `நகல் = அசல்; நகல்[0] = 9;` — both names held the same handle, and
+        // the original must not change. It did, until the parity job caught
+        // examples/language/nilY.qmz disagreeing with the VM.
+        let original = etamil_array();
+        etamil_array_push(original, number("1"));
+        let name = std::ffi::CString::new("நகல்").unwrap();
+        let copy = unsafe { etamil_index_set(original, number("0"), number("9"), name.as_ptr()) };
+        assert_eq!(shown(copy), "[9]");
+        assert_eq!(shown(original), "[1]");
+
+        let record = etamil_record();
+        let key = std::ffi::CString::new("அ").unwrap();
+        unsafe { etamil_record_put(record, key.as_ptr(), number("1")) };
+        let changed = unsafe { etamil_field_set(record, key.as_ptr(), number("2")) };
+        assert_eq!(shown(changed), "{அ: 2}");
+        assert_eq!(shown(record), "{அ: 1}");
     }
 
     /// The bug the parity job caught: this aborted the compiled program with
@@ -1329,8 +1351,9 @@ mod tests {
         let record = etamil_record();
         let name = std::ffi::CString::new("vitY").unwrap();
 
-        unsafe { etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr()) };
-        unsafe { etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr()) };
+        let record =
+            unsafe { etamil_index_set(record, text("pa"), text("shop@okhdfcbank"), name.as_ptr()) };
+        let record = unsafe { etamil_index_set(record, text("tr"), text("INV-9"), name.as_ptr()) };
 
         assert_eq!(shown(etamil_index(record, text("pa"))), "shop@okhdfcbank");
         assert_eq!(shown(etamil_index(record, text("tr"))), "INV-9");

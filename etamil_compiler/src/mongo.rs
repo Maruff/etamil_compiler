@@ -261,7 +261,7 @@ mod tests {
         for (key, value) in pairs {
             fields.insert((*key).to_string(), value.clone());
         }
-        Value::Map(fields)
+        Value::Map(fields.into())
     }
 
     fn decimal(text: &str) -> Value {
