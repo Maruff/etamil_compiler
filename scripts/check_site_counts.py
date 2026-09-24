@@ -10,6 +10,10 @@ stale the moment a keyword lands, and they did: a token and five standard
 library functions were added and the site went on saying 202 tokens across 541
 spellings when the answer was 203 and 545. Nobody reading the site can tell.
 
+It also compares the version the site advertises with the compiler's own. That
+is the one field a release must edit by hand -- the download URLs beside it are
+unversioned, behind GitHub's /latest/ redirect -- and at 1.1.0 it was missed.
+
 `eTamil_Code/test/counts.test.js` already guards the extension's figures for
 this reason. This does the same for the site, from the same source: the token
 table in `lexer.rs`, read through `generate_editor_support.py` rather than
@@ -41,10 +45,12 @@ import importlib.util
 import os
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GENERATOR = ROOT / "scripts" / "generate_editor_support.py"
+CARGO = ROOT / "etamil_compiler" / "Cargo.toml"
 
 SKIP_DIRS = {"node_modules", "_site_preview", ".git", "worktrees", ".jekyll-cache"}
 # Release notes record what was true at a release and must not be rewritten.
@@ -74,6 +80,34 @@ def counts() -> dict[str, int]:
         "builtins": len(generator.read_builtins()),
         "stdlib": len(generator.read_stdlib()),
     }
+
+
+def released_version() -> str:
+    """The compiler's own version, from the package it publishes."""
+    with CARGO.open("rb") as handle:
+        return tomllib.load(handle)["package"]["version"]
+
+
+def site_version(root: Path) -> str | None:
+    """`brand.version` from _config.yml, read without a YAML dependency.
+
+    The file is Jekyll's and the key is two spaces under `brand:`, so a state
+    machine over the lines is enough and keeps this script's dependencies at
+    the standard library, as its neighbours in scripts/ do.
+    """
+    config = root / "_config.yml"
+    if not config.is_file():
+        return None
+    in_brand = False
+    for line in config.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^\S", line):
+            in_brand = line.startswith("brand:")
+            continue
+        if in_brand:
+            match = re.match(r'^  version:\s*"?([^"\s]+)"?', line)
+            if match:
+                return match.group(1)
+    return None
 
 
 def site_root(argv: list[str]) -> Path | None:
@@ -142,12 +176,33 @@ def main(argv: list[str]) -> int:
         )
         return 0
 
-    findings = check(root, truth)
+    findings: list[str] = []
+
+    # The one field a release has to edit by hand. The download URLs beside it
+    # in _config.yml are deliberately unversioned, behind GitHub's /latest/
+    # redirect, so they need no release-time edit; brand.version does, and at
+    # 1.1.0 it was missed -- the site went on saying 1.0.0 in four places while
+    # the compiler was tagged v1.1.0.
+    released = released_version()
+    published = site_version(root)
+    if published is None:
+        findings.append(
+            "_config.yml  brand.version could not be read -- the check cannot "
+            "compare it with the compiler's"
+        )
+    elif published != released:
+        findings.append(
+            f"_config.yml  brand.version is {published}, "
+            f"etamil_compiler/Cargo.toml is {released}"
+        )
+
+    findings += check(root, truth)
     print(
         f"checked {root.name} against the lexer: {truth['tokens']} tokens, "
         f"{truth['spellings']} spellings, {truth['reserved']} reserved, "
         f"{truth['usable']} usable as names, {truth['builtins']} builtins, "
-        f"{truth['stdlib']} stdlib functions -- {len(findings)} stale\n"
+        f"{truth['stdlib']} stdlib functions, version {released} "
+        f"-- {len(findings)} stale\n"
     )
     for finding in findings:
         print(finding)
