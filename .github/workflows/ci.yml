@@ -10,6 +10,90 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # The text checks, in one job rather than once per operating system.
+  #
+  # All five read source as text and none of them needs a compiler, so running
+  # them inside the `compiler` matrix ran each one twice and reported a
+  # single-source-of-truth failure as two failures on two operating systems.
+  # A job of their own also names what broke: "conventions" failing says the
+  # repository disagrees with itself, not that a build is broken.
+  conventions:
+    name: conventions
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The website, for the counts check at the end. Public, so no token; and
+      # `path:` keeps it out of the way of the compiler checkout at the root.
+      - uses: actions/checkout@v4
+        with:
+          repository: Maruff/eTamil
+          path: site
+
+      # Explicit rather than the runner's default, which is what the matrix
+      # relied on: these scripts are the gate on the language's own spelling
+      # rules and should not change behaviour when a runner image does.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Audits every keyword's romanization against the ezuqqu scheme. It was
+      # non-gating while 19 keywords were off-scheme; 18 are now on-scheme and
+      # the one that stays is recorded in transliterate.py with its reason, so a
+      # failure here is a real regression. See docs/ROADMAP.md item 6.
+      - name: Romanization scheme check
+        run: python scripts/transliterate.py --check
+
+      # The same scheme, applied to the names that are not keywords — modules,
+      # files, SQL tables and columns, record keys. `transliterate.py` reads
+      # lexer.rs and nothing else, which is how `viziqam` for விகிதம் survived
+      # in a module name, a table and two columns without any gate seeing it.
+      - name: Romanized name check
+        run: python scripts/check_names.py --check
+
+      # The `_` and `__` marks that say which ASCII is English and which is
+      # Tamil spelled in ASCII. `sum` and `col` are the same kind of word to
+      # everything else in this build; under the eTamil font one of them draws
+      # as ஸும் and the other as சொல், and only the mark tells them apart.
+      # docs/reference/SCRIPT_RULES.md.
+      - name: Script mark check
+        run: python scripts/check_script_rules.py --check
+
+      # Two differently named functions with the same body. Names cannot
+      # collide — that is already zero — so this is the quieter kind: four ways
+      # to pro-rate an amount by days and no agreement about which to call.
+      # docs, and the reasons a group is allowed, are in the script itself.
+      - name: Redundancy check
+        run: python scripts/check_redundancy.py --check
+
+      # What reaches a wasm build, and what the comments claim reaches one.
+      # The boundary is one `#[cfg(not(target_family = "wasm"))]` per module
+      # and it is described in prose in three places, all of which had drifted:
+      # the crate doc said everything past the front end was gated out when
+      # `vm` is not — which is the whole reason the editor on etamil.in runs a
+      # program rather than only checking one — and three modules had their
+      # notes off by one, a portable module's explanation sitting above the
+      # gated driver before it. A compiler cannot catch any of that.
+      - name: wasm boundary check
+        run: python scripts/check_wasm_boundary.py --check
+
+      # The website states how many keywords the language has in thirteen
+      # places — the home page's statistics, the keyword reference, the manual,
+      # the status table, the tour — and every one is a number typed by hand.
+      # They went stale the moment a token landed: the site said 202 across 541
+      # spellings when the answer was 203 and 545, and nothing anywhere said so.
+      # `eTamil_Code/test/counts.test.js` already guards the extension's
+      # figures; this guards the site's, from the same token table.
+      #
+      # It needs the site, which is a separate repository, hence the checkout
+      # above. Note what that couples: a pull request here that adds a keyword
+      # fails this step until the site is updated too. That is the intended
+      # reading — the published numbers are about to become wrong — but it does
+      # mean the fix lives in another repository.
+      - name: Site counts match the lexer
+        run: python scripts/check_site_counts.py --check --site site
+
   build-and-test:
     name: compiler (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -41,35 +125,6 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
-
-      # Audits every keyword's romanization against the ezuqqu scheme. It was
-      # non-gating while 19 keywords were off-scheme; 18 are now on-scheme and
-      # the one that stays is recorded in transliterate.py with its reason, so a
-      # failure here is a real regression. See docs/ROADMAP.md item 6.
-      - name: Romanization scheme check
-        run: python ../scripts/transliterate.py --check
-
-      # The same scheme, applied to the names that are not keywords — modules,
-      # files, SQL tables and columns, record keys. `transliterate.py` reads
-      # lexer.rs and nothing else, which is how `viziqam` for விகிதம் survived
-      # in a module name, a table and two columns without any gate seeing it.
-      - name: Romanized name check
-        run: python ../scripts/check_names.py --check
-
-      # The `_` and `__` marks that say which ASCII is English and which is
-      # Tamil spelled in ASCII. `sum` and `col` are the same kind of word to
-      # everything else in this build; under the eTamil font one of them draws
-      # as ஸும் and the other as சொல், and only the mark tells them apart.
-      # docs/reference/SCRIPT_RULES.md.
-      - name: Script mark check
-        run: python ../scripts/check_script_rules.py --check
-
-      # Two differently named functions with the same body. Names cannot
-      # collide — that is already zero — so this is the quieter kind: four ways
-      # to pro-rate an amount by days and no agreement about which to call.
-      # docs, and the reasons a group is allowed, are in the script itself.
-      - name: Redundancy check
-        run: python ../scripts/check_redundancy.py --check
 
       - name: Build (release)
         run: cargo build --release
@@ -242,9 +297,19 @@ jobs:
         with:
           workspaces: etamil_compiler
 
+      # The whole suite with the feature on, not a `mongo` filter.
+      #
+      # The filter used to be the last argument, and nothing in the suite is
+      # named `mongo`: all 303 tests were filtered out in both binaries and the
+      # job went green having executed nothing. It still proved the driver
+      # compiles, which is what this job is named for, but a green tick that
+      # says "and test" while running no test is worse than one that does not
+      # claim to. Running everything with the feature enabled costs seconds on
+      # top of the build and answers the wider question — whether turning the
+      # driver on breaks anything else.
       - name: Build and test with --features mongodb
         working-directory: etamil_compiler
-        run: cargo test --features mongodb mongo
+        run: cargo test --features mongodb
 
   # The browser build, which nothing here checked until it broke twice in one
   # afternoon and neither failure showed up on a native build.
