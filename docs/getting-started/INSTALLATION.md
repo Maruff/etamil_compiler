@@ -45,6 +45,23 @@ cargo build --release
 
 The binary lands at `target/release/etamil` (`etamil.exe` on Windows).
 
+### What that build does not include
+
+`cargo build --release` builds the default features — `sqlite` and
+`http-client` — and nothing else. **The released packages are not that build.**
+`release.yml` sets `FEATURES: postgres,mysql`, so every downloaded binary, and
+the one running on the droplet, carries both database drivers.
+
+A program that opens PostgreSQL therefore works against a released binary and
+fails against a plain local one. To build what actually ships:
+
+```bash
+cargo build --release --features postgres,mysql
+```
+
+LLVM stays out of the packages on purpose: it needs LLVM installed on whatever
+machine runs the compiler. Add `--features llvm` yourself when you want it.
+
 ## Install the binary
 
 ### Linux / macOS

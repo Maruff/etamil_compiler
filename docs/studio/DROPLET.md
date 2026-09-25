@@ -14,7 +14,7 @@ is untested it says so.
 |---|---|
 | **Nginx** | reverse proxy and TLS for the demo domains |
 | **PostgreSQL 16** | tuned for a small box: `shared_buffers=128MB`, `max_connections=20`, `work_mem=4MB` |
-| **eTamil 1.1.0** | `/usr/local/bin/etamil`, from the release tarball — **includes the PostgreSQL driver** |
+| **eTamil 1.1.0** | `/root/.local/bin/etamil`, from the release tarball — **includes the PostgreSQL driver**. `install.sh` without `sudo` puts it under `$HOME`, not `/usr/local/bin`, and nothing adds `~/.local/bin` to `PATH`: reach it by full path. |
 | **Ollama** | `granite3.3:2b` (1.5 G) and `llama3.2:3b` (2.0 G) |
 | **Toolchains** | Rust 1.98.1, LLVM 18.1.3, Python 3.12.3 + pip, Node 22.23.3 + npm 10.9.9 |
 | **Hardening** | UFW (22/80/443), fail2ban, unattended-upgrades, 4 GiB swap at `vm.swappiness=10` |
@@ -60,11 +60,15 @@ systemctl start ollama
 One line, from your own machine:
 
 ```bash
-ssh root@201.79.9.90 "systemctl stop ollama && cd /root/src/etamil_compiler && LLVM_SYS_180_PREFIX=/usr/lib/llvm-18 cargo build --release --features llvm -j2; systemctl start ollama"
+ssh root@201.79.9.90 'bash -lc "systemctl stop ollama && cd /root/src/etamil_compiler && LLVM_SYS_180_PREFIX=/usr/lib/llvm-18 cargo build --release --features llvm -j2; systemctl start ollama"'
 ```
 
 The `;` before the restart rather than `&&` is deliberate: Ollama comes back
 whether the build succeeded or failed.
+
+`bash -lc` is not decoration. A non-interactive `ssh` command gets the default
+`PATH`, which does not include `/root/.cargo/bin`, so the same line without it
+stops at `cargo: command not found` — after Ollama has already been stopped.
 
 **Nothing needs stopping in the other direction.** Builds are occasional and
 manual; if one is running when a request arrives, the model simply loads more
@@ -96,7 +100,7 @@ this machine.
 |---|---|
 | `qos.ae` | ✅ HTTPS, placeholder page, certificate to 2026-12-24 |
 | `kelir.org` | ✅ HTTPS, placeholder page, certificate to 2026-12-24 |
-| `conf.ae` | ⏳ HTTP only — see below |
+| `conf.ae` | ✅ HTTPS, placeholder page, certificate to 2026-12-24 — covers `www.conf.ae` |
 | `api.kelir.org` | resolves here; awaits the kElir API deploy |
 | `ineo.in` | hosted elsewhere, to be moved |
 
@@ -109,27 +113,28 @@ the `location` block in `/etc/nginx/sites-available/<name>` with a
 it skips any domain that does not resolve to this machine, and leaves existing
 certificates alone.
 
-### conf.ae
+### conf.ae took three attempts
 
-Two certbot attempts failed. The cause is not this machine:
+The first two certbot runs failed against a stale resolver, not against this
+machine:
 
 ```
 Invalid response from http://conf.ae/... 194.39.149.163: 404
 ```
 
-All four authoritative nameservers return `201.79.9.90`, as do Google,
-Cloudflare, Quad9 and OpenDNS. Let's Encrypt's own resolver still held the
-previous host. **The record's TTL is 7200 s**, so the stale copy expires within
-two hours of the change.
+All four authoritative nameservers returned `201.79.9.90`, as did Google,
+Cloudflare, Quad9 and OpenDNS. Only Let's Encrypt's own resolver still held the
+previous host, and the record's TTL was 7200 s. The third attempt, made after
+that expired, succeeded for both `conf.ae` and `www.conf.ae`.
 
-Retry once after that:
+The lesson generalises to any domain moved here: check the TTL, wait it out,
+and **prove the move with a staging dry run before spending a real attempt.**
+Let's Encrypt allows five failed validations per domain per hour; a dry run
+costs none of them, because it runs against the staging CA:
 
 ```bash
-certbot --nginx -d conf.ae -d www.conf.ae --non-interactive --agree-tos -m esan@etamil.in --redirect
+certbot certonly --nginx -d conf.ae -d www.conf.ae --dry-run --non-interactive
 ```
-
-Let's Encrypt allows five failed validations per domain per hour and `conf.ae`
-has used two. Do not retry in a loop.
 
 ---
 
