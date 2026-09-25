@@ -214,6 +214,19 @@ rustls-pemfile = ["dep:rustls-pemfile"]
 webpki-roots = ["dep:webpki-roots"]
 mongodb = ["dep:mongodb"]
 
+[profile.dev]
+# Line tables, not full debug info. The default, `debug = true`, produced a
+# 40.9 GB target/debug against release's 4.1 GB on the same code -- ten times
+# the size -- because every test binary carries a .pdb on Windows MSVC and
+# there are eight of them. It also broke a build outright: `LNK1318 ... LIMIT`
+# is the linker failing to write one of those files, and the disk it was
+# writing to had run out.
+#
+# `debug = 1` keeps what is actually read -- the file and line in a panic or a
+# backtrace -- and drops the variable-inspection data a step debugger wants.
+# Raise it to `true` locally if you need to step through something.
+debug = 1
+
 [profile.release]
 # The headline feature is a small standalone binary, so optimize for that.
 lto = true
