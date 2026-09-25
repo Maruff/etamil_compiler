@@ -213,7 +213,7 @@ jobs:
 
       - name: Install the tree-sitter grammar's tools
         working-directory: tree-sitter-etamil
-        run: npm install
+        run: npm ci
 
       # The committed src/parser.c must match grammar.js. Consumers build from
       # the committed parser without running the CLI, so a stale one ships a
@@ -241,7 +241,7 @@ jobs:
 
       - name: Install highlight.js
         working-directory: eTamil_HighlightJS
-        run: npm install
+        run: npm ci
 
       - name: highlight.js definition
         working-directory: eTamil_HighlightJS
