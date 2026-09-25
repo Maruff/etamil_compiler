@@ -13,7 +13,35 @@
 //! environment cleared, which is the only arrangement that can tell the
 //! difference.
 
-use std::process::Command;
+use std::process::{Command, Output};
+
+/// Run a command, waiting out a copy that the kernel still holds open.
+///
+/// `fs::copy` closes the file it writes, but `cargo test` runs tests on
+/// several threads, and a spawn from any of them can inherit that descriptor
+/// between the open and the close. Linux then refuses to exec the file --
+/// ETXTBSY, `ExecutableFileBusy` -- until the inherited copy is gone.
+///
+/// It is a race rather than a state: the same test passes on the next attempt.
+/// CI hit it once in this file while four other tests copied and ran the same
+/// binary successfully in the same job. Retrying is what the race deserves;
+/// the alternative is serialising every test here for a window measured in
+/// milliseconds.
+fn run_when_not_busy(command: &mut Command) -> Output {
+    let mut waited = std::time::Duration::ZERO;
+    for attempt in 0..8 {
+        match command.output() {
+            Ok(output) => return output,
+            Err(error) if error.kind() == std::io::ErrorKind::ExecutableFileBusy => {
+                let pause = std::time::Duration::from_millis(20 << attempt);
+                std::thread::sleep(pause);
+                waited += pause;
+            }
+            Err(error) => panic!("run the compiler: {error:?}"),
+        }
+    }
+    panic!("the copied compiler was still busy after {waited:?}");
+}
 
 /// Run the built binary on `source`, from a scratch directory, with every
 /// route to an on-disk standard library removed.
@@ -37,13 +65,13 @@ fn run_isolated(source: &str) -> (bool, String) {
     });
     std::fs::copy(env!("CARGO_BIN_EXE_etamil"), &installed).expect("copy the binary");
 
-    let output = Command::new(&installed)
-        .arg("--vm")
-        .arg(&program)
-        .current_dir(&directory)
-        .env_remove("ETAMIL_PATH")
-        .output()
-        .expect("run the compiler");
+    let output = run_when_not_busy(
+        Command::new(&installed)
+            .arg("--vm")
+            .arg(&program)
+            .current_dir(&directory)
+            .env_remove("ETAMIL_PATH"),
+    );
 
     let combined = format!(
         "{}{}",
@@ -121,13 +149,13 @@ fn a_file_on_disk_overrides_the_built_in_copy() {
     });
     std::fs::copy(env!("CARGO_BIN_EXE_etamil"), &installed).expect("copy the binary");
 
-    let output = Command::new(&installed)
-        .arg("--vm")
-        .arg(directory.join("program.qmz"))
-        .current_dir(&directory)
-        .env_remove("ETAMIL_PATH")
-        .output()
-        .expect("run the compiler");
+    let output = run_when_not_busy(
+        Command::new(&installed)
+            .arg("--vm")
+            .arg(directory.join("program.qmz"))
+            .current_dir(&directory)
+            .env_remove("ETAMIL_PATH"),
+    );
 
     let combined = String::from_utf8_lossy(&output.stdout).into_owned();
     let _ = std::fs::remove_dir_all(&directory);
