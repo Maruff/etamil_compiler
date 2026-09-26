@@ -19,6 +19,8 @@ eN varuvAy = 100000;       // romanized (ezuqqu scheme)
 
 That is the core idea: Tamil semantics you can type on a plain keyboard.
 
+The syntax — `{ }` for blocks, `;` to end a statement, and much of the rest — was evaluated against C, C++ and Rust before it was finalised, and Rust shaped the semantics too: a failure is a value, not an exception. A few keywords were adopted from [Ezhil](https://en.wikipedia.org/wiki/Ezhil_(programming_language)), the earlier Tamil programming language.
+
 📖 **[Read the user manual at etamil.in/manual](https://etamil.in/manual/)** —
 installation through to a database-backed HTTP service, in
 [English](https://etamil.in/manual/) and
