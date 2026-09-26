@@ -4,6 +4,9 @@
 {{Use Indian English|date=September 2026}}
 {{Infobox programming language
 | name = eTamil
+| logo = ETamil logo.png
+| logo size = 250px
+| logo alt = eTamil logo: a stylised Tamil letter beside the words "eTamil.in – A FinTech DSL"
 | paradigm = [[Programming paradigm|Multi-paradigm]]: [[Procedural programming|procedural]] ([[Imperative programming|imperative]]), [[Functional programming|functional]], [[Structured programming|structured]]
 | designer = Esan Maruff
 | developer = Esan Maruff
@@ -16,7 +19,7 @@
 | license = [[GNU Affero General Public License|AGPL-3.0-or-later]]<ref name="citation" />
 | file ext = .qmz, .etamil<ref name="vscode" />
 | website = {{URL|https://etamil.in|etamil.in}}
-| influenced by = [[Rust (programming language)|Rust]],<ref name="readme" /> [[SQL]]<ref name="keywords" />
+| influenced by = [[Rust (programming language)|Rust]], [[C++]], [[Ezhil (programming language)|Ezhil]]<ref name="readme" /><ref name="site-about" />
 }}
 
 '''eTamil''' is a [[high-level programming language|high-level]] [[programming language]] whose keywords are words of the [[Tamil language]]. It is designed as a [[domain-specific language]] for Indian [[accounting]], [[taxation in India|taxation]] and [[financial technology]], and also provides the features of a [[general-purpose programming language]], including first-class functions, user-defined record types, modules, database access and an [[Web server|HTTP server]].<ref name="readme" /><ref name="citation" />
@@ -65,7 +68,7 @@ eTamil's design documents state that the language should let Tamil-speaking acco
 Error messages are bilingual, in Tamil and English, and report a line and column. Columns count written Tamil letters rather than bytes.<ref name="readme" />
 
 == Syntax and semantics ==
-eTamil uses braces to delimit blocks and semicolons to end statements. Unlike most brace-delimited languages, it places a condition before its keyword, following the [[subject–object–verb word order|subject–object–verb]] order of Tamil: <code>(x > 0) எனில் { … }</code> reads as "(x > 0) if { … }".<ref name="readme" />
+eTamil uses braces to delimit blocks and semicolons to end statements; these and much of the rest of its syntax were evaluated against [[C (programming language)|C]], [[C++]] and Rust before being finalised, and a few keywords were adopted from Ezhil.<ref name="readme" /><ref name="site-about" /> Unlike most brace-delimited languages, eTamil places a condition before its keyword: <code>(x > 0) எனில் { … }</code> reads as "(x > 0) if { … }".<ref name="readme" />
 
 === Keywords and scripts ===
 The language has 203 keywords, accepted in 545 spellings in total.<ref name="readme" /> Each keyword has a Tamil-script form and a romanized form in the project's ''ezuqqu'' scheme, which maps each Tamil letter to ASCII characters so that programs can be typed on an ordinary keyboard. The scheme keeps the three Tamil nasal consonants distinct: {{lang|ta|ண}} is written <code>N</code>, {{lang|ta|ந}} <code>n</code> and {{lang|ta|ன}} <code>Z</code>.<ref name="keywords" /><ref name="romanization" /> Most keywords also have an English alias beginning with an underscore, such as <code>_if</code>.<ref name="keywords" />
@@ -294,6 +297,7 @@ The name combines "e", as in electronic, with ''Tamil''.<!-- VERIFY: the reposit
 <ref name="site-initial">{{cite web |author=Esan Maruff |title=Initial commit |url=https://github.com/Maruff/eTamil/commit/d14d4f8772ad286ec19a9a2c5a5bc94b718db8b8 |website=GitHub |date=5 July 2024 |access-date=26 September 2026}}</ref>
 <ref name="site-removal">{{cite web |author=Esan Maruff |title=Rebuild the site around the compiler that actually exists |url=https://github.com/Maruff/eTamil/commit/bd1d3d0e675852407ed85fc06dcb45727dfd7289 |website=GitHub |date=18 August 2026 |access-date=26 September 2026}}</ref>
 <ref name="repos">GitHub repositories by Esan Maruff, with creation dates: [https://github.com/Maruff/eTml eTml] (26 June 2024), [https://github.com/Maruff/eTamil-ciRal eTamil-ciRal] (20 August 2024), [https://github.com/Maruff/eTamil-nivaqi eTamil-nivaqi] (1 September 2024), [https://github.com/Maruff/Accounts Accounts] (19 February 2025), [https://github.com/Maruff/nivaqi-v1 nivaqi-v1] (28 March 2025), [https://github.com/Maruff/etamil-compiler eTamil-Compiler] (25 January 2026), [https://github.com/Maruff/etamil-vscode eTamil-vscode] (25 January 2026), [https://github.com/Maruff/etamil_transpiler eTamil_transpiler] (2 February 2026). Retrieved 26 September 2026.</ref>
+<ref name="site-about">{{cite web |author=Esan Maruff |title=About eTamil and its author |url=https://etamil.in/about/ |website=etamil.in |access-date=26 September 2026}}</ref>
 <ref name="manual">{{cite web |title=eTamil user manual |url=https://etamil.in/manual/ |website=etamil.in |access-date=26 September 2026}}</ref>
 }}
 
