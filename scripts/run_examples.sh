@@ -110,7 +110,7 @@ while IFS= read -r file; do
         fi
     fi
 done < <(find "$ROOT/examples" "$ROOT/nUlakam" \
-             -type f \( -name '*.qmz' -o -name '*.etamil' \) | sort)
+             -type f -name '*.qmz' | sort)
 
 echo
 echo "-------------------------------------------"

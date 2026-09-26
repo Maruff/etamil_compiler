@@ -8,7 +8,7 @@ Complete VS Code extension for eTamil programming language with syntax highlight
 
 ### Language Support
 - **Language ID**: `etamil`
-- **File Extensions**: `.etamil`, `.qmz`
+- **File Extension**: `.qmz`
 - **Syntax Highlighting**: Tamil + romanized keyword support
 - **Comments**: Single-line (`//`) comments
 - **Bracket Matching**: Automatic bracket and brace pairing
@@ -371,7 +371,7 @@ cargo build --release
 ## 🎯 Common Workflows
 
 ### Basic Script Development
-1. Create a `.etamil` file with eTamil code
+1. Create a `.qmz` file with eTamil code
 2. Use the IntelliSense (Ctrl+Space) for keyword suggestions
 3. Run with: `etamil --vm yourfile.qmz`
 
@@ -420,7 +420,7 @@ chmod +x /path/to/etamil
 
 ## ✅ Snippets Quick Reference
 
-Type these shortcuts in an `.etamil` file:
+Type these shortcuts in a `.qmz` file:
 
 **VS Code Snippets**: The extension provides code templates for common constructs.
 Press `Ctrl+Space` while typing to see available keywords and autocomplete suggestions.

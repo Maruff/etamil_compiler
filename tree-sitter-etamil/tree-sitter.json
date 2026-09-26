@@ -7,7 +7,7 @@
       "title": "eTamil",
       "scope": "source.etamil",
       "path": ".",
-      "file-types": ["qmz", "etamil"],
+      "file-types": ["qmz"],
       "injection-regex": "^(etamil|qmz)$",
       "highlights": ["queries/highlights.scm"],
       "injections": [],

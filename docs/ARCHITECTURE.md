@@ -136,7 +136,7 @@ need only implement the trait.
 ## The pipeline
 
 ```
-source (.etamil / .qmz)
+source (.qmz)
   ↓  module.rs        இறக்கு resolution, splicing imports ahead of the importer
   ↓  lexer.rs         logos; 203 keywords; errors carry line and column
   ↓  parser.rs        hand-written recursive descent → Expr / Stmt

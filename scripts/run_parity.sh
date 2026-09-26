@@ -175,7 +175,7 @@ feed() { echo "0"; }
 # drain. Belt as well as braces: the `feed` above is the other half, and it is
 # there for the parity reason rather than this one.
 mapfile -t FILES < <(find "$ROOT/examples" "$ROOT/nUlakam" \
-                         -type f \( -name '*.qmz' -o -name '*.etamil' \) | sort)
+                         -type f -name '*.qmz' | sort)
 
 if [[ ${#FILES[@]} -eq 0 ]]; then
     echo "error: no examples found under $ROOT/examples or $ROOT/nUlakam."
