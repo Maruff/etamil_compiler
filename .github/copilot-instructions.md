@@ -13,7 +13,7 @@ that. If something is not implemented, say so.
 ## Pipeline
 
 ```
-Source (.etamil / .qmz)
+Source (.qmz)
   ↓  src/lexer.rs        logos, 196 keyword tokens, reports line/column errors
 Tokens
   ↓  src/parser.rs       hand-written recursive descent → Expr / Stmt

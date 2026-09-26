@@ -90,7 +90,7 @@ cat program.qmz | etamil --vm            # program from stdin
 
 `உள்ளிடு` (`uLLitu`) reads one line from standard input, so piping a value in answers the first prompt.
 
-Both `.etamil` and `.qmz` extensions work — the compiler does not inspect the extension.
+eTamil source files use the `.qmz` extension, and it is the only one the editor extension recognises. The compiler itself does not inspect the extension.
 
 ## Exit codes
 

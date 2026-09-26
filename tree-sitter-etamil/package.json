@@ -42,8 +42,7 @@
     {
       "scope": "source.etamil",
       "file-types": [
-        "qmz",
-        "etamil"
+        "qmz"
       ],
       "highlights": "queries/highlights.scm"
     }

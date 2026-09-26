@@ -18,7 +18,7 @@ module Rouge
       desc 'A Tamil-vocabulary language for Indian accounting, tax and FinTech (etamil.in)'
       tag 'etamil'
       aliases 'etamil'
-      filenames '*.qmz', '*.etamil'
+      filenames '*.qmz'
       mimetypes 'text/x-etamil'
 
       state :root do
