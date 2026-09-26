@@ -10,6 +10,9 @@
 இறக்கு "../../nUlakam/paNam.qmz";
 இறக்கு "../../nUlakam/kaNiqam.qmz";
 
+// __வரி_கணக்கு(ஆண்டு_வருமானம்) — income tax under the new regime slabs__
+//
+// __A ladder, not a single rate on the whole income: nothing to 3 lakh, 5% on the next 4, 20% above 7. Each band is charged only on the part of the income that falls inside it, which is why crossing a threshold never leaves someone worse off than before.__
 செயல் வரி_கணக்கு(ஆண்டு_வருமானம்) {
     (ஆண்டு_வருமானம் <= 300000) எனில் { திரும்பு 0; }
     (ஆண்டு_வருமானம் <= 700000) எனில் {

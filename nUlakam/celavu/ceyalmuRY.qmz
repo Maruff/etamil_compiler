@@ -59,6 +59,9 @@
     திரும்பு வட்டமிடு(உண்மை_இழப்பு - இயல்பு_இழப்பு, 4);
 }
 
+// __நல்ல_வெளியீடு(உள்ளீட்டு_அலகுகள், உண்மை_இழப்பு) — good output, input less actual loss__
+//
+// __The denominator every per-unit figure in process costing needs. Uses actual loss, not normal loss: normal loss is absorbed by the good units and carries no cost of its own, which is what makes the surviving units cost more than the input did.__
 செயல் நல்ல_வெளியீடு(உள்ளீட்டு_அலகுகள், உண்மை_இழப்பு) {
     திரும்பு வட்டமிடு(உள்ளீட்டு_அலகுகள் - உண்மை_இழப்பு, 4);
 }
@@ -229,6 +232,9 @@
 }
 
 // சமமான_அலகின்_செலவு(காலத்தின்_செலவு, சமமான_அலகுகள்)
+// __சமமான_அலகின்_செலவு(காலத்தின்_செலவு, சமமான_அலகுகள்) — cost per equivalent unit__
+//
+// __தவறு when there are no equivalent units, since a period with no work done has no unit cost — zero would be a figure that reads as free production. Rounded to four places because this number is multiplied back out over thousands of units.__
 செயல் சமமான_அலகின்_செலவு(காலத்தின்_செலவு, சமமான_அலகுகள்) {
     (சமமான_அலகுகள் <= 0) எனில் {
         திரும்பு தவறு("சமமான அலகுகள் இல்லை  (no equivalent units)");

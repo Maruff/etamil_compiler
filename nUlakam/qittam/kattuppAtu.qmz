@@ -47,6 +47,9 @@
     திரும்பு பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், கணு_குறி) == 1;
 }
 
+// __பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், கணு_குறி) — how many control accounts lie on the path to the root__
+//
+// __Walks up the parent chain counting as it goes. More than one is the error worth finding: a WBS branch controlled at two levels has its cost counted twice in the roll-up, and the totals still look plausible because every individual number is right.__
 செயல் பாதையில்_கணக்குகள்(கணக்குகள், கணுக்கள், கணு_குறி) {
     (கணு_குறி == "") எனில் { திரும்பு 0; }
     எண்ணிக்கை = 0;
@@ -74,6 +77,9 @@
 
 // __--- The time-phased budget ---------------------------------------------__
 
+// __காலப்_பகிர்வு(காலம்_எண், காலத்_தொகை) — one period's slice of the budget__
+//
+// __A time-phased budget is a list of these. Held as period number and amount rather than as dates, because the phasing is relative to the project and survives the start date moving.__
 செயல் காலப்_பகிர்வு(காலம்_எண், காலத்_தொகை) {
     திரும்பு { காலம்_எண்: காலம்_எண், காலத்_தொகை: காலத்_தொகை };
 }
@@ -92,6 +98,9 @@
     திரும்பு ஓடும்_கூட்டல்;
 }
 
+// __மொத்த_நிதி(பகிர்வுகள்) — the phased budget added back up__
+//
+// __Must equal the budget at completion. The check that phasing has not quietly changed the total: moving money between periods is replanning, and creating or losing some is an error.__
 செயல் மொத்த_நிதி(பகிர்வுகள்) {
     ஓடும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_பகிர்வு இல் பகிர்வுகள் {

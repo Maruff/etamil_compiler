@@ -88,6 +88,9 @@
     திரும்பு எண்களே(குறியீட்டெண்);
 }
 
+// __எண்களே(பாடம்) — is every character of this string a digit?__
+//
+// __Used on tariff and HS codes, which are digit strings and not numbers: 0810 must keep its leading zero, so it is carried as text and validated here rather than parsed. An empty string answers பொய், because nothing is not a code.__
 செயல் எண்களே(பாடம்) {
     இடம்_எண் = 0;
     (இடம்_எண் < நீளம்(பாடம்)) சுற்று {

@@ -128,6 +128,9 @@
 // __Each reader returns சரி({கிடைத்த_மதிப்பு, அடுத்த_இடம்}) or தவறு(செய்தி),__
 // __so a caller both gets the value and knows where to carry on from.__
 
+// __ஜே_சரம்(மூல_உரை, தொடக்க_இடம்) — parse one JSON string literal__
+//
+// __Every parser here takes the text and a position and returns சரி with the value and the position after it, which is what lets them nest without a shared cursor. It handles the six escapes JSON uses in practice; a unicode escape is passed through rather than decoded. An unterminated string is தவறு, not a truncated value.__
 செயல் ஜே_சரம்(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = தொடக்க_இடம் + 1;   // __past the opening quote__
     விடை = "";
@@ -160,6 +163,9 @@
     திரும்பு சரி({கிடைத்த_மதிப்பு: விடை, அடுத்த_இடம்: நடப்பு_இடம்});
 }
 
+// __ஜே_எண்(மூல_உரை, தொடக்க_இடம்) — parse one JSON number__
+//
+// __Accepts the sign, decimal point and exponent JSON allows, and stops at the first character that cannot continue a number — so the caller's delimiter is still there to be read. JSON has one numeric type and eTamil's எண் covers it.__
 செயல் ஜே_எண்(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = தொடக்க_இடம்;
     சேகரம் = "";
@@ -185,6 +191,9 @@
     திரும்பு சரி({கிடைத்த_மதிப்பு: மதிப்பு(எண்_விளைவு), அடுத்த_இடம்: நடப்பு_இடம்});
 }
 
+// __ஜே_அணி(மூல_உரை, தொடக்க_இடம்) — parse one JSON array__
+//
+// __Recurses through ஜே_மதிப்பு for each element, so arrays of objects of arrays work without anything special. A trailing comma is an error: JSON does not allow one, and accepting it here would produce documents that other parsers reject.__
 செயல் ஜே_அணி(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = ஜே_வெண்மை(மூல_உரை, தொடக்க_இடம் + 1);
     விடை = [];
@@ -247,6 +256,9 @@
     });
 }
 
+// __ஜே_பொருள்(மூல_உரை, தொடக்க_இடம்) — parse one JSON object__
+//
+// __The function this module exists to prove possible: the key is read from the text and used as a computed record key, building a record whose fields were never written in the source. That is the one host capability a JSON parser needs, and having it is why layer 0 stays thin.__
 செயல் ஜே_பொருள்(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = ஜே_வெண்மை(மூல_உரை, தொடக்க_இடம் + 1);
     விடை = {};
@@ -283,6 +295,9 @@
     திரும்பு சரி({கிடைத்த_மதிப்பு: விடை, அடுத்த_இடம்: நடப்பு_இடம்});
 }
 
+// __ஜே_மதிப்பு(மூல_உரை, தொடக்க_இடம்) — parse any JSON value, whatever comes next__
+//
+// __Dispatches on the first non-space character to string, number, array, object, true, false or null. The recursive heart of the parser: every container calls back into this, which is how arbitrary nesting is handled without a stack of its own.__
 செயல் ஜே_மதிப்பு(மூல_உரை, தொடக்க_இடம்) {
     நடப்பு_இடம் = ஜே_வெண்மை(மூல_உரை, தொடக்க_இடம்);
     ஒரு_எழுத்து = ஜே_எழுத்து(மூல_உரை, நடப்பு_இடம்);

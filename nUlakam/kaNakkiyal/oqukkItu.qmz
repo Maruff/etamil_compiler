@@ -141,6 +141,9 @@
     };
 }
 
+// __வயது_அட்டவணை_அச்சிடு(அட்டவணை) — print a receivables ageing schedule__
+//
+// __The standard 30-day buckets, with the total last so it can be checked against the ledger. Printing is kept out of the function that computes the ageing, so the buckets can be tested without asserting on layout.__
 செயல் வயது_அட்டவணை_அச்சிடு(அட்டவணை) {
     அச்சு "வயது அட்டவணை";
     அச்சு "  நடப்பு (0-30)   : " & அட்டவணை.நடப்பு;

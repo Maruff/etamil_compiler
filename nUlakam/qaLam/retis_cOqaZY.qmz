@@ -116,6 +116,9 @@
 
 }
 
+// __கொண்டுள்ளதா_எளிது(பாடம், தேடல்) — does this text contain that substring?__
+//
+// __A test fixture, implemented by splitting and counting the pieces rather than by scanning. Local to the Redis tests so they assert on replies without depending on col.qmz, which they are not testing.__
 செயல் கொண்டுள்ளதா_எளிது(பாடம், தேடல்) {
     திரும்பு நீளம்(பிரி(சொல்லாக்கு(பாடம்), தேடல்)) > 1;
 }

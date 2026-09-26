@@ -6,6 +6,9 @@
 // __copies of the local values it uses, taken when it was made — the way a__
 // __Rust `move` closure does.__
 
+// __இரட்டி(எண் எ) எண் — double a number__
+//
+// __The example's worked case: a named function that is then held in a variable and called through it. Trivial on purpose — what is being shown is that a செயல் is a value, not what this one computes.__
 செயல் இரட்டி(எண் எ) எண் { திரும்பு எ * 2; }
 
 // __A named function, held and called through a variable__

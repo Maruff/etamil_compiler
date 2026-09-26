@@ -14,6 +14,9 @@
 இறக்கு "../aNi.qmz";
 
 // வரிசை_ஆக்கு(கணக்கு_குறி, பற்று_தொகை, வரவு_தொகை)
+// __வரிசை_ஆக்கு(கணக்கு_குறி, பற்று_தொகை, வரவு_தொகை) — one line of a journal entry__
+//
+// __Both amounts are carried, not a single signed figure with a side flag. A line is conventionally one or the other, but holding both means the totals below add without knowing the convention, and a line that somehow has two is visible rather than silently netted.__
 செயல் வரிசை_ஆக்கு(கணக்கு_குறி, பற்று_தொகை, வரவு_தொகை) {
     திரும்பு {
         கணக்கு_குறி: கணக்கு_குறி,
@@ -27,11 +30,17 @@
     திரும்பு வரிசை_ஆக்கு(கணக்கு_குறி, தொகை_மதிப்பு, 0);
 }
 
+// __வரவு_வரிசை(கணக்கு_குறி, தொகை_மதிப்பு) — a credit line__
+//
+// __The credit half of the pair with பற்று_வரிசை. Writing the two sides through named helpers rather than positional zeroes is what stops the commonest journal mistake, which is not an unbalanced entry but a balanced one posted the wrong way round.__
 செயல் வரவு_வரிசை(கணக்கு_குறி, தொகை_மதிப்பு) {
     திரும்பு வரிசை_ஆக்கு(கணக்கு_குறி, 0, தொகை_மதிப்பு);
 }
 
 // பரிவர்த்தனை_ஆக்கு(ஒரு_எண், நாள், விவரம், வரிசைகள்)
+// __பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்) — assemble one transaction__
+//
+// __Builds it; it does not post it. The balance check belongs to posting, so a caller can construct an entry, inspect it and amend it before the ledger ever sees it — and what the ledger accepts is still only what balances.__
 செயல் பரிவர்த்தனை_ஆக்கு(பரிவர்த்தனை_எண், நாள், விவரம், வரிசைகள்) {
     திரும்பு {
         பரிவர்த்தனை_எண்: பரிவர்த்தனை_எண்,
@@ -50,6 +59,9 @@
     திரும்பு மொத்தம்;
 }
 
+// __மொத்த_வரவு(வரிசைகள்) — the credits of one transaction, added up__
+//
+// __Compared against மொத்த_பற்று to decide whether the entry balances. Computed over the lines as given rather than accumulated as they are added, so the check cannot be fooled by an entry assembled in an unusual order.__
 செயல் மொத்த_வரவு(வரிசைகள்) {
     மொத்தம் = 0;
     ஒவ்வொரு ஒரு_வரிசை இல் வரிசைகள் {
@@ -165,6 +177,9 @@
 }
 
 // பரிவர்த்தனை_நாள்(பேரேடு, பரிவர்த்தனை_எண்)
+// __பரிவர்த்தனை_நாள்(பேரேடு, பரிவர்த்தனை_எண்) — the date a transaction was posted on__
+//
+// __சரி with the date, or தவறு for a number that is not in the ledger. Needed because the ledger is append-only and flat: the date lives on the entry, and a period report has to ask rather than assume the order of posting matches the order of dates.__
 செயல் பரிவர்த்தனை_நாள்(பேரேடு, பரிவர்த்தனை_எண்) {
     ஒவ்வொரு பதிவு இல் பேரேடு {
         (பதிவு.பரிவர்த்தனை_எண் == பரிவர்த்தனை_எண்) எனில் {

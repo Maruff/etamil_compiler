@@ -20,14 +20,38 @@
 // __--- Accounts -------------------------------------------------------------__
 // __A shop's books. The codes are what the ledger posts against.__
 
+// __கணக்கு_வங்கி() — the bank account code, 1000__
+//
+// __The shop's chart of accounts as functions rather than bare strings, so a mistyped code is a name the compiler does not know instead of a posting that lands nowhere. The numbering follows the usual convention: 1000s assets, 2000s liabilities, 3000s equity, 4000s income, 5000s expense.__
 செயல் கணக்கு_வங்கி()          { திரும்பு "1000"; }
+// __கணக்கு_வாடிக்கையாளர்() — trade receivables, 1100__
+//
+// __What customers owe on a credit sale. An asset, so a sale debits it and a receipt credits it.__
 செயல் கணக்கு_வாடிக்கையாளர்() { திரும்பு "1100"; }
+// __கணக்கு_சரக்கிருப்பு() — inventory, 1200__
+//
+// __Goods held for sale. Credited when something is sold, against cost of goods sold — the second of the two entries a sale produces.__
 செயல் கணக்கு_சரக்கிருப்பு()   { திரும்பு "1200"; }
+// __கணக்கு_வரி_செலுத்த() — GST payable, 2100__
+//
+// __A liability, not income: the tax on a sale is collected for the government and held. Keeping it in its own account is what makes the return a query rather than a reconstruction.__
 செயல் கணக்கு_வரி_செலுத்த()    { திரும்பு "2100"; }
+// __கணக்கு_மூலதனம்() — owner's capital, 3000__
+//
+// __What the owner put in. Equity, so it carries a credit balance like the liabilities it ranks behind.__
 செயல் கணக்கு_மூலதனம்()        { திரும்பு "3000"; }
+// __கணக்கு_விற்பனை() — sales, 4000__
+//
+// __Income, and the tax-exclusive figure only. Posting the invoice total here would overstate revenue by the GST and understate the liability by the same amount, leaving the ledger balanced and both numbers wrong.__
 செயல் கணக்கு_விற்பனை()        { திரும்பு "4000"; }
+// __கணக்கு_விற்ற_செலவு() — cost of goods sold, 5000__
+//
+// __The other half of a sale: inventory leaves at cost and arrives here. Recording the revenue without this is what makes a shop look profitable while its stock quietly empties.__
 செயல் கணக்கு_விற்ற_செலவு()    { திரும்பு "5000"; }
 
+// __கடை_கணக்குகள்() — the shop's whole chart of accounts__
+//
+// __Built through கணக்கு_ஆக்கு so every account is validated against the five IFRS roots as it is created. Seven accounts is enough for a shop that sells, collects and owes tax, and small enough to read in one screen.__
 செயல் கடை_கணக்குகள்() {
     திரும்பு [
         மதிப்பு(கணக்கு_ஆக்கு(கணக்கு_வங்கி(), "வங்கி", "சொத்து", "நடப்பு")),
@@ -94,6 +118,9 @@
 
 // __--- The invoice ----------------------------------------------------------__
 
+// __விலைப்பட்டியல்_அச்சிடு(விலைப்பட்டியல்_எண், வாடிக்கையாளர்_பெயர், நாள், வண்டி_வரிசைகள், கணக்கு) — print a GST invoice__
+//
+// __Per-line tax, then the totals, which is the shape a GST invoice legally has to take: an order mixing 5% and 18% cannot be taxed on its sum, and the lines are where the rates live.__
 செயல் விலைப்பட்டியல்_அச்சிடு(விலைப்பட்டியல்_எண், வாடிக்கையாளர்_பெயர்,
                                 நாள், வண்டி_வரிசைகள், கணக்கு) {
     அச்சு "====================================================";

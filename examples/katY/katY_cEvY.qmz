@@ -20,6 +20,9 @@
 // __environment in anything real; written here so the example runs.__
 செயல் வலைக்கொக்கி_இரகசியம்() { திரும்பு "wh_test_secret"; }
 
+// __பிழை_பதில்(செய்தி) — an error as a JSON body__
+//
+// __One shape for every failure, so a client can parse a refusal the same way it parses a result. Built through ஜேசான்_ஆக்கு rather than by concatenation, so a message containing a quote cannot produce a body that will not parse.__
 செயல் பிழை_பதில்(செய்தி) {
     திரும்பு ஜேசான்_ஆக்கு({பிழை: செய்தி});
 }

@@ -180,6 +180,9 @@
 }
 
 // வளத்தைத்_தேடு(வளங்கள், வளக்_குறி)
+// __வளத்தைத்_தேடு(வளங்கள், வளக்_குறி) — find one resource by its code__
+//
+// __சரி with the resource, or தவறு naming the code. A timesheet line against an unknown resource has no rate, and costing it at zero would quietly understate the actual cost that everything downstream is measured against.__
 செயல் வளத்தைத்_தேடு(வளங்கள், வளக்_குறி) {
     ஒவ்வொரு ஒரு_வளம் இல் வளங்கள் {
         (ஒரு_வளம்["குறி"] == வளக்_குறி) எனில் { திரும்பு சரி(ஒரு_வளம்); }

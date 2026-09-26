@@ -128,14 +128,23 @@
                                           நாள்_மதிப்பு));
 }
 
+// __ஆண்டைப்_பெறு(ஒரு_நாள்) — the year, as a number__
+//
+// __A slice of the ISO text, not arithmetic on a day count. The format was chosen so that reading a field costs nothing; going through நாள்_வேறுபாடு to recover a year would be slower and no more correct.__
 செயல் ஆண்டைப்_பெறு(ஒரு_நாள்) {
     திரும்பு மதிப்பு(எண்ணாக்கு(துண்டு(ஒரு_நாள், 0, 4)));
 }
 
+// __மாதத்தைப்_பெறு(ஒரு_நாள்) — the month, 1 to 12__
+//
+// __Returns a number, so callers can compare and index with it. The two-digit text would sort correctly but 09 and 9 are not equal, and that inequality has ended up in a report more than once.__
 செயல் மாதத்தைப்_பெறு(ஒரு_நாள்) {
     திரும்பு மதிப்பு(எண்ணாக்கு(துண்டு(ஒரு_நாள், 5, 2)));
 }
 
+// __நாளைப்_பெறு(ஒரு_நாள்) — the day of the month, 1 to 31__
+//
+// __Says nothing about whether the date exists: the host accepts 2026-02-31 and rolls it forward. Put anything from outside the program through நாள்_செல்லுபடியா first.__
 செயல் நாளைப்_பெறு(ஒரு_நாள்) {
     திரும்பு மதிப்பு(எண்ணாக்கு(துண்டு(ஒரு_நாள், 8, 2)));
 }
@@ -156,6 +165,9 @@
 }
 
 // மாத_நாட்கள்(ஆண்டு_மதிப்பு, மாத_மதிப்பு)
+// __மாத_நாட்கள்(ஆண்டு_மதிப்பு, மாத_மதிப்பு) — how many days that month has__
+//
+// __The one place the 28/29/30/31 question is answered, so no caller has to carry the rhyme. February consults நெட்டாண்டா rather than assuming 28, which is why an instalment schedule built on this does not drift in a leap year.__
 செயல் மாத_நாட்கள்(ஆண்டு_மதிப்பு, மாத_மதிப்பு) {
     (மாத_மதிப்பு == 2) எனில் {
         (நெட்டாண்டா(ஆண்டு_மதிப்பு)) எனில் { திரும்பு 29; }
@@ -167,11 +179,17 @@
 }
 
 // மாத_முதல்(ஒரு_நாள்) / மாத_இறுதி(ஒரு_நாள்)
+// __மாத_முதல்(ஒரு_நாள்) — the first of that month__
+//
+// __Always day 1, so it needs no length lookup. Together with மாத_இறுதி it gives the period boundaries that a monthly report, an ageing bucket or an interest rest is computed between.__
 செயல் மாத_முதல்(ஒரு_நாள்) {
     திரும்பு நாளாக_வடிவமை(ஆண்டைப்_பெறு(ஒரு_நாள்),
                             மாதத்தைப்_பெறு(ஒரு_நாள்), 1);
 }
 
+// __மாத_இறுதி(ஒரு_நாள்) — the last day of that month__
+//
+// __Asks மாத_நாட்கள் rather than adding a month and stepping back a day, which would go wrong from the 29th, 30th and 31st. The end of January reached by shifting a month from 31 January is not 28 February in most libraries, and this is the source of the classic month-end bug.__
 செயல் மாத_இறுதி(ஒரு_நாள்) {
     ஆண்டு_மதிப்பு = ஆண்டைப்_பெறு(ஒரு_நாள்);
     மாத_மதிப்பு = மாதத்தைப்_பெறு(ஒரு_நாள்);
@@ -179,6 +197,9 @@
                             மாத_நாட்கள்(ஆண்டு_மதிப்பு, மாத_மதிப்பு));
 }
 
+// __மாத_இறுதியா(ஒரு_நாள்) — is this the last day of its month?__
+//
+// __The test a month-end rule needs: a schedule that falls on the end of the month has to land on the 28th, 30th or 31st depending on where it is, and a fixed day number cannot express that.__
 செயல் மாத_இறுதியா(ஒரு_நாள்) {
     திரும்பு ஒரு_நாள் == மாத_இறுதி(ஒரு_நாள்);
 }
@@ -292,6 +313,9 @@
     திரும்பு ஆ;
 }
 
+// __பிந்தையது(அ, ஆ) — the later of two dates__
+//
+// __A string comparison, like முந்தையது, because ISO-8601 text sorts chronologically. Ties return அ, which matters only in that the answer is a date and not a copy — the two are equal.__
 செயல் பிந்தையது(அ, ஆ) {
     (அ >= ஆ) எனில் { திரும்பு அ; }
     திரும்பு ஆ;
@@ -310,6 +334,9 @@
     திரும்பு மீதி(நாள்_வேறுபாடு(காலத்_தொடக்கம்(), ஒரு_நாள்) + 4, 7);
 }
 
+// __வாரநாள்_பெயர்(வாரநாள்_எண்) — the Tamil name of a weekday number__
+//
+// __Takes the number வாரநாள் returns, 0 for Sunday. Kept apart from வாரநாள் so the arithmetic can be tested without asserting on names, and so a caller working in another language can replace the naming without touching the calendar.__
 செயல் வாரநாள்_பெயர்(வாரநாள்_எண்) {
     (வாரநாள்_எண் == 0) எனில் { திரும்பு "ஞாயிறு"; }
     (வாரநாள்_எண் == 1) எனில் { திரும்பு "திங்கள்"; }

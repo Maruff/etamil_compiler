@@ -72,6 +72,9 @@
 // __Addition, subtraction and multiplication by a count: exact on any backend,__
 // __because whole numbers are exact in a double.__
 செயல் காசு_கூட்டு(அ, ஆ) { திரும்பு அ + ஆ; }
+// __காசு_கழி(அ, ஆ) — subtract one money amount from another__
+//
+// __Plain subtraction, named for symmetry with காசு_கூட்டு so money arithmetic reads the same way throughout. No rounding: the operands are already at the scale money is held in, and rounding a difference that was never rounded into existence only loses paise.__
 செயல் காசு_கழி(அ, ஆ) { திரும்பு அ - ஆ; }
 
 // __காசு_மடங்கு(மொத்த_பைசா, எண்ணிக்கை) — a price times a quantity__

@@ -74,10 +74,16 @@
 
 // __--- Variances -----------------------------------------------------------__
 
+// __செலவு_வேறுபாடு(ஈட்டியது, உண்மைச்_செலவு) — cost variance, CV__
+//
+// __What the work accomplished was worth, less what it cost. Positive is under budget. This is the total cost variance of standard costing with a project's physical progress as the flexed budget, which is why comparing spend against the original budget answers a different and much less useful question.__
 செயல் செலவு_வேறுபாடு(ஈட்டியது, உண்மைச்_செலவு) {
     திரும்பு ஈட்டியது - உண்மைச்_செலவு;
 }
 
+// __கால_வேறுபாடு(ஈட்டியது, திட்டமிட்டது) — schedule variance, SV, in money__
+//
+// __In rupees, not days, and this catches everyone once. −85 does not mean 85 days late; it means the work that should have been done by now but was not was budgeted at 85. Turning that into time needs the schedule in pAqY.qmz. It also goes to zero at completion whatever happened, because by then all the planned work has been earned.__
 செயல் கால_வேறுபாடு(ஈட்டியது, திட்டமிட்டது) {
     திரும்பு ஈட்டியது - திட்டமிட்டது;
 }
@@ -105,6 +111,9 @@
     திரும்பு சரி(ஈட்டியது / உண்மைச்_செலவு);
 }
 
+// __காலச்_செயல்திறன்(ஈட்டியது, திட்டமிட்டது) — schedule performance index, SPI__
+//
+// __Work done over work planned: 1 is on schedule, below 1 behind. தவறு when nothing was planned yet, because a ratio against zero is not infinity here, it is a question that has not started. Like SV it drifts to 1 as the project completes, so it is a mid-project signal and not a verdict.__
 செயல் காலச்_செயல்திறன்(ஈட்டியது, திட்டமிட்டது) {
     (திட்டமிட்டது == 0) எனில் {
         திரும்பு தவறு("திட்டமிட்ட மதிப்பு பூஜ்யம்: செயல்திறன் இன்னும் பொருளற்றது");
@@ -112,6 +121,9 @@
     திரும்பு சரி(ஈட்டியது / திட்டமிட்டது);
 }
 
+// __நிறைவுப்_பங்கு_நிதியால்(ஈட்டியது, மொத்த_நிதி) — percent complete, by value__
+//
+// __Earned value over the whole budget. Measures work, not money spent and not time elapsed — the three differ, and reporting spend as progress is how a project is 90% complete for half its duration.__
 செயல் நிறைவுப்_பங்கு_நிதியால்(ஈட்டியது, மொத்த_நிதி) {
     (மொத்த_நிதி == 0) எனில் { திரும்பு தவறு("மொத்த நிதி பூஜ்யம்"); }
     திரும்பு சரி(ஈட்டியது / மொத்த_நிதி * 100);
@@ -149,10 +161,16 @@
     திரும்பு சரி(உண்மைச்_செலவு + (மொத்த_நிதி - ஈட்டியது) / கூட்டுத்_திறன்);
 }
 
+// __முடிக்க_மீதி(முடிவில்_மதிப்பீடு, உண்மைச்_செலவு) — estimate to complete, ETC__
+//
+// __What the rest is now expected to cost: the forecast at completion less what has already gone. Derived from the forecast rather than from the remaining budget, so it inherits whatever efficiency assumption that forecast was built on.__
 செயல் முடிக்க_மீதி(முடிவில்_மதிப்பீடு, உண்மைச்_செலவு) {
     திரும்பு முடிவில்_மதிப்பீடு - உண்மைச்_செலவு;
 }
 
+// __முடிவில்_வேறுபாடு(மொத்த_நிதி, முடிவில்_மதிப்பீடு) — variance at completion, VAC__
+//
+// __The budget less the forecast: the overrun as it is expected to land, while there is still time to act on it. Negative is an overspend. This is the number a steering committee should be shown, because CV reports what has happened and VAC reports where it ends.__
 செயல் முடிவில்_வேறுபாடு(மொத்த_நிதி, முடிவில்_மதிப்பீடு) {
     திரும்பு மொத்த_நிதி - முடிவில்_மதிப்பீடு;
 }
@@ -173,6 +191,9 @@
 }
 
 // எதிர்பார்க்கும்_காலம்(அசல்_காலம், காலத்_திறன்)
+// __எதிர்பார்க்கும்_காலம்(அசல்_காலம், காலத்_திறன்) — the duration this pace implies__
+//
+// __The planned duration divided by the schedule index. Assumes the pace so far continues, which is the weakest assumption in the module and stated rather than hidden: a project that lost time to a one-off will beat this, and one that is structurally slow will not.__
 செயல் எதிர்பார்க்கும்_காலம்(அசல்_காலம், காலத்_திறன்) {
     (காலத்_திறன் == 0) எனில் { திரும்பு தவறு("காலச் செயல்திறன் பூஜ்யம்"); }
     திரும்பு சரி(அசல்_காலம் / காலத்_திறன்);
@@ -207,6 +228,9 @@
     });
 }
 
+// __நிலவரத்தை_அச்சிடு(நிலவரப்_பதிவு) — print a status record as a report block__
+//
+// __Prints the English acronyms beside the Tamil names, because PV, EV, AC, CV, SV, CPI and SPI are what the literature and the audience use. The schedule variance line says in money, not in time, on the line itself — the one place that warning is certain to be read.__
 செயல் நிலவரத்தை_அச்சிடு(நிலவரப்_பதிவு) {
     அச்சு "── ஈட்டு மதிப்பு நிலவரம் (earned value status) ──";
     அச்சு "  திட்டமிட்டது  (PV)  : " & நிலவரப்_பதிவு.திட்டமிட்டது;

@@ -94,6 +94,9 @@
 }
 
 // முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை)
+// __முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை) — what a deposit is worth at maturity__
+//
+// __Principal plus compound interest, so the compounding frequency matters: the same nominal rate paid quarterly and annually gives different money, and quoting one while computing the other is the commonest error in a deposit schedule.__
 செயல் முதிர்வுத்_தொகை(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை) {
     திரும்பு அசல்_தொகை
            + கூட்டு_வட்டி(அசல்_தொகை, ஆண்டு_விகிதம், ஆண்டுகள், ஆண்டுக்கு_எத்தனை);

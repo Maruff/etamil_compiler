@@ -66,6 +66,9 @@
                            / ஒரு_செயல்பாடு["மொத்த_அளவு"], 4));
 }
 
+// __நுகர்வு_ஆக்கு(செயல்பாட்டுக்_குறி, நுகர்ந்த_அளவு) — one product's consumption of one activity__
+//
+// __How many setups, inspections or orders this product actually caused. The whole of activity-based costing is that this number differs between products in a way machine hours do not capture.__
 செயல் நுகர்வு_ஆக்கு(செயல்பாட்டுக்_குறி, நுகர்ந்த_அளவு) {
     திரும்பு {"செயல்பாடு": செயல்பாட்டுக்_குறி, "அளவு": நுகர்ந்த_அளவு};
 }
@@ -107,6 +110,9 @@
                            / மொத்த_அடிப்படை, 2));
 }
 
+// __தொகுப்புகளின்_கூட்டல்(செயல்பாடுகள்) — every activity cost pool added up__
+//
+// __Must equal the overhead being assigned. The audit that activity-based costing redistributes overhead rather than inventing it: a finer allocation should move cost between products, never change how much there is.__
 செயல் தொகுப்புகளின்_கூட்டல்(செயல்பாடுகள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_செயல்பாடு இல் செயல்பாடுகள் {

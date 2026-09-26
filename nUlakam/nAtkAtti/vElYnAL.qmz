@@ -48,6 +48,9 @@
 }
 
 // பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி)
+// __பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி) — is this value in the list?__
+//
+// __A linear scan, which is right for the lists it is used on: a weekend is two weekday numbers and a holiday calendar is a few dozen dates. Local to this module so the calendar has no dependency on col.qmz.__
 செயல் பட்டியலில்_உள்ளதா(ஒரு_பட்டியல், தேடும்_உருப்படி) {
     ஒவ்வொரு ஓர்_உருப்படி இல் ஒரு_பட்டியல் {
         (ஓர்_உருப்படி == தேடும்_உருப்படி) எனில் { திரும்பு மெய்; }
@@ -55,10 +58,16 @@
     திரும்பு பொய்;
 }
 
+// __வார_ஓய்வா(ஒரு_நாள், ஒரு_நாட்காட்டி) — does this date fall on the weekly off?__
+//
+// __The off days come from the calendar rather than being assumed to be Saturday and Sunday. A six-day working week with only Sunday off is common here, and a factory running Tuesday to Sunday is not unusual.__
 செயல் வார_ஓய்வா(ஒரு_நாள், ஒரு_நாட்காட்டி) {
     திரும்பு பட்டியலில்_உள்ளதா(ஒரு_நாட்காட்டி["வார_ஓய்வு"], வாரநாள்(ஒரு_நாள்));
 }
 
+// __விடுமுறையா(ஒரு_நாள், ஒரு_நாட்காட்டி) — is this date a declared holiday?__
+//
+// __Holidays are listed as dates, not rules, because most of the ones that matter in India move with the lunar calendar and cannot be derived from the Gregorian one. The list is the caller's to supply and to keep current.__
 செயல் விடுமுறையா(ஒரு_நாள், ஒரு_நாட்காட்டி) {
     திரும்பு பட்டியலில்_உள்ளதா(ஒரு_நாட்காட்டி["விடுமுறைகள்"], ஒரு_நாள்);
 }
@@ -113,6 +122,9 @@
                    & சொல்லாக்கு(தேடல்_எல்லை()) & " days)");
 }
 
+// __முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி) — the last working day on or before this date__
+//
+// __Steps back until it finds one. The pair to அடுத்த_வேலை_நாள், and the direction matters: a payment due on a holiday is usually brought forward, while a deadline is usually pushed back, and neither convention is safe to assume for the other.__
 செயல் முந்தைய_வேலை_நாள்(ஒரு_நாள், ஒரு_நாட்காட்டி) {
     (இல்லை வேலை_வாரம்_உள்ளதா(ஒரு_நாட்காட்டி)) எனில் {
         திரும்பு தவறு("நாட்காட்டியில் வேலை நாள் எதுவும் இல்லை  "

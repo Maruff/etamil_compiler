@@ -332,6 +332,9 @@
     திரும்பு கடமைகளுக்கு_ஒதுக்கு(தள்ளுபடித்_தொகை, இலக்குகள்);
 }
 
+// __குறியில்_உள்ளதா(குறிகள், தேடும்_குறி) — is this code in the list?__
+//
+// __Used when checking that a contract's obligations are distinct and accounted for once. Thin wrapper over உள்ளதா, named for what it is looking for so the call sites read as the rule they are enforcing.__
 செயல் குறியில்_உள்ளதா(குறிகள், தேடும்_குறி) {
     திரும்பு உள்ளதா(குறிகள், தேடும்_குறி);
 }

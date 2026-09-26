@@ -82,6 +82,9 @@
 }
 
 // நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்)
+// __நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்) — one person's hours on one day__
+//
+// __Summed across every activity they touched, which is how an over-booked day is found: eight hours split four ways still totals eight, and twelve does not become visible on any single line.__
 செயல் நாள்_மொத்த_மணிகள்(உள்ளீடுகள், வளக்_குறி, ஒரு_நாள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_உள்ளீடு இல் உள்ளீடுகள் {
@@ -129,6 +132,9 @@
 }
 
 // நிலையை_மாற்று(ஒரு_உள்ளீடு, புதிய_நிலைமை)
+// __நிலையை_மாற்று(ஒரு_உள்ளீடு, புதிய_நிலைமை) — move a timesheet entry to a new state__
+//
+// __Refuses a transition the workflow does not allow, and returns a new entry rather than changing the old one. This is where actual cost is born, so an approved entry that can be edited back to draft is an audit trail that says nothing.__
 செயல் நிலையை_மாற்று(ஒரு_உள்ளீடு, புதிய_நிலைமை) {
     (இல்லை நிலை_மாற்றம்_சரியா(ஒரு_உள்ளீடு["நிலைமை"], புதிய_நிலைமை)) எனில் {
         திரும்பு தவறு("இந்த நிலை மாற்றம் அனுமதிக்கப்படவில்லை  "
@@ -248,6 +254,9 @@
 }
 
 // வளத்துக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், வளக்_குறி)
+// __வளத்துக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், வளக்_குறி) — one person's hours and cost, totalled__
+//
+// __Both figures together, because they are checked against each other: hours times the rate should be the amount, and a mismatch means a rate changed part-way through the period. Rounded only at the end, so the total is not the sum of rounded lines.__
 செயல் வளத்துக்கு_மொத்தம்(கணக்கிட்ட_உள்ளீடுகள், வளக்_குறி) {
     தொகைக்_கூட்டல் = 0;
     மணிக்_கூட்டல் = 0;

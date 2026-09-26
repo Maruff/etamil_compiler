@@ -17,10 +17,16 @@
     எண் ஆண்டு_வீதம்,
     எண் மாதங்கள்,
 
+    // __புதிது(பெயர், அசல், ஆண்டு_வீதம், மாதங்கள்) கடன் — make one loan__
+    //
+    // __A constructor on the shape itself, so a கடன் is only ever made one way and the shape's field checks run every time. Called as கடன்.புதிது(...), without an instance.__
     செயல் புதிது(பெயர், அசல், ஆண்டு_வீதம், மாதங்கள்) கடன் {
         திரும்பு கடன்{பெயர்: பெயர், அசல்: அசல், ஆண்டு_வீதம்: ஆண்டு_வீதம், மாதங்கள்: மாதங்கள்};
     }
 
+    // __மாத_வீதம்(இது) எண் — the monthly rate__
+    //
+    // __The annual rate over twelve. Kept as its own method because தவணை_தொகை and anything else that compounds must use the same figure: dividing by 12 in two places is how two calculations on one loan stop agreeing.__
     செயல் மாத_வீதம்(இது) எண் {
         திரும்பு இது.ஆண்டு_வீதம் / 12;
     }
@@ -37,6 +43,9 @@
         திரும்பு வட்டமிடு(இது.அசல் * ம * காரணி / (காரணி - 1), 2);
     }
 
+    // __மொத்த_வட்டி(இது) எண் — the interest paid over the whole term__
+    //
+    // __Every instalment less the principal. Derived from தவணை_தொகை rather than summed separately, so the total cannot disagree with the schedule the borrower is actually shown.__
     செயல் மொத்த_வட்டி(இது) எண் {
         திரும்பு வட்டமிடு(இது.தவணை_தொகை() * இது.மாதங்கள் - இது.அசல், 2);
     }

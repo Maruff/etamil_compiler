@@ -55,6 +55,9 @@
 }
 
 // தொடங்குகிறதா(சரம், முன்னொட்டு)
+// __தொடங்குகிறதா(சரம், முன்னொட்டு) — does the string start with this prefix?__
+//
+// __Checks the length first, so a prefix longer than the string answers பொய் rather than slicing past the end. Counts in characters, not bytes, which is what makes it correct for Tamil text where one letter is several bytes.__
 செயல் தொடங்குகிறதா(சரம், முன்னொட்டு) {
     அளவு = நீளம்(முன்னொட்டு);
     (அளவு > நீளம்(சரம்)) எனில் { திரும்பு பொய்; }
@@ -62,6 +65,9 @@
 }
 
 // முடிகிறதா(சரம், பின்னொட்டு)
+// __முடிகிறதா(சரம், பின்னொட்டு) — does the string end with this suffix?__
+//
+// __The mirror of தொடங்குகிறதா, offsetting from the end. Same length guard and the same character-based counting.__
 செயல் முடிகிறதா(சரம், பின்னொட்டு) {
     அளவு = நீளம்(பின்னொட்டு);
     மொத்தம் = நீளம்(சரம்);

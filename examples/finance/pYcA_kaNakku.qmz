@@ -25,10 +25,16 @@
     திரும்பு ரூபாய் * பைசா_ஒரு_ரூபாய் + பைசா;
 }
 
+// __முழு_ரூபாய்(மொத்த_பைசா) — how many whole rupees are in this many paise__
+//
+// __Floor division by 100. Money is carried as whole paise throughout this example so that both backends agree: the VM computes in fixed-point decimal and LLVM in whole numbers, and any fraction of a paisa is where the two would start to differ.__
 செயல் முழு_ரூபாய்(மொத்த_பைசா) {
     திரும்பு தரை(மொத்த_பைசா / பைசா_ஒரு_ரூபாய்);
 }
 
+// __மீதிப்_பைசா(மொத்த_பைசா) — the paise left over after the whole rupees__
+//
+// __Derived by subtracting the rupees back out rather than by a separate remainder, so the two halves always reconstruct the original amount exactly.__
 செயல் மீதிப்_பைசா(மொத்த_பைசா) {
     திரும்பு மொத்த_பைசா - முழு_ரூபாய்(மொத்த_பைசா) * பைசா_ஒரு_ரூபாய்;
 }

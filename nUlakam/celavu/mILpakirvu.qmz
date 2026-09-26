@@ -50,10 +50,16 @@
               "பகிர்வுகள்": பகிர்வுகள்};
 }
 
+// __பகிர்வு_ஆக்கு(க்கு_குறி, விகித_மதிப்பு) — one share of a service centre's cost__
+//
+// __Who receives it, and what proportion. Held as a list per centre rather than as a matrix, because most centres serve a handful of others and a full matrix of mostly zeroes is harder to read and to get right.__
 செயல் பகிர்வு_ஆக்கு(க்கு_குறி, விகித_மதிப்பு) {
     திரும்பு {"க்கு": க்கு_குறி, "விகிதம்": விகித_மதிப்பு};
 }
 
+// __பகிர்வு_மொத்தம்(ஒரு_நிலையம்) — the shares of one centre, added up__
+//
+// __Should come to 1. Worth checking before a run: shares that total less than 1 leave cost stranded in the service centre, and more than 1 create cost that was never incurred — and repeated distribution then fails to converge instead of failing loudly.__
 செயல் பகிர்வு_மொத்தம்(ஒரு_நிலையம்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_பகிர்வு இல் ஒரு_நிலையம்["பகிர்வுகள்"] {
@@ -64,6 +70,9 @@
 
 // __--- small helpers, named so they cannot collide across nUlakam -----------__
 
+// __உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_குறி) — is this a production centre?__
+//
+// __The test that stops the recursion. Cost sent to a production centre stays there; cost sent to a service centre has to go round again, which is the reciprocity this module exists for.__
 செயல் உற்பத்தியா(உற்பத்திக்_குறிகள், ஒரு_குறி) {
     ஒவ்வொரு ஓர்_உற்பத்தி இல் உற்பத்திக்_குறிகள் {
         (ஓர்_உற்பத்தி == ஒரு_குறி) எனில் { திரும்பு மெய்; }
@@ -71,6 +80,9 @@
     திரும்பு பொய்;
 }
 
+// __நிலையத்_தொகையைப்_பெறு(இருப்புகள், ஒரு_குறி) — one centre's running balance__
+//
+// __Zero for a centre not in the list, which is the right answer here: a centre that has received nothing yet holds nothing, and distinguishing that from absent would complicate every caller for no gain.__
 செயல் நிலையத்_தொகையைப்_பெறு(இருப்புகள், ஒரு_குறி) {
     ஒவ்வொரு ஓர்_இருப்பு இல் இருப்புகள் {
         (ஓர்_இருப்பு["குறி"] == ஒரு_குறி) எனில் { திரும்பு ஓர்_இருப்பு["தொகை"]; }
@@ -100,6 +112,9 @@
     திரும்பு விடை;
 }
 
+// __இருப்புகளின்_கூட்டல்(இருப்புகள்) — every balance added together__
+//
+// __The convergence test for repeated distribution: the run stops when what is still sitting in the service centres is immaterial. It is also the audit — the total across all centres must equal the direct cost put in, at every round.__
 செயல் இருப்புகளின்_கூட்டல்(இருப்புகள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஓர்_இருப்பு இல் இருப்புகள் {
@@ -332,6 +347,9 @@
 }
 
 // நேரடிச்_செலவின்_மொத்தம்(சேவை_நிலையங்கள்)
+// __நேரடிச்_செலவின்_மொத்தம்(சேவை_நிலையங்கள்) — the service centres' own cost, before any sharing__
+//
+// __What the apportionment has to account for exactly. Whichever of the three methods is used, the cost landing on production must equal this: simultaneous and repeated distribution both reach it, and step-down misses it by the reciprocal service it refused to see.__
 செயல் நேரடிச்_செலவின்_மொத்தம்(சேவை_நிலையங்கள்) {
     கூட்டல் = 0;
     ஒவ்வொரு ஒரு_நிலையம் இல் சேவை_நிலையங்கள் {

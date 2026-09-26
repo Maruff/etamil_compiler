@@ -147,6 +147,9 @@
     திரும்பு சரி(இணைப்பு);
 }
 
+// __விருப்பத்தைச்_சேர்(இணைப்பு, பெயர், மதிப்பீடு) — append one optional parameter to a UPI link__
+//
+// __An empty value is dropped rather than written as an empty parameter, because some UPI apps treat a present-but-blank field as a value and refuse the link. The value is percent-encoded; a payee name with a space is otherwise a link that ends at the space.__
 செயல் விருப்பத்தைச்_சேர்(இணைப்பு, பெயர், மதிப்பீடு) {
     (நீளம்(சொல்லாக்கு(மதிப்பீடு)) == 0) எனில் { திரும்பு இணைப்பு; }
     திரும்பு இணைப்பு & "&" & பெயர் & "=" & உரை_மறை(சொல்லாக்கு(மதிப்பீடு));

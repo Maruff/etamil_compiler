@@ -397,10 +397,41 @@ def unmark(text: str) -> str:
 
 
 def pick_doc(doc_lines: list[str], name: str) -> str:
-    """The line of a comment block that describes `name`, else the first."""
+    """The line of a comment block that describes `name`, else the first.
+
+    The library's convention is a bare signature line above the prose:
+
+        // அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்)
+        //
+        // __The cost per unit. தவறு when there are no units, because...__
+
+    Both lines start with the name, and returning the first one returned the
+    signature — which the caller can already see — while the sentence that
+    explains the function never left the file. 271 of 708 stdlib entries were
+    indexed that way, so a search for what a function *does* had nothing to
+    match on for more than a third of the library.
+
+    A line that is only a signature describes nothing, so it is skipped in
+    favour of one that says something, and kept only as a last resort where
+    there is nothing else.
+    """
+
+    def only_a_signature(line: str) -> bool:
+        if not line.startswith(name):
+            return False
+        close = line.find(")")
+        # Anything after the closing paren beyond punctuation is prose.
+        return close == -1 or line[close + 1 :].strip(" .:—-") == ""
+
+    # Best: the line that names the function and then says something about it.
     for line in doc_lines:
-        if line.startswith(name):
+        if line.startswith(name) and not only_a_signature(line):
             return line
+    # Otherwise any prose, skipping dividers and signature-only lines.
+    for line in doc_lines:
+        if line and not line.startswith("---") and not only_a_signature(line):
+            return line
+    # A signature is still better than nothing.
     for line in doc_lines:
         if line and not line.startswith("---"):
             return line

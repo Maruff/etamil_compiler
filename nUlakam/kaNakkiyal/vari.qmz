@@ -11,6 +11,9 @@
 இறக்கு "../kaNiqam.qmz";
 
 // வரி_விகிதம்_ஆக்கு(பெயர், விகிதம், கட்டுப்பாட்டு_கணக்கு)
+// __வரி_விகிதம்_ஆக்கு(பெயர், விகிதம், கட்டுப்பாட்டு_கணக்கு) — one GST rate__
+//
+// __The control account travels with the rate, because tax collected is money held for the government and not revenue. Binding the two here means a posting cannot use a rate without also knowing where the tax half belongs.__
 செயல் வரி_விகிதம்_ஆக்கு(பெயர், விகிதம், கட்டுப்பாட்டு_கணக்கு) {
     திரும்பு {
         பெயர்: பெயர்,
@@ -25,6 +28,9 @@
 }
 
 // வரியுடன்_மொத்தம்(அடிப்படை, விகிதம்)
+// __வரியுடன்_மொத்தம்(அடிப்படை, விகிதம்) — the invoice total, tax included__
+//
+// __Base plus tax, with the tax computed by வரி_தொகை so rounding happens in exactly one place. Adding a separately rounded tax to a base is how an invoice ends up a paisa away from the sum of its own lines.__
 செயல் வரியுடன்_மொத்தம்(அடிப்படை, விகிதம்) {
     திரும்பு அடிப்படை + வரி_தொகை(அடிப்படை, விகிதம்);
 }

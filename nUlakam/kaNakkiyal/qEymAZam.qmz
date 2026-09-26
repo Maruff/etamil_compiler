@@ -108,6 +108,9 @@
 }
 
 // குறையும்_அட்டவணை(கொள்முதல்_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு, எத்தனை_ஆண்டுகள்)
+// __குறையும்_அட்டவணை(கொள்முதல்_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு, எத்தனை_ஆண்டுகள்) — a reducing-balance depreciation schedule__
+//
+// __One row per year, carrying opening value, charge and closing value, so the schedule can be read straight into a note to the accounts. Each year works from the previous closing balance rather than recomputing from cost, which is what makes the method reducing-balance and not straight-line with a rate.__
 செயல் குறையும்_அட்டவணை(கொள்முதல்_மதிப்பு, ஆண்டு_விகிதம், எஞ்சிய_மதிப்பு, எத்தனை_ஆண்டுகள்) {
     அட்டவணை = [];
     மீதிப்_புத்தகம் = கொள்முதல்_மதிப்பு;

@@ -199,6 +199,9 @@
 // =========================================================================
 
 // இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்)
+// __இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்) — revenue earned to date on a performance obligation__
+//
+// __The transaction price at the measured progress, with progress clamped to the range first. Cumulative, not incremental: IFRS 15 measures the position and the period's revenue is the difference between two of these, which is what keeps a revised estimate from restating what was already reported.__
 செயல் இதுவரை_வருவாய்(ஒதுக்கிய_மதிப்பு, முன்னேற்றம்) {
     திரும்பு வட்டமிடு(ஒதுக்கிய_மதிப்பு * முன்னேற்றத்தை_வரம்பிடு(முன்னேற்றம்), 2);
 }

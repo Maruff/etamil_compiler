@@ -24,6 +24,9 @@
 }
 
 // மொத்த_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, அலகுகள்)
+// __மொத்த_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, அலகுகள்) — total contribution__
+//
+// __Unit contribution times volume: what is left to cover fixed cost and then to be profit. Not gross profit — fixed production overhead is excluded here and included there, which is exactly why marginal and absorption statements disagree when stock moves.__
 செயல் மொத்த_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு, அலகுகள்) {
     திரும்பு அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு) * அலகுகள்;
 }
@@ -54,6 +57,9 @@
 // __--- Break-even ---------------------------------------------------------__
 
 // சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு)
+// __சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) — break-even, in units__
+//
+// __Fixed cost divided by unit contribution. தவறு when contribution is zero or negative, because there is then no volume at which the product pays for itself — selling more loses more, and a break-even figure would imply a target worth chasing.__
 செயல் சமநிலை_அலகுகள்(நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
     பங்களிப்பு = அலகு_பங்களிப்பு(விற்பனை_விலை, மாறும்_செலவு);
     (பங்களிப்பு <= 0) எனில் {
@@ -82,6 +88,9 @@
 }
 
 // பாதுகாப்பு_விகிதம்(அலகுகள், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு)
+// __பாதுகாப்பு_விகிதம்(அலகுகள், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) — margin of safety, as a percentage__
+//
+// __How far sales can fall before break-even, relative to current volume. The percentage travels better than the absolute margin: 2,000 units of headroom means nothing until you know whether sales are 3,000 or 300,000.__
 செயல் பாதுகாப்பு_விகிதம்(அலகுகள், நிலையான_செலவு, விற்பனை_விலை, மாறும்_செலவு) {
     (அலகுகள் == 0) எனில் {
         திரும்பு தவறு("அலகுகள் பூஜ்யம்: பாதுகாப்பு விகிதம் இல்லை");

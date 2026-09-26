@@ -502,6 +502,9 @@
 இரண்டு_நீளம் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 6)];
 இரண்டு_குறுகல் = [முனை_ஆக்கு("P", "", 4), முனை_ஆக்கு("Q", "", 2)];
 
+// __காலத்தைப்_பெறு(முனைகள், தொடர்புகள்) — the project duration, for a test to assert on__
+//
+// __Solves the network and takes the one figure out of the result. A fixture: the tests care about how long the schedule comes to, and unwrapping the whole result in each of them would bury the assertion.__
 செயல் காலத்தைப்_பெறு(முனைகள், தொடர்புகள்) {
     திரும்பு மதிப்பு(தொடர்பு_வலையைக்_கணக்கிடு(முனைகள், தொடர்புகள்))["திட்ட_காலம்"];
 }

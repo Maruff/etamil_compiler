@@ -69,6 +69,9 @@
 }
 
 // தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்)
+// __தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்) — one dependency edge__
+//
+// __The kind and the lag travel with the edge rather than with either activity, because the same pair can be related more than once: a long task can be both SS+5 and FF+2 against its successor, which is how overlapping work is modelled honestly.__
 செயல் தொடர்பு_ஆக்கு(முன்னோடிக்_குறி, பின்தொடர்க்_குறி, தொடர்பு_வகை, தாமதம்) {
     திரும்பு {"முன்னோடி": முன்னோடிக்_குறி,
               "பின்தொடர்": பின்தொடர்க்_குறி,
@@ -76,6 +79,9 @@
               "தாமதம்": தாமதம்};
 }
 
+// __தொடர்பு_வகை_சரியா(தொடர்பு_வகை) — is this one of the four dependency types?__
+//
+// __A mistyped kind would otherwise fall through every branch of the pass and impose no constraint at all — an edge that is silently ignored, which shows up as a schedule that is impossibly short rather than as an error.__
 செயல் தொடர்பு_வகை_சரியா(தொடர்பு_வகை) {
     (தொடர்பு_வகை == "முடிவு_தொடக்கம்") எனில் { திரும்பு மெய்; }
     (தொடர்பு_வகை == "தொடக்கம்_தொடக்கம்") எனில் { திரும்பு மெய்; }
@@ -100,6 +106,9 @@
 
 // __--- helpers, named apart from pAqY.qmz's --------------------------------__
 
+// __முனையைப்_பெறு(முனைகள், முனைக்_குறி) — find one activity by its code__
+//
+// __சரி with the activity, or தவறு naming the code. An edge that points at an activity which is not in the network is a data error worth stopping on: ignoring it would drop a constraint and shorten the critical path.__
 செயல் முனையைப்_பெறு(முனைகள், முனைக்_குறி) {
     ஒவ்வொரு ஒரு_முனை இல் முனைகள் {
         (ஒரு_முனை["குறி"] == முனைக்_குறி) எனில் { திரும்பு சரி(ஒரு_முனை); }
@@ -107,12 +116,18 @@
     திரும்பு தவறு("முனை இல்லை  (no such activity): " & சொல்லாக்கு(முனைக்_குறி));
 }
 
+// __கால_அளவைப்_பெறு(முனைகள், முனைக்_குறி) — an activity's duration, or zero__
+//
+// __Answers 0 for an unknown code rather than propagating a தவறு, because this is called inside the forward pass where a missing activity contributes no time. முனையைப்_பெறு is the one to use when absence should be reported.__
 செயல் கால_அளவைப்_பெறு(முனைகள், முனைக்_குறி) {
     விடை = முனையைப்_பெறு(முனைகள், முனைக்_குறி);
     (தவறா(விடை)) எனில் { திரும்பு 0; }
     திரும்பு மதிப்பு(விடை)["கால_அளவு"];
 }
 
+// __முந்தியைப்_பெறு(முந்திகள், முனைக்_குறி, புலப்_பெயர்) — read one early-pass field__
+//
+// __தொடக்கம் or முடிவு for an activity, 0 if it has not been reached. The field is named rather than having two functions, because the four dependency types need different ends of the predecessor and the caller already knows which.__
 செயல் முந்தியைப்_பெறு(முந்திகள், முனைக்_குறி, புலப்_பெயர்) {
     ஒவ்வொரு ஒரு_நிலை இல் முந்திகள் {
         (ஒரு_நிலை["குறி"] == முனைக்_குறி) எனில் { திரும்பு ஒரு_நிலை[புலப்_பெயர்]; }
@@ -139,6 +154,9 @@
     திரும்பு விடை;
 }
 
+// __தாழ்த்தியை_அமை(தாழ்த்திகள், முனைக்_குறி, புது_முடிவு, கால_அளவு) — write one late-pass entry__
+//
+// __The mirror of முந்தியை_அமை: the backward pass knows the late finish and derives the late start, so both are written together and cannot drift apart. Rebuilds the list rather than mutating it, which keeps each pass a value the tests can compare.__
 செயல் தாழ்த்தியை_அமை(தாழ்த்திகள், முனைக்_குறி, புது_முடிவு, கால_அளவு) {
     விடை = [];
     ஒவ்வொரு ஒரு_நிலை இல் தாழ்த்திகள் {
@@ -356,6 +374,9 @@
     திரும்பு விடை;
 }
 
+// __தொடர்பு_முனையின்_புலம்(வலை_விடை, முனைக்_குறி, புலப்_பெயர்) — read one field from a solved network__
+//
+// __For callers reading the result rather than computing it. Returns தவறு for an unknown activity, unlike the internal readers that answer zero: a report asking for an activity that is not there has made a mistake worth hearing about.__
 செயல் தொடர்பு_முனையின்_புலம்(வலை_விடை, முனைக்_குறி, புலப்_பெயர்) {
     ஒவ்வொரு ஒரு_முனை இல் வலை_விடை["முனைகள்"] {
         (ஒரு_முனை["குறி"] == முனைக்_குறி) எனில் {

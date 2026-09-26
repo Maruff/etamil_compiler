@@ -274,6 +274,9 @@
 }
 
 // ஈடுசெய்ய_முடியுமா(இழப்பு_வகை, வருமான_வகை)
+// __ஈடுசெய்ய_முடியுமா(இழப்பு_வகை, வருமான_வகை) — may a loss of this head be set off against that head?__
+//
+// __Consults the rules table rather than encoding them here, because the Act permits some pairings and forbids others for reasons that are policy and not arithmetic — a speculation loss against business income is not allowed, and no principle predicts that.__
 செயல் ஈடுசெய்ய_முடியுமா(இழப்பு_வகை, வருமான_வகை) {
     ஒவ்வொரு ஒரு_விதி இல் ஈட்டு_விதிகள்() {
         (ஒரு_விதி["இழப்பு_வகை"] == இழப்பு_வகை

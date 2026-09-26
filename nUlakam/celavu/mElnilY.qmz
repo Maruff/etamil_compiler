@@ -26,12 +26,30 @@
 
 // __--- Which base ---------------------------------------------------------__
 
+// __அடிப்படை_அலகுகள்() — absorb on units produced__
+//
+// __The simplest base and the safest only when every unit is alike. Where a line makes several products, units charge a complex item and a trivial one the same overhead, which is the clearest form of cross-subsidy.__
 செயல் அடிப்படை_அலகுகள்()      { திரும்பு "அலகுகள்"; }
+// __அடிப்படை_இயந்திர_நேரம்() — absorb on machine hours__
+//
+// __The base for a machine-intensive shop, where power, depreciation and maintenance move with running time and not with headcount.__
 செயல் அடிப்படை_இயந்திர_நேரம்() { திரும்பு "இயந்திர_நேரம்"; }
+// __அடிப்படை_ஊதிய_நேரம்() — absorb on direct labour hours__
+//
+// __For a labour-intensive shop. Uses hours rather than wages, so a grade that is paid more does not attract more overhead for doing the same work in the same time.__
 செயல் அடிப்படை_ஊதிய_நேரம்()   { திரும்பு "ஊதிய_நேரம்"; }
+// __அடிப்படை_நேரடி_ஊதியம்() — absorb on direct wages__
+//
+// __Hours weighted by rate. Defensible where the costly grades really are the ones that consume supervision and space, and misleading where they are not.__
 செயல் அடிப்படை_நேரடி_ஊதியம்() { திரும்பு "நேரடி_ஊதியம்"; }
+// __அடிப்படை_நேரடிப்_பொருள்() — absorb on direct material cost__
+//
+// __The weakest of the five and kept because it is still used: material cost rarely drives factory overhead, so it mostly redistributes overhead by purchase price. Worth choosing only where handling and storage genuinely dominate.__
 செயல் அடிப்படை_நேரடிப்_பொருள்() { திரும்பு "நேரடிப்_பொருள்"; }
 
+// __அடிப்படை_செல்லுபடியா(அடிப்படை_வகை) — is this one of the five bases?__
+//
+// __Checked when the rate is built. A mistyped base would otherwise be recorded with the rate and carried into every absorption after it, and the products would cross-subsidise silently — the failure this module's header warns about, which no variance ever reveals.__
 செயல் அடிப்படை_செல்லுபடியா(அடிப்படை_வகை) {
     (அடிப்படை_வகை == "அலகுகள்")        எனில் { திரும்பு மெய்; }
     (அடிப்படை_வகை == "இயந்திர_நேரம்")  எனில் { திரும்பு மெய்; }
@@ -76,6 +94,9 @@
 // __--- Applying it --------------------------------------------------------__
 
 // உள்வாங்கியது(விகிதத்_தொகுதி, உண்மை_அடிப்படை)
+// __உள்வாங்கியது(விகிதத்_தொகுதி, உண்மை_அடிப்படை) — overhead charged onto actual activity__
+//
+// __The budgeted rate applied to what actually happened. This is the amount that reached the jobs, and it is almost never what was spent — the difference is the over- or under-absorption below, and it is a real amount that has to be disposed of, not an error to suppress.__
 செயல் உள்வாங்கியது(விகிதத்_தொகுதி, உண்மை_அடிப்படை) {
     திரும்பு விகிதத்_தொகுதி.விகிதப்_பணம் * உண்மை_அடிப்படை;
 }
@@ -93,10 +114,16 @@
     திரும்பு உள்வாங்கிய_தொகை - உண்மை_மேல்நிலை;
 }
 
+// __அதிக_உள்வாங்கலா(வேறுபாட்டுத்_தொகை) — was more absorbed than was spent?__
+//
+// __Over-absorption credits the period, because the jobs were charged with overhead the factory did not incur. Favourable as a number and not always as news: it usually means activity ran above the budget the rate was built on, and the rate is now wrong for the rest of the year.__
 செயல் அதிக_உள்வாங்கலா(வேறுபாட்டுத்_தொகை) {
     திரும்பு வேறுபாட்டுத்_தொகை > 0;
 }
 
+// __குறை_உள்வாங்கலா(வேறுபாட்டுத்_தொகை) — was less absorbed than was spent?__
+//
+// __Under-absorption is the cost that never reached a job, and it has to be written off or spread rather than left in a suspense account. Persistent under-absorption is a budgeted-activity figure that was too optimistic, not a spending problem.__
 செயல் குறை_உள்வாங்கலா(வேறுபாட்டுத்_தொகை) {
     திரும்பு வேறுபாட்டுத்_தொகை < 0;
 }

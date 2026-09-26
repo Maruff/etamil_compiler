@@ -34,6 +34,9 @@
     };
 }
 
+// __கணு_தேடு(கணுக்கள், கணு_குறி) — find one WBS node by its code__
+//
+// __சரி with the node, or தவறு naming the code. The WBS is what the schedule, the budget and the responsibility matrix all key on, so a code that resolves to nothing is a break between two of them and not a lookup miss to shrug at.__
 செயல் கணு_தேடு(கணுக்கள், கணு_குறி) {
     ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
         (ஒரு_கணு.கணு_குறி == கணு_குறி) எனில் { திரும்பு சரி(ஒரு_கணு); }
@@ -41,6 +44,9 @@
     திரும்பு தவறு("கணு காணவில்லை: " & கணு_குறி);
 }
 
+// __சேய்கள்(கணுக்கள், பெற்றோர்_குறி) — the immediate children of one node__
+//
+// __One level, not the whole subtree. Rolling a cost up the WBS means summing children whose own totals are already rolled up, and a function that returned every descendant would double-count at every level above the leaves.__
 செயல் சேய்கள்(கணுக்கள், பெற்றோர்_குறி) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {
@@ -51,6 +57,9 @@
     திரும்பு விடை_பட்டி;
 }
 
+// __மூலங்கள்(கணுக்கள்) — the top-level nodes__
+//
+// __The children of the empty parent, which is how a root is recorded: a node with no parent rather than a parent that is absent. That keeps the tree in one flat list with no special case for the top.__
 செயல் மூலங்கள்(கணுக்கள்) { திரும்பு சேய்கள்(கணுக்கள், ""); }
 
 // __இலைக்_கணுவா(கணுக்கள், கணு_குறி) — a leaf is a work package__
@@ -63,6 +72,9 @@
     திரும்பு நீளம்(சேய்கள்(கணுக்கள், கணு_குறி)) == 0;
 }
 
+// __வேலைத்_தொகுப்புகள்(கணுக்கள்) — the work packages, the leaves of the tree__
+//
+// __The only nodes that carry estimates, get scheduled and are assigned to someone. Everything above them is a summary, and a budget entered against a summary node is the classic way a WBS stops adding up.__
 செயல் வேலைத்_தொகுப்புகள்(கணுக்கள்) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_கணு இல் கணுக்கள் {

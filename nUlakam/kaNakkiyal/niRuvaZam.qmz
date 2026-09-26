@@ -15,6 +15,9 @@
 // __--- நிறுவனம் (entity) ---__
 
 // நிறுவனம்_ஆக்கு(குறி, பெயர், அறிக்கை_நாணயம்)
+// __நிறுவனம்_ஆக்கு(குறி, பெயர், அறிக்கை_நாணயம்) — one company in the ledger__
+//
+// __The reporting currency belongs to the company, not to the installation, which is what lets several companies share one ledger and still each present in their own. Translation differences are then a property of the pair, and வேறுபாட்டுத்_தொகை below computes them.__
 செயல் நிறுவனம்_ஆக்கு(குறி, பெயர், அறிக்கை_நாணயம்) {
     திரும்பு {
         குறி: குறி,
@@ -55,6 +58,9 @@
 // __--- நாணயம் (currency) ---__
 
 // நாணயம்_ஆக்கு(குறி, பெயர், சின்னம்)
+// __நாணயம்_ஆக்கு(குறி, பெயர், சின்னம்) — one currency__
+//
+// __The symbol is carried for presentation only. Nothing computes with it: amounts are numbers and the currency is a label on them, because a figure that knows how to print itself is a figure that can be added to one that prints differently.__
 செயல் நாணயம்_ஆக்கு(குறி, பெயர், சின்னம்) {
     திரும்பு {குறி: குறி, பெயர்: பெயர், சின்னம்: சின்னம்};
 }
@@ -78,6 +84,9 @@
 // __balance in the reporting currency.__
 
 // வேறுபாட்டுத்_தொகை(அன்னியத்_தொகை, பழைய_விகிதம், புதிய_விகிதம்)
+// __வேறுபாட்டுத்_தொகை(அன்னியத்_தொகை, பழைய_விகிதம், புதிய_விகிதம்) — the exchange difference__
+//
+// __The foreign amount revalued at the new rate less the old, rounded to two places. Positive when the new rate is higher, which is a gain on an asset and a loss on a liability — the sign here is arithmetic and which side it falls on is the caller's to decide.__
 செயல் வேறுபாட்டுத்_தொகை(அன்னியத்_தொகை, பழைய_விகிதம், புதிய_விகிதம்) {
     திரும்பு வட்டமிடு(அன்னியத்_தொகை * (புதிய_விகிதம் - பழைய_விகிதம்), 2);
 }

@@ -155,6 +155,9 @@
 }
 
 // புள்ளியைத்_தாண்டியதா(உண்மைச்_செலவு, புள்ளி)
+// __புள்ளியைத்_தாண்டியதா(உண்மைச்_செலவு, புள்ளி) — has cost passed the point of total assumption?__
+//
+// __Beyond it the contractor bears every further rupee, so the incentive stops working: there is nothing left to share and the only remaining question is who absorbs the overrun. The point where a cost-plus-incentive contract turns into a fixed price in all but name.__
 செயல் புள்ளியைத்_தாண்டியதா(உண்மைச்_செலவு, புள்ளி) {
     திரும்பு உண்மைச்_செலவு > புள்ளி;
 }

@@ -12,11 +12,17 @@
 }
 
 // சிறியது(அ, ஆ) / பெரியது(அ, ஆ)
+// __சிறியது(அ, ஆ) — the smaller of two numbers__
+//
+// __A tie returns ஆ, which matters only in that the values are equal. Present so callers do not write the comparison inline, where reversing it is easy and the mistake reads as correct.__
 செயல் சிறியது(அ, ஆ) {
     (அ < ஆ) எனில் { திரும்பு அ; }
     திரும்பு ஆ;
 }
 
+// __பெரியது(அ, ஆ) — the larger of two numbers__
+//
+// __The pair to சிறியது. Between them they cover the clamping that shows up all over the accounting modules: an allowance that cannot go below zero, a claim capped at the sum insured.__
 செயல் பெரியது(அ, ஆ) {
     (அ > ஆ) எனில் { திரும்பு அ; }
     திரும்பு ஆ;
@@ -41,6 +47,9 @@
 }
 
 // மிகச்சிறியது(அணி) / மிகப்பெரியது(அணி)
+// __மிகச்சிறியது(பட்டியல்) — the smallest element of an array__
+//
+// __சரி with the value, or தவறு for an empty array. Empty has no minimum, and answering zero would be a lie that survives into a report — the least of nothing is not nothing.__
 செயல் மிகச்சிறியது(பட்டியல்) {
     (நீளம்(பட்டியல்) == 0) எனில் {
         திரும்பு தவறு("காலி அணி  (empty array)");
@@ -52,6 +61,9 @@
     திரும்பு சரி(விடை);
 }
 
+// __மிகப்பெரியது(பட்டியல்) — the largest element of an array__
+//
+// __The pair to மிகச்சிறியது, and தவறு on empty for the same reason. Walks the array once rather than sorting it, so the cost is linear and the original order is untouched.__
 செயல் மிகப்பெரியது(பட்டியல்) {
     (நீளம்(பட்டியல்) == 0) எனில் {
         திரும்பு தவறு("காலி அணி  (empty array)");

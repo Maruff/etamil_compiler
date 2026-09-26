@@ -24,10 +24,19 @@
 
 // __--- Reading a variance -------------------------------------------------__
 
+// __சாதகமா(வேறுபாட்டுத்_தொகை) — is this variance favourable?__
+//
+// __Positive is favourable, because every variance here is standard minus actual. Provided so no caller has to remember which way the subtraction runs; texts that report an absolute figure with an F or A label have the opposite habit.__
 செயல் சாதகமா(வேறுபாட்டுத்_தொகை) { திரும்பு வேறுபாட்டுத்_தொகை > 0; }
+// __பாதகமா(வேறுபாட்டுத்_தொகை) — is this variance adverse?__
+//
+// __Not simply the negation of சாதகமா: exactly zero is neither, and a report that calls an on-standard month adverse will be argued with rather than acted on.__
 செயல் பாதகமா(வேறுபாட்டுத்_தொகை) { திரும்பு வேறுபாட்டுத்_தொகை < 0; }
 
 // வேறுபாட்டு_உரை(வேறுபாட்டுத்_தொகை) — "1200 சாதகம்" / "800 பாதகம்"
+// __வேறுபாட்டு_உரை(வேறுபாட்டுத்_தொகை) — the variance as a line of report Tamil__
+//
+// __Prints the magnitude with சாதகம் or பாதகம் rather than a signed number, because a minus sign in front of a variance is read as adverse by half its readers and as favourable by the other half. Exactly zero gets its own words.__
 செயல் வேறுபாட்டு_உரை(வேறுபாட்டுத்_தொகை) {
     (வேறுபாட்டுத்_தொகை > 0) எனில் {
         திரும்பு வேறுபாட்டுத்_தொகை & " சாதகம்";
@@ -70,17 +79,26 @@
 
 // __--- Labour --------------------------------------------------------------__
 
+// __ஊதிய_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம், உண்மை_நேரம், உண்மை_வீதம்) — the whole labour difference__
+//
+// __What the wages should have been for this output, less what they were. It is the figure the ledger shows, and on its own it says nothing about cause: the rate and efficiency variances below split it into the two decisions that produced it, and they sum back to exactly this.__
 செயல் ஊதிய_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம்,
                             உண்மை_நேரம், உண்மை_வீதம்) {
     திரும்பு (நியம_நேரம் * நியம_வீதம்) - (உண்மை_நேரம் * உண்மை_வீதம்);
 }
 
 // ஊதிய_வீத_வேறுபாடு(உண்மை_நேரம், நியம_வீதம், உண்மை_வீதம்)
+// __ஊதிய_வீத_வேறுபாடு(உண்மை_நேரம், நியம_வீதம், உண்மை_வீதம்) — paying more or less per hour__
+//
+// __Priced on the hours actually worked, not the standard hours. Using standard hours here would move part of the efficiency effect into the rate figure, and the two would stop reconciling to the total. Adverse usually means overtime, a grade mix, or a wage settlement, and none of those belong to the supervisor who controls the hours.__
 செயல் ஊதிய_வீத_வேறுபாடு(உண்மை_நேரம், நியம_வீதம், உண்மை_வீதம்) {
     திரும்பு உண்மை_நேரம் * (நியம_வீதம் - உண்மை_வீதம்);
 }
 
 // ஊதிய_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்)
+// __ஊதிய_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்) — taking more or fewer hours than allowed__
+//
+// __Valued at the standard rate, so the price of labour cannot leak into a measure of how it was used. நியம_நேரம் is the time allowed for the output actually achieved, not the time budgeted at the start of the period — comparing against the budget would report a variance for simply making less.__
 செயல் ஊதிய_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்) {
     திரும்பு நியம_வீதம் * (நியம_நேரம் - உண்மை_நேரம்);
 }
@@ -98,6 +116,9 @@
 
 // __--- Variable overhead ---------------------------------------------------__
 
+// __மாறும்_மேல்நிலை_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம், உண்மை_மேல்நிலை) — the whole variable overhead difference__
+//
+// __Overhead absorbed on the standard hours for the output achieved, less what was actually spent. Splits into an expenditure and an efficiency half, which sum back to this.__
 செயல் மாறும்_மேல்நிலை_மொத்த_வேறுபாடு(நியம_நேரம், நியம_வீதம்,
                                        உண்மை_மேல்நிலை) {
     திரும்பு (நியம_நேரம் * நியம_வீதம்) - உண்மை_மேல்நிலை;
@@ -113,6 +134,9 @@
 }
 
 // மாறும்_மேல்நிலை_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்)
+// __மாறும்_மேல்நிலை_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்) — overhead lost or gained with the hours__
+//
+// __The same arithmetic as the labour efficiency variance and for the same reason: variable overhead is absorbed on hours, so hours taken above the allowance carry overhead with them. It is reported separately because the recovery is the accountant's concern and the hours are the supervisor's.__
 செயல் மாறும்_மேல்நிலை_திறன்_வேறுபாடு(நியம_வீதம், நியம_நேரம், உண்மை_நேரம்) {
     திரும்பு நியம_வீதம் * (நியம_நேரம் - உண்மை_நேரம்);
 }
@@ -131,6 +155,9 @@
 
 // நிலையான_மேல்நிலை_கொள்திறன்_வேறுபாடு(நியம_வீதம், மதிப்பிட்ட_அலகுகள்,
 //                                       உண்மை_அலகுகள்)
+// __நிலையான_மேல்நிலை_கொள்திறன்_வேறுபாடு(நியம_வீதம், மதிப்பிட்ட_அலகுகள், உண்மை_அலகுகள்) — the volume variance__
+//
+// __Actual output less budgeted, at the standard rate — the only variance in this module written that way round, and deliberately so: fixed overhead is recovered by making units, so making more than budget over-recovers and is favourable. It measures activity, not spending. A plant that ran below plan shows adverse here even if it spent exactly what it said it would.__
 செயல் நிலையான_மேல்நிலை_கொள்திறன்_வேறுபாடு(நியம_வீதம், மதிப்பிட்ட_அலகுகள்,
                                             உண்மை_அலகுகள்) {
     திரும்பு நியம_வீதம் * (உண்மை_அலகுகள் - மதிப்பிட்ட_அலகுகள்);
@@ -176,6 +203,9 @@
     };
 }
 
+// __ஊதிய_வேறுபாட்டுத்_தொகுதி(நியம_நேரம், நியம_வீதம், உண்மை_நேரம், உண்மை_வீதம்) — the labour variances as one record__
+//
+// __Rate, efficiency and total together, so a report cannot show two of the three and leave the reader to assume the third. The first two add to the last, which the tests assert: a decomposition that does not reconcile is arithmetic with no meaning.__
 செயல் ஊதிய_வேறுபாட்டுத்_தொகுதி(நியம_நேரம், நியம_வீதம்,
                                 உண்மை_நேரம், உண்மை_வீதம்) {
     திரும்பு {

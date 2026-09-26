@@ -8,6 +8,9 @@
 இறக்கு "../../nUlakam/col.qmz";
 
 // வரி_பிரிப்பு(தொகை, விகிதம், மாநிலம்_ஒன்றா)
+// __வரி_பிரிப்பு(தொகை, விகிதம், மாநிலம்_ஒன்றா) — split GST into CGST, SGST or IGST__
+//
+// __Within one state the tax halves into central and state; across states it is one IGST charge. The halves are computed by rounding one and subtracting it from the total, so the two always add back to the tax exactly rather than differing by a paisa.__
 செயல் வரி_பிரிப்பு(தொகை, விகிதம், மாநிலம்_ஒன்றா) {
     மொத்த_வரி = சதவீதம்(தொகை, விகிதம்);
     (மாநிலம்_ஒன்றா) எனில் {
@@ -17,6 +20,9 @@
     திரும்பு {மொத்தம்: மொத்த_வரி, cgst: 0, sgst: 0, igst: மொத்த_வரி};
 }
 
+// __வரிசை_மதிப்பு(உருப்படி) — one invoice line, before tax__
+//
+// __Quantity times price. The taxable value each rate is applied to, which is why tax is computed per line and not on the invoice total.__
 செயல் வரிசை_மதிப்பு(உருப்படி) {
     திரும்பு உருப்படி.அளவு * உருப்படி.விலை;
 }

@@ -60,6 +60,9 @@
 }
 
 // காலியா(அணி)
+// __காலியா(பட்டியல்) — does this array hold nothing?__
+//
+// __Named rather than written as a length test at each call site, because நீளம்(x) == 0 and நீளம்(x) < 1 both appear in code that means this, and one of them is wrong for a value that is not an array at all.__
 செயல் காலியா(பட்டியல்) {
     திரும்பு நீளம்(பட்டியல்) == 0;
 }

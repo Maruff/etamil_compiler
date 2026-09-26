@@ -11,6 +11,9 @@
 // __real error, not a presentation choice.__
 
 // காலம்_ஆக்கு(தொடக்கம், முடிவு)
+// __காலம்_ஆக்கு(தொடக்கம், முடிவு) — one reporting period, start and end inclusive__
+//
+// __தவறு when the end precedes the start, because a backwards period does not report nothing — it reports nothing while looking like a period, and every statement built on it is quietly empty. Both bounds are inclusive: a posting on the last day is in the year.__
 செயல் காலம்_ஆக்கு(தொடக்கம், முடிவு) {
     (தொடக்கம் > முடிவு) எனில் {
         திரும்பு தவறு("காலத் தொடக்கம் முடிவுக்குப் பின் உள்ளது: "
@@ -29,6 +32,9 @@
 }
 
 // நாட்காட்டி_ஆண்டு(ஆண்டு)
+// __நாட்காட்டி_ஆண்டு(ஆண்டு) — the calendar year as a period__
+//
+// __January to December. A financial year that runs April to March is காலம்_ஆக்கு with those dates; this is named for the calendar year precisely so the two cannot be confused in a report heading.__
 செயல் நாட்காட்டி_ஆண்டு(ஆண்டு) {
     திரும்பு மதிப்பு(காலம்_ஆக்கு(
         சொல்லாக்கு(ஆண்டு) & "-01-01",
@@ -37,6 +43,9 @@
 }
 
 // காலத்தில்_உள்ளதா(நாள், காலம்)
+// __காலத்தில்_உள்ளதா(நாள், காலம்) — does this date fall in the period?__
+//
+// __Two string comparisons and no arithmetic, because ISO-8601 text sorts chronologically. Inclusive at both ends, which is what makes consecutive periods partition the year without a gap or an overlap on the boundary days.__
 செயல் காலத்தில்_உள்ளதா(நாள், காலம்) {
     திரும்பு நாள் >= காலம்.தொடக்கம் மற்றும் நாள் <= காலம்.முடிவு;
 }
@@ -47,6 +56,9 @@
 }
 
 // காலம்_விவரம்(காலம்)
+// __காலம்_விவரம்(காலம்) — the period as a line of report Tamil__
+//
+// __For a statement heading. Both dates in full rather than a month name, so a period that is not a whole month still reads correctly.__
 செயல் காலம்_விவரம்(காலம்) {
     திரும்பு காலம்.தொடக்கம் & " முதல் " & காலம்.முடிவு & " வரை";
 }

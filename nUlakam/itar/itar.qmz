@@ -222,6 +222,9 @@
 }
 
 // பதிலளிப்பு_நிகரம்(நன்மை, பதிலளிப்புச்_செலவு)
+// __பதிலளிப்பு_நிகரம்(நன்மை, பதிலளிப்புச்_செலவு) — what a risk response is worth, net__
+//
+// __The reduction in expected loss less what the response costs. Through வட்டக்_கழி so the subtraction rounds once: a mitigation whose net benefit is a rounding artefact should not appear to be worth doing.__
 செயல் பதிலளிப்பு_நிகரம்(நன்மை, பதிலளிப்புச்_செலவு) {
     திரும்பு வட்டக்_கழி(நன்மை, பதிலளிப்புச்_செலவு);
 }

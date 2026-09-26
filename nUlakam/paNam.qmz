@@ -65,6 +65,9 @@
     திரும்பு வட்டமிடு(தொகை / 100000, 2);
 }
 
+// __கோடி(தொகை) — an amount expressed in crore__
+//
+// __Ten million to the crore, rounded to two places. The unit Indian financial reporting actually uses: a balance sheet in crore is read at a glance and the same figure in millions is converted in the reader's head, badly.__
 செயல் கோடி(தொகை) {
     திரும்பு வட்டமிடு(தொகை / 10000000, 2);
 }

@@ -95,6 +95,9 @@
     திரும்பு சரி({ செயல்_குறி: சிறந்த_குறி, சரிவு: சிறந்த_சரிவு });
 }
 
+// __கடுமையானதா(கடுமையான_குறிகள், செயல்_குறி) — is this activity on the critical path?__
+//
+// __Only critical activities are worth crashing: spending money to shorten an activity with float buys nothing, because the project still finishes when the critical path does. This is the test that stops that money being spent.__
 செயல் கடுமையானதா(கடுமையான_குறிகள், செயல்_குறி) {
     திரும்பு உள்ளதா(கடுமையான_குறிகள், செயல்_குறி);
 }
@@ -120,6 +123,9 @@
 
 // __--- Totals --------------------------------------------------------------__
 
+// __இயல்பு_நேரடிச்_செலவு(தரவுகள்) — the project's direct cost with nothing crashed__
+//
+// __The baseline every crashing decision is measured against. Crashing raises direct cost and lowers indirect cost, and the optimum is where the two curves cross — which cannot be found without knowing where they started.__
 செயல் இயல்பு_நேரடிச்_செலவு(தரவுகள்) {
     ஓடும்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_தரவு இல் தரவுகள் {

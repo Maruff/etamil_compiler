@@ -51,12 +51,18 @@
               "எழுதும்_பாதை": எழுதும்};
 }
 
+// __முழு_முகவரி(நுழைவுப்_பொருள், பாதைப்_படிவம்) — build the gateway URL for one call__
+//
+// __Substitutes the channel and chaincode into a path template. Kept as a template rather than concatenation so every route in this module reads the same way and a missing segment is visible in the template rather than hidden in string joins.__
 செயல் முழு_முகவரி(நுழைவுப்_பொருள், பாதைப்_படிவம்) {
     பாதை = மாற்று(பாதைப்_படிவம், "{channel}", நுழைவுப்_பொருள்["சேனல்"]);
     பாதை = மாற்று(பாதை, "{chaincode}", நுழைவுப்_பொருள்["நிரல்பொருள்"]);
     திரும்பு நுழைவுப்_பொருள்["முகவரிப்_பாதை"] & பாதை;
 }
 
+// __உடலைக்_கட்டு(செயற்பெயர், அளபுருக்கள்) — the JSON body of a chaincode invocation__
+//
+// __Fabric expects the function name and an array of string arguments, which is the shape every chaincode sees regardless of what it does. Built through ஜேசான்_ஆக்கு, so escaping is handled once and not per call site.__
 செயல் உடலைக்_கட்டு(செயற்பெயர், அளபுருக்கள்) {
     திரும்பு ஜேசான்_ஆக்கு({"function": செயற்பெயர், "args": அளபுருக்கள்});
 }

@@ -107,6 +107,9 @@
 }
 
 // மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்)
+// __மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்) — the surcharge rate that applies at this income__
+//
+// __The rate alone, for a caller that only needs to show it. The slab itself comes from மேல்வரி_படி, and surcharge is a cliff rather than a ladder — crossing a threshold raises the rate on the whole income, which is why marginal relief exists.__
 செயல் மேல்வரி_விகிதம்(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்) {
     திரும்பு மேல்வரி_படி(வரிக்குரிய_வருமானம், மேல்வரிப்_படிகள்)["விகிதம்"];
 }

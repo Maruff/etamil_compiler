@@ -19,9 +19,25 @@
 // __product: service and administrative centres have their cost re-apportioned__
 // __onto production centres before absorption, never onto units directly.__
 செயல் வகை_உற்பத்தி()  { திரும்பு "உற்பத்தி"; }
+// __வகை_சேவைத்துறை() — the service-centre kind: maintenance, stores, canteen__
+//
+// __A service centre incurs real cost and absorbs none of it into product. Its__
+// __total is re-apportioned onto the production centres it serves, so it must__
+// __be emptied before absorption runs or the cost is simply lost.__
 செயல் வகை_சேவைத்துறை() { திரும்பு "சேவை"; }
+// __வகை_நிர்வாகம்() — the administrative kind, which serves the business__
+//
+// __Kept separate from சேவை because administration is often not apportioned to__
+// __production at all: many costing policies write it off against the period__
+// __rather than burying it in unit cost, and that is a choice the caller makes.__
 செயல் வகை_நிர்வாகம்()  { திரும்பு "நிர்வாகம்"; }
 
+// __நிலைய_வகை_செல்லுபடியா(நிலைய_வகை) — is this one of the three kinds?__
+//
+// __Checked at construction rather than at absorption. A centre with a mistyped__
+// __kind would otherwise sit in the list looking correct and quietly absorb__
+// __nothing, and the shortfall surfaces much later as an under-absorption that__
+// __nobody can trace back to a spelling.__
 செயல் நிலைய_வகை_செல்லுபடியா(நிலைய_வகை) {
     (நிலைய_வகை == "உற்பத்தி") எனில் { திரும்பு மெய்; }
     (நிலைய_வகை == "சேவை")     எனில் { திரும்பு மெய்; }
@@ -35,6 +51,11 @@
 }
 
 // நிலையம்_ஆக்கு(நிலைய_குறி, நிலைய_பெயர், நிலைய_வகை)
+// __நிலையம்_ஆக்கு(நிலைய_குறி, நிலைய_பெயர், நிலைய_வகை) — build one cost centre__
+//
+// __Returns தவறு for an unknown kind rather than the record, so an invalid__
+// __centre cannot enter the list at all. The code is what everything else joins__
+// __on; the name is for the report and is never matched against.__
 செயல் நிலையம்_ஆக்கு(நிலைய_குறி, நிலைய_பெயர், நிலைய_வகை) {
     (இல்லை நிலைய_வகை_செல்லுபடியா(நிலைய_வகை)) எனில் {
         திரும்பு தவறு("அறியப்படாத நிலைய வகை: " & நிலைய_வகை);
@@ -46,6 +67,11 @@
     });
 }
 
+// __நிலையம்_தேடு(நிலையங்கள், நிலைய_குறி) — find one cost centre by its code__
+//
+// __சரி with the centre, or தவறு naming the code that was not there. Absent is__
+// __an answer, not a failure: apportioning to a centre that does not exist is a__
+// __mistake worth stopping on rather than skipping past.__
 செயல் நிலையம்_தேடு(நிலையங்கள், நிலைய_குறி) {
     ஒவ்வொரு ஒரு_நிலையம் இல் நிலையங்கள் {
         (ஒரு_நிலையம்.நிலைய_குறி == நிலைய_குறி) எனில் {
@@ -55,6 +81,10 @@
     திரும்பு தவறு("நிலையம் காணவில்லை: " & நிலைய_குறி);
 }
 
+// __வகையால்_நிலையங்கள்(நிலையங்கள், நிலைய_வகை) — every centre of one kind__
+//
+// __How an apportionment run finds its targets: service cost goes onto the__
+// __production centres, so the list of those is what it asks for first.__
 செயல் வகையால்_நிலையங்கள்(நிலையங்கள், நிலைய_வகை) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_நிலையம் இல் நிலையங்கள் {
@@ -104,6 +134,11 @@
     };
 }
 
+// __கூறுகளின்_கூட்டல்(கூறுகள்) — the total of an element list, in rupees__
+//
+// __Ignores both classifications deliberately. This is the cost sheet's total__
+// __line, and it has to equal direct plus indirect, and variable plus fixed,__
+// __whichever way the same elements are later split.__
 செயல் கூறுகளின்_கூட்டல்(கூறுகள்) {
     மொத்தக்_கூட்டல் = 0;
     ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
@@ -112,6 +147,11 @@
     திரும்பு மொத்தக்_கூட்டல்;
 }
 
+// __நேரடிக்_கூறுகள்(கூறுகள்) — only the elements traceable to the cost object__
+//
+// __These are absorbed into the object as they stand. What is left over is the__
+// __pool that has to be apportioned on some basis, which is where judgement__
+// __enters a cost sheet and why the two lists are kept apart.__
 செயல் நேரடிக்_கூறுகள்(கூறுகள்) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
@@ -120,6 +160,11 @@
     திரும்பு விடை_பட்டி;
 }
 
+// __மறைமுகக்_கூறுகள்(கூறுகள்) — the elements that cannot be traced, the overhead__
+//
+// __The complement of நேரடிக்_கூறுகள், and the two together are the whole list.__
+// __Overhead is not a lesser cost, it is a cost whose owner is a matter of__
+// __policy rather than of measurement.__
 செயல் மறைமுகக்_கூறுகள்(கூறுகள்) {
     விடை_பட்டி = [];
     ஒவ்வொரு ஒரு_கூறு இல் கூறுகள் {
@@ -141,6 +186,11 @@
     திரும்பு மாறும்_கூட்டல்;
 }
 
+// __நிலையான_பகுதி(கூறுகள்) — the rupees that do not move with volume__
+//
+// __Computed as the total less மாறும்_பகுதி rather than summed on its own, so__
+// __the two halves always add back to the total exactly. Summing both__
+// __independently would let a rounding difference appear between them.__
 செயல் நிலையான_பகுதி(கூறுகள்) {
     திரும்பு கூறுகளின்_கூட்டல்(கூறுகள்) - மாறும்_பகுதி(கூறுகள்);
 }

@@ -57,6 +57,9 @@
 }
 
 // __--- வருமான அறிக்கை (income statement) ---__
+// __வருமான_அறிக்கை(பேரேடு, கணக்குகள்) — the income statement from the ledger__
+//
+// __Selects the வருவாய் and செலவு accounts and nets them. Derived from the postings rather than stored, so it cannot disagree with the ledger it came from. Takes the whole ledger: use கால_வருமான_அறிக்கை when a period is meant, since income is a flow and a figure since the ledger began is rarely what was wanted.__
 செயல் வருமான_அறிக்கை(பேரேடு, கணக்குகள்) {
     மொத்த_வருவாய் = 0;
     மொத்த_செலவு = 0;
@@ -146,6 +149,9 @@
 // __only right for a first year with no closing.__
 
 // கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்)
+// __கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்) — the income statement for one period__
+//
+// __Filters the ledger first, then builds the statement, and records the period on the result. Income accounts are flows: reporting them without a period gives a figure since the ledger began, which is a number nobody asked for.__
 செயல் கால_வருமான_அறிக்கை(பேரேடு, கணக்குகள், காலம்) {
     அறிக்கை = வருமான_அறிக்கை(காலம்_வடிகட்டு(பேரேடு, காலம்), கணக்குகள்);
     அறிக்கை.காலம் = காலம்;
@@ -163,6 +169,9 @@
 }
 
 // கால_இருப்பாய்வு(பேரேடு, கணக்குகள், நாள்)
+// __கால_இருப்பாய்வு(பேரேடு, கணக்குகள், வரம்பு_நாள்) — the trial balance as at a date__
+//
+// __Takes everything up to the date rather than a window, because a balance is a position and not a flow. That is the difference between the two period functions here, and it is worth being deliberate about.__
 செயல் கால_இருப்பாய்வு(பேரேடு, கணக்குகள், வரம்பு_நாள்) {
     திரும்பு இருப்பாய்வு(வரை_வடிகட்டு(பேரேடு, வரம்பு_நாள்), கணக்குகள்);
 }
@@ -232,6 +241,9 @@
 
 // __--- Printing ---__
 
+// __இருப்பாய்வு_அச்சிடு(அறிக்கை) — print a trial balance__
+//
+// __States the balance check as a mark rather than leaving the reader to add the columns. A trial balance that does not balance is not a formatting matter, so it is said on the face of the report.__
 செயல் இருப்பாய்வு_அச்சிடு(அறிக்கை) {
     அச்சு "இருப்பாய்வு";
     அச்சு திரும்பச்செய்("=", 56);
@@ -247,6 +259,9 @@
     இன்றேல் { அச்சு "  ✗ சமநிலை இல்லை"; }
 }
 
+// __வருமான_அறிக்கை_அச்சிடு(அறிக்கை) — print an income statement__
+//
+// __Revenue lines, expense lines, then totals, with amounts through ரூபாய் so the lakh and crore grouping is the one an Indian reader expects. Printing is kept apart from the functions that compute, so a statement can be tested without asserting on its layout.__
 செயல் வருமான_அறிக்கை_அச்சிடு(அறிக்கை) {
     அச்சு "வருமான அறிக்கை";
     அச்சு திரும்பச்செய்("=", 56);
@@ -264,6 +279,9 @@
     அச்சு "  நிகர லாபம்    : " & ரூபாய்(அறிக்கை.நிகர_லாபம்);
 }
 
+// __இருப்புநிலை_அச்சிடு(அறிக்கை) — print a balance sheet__
+//
+// __Assets on one side, liabilities and equity on the other, and the accounting equation checked on the face of it. The check is worth printing even though the ledger already rejects unbalanced entries: it also catches a classification error, where a real posting has been filed under the wrong root.__
 செயல் இருப்புநிலை_அச்சிடு(அறிக்கை) {
     அச்சு "இருப்புநிலை";
     அச்சு திரும்பச்செய்("=", 56);

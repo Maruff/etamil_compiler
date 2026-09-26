@@ -24,6 +24,9 @@
 // __--- Rung 1: prime cost --------------------------------------------------__
 
 // முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்)
+// __முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்) — prime cost__
+//
+// __The bottom rung: everything traceable to the product and no overhead at all. Direct expenses are the forgotten third — a royalty per unit, a hired mould for one job — and leaving them out understates prime cost and overstates the overhead recovery rate built on it.__
 செயல் முதன்மைச்_செலவு(நேரடிப்_பொருட்கள், நேரடி_ஊதியம், நேரடிச்_செலவுகள்) {
     திரும்பு நேரடிப்_பொருட்கள் + நேரடி_ஊதியம் + நேரடிச்_செலவுகள்;
 }
@@ -51,6 +54,9 @@
 
 // __--- Rung 3: cost of production and cost of goods sold ------------------__
 
+// __உற்பத்திச்_செலவு(தொழிற்சாலை, நிர்வாக_மேல்நிலை) — cost of production__
+//
+// __Factory cost plus administrative overhead. The rung where policies differ: some carry administration to the period instead, and a cost sheet that changes convention between months is not comparable with itself.__
 செயல் உற்பத்திச்_செலவு(தொழிற்சாலை, நிர்வாக_மேல்நிலை) {
     திரும்பு தொழிற்சாலை + நிர்வாக_மேல்நிலை;
 }
@@ -66,11 +72,17 @@
 
 // __--- Rung 4: cost of sales, and what is left ----------------------------__
 
+// __விற்பனைச்_செலவு(விற்றவை_செலவு, விற்பனை_மேல்நிலை) — cost of sales__
+//
+// __The top rung, and the only total that may be set against revenue. Selling overhead is added last because it attaches to units sold rather than units made, which is why the rung below adjusts for finished stock first.__
 செயல் விற்பனைச்_செலவு(விற்றவை_செலவு, விற்பனை_மேல்நிலை) {
     திரும்பு விற்றவை_செலவு + விற்பனை_மேல்நிலை;
 }
 
 // லாபம்_ஈட்டியது(விற்பனை_வருவாய், விற்பனைச்_செலவு_மொத்தம்)
+// __லாபம்_ஈட்டியது(விற்பனை_வருவாய், விற்பனைச்_செலவு_மொத்தம்) — profit on the cost sheet__
+//
+// __Revenue less cost of sales. Agrees with the income statement only when every rung was built on the same units: cost priced on production against revenue earned on sales differs by the stock movement, which the ladder handles and a shortcut does not.__
 செயல் லாபம்_ஈட்டியது(விற்பனை_வருவாய், விற்பனைச்_செலவு_மொத்தம்) {
     திரும்பு விற்பனை_வருவாய் - விற்பனைச்_செலவு_மொத்தம்;
 }
@@ -78,6 +90,9 @@
 // __--- Per unit ------------------------------------------------------------__
 
 // அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்)
+// __அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்) — cost per unit__
+//
+// __தவறு when there are no units rather than zero: dividing a real cost by nothing has no answer, and a unit cost of zero reported against a month with no output is the kind of figure that gets quoted later.__
 செயல் அலகுக்குச்_செலவு(மொத்தச்_செலவு, அலகுகள்) {
     (அலகுகள் <= 0) எனில் {
         திரும்பு தவறு("அலகுகள் பூஜ்யம்: அலகுச் செலவு இல்லை");
