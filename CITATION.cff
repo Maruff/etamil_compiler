@@ -56,7 +56,7 @@ abstract: >-
 # The design paper. Update `year`, add `doi:` and replace `type:` with the
 # published form once it appears in a venue — not before.
 preferred-citation:
-  type: unpublished
+  type: published
   title: >-
     Developing an Indian DSL (Programming Language) for Accounts, Commerce,
     Finance, and Fintech Professionals
@@ -66,10 +66,4 @@ preferred-citation:
       affiliation: >-
         B. S. Abdur Rahman Crescent Institute of Science and Technology,
         Chennai, India
-    - family-names: Valli
-      given-names: S. P.
-      name-particle: Dr.
-      affiliation: >-
-        Department of Computer Science and Engineering, B. S. Abdur Rahman
-        Crescent Institute of Science and Technology, Chennai, India
-  year: 2026
+  year: 2024
