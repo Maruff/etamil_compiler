@@ -56,7 +56,7 @@ abstract: >-
 # The design paper. Update `year`, add `doi:` and replace `type:` with the
 # published form once it appears in a venue — not before.
 preferred-citation:
-  type: published
+  type: conference-paper
   title: >-
     Developing an Indian DSL (Programming Language) for Accounts, Commerce,
     Finance, and Fintech Professionals
@@ -66,4 +66,27 @@ preferred-citation:
       affiliation: >-
         B. S. Abdur Rahman Crescent Institute of Science and Technology,
         Chennai, India
-  year: 2024
+    - family-names: Valli
+      given-names: S. P.
+      affiliation: >-
+        Department of Computer Science and Engineering, B. S. Abdur Rahman
+        Crescent Institute of Science and Technology, Chennai, India
+  collection-title: >-
+    Proceedings of the International Conference on Technology Enhanced
+    Teaching and Learning (ICTETL 2025)
+  conference:
+    name: >-
+      International Conference on Technology Enhanced Teaching and Learning
+      (ICTETL 2025)
+    date-start: 2025-10-23
+    date-end: 2025-10-24
+  publisher:
+    name: >-
+      Centre for Distance and Online Education, B. S. Abdur Rahman Crescent
+      Institute of Science and Technology
+    city: Chennai
+  start: 160
+  end: 174
+  url: "https://heyzine.com/flip-book/30f47b1d9c.html#page/195"
+  year: 2025
+  month: 10
